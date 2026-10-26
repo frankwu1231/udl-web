@@ -109,7 +109,7 @@
       <p class="subtle"><a href="hands-on.html" target="_blank" rel="noopener">🖨 列印實物操作卡 ↗</a></p>
 
       <h2 id="sec-buddy">🤖 學習小幫手「小方」</h2>
-      <p class="subtle">解題時，右下角有一個小機器人。學生很久沒有動，它會問「要不要我幫你？」，學生按「好」就打開第 1 層提示；再過一樣久，會幫學生打開「我卡住了」。同一步答錯 2 次會鼓勵，答錯 3 次打開「我卡住了」。小測驗只鼓勵、不給提示。</p>
+      <p class="subtle">解題時，右下角有一個小機器人。學生很久沒有動，它會問「要不要我幫你？」，學生按「好」就打開第 1 層提示；再過一樣久，會幫學生打開「我卡住了」。學生一直在動、但同一步一直過不了時：同一個錯答案又試一次，會提醒「換一個想法」；10 秒內又答錯，會說「慢慢來，先看提示」；答錯 3 次打開「我卡住了」；在同一步待了 3 倍等待時間（例如 60 秒 × 3 = 3 分鐘），不論有沒有在動，都會問要不要幫忙。小測驗只鼓勵、不給提示。</p>
       <label class="check"><input id="buddy" type="checkbox" ${s.buddy ? 'checked' : ''}>使用學習小幫手</label>
       <label>學生同一步沒有動多久，小幫手才問要不要幫忙<select id="buddyWait"><option value="30">30 秒</option><option value="60">60 秒（建議）</option><option value="90">90 秒：給學生多一點思考時間</option></select></label>
       <label class="check"><input id="buddyVoice" type="checkbox" ${s.buddyVoice ? 'checked' : ''}>小幫手把話唸出來</label>

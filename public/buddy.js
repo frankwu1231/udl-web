@@ -17,6 +17,9 @@
     stuck: '慢慢來。我幫你打開「我卡住了」，選一個方法。',
     probe: '慢慢想，你可以的。',
     wrong: '沒關係，再試一次。看看上面的提示。',
+    same: '這個答案剛剛試過了。換一個想法看看。',
+    fast: '慢慢來。先看提示，想一想再按。',
+    long: '這一步做了很久了。要不要我幫你？',
     wrongMore: '這一步比較難。我幫你打開「我卡住了」。',
     right: ['答對了！', '做得好！', '你做到了！'],
     look: '眼睛看這裡喔！我們一起做。',
@@ -28,7 +31,7 @@
   };
 
   let api = null, root = null, cfg = {}, steps = [], where = '';
-  let idle = 0, stage = 0, wrongs = {}, hideTimer = 0, lastSpoken = '', offering = false, asked = false;
+  let idle = 0, stage = 0, onStep = 0, wrongs = {}, lastWrong = {}, hideTimer = 0, lastSpoken = '', offering = false, asked = false;
   let cam = null;                  // { stream, video, detector, timer, away, awaySince, lastRemind, reminds:[] }
 
   // ---------- 畫面 ----------
@@ -84,11 +87,20 @@
       ['我自己想', () => { api.log('小幫手', { activity: s + 1, action: '自己想' }); idle = 0; stage = 0; say('好，加油！', { mood: 'happy', ttl: 2500 }); }]
     ] });
   }
+  function offerLong(s) {
+    api.log('小幫手', { activity: s + 1, action: '同一步做很久' });   // 學生一直在動，所以這個問題不因為動了就收起
+    say(SAY.long, { mood: 'worried', buttons: [
+      ['😣 好，幫我', () => openStuck(s, '小幫手：接受')],
+      ['我自己想', () => { api.log('小幫手', { activity: s + 1, action: '自己想' }); say('好，加油！', { mood: 'happy', ttl: 2500 }); }]
+    ] });
+  }
   function openStuck(s, why) { api.log('小幫手', { activity: s + 1, action: why }); api.stuck(s); idle = 0; stage = 0; }
   function tick() {
     if (!api || !cfg.buddy || where !== 'solve' || open() === undefined || paused()) return;
-    idle++;
+    idle++; onStep++;
     const wait = cfg.buddyWait || 60;
+    // 一直在動、但同一步一直過不了：不看有沒有動，在這一步待了 3 倍等待時間就問（之後每 3 倍再問一次）
+    if (onStep >= wait * 3 && !offering && api.mode() !== 'probe' && api.mode() !== 'demo') { onStep = 0; offerLong(open()); return; }
     if (stage === 0 && idle >= wait) { stage = 1; offer(false); }
     else if (stage === 1 && idle >= wait * 2 && api.mode() !== 'probe' && api.mode() !== 'demo') {
       stage = 2; const s = open();
@@ -184,14 +196,19 @@
       mount();
       root.classList.toggle('face-only', !cfg.buddy);
       const now = api.phase(), list = now === 'solve' ? api.steps() : [];
-      if (now !== where || list.join() !== steps.join()) { idle = 0; stage = 0; if (now !== where && now !== 'solve') hide(); }
+      if (now !== where || list.join() !== steps.join()) { idle = 0; stage = 0; onStep = 0; if (now !== where && now !== 'solve') hide(); }
       where = now; steps = list;
       if (cfg.attention && where !== 'map') askCamera(); else stopCamera();
     },
-    wrong(s) {
+    // tried：這次的錯答案（同一個答案再試，會提醒換個想法）
+    wrong(s, tried) {
       if (!root || !cfg.buddy || api.mode() === 'probe') return;
       idle = 0; wrongs[s] = (wrongs[s] || 0) + 1;
+      const now = Date.now(), last = lastWrong[s] || {}, same = !!tried && tried === last.tried, fast = now - (last.at || 0) < 10000;
+      lastWrong[s] = { tried, at: now };
       if (wrongs[s] >= 3 && !api.stuckOpen(s) && api.mode() !== 'demo') { wrongs[s] = 0; say(SAY.wrongMore, { mood: 'worried', ttl: 6000 }); openStuck(s, '連續答錯，打開我卡住了'); }
+      else if (same) { api.log('小幫手', { activity: s + 1, action: '同一個錯答案' }); say(SAY.same, { mood: 'worried', ttl: 5000 }); }
+      else if (fast && wrongs[s] >= 2) { api.log('小幫手', { activity: s + 1, action: '很快又答錯' }); say(SAY.fast, { mood: 'worried', ttl: 5000 }); }
       else if (wrongs[s] === 2) say(SAY.wrong, { mood: 'worried', ttl: 5000 });
       else mood('worried');
     },
@@ -200,7 +217,7 @@
       delete wrongs[s];
       say(SAY.right[Math.floor(Math.random() * SAY.right.length)], { mood: 'happy', ttl: 2500 });
     },
-    newQuestion() { wrongs = {}; idle = 0; stage = 0; },
+    newQuestion() { wrongs = {}; lastWrong = {}; idle = 0; stage = 0; onStep = 0; },
     // 測試與教師說明用
     gaze, looking, lastSaid: () => lastSpoken, idle: () => idle
   };

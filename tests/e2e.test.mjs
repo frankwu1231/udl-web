@@ -770,7 +770,7 @@ test('小幫手：同一步答錯 2 次鼓勵、3 次打開「我卡住了」；
   let p = await student('rectangle', { buddyVoice: false });
   await p.start();
   await p.choose('target', 'border'); await p.check(); assert.equal(await buddySays(p.page), '');
-  await p.choose('target', 'corner'); await p.check(); assert.match(await buddySays(p.page), /再試一次/);
+  await p.choose('target', 'corner'); await p.check(); assert.match(await buddySays(p.page), /慢慢來/, '很快又答錯：先看提示');
   await p.check(); assert.ok(await p.page.$('#stuckPanel0'), '答錯 3 次打開我卡住了');
   await p.choose('target', 'inside'); await p.check(); assert.match(await buddySays(p.page), /答對了|做得好|做到了/);
   assert.deepEqual(p.errors, []);
@@ -820,4 +820,25 @@ test('教師備課：學習小幫手與專心提醒的設定可以儲存', { ski
   const s = await page.evaluate(async () => { const r = await (await fetch('/api/teacher/lessons')).json(); return r.draft.rectangle.settings; });
   assert.deepEqual([s.buddy, s.buddyWait, s.buddyVoice, s.attention, s.attentionSec], [true, 90, false, true, 8]);
   await page.close();
+});
+
+test('小幫手：學生一直在動但一直答錯——同一個錯答案提醒換想法；在同一步待太久，就算一直在動也問要不要幫忙', { skip: skip || !distReady }, async () => {
+  const p = await student('rectangle', { buddyWait: 30, buddyVoice: false }, undefined, { clock: true });
+  await p.start();
+  await p.choose('target', 'border'); await p.check(); await p.page.clock.runFor(12000);
+  await p.choose('target', 'corner'); await p.check(); assert.match(await buddySays(p.page), /再試一次/, '隔一陣子答錯第 2 次：鼓勵');
+  await p.page.clock.runFor(12000); await p.check();
+  assert.ok(await p.page.$('#stuckPanel0'), '第 3 次打開我卡住了');
+  await p.page.click('[data-stuck-pick="hint"]').catch(() => {});
+  await p.page.clock.runFor(12000); await p.check();
+  assert.match(await buddySays(p.page), /剛剛試過了/, '同一個錯答案又試一次');
+  // 一直點選項（每 10 秒動一次），空閒計時一直歸零，但同一步待了 90 秒就問
+  for (let i = 0; i < 6; i++) { await p.choose('target', i % 2 ? 'border' : 'corner'); await p.page.clock.runFor(10000); }
+  assert.match(await buddySays(p.page), /做了很久/);
+  await p.choose('target', 'border'); assert.match(await buddySays(p.page), /做了很久/, '學生繼續動，問題不會收起');
+  await p.page.click('#buddyBubble [data-buddy="0"]');
+  assert.ok(await p.page.$('#stuckPanel0'), '按「好，幫我」打開我卡住了');
+  const log = await buddyLog(p.page);
+  for (const a of ['同一個錯答案', '同一步做很久']) assert.ok(log.includes(a), a);
+  assert.deepEqual(p.errors, []);
 });

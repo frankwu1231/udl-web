@@ -728,8 +728,8 @@
       if (r) { ok = false; errors++; checked.delete(s); if (hintLevel[s] < 3 && mode() !== 'probe') { hintLevel[s]++; log('自動提示', { activity: s + 1, hintLevel: hintLevel[s] }); if (settings.hintGate && hintPending === false) hintPending = s; } }
       else checked.add(s);
     }
-    const msgs = {};
-    for (const s of list) { const r = checked.has(s) ? null : issue(s); msgs[s] = r; }
+    const msgs = {}, tried = {};   // tried：這次的錯答案，讓小幫手認出「同一個答案又試一次」
+    for (const s of list) { const r = checked.has(s) ? null : issue(s); msgs[s] = r; if (r) tried[s] = r.code + '|' + answerText(s, r.code); }
     rerenderKeep();
     if (hintPending !== false) lockForHint();
     for (const s of list) {
@@ -738,7 +738,7 @@
       else if (r.partial || (s === 3 && lineOk && r.code === 'second' && partial)) showStatus($('feedback' + s), '找到了！', true);
       else showStatus($('feedback' + s), r.msg);
     }
-    for (const s of list) if (msgs[s] && !msgs[s].partial && !msgs[s].soft) window.areaBuddy?.wrong(s);
+    for (const s of list) if (msgs[s] && !msgs[s].partial && !msgs[s].soft) window.areaBuddy?.wrong(s, tried[s]);
     if (ok) { showStatus(groupBox(), phase === 'reflect' ? '單位答對了！' : '全部答對了，可以按「下一步」。', true); if (phase !== 'reflect') celebrate(); window.areaBuddy?.right(list[list.length - 1]); }
     else if (partial) showStatus(groupBox(), '找到高了！再填它的長度。', true);
     else if (list.every(s => checked.has(s) || msgs[s]?.soft)) showStatus(groupBox(), '快好了！照上面的說明再做一步。');
