@@ -1,0 +1,22 @@
+/* 現場試用紀錄（第 22 版）：老師用的工具列與對話框 */
+.research-bar{max-width:1140px;margin:0 auto 12px;padding:10px 24px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;background:#fff7e6;border-block:1px solid #e9c37a}
+.research-bar .who{margin:0;display:flex;flex-direction:column;line-height:1.3}
+.research-bar .who b{font-size:18px}.research-bar .who span{font-size:14px;color:#6b5420}
+.research-bar .quick,.research-bar .ops{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.research-bar .ops{margin-left:auto}
+.research-bar button{min-height:40px;padding:6px 12px;font-size:15px}
+.research-bar .count{font-size:14px;color:#3d5a2a}.research-bar .count.warn{color:#9a3412;font-weight:bold}
+.research-dialog{max-width:640px}
+.research-dialog h2{margin-top:0}.research-dialog h3{font-size:17px;margin:14px 0 6px}
+.research-dialog .pick{display:flex;flex-wrap:wrap;gap:8px}
+.research-dialog .pick button{min-width:64px;min-height:52px;font-size:19px}
+.research-dialog .pick button[aria-checked=true]{background:#2157da;color:#fff;border-color:#2157da}
+.research-dialog .moods{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+.research-dialog .moods button{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:96px;font-size:18px}
+.research-dialog .moods span{font-size:44px;line-height:1}
+.research-dialog .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.research-dialog textarea{width:100%}
+.research-dialog .names{margin-top:14px;font-size:15px}
+.research-toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:50;margin:0;background:#172b4d;color:#fff;padding:10px 18px;border-radius:24px;font-size:16px}
+html.contrast .research-bar{background:#fff;border-color:#000}
+@media(max-width:760px){.research-bar{padding:10px 14px}.research-bar .ops{margin-left:0}.research-dialog .moods{grid-template-columns:repeat(2,1fr)}}

@@ -1,5 +1,5 @@
 'use strict';
-// 教師備課頁（第 19 版：學習地圖與指派；每個活動可個別設定）
+// 教師備課頁（第 22 版：學習小幫手、現場試用紀錄；第 19 版：學習地圖與指派；每個活動可個別設定）
 (() => {
   const $ = id => document.getElementById(id);
   const F = window.learningFlow, C = window.lessonContent, A = window.areaActs;
@@ -46,6 +46,26 @@
       document.querySelectorAll('[data-path]').forEach(b => b.setAttribute('aria-pressed', 'false')); count();
     });
     document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => { collect(); $('shape').value = b.dataset.edit; draw(); $('sec-target').scrollIntoView({ behavior: 'smooth' }); });
+  }
+
+  // ---------- 第 22 版：現場試用紀錄（Google 試算表） ----------
+  function drawResearch() {
+    const r = config.research = config.research || { url: '', key: '', teachers: 4, students: 6 };
+    $('researchSection').innerHTML = `<h2>📋 現場試用紀錄（Google 試算表）</h2>
+      <p class="subtle">填好後，學生頁一開始會請老師點選教師代號和學生號碼，紀錄自動上傳到您的 Google 試算表（斷線時先存在學生的電腦，連上再補傳）。不填網址就不記錄。部署方法見 research 資料夾的「部署說明」。</p>
+      <label>Apps Script 網頁應用程式網址<input id="researchUrl" type="url" placeholder="https://script.google.com/macros/s/……/exec" value="${esc(r.url)}"></label>
+      <label>通行碼（和 Apps Script 裡設定的一樣，4～40 字）<input id="researchKey" maxlength="40" autocomplete="off" value="${esc(r.key)}"></label>
+      <div class="field-grid"><label>教師人數<input id="researchTeachers" type="number" min="1" max="12" value="${r.teachers || 4}"></label><label>每位老師最多幾位學生<input id="researchStudents" type="number" min="1" max="20" value="${r.students || 6}"></label></div>
+      <button type="button" id="researchPing">測試連線</button><p id="researchPingMsg" class="subtle" role="status"></p>`;
+    const read = () => { r.url = $('researchUrl').value.trim(); r.key = $('researchKey').value.trim(); r.teachers = Math.max(1, Math.min(12, Number($('researchTeachers').value) || 4)); r.students = Math.max(1, Math.min(20, Number($('researchStudents').value) || 6)); };
+    ['researchUrl', 'researchKey', 'researchTeachers', 'researchStudents'].forEach(id => $(id).oninput = read);
+    $('researchPing').onclick = async () => {
+      read(); const msg = $('researchPingMsg');
+      if (!r.url) { msg.textContent = '請先貼上網址。'; return; }
+      msg.textContent = '連線中……';
+      try { const out = await (await fetch(r.url, { method: 'POST', headers: { 'content-type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ key: r.key, ping: true }) })).json(); msg.textContent = out.ok ? `✓ 連線成功：${out.spreadsheet || '試算表'}。記得按「發布給學生」。` : out.error === 'bad_key' ? '通行碼不對。' : '連線失敗：' + (out.error || ''); }
+      catch { msg.textContent = '連不上。請確認網址、部署時「誰可以存取」選「所有人」。'; }
+    };
   }
 
   function buildSelect() {
@@ -286,6 +306,9 @@
       if (section.hints.some(h => h.length < 3)) return `${names[shape]}的第 1 層提示都要填寫。`;
     }
     if (!config.map.assigned.length) return '請至少指派一個活動。';
+    const r = config.research;
+    if (r && r.url && !/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]{10,200}\/exec$/.test(r.url)) return '現場試用紀錄的網址要是 Apps Script 網頁應用程式的網址（https://script.google.com/macros/s/……/exec）。';
+    if (r && r.url && (r.key.length < 4 || r.key.length > 40)) return '現場試用紀錄的通行碼要 4～40 個字。';
     return '';
   }
 
@@ -319,7 +342,7 @@
       $('editor').hidden = false;
       $('status').textContent = testWorkspace ? '測試工作區：可編修與發布，正式教材不受影響。' : data.draft ? '已載入草稿，可繼續編修。' : '已載入目前發布版本。';
       buildSelect(); $('shape').value = 'rectangle';
-      drawMap(); draw();
+      drawMap(); drawResearch(); draw();
       $('shape').onchange = () => { collect(); draw(); };
       $('saveDraft').onclick = () => save('draft'); $('publish').onclick = () => save('published');
       $('preview').onclick = async e => { e.preventDefault(); if (await save('draft')) location.href = $('preview').href; };   // 試用版：在同一個畫面預覽

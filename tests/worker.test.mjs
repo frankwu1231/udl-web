@@ -197,3 +197,11 @@ test('new activities can ask AI with the activity and step name; perimeter is al
  assert.equal((await call('/api/ai-support',{method:'POST',cookie,body:teacher})).status,200);
  }finally{globalThis.fetch=originalFetch;}
 });
+
+test('field trial logging settings (v22): Apps Script URL and passcode are validated',async()=>{
+  const config=structuredClone(feedbackDefaults);
+  const save=async research=>(await call('/api/teacher/lessons',{method:'POST',user:owner,body:{kind:'draft',config:{...config,research}}})).status;
+  assert.equal(await save({url:'https://script.google.com/macros/s/AKfycbx1234567890/exec',key:'field-2026',teachers:4,students:6}),200);
+  assert.equal(await save({url:'',key:''}),200,'empty means not recording');
+  for(const bad of [{url:'https://example.com/x',key:'abcd'},{url:'https://script.google.com/macros/s/AKfycbx1234567890/exec',key:'ab'},{url:'',key:'',teachers:40},{url:'',key:'',extra:1},'yes'])assert.equal(await save(bad),400,JSON.stringify(bad));
+});

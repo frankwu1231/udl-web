@@ -217,6 +217,8 @@
       delete wrongs[s];
       say(SAY.right[Math.floor(Math.random() * SAY.right.length)], { mood: 'happy', ttl: 2500 });
     },
+    // 換學生：鏡頭同意要重新問這位學生
+    newStudent() { stopCamera(); asked = false; try { sessionStorage.removeItem(CONSENT_KEY); } catch { /* 略過 */ } hide(); wrongs = {}; lastWrong = {}; idle = 0; stage = 0; onStep = 0; },
     newQuestion() { wrongs = {}; lastWrong = {}; idle = 0; stage = 0; onStep = 0; },
     // 測試與教師說明用
     gaze, looking, lastSaid: () => lastSpoken, idle: () => idle

@@ -55,7 +55,9 @@
 
   function log(event, extra = {}) {
     const st = extra.activity && phase !== 'plan' ? (titles()[extra.activity - 1] || '') : '';
-    records.push({ time: new Date().toISOString(), shape: nameOf(), shapeKey: type, actId: type, stepTitle: st, cycle, activity: extra.activity ?? null, event, support: settings.support, response, method, flow: settings.flow, difficulty: settings.difficulty, mode: mode(), studyPhase, ...extra });
+    const r = { time: new Date().toISOString(), shape: nameOf(), shapeKey: type, actId: type, stepTitle: st, cycle, activity: extra.activity ?? null, event, support: settings.support, response, method, flow: settings.flow, difficulty: settings.difficulty, mode: mode(), studyPhase, ...extra };
+    window.areaResearch?.record(r);   // 第 22 版：現場試用時加上代號並上傳到試算表
+    records.push(r);
     saveRecords();
   }
 
@@ -101,6 +103,7 @@
     if (!type) mapView();
     else if (phase === 'reflect') reflect(); else if (phase === 'plan') plan(); else solve();
     window.areaBuddy?.update();
+    window.areaResearch?.page();
   }
 
   // ---------- ① 看題與選方法 ----------
@@ -1143,6 +1146,7 @@
       <label>回應方式<select id="response"><option>自行操作</option><option>口述、教師代輸入</option><option>指選、教師代輸入</option></select></label>${button('apply', '套用本次支持')}
       <h3>教師觀察</h3><label>觀察階段<select id="observe"><option>看題、選方法</option><option>動手算</option><option>檢查、回顧</option></select></label>
       <label>支持程度<select id="level"><option>未觀察／證據不足</option><option>自己完成</option><option>一般提醒後</option><option>具體提示後</option><option>示範協助</option></select></label>
+      <label>學生對小方的反應<select id="buddyReact"><option value="">未觀察</option><option>接受幫忙</option><option>忽略</option><option>覺得煩</option><option>被嚇到</option><option>主動找小方</option></select></label>
       <label>實際行為（勿填姓名）<textarea id="evidence" maxlength="300"></textarea></label>${button('saveObservation', '記下觀察')}<p id="observed" role="status"></p>
       ${settings.ai ? `${button('aiSummary', '請 AI 整理本題紀錄')}<p id="aiSummaryText" class="notice" role="status">只使用點擊次數，不傳送教師筆記。</p>` : ''}
       <p>目前 ${records.length} 筆紀錄（含其他圖形）；換圖形、重新整理都會保留，關掉這個分頁才會清除，請在課後下載。</p>${button('clearRecords', '清除本分頁紀錄（換下一位學生時）')}<p id="clearMsg" role="status"></p>${button('export', '下載 CSV', 'primary')}<p id="exportResult" role="status"></p>`;
@@ -1151,7 +1155,7 @@
       settings.support = $('support').value; response = $('response').value; studyPhase = $('studyPhase').value;
       if (type) L().settings = { ...L().settings, support: settings.support };
       if (type && $('mode').value !== mode()) { const toProbe = $('mode').value === 'probe' || mode() === 'probe'; settings.mode = $('mode').value; L().settings = { ...L().settings, mode: settings.mode }; if (toProbe || settings.fading) { if (settings.fading) cycle++; log('調整支持', { activity: step() }); $('tools').close(); startQuestion(); return; } } if (settings.support === 'full' && answers.useProduct) { answers.useProduct = false; invalidate('useProduct'); } log('調整支持', { activity: step() }); $('tools').close(); render(); };
-    $('saveObservation').onclick = () => { const evidence = $('evidence').value.trim(); if (!evidence) { $('observed').textContent = '請先寫下實際行為。'; return; } log('教師觀察', { activity: step(), phase: $('observe').value, level: $('level').value, evidence }); $('observed').textContent = '已記下，可以下載 CSV。'; };
+    $('saveObservation').onclick = () => { const evidence = $('evidence').value.trim(); if (!evidence && !$('buddyReact').value && $('level').selectedIndex === 0) { $('observed').textContent = '請先勾選支持程度、小方反應，或寫下實際行為。'; return; } log('教師觀察', { activity: step(), phase: $('observe').value, level: $('level').value, buddyReact: $('buddyReact').value, evidence }); $('observed').textContent = window.areaResearch?.active() ? '已記下，會自動上傳到試算表。' : '已記下，可以下載 CSV。'; };
     if ($('aiSummary')) $('aiSummary').onclick = () => askAI('teacher', 6, $('aiSummaryText'));
     $('export').onclick = exportData;
     $('clearRecords').onclick = () => { if ($('clearRecords').dataset.confirm !== '1') { $('clearRecords').dataset.confirm = '1'; $('clearRecords').textContent = '確定清除？再按一次'; return; } records = []; saveRecords(); cycle = 1; try { sessionStorage.removeItem(FADE_KEY); } catch { /* 略過 */ } fadeFull = false; retryQ = false; carry = null; if (type) startQuestion(); $('clearMsg').textContent = '已清除。下一位學生可以開始了。'; };
@@ -1211,7 +1215,7 @@
   // ---------- 第 22 版：學習小幫手（buddy.js）只透過這些函式讀狀態、做動作 ----------
   function attachBuddy() {
     window.areaBuddy?.attach({
-      settings: () => settings, mode, step,
+      settings: () => window.areaResearch && !window.areaResearch.cameraAllowed() ? { ...settings, attention: false } : settings, mode, step,
       phase: () => type ? phase : 'map',
       steps: () => current().filter(s => !isWorked(s)),
       passed: s => checked.has(s), hintLevel: s => hintLevel[s] || 0, stuckOpen: s => stuckOpen === s,
@@ -1239,7 +1243,9 @@
       loadRecords();
       if (P()) { settings = F.settings(L()); if (!settings.ai) $('apiSettings').hidden = true; pProblem = P().makeProblem(level(), index, Math.random); }
       else if (type) { settings = F.settings(L()); orders.lines = F.shuffle(['A', 'B', 'C']); if (!settings.ai) $('apiSettings').hidden = true; if (settings.mode === 'probe') probeDims = F.randomProblem(type, settings.difficulty === 'custom' ? 'standard' : settings.difficulty); }
-      attachBuddy(); applyReading(); render();
+      attachBuddy(); applyReading();
+      window.areaResearch?.init(lessons.research, { records: () => records, settings: () => settings, activity: () => ({ id: type || '', name: type ? nameOf() : '' }), step, log, changed: () => render() });
+      render();
     } catch (error) { shell('教材暫時無法載入', `<p>${esc(error.message)}</p><a href="/">返回入口</a>`); }
   }
   init();

@@ -35,6 +35,7 @@ async function publish(settings) {
   const status = await page.evaluate(async s => {
     const r = await (await fetch('/api/teacher/lessons')).json(); const c = r.draft || r.published;
     const map = s.__map || {}; delete s.__map;
+    if (s.__research) c.research = s.__research; else delete c.research; delete s.__research;   // 第 22 版：現場試用紀錄只在指定的測試開啟
     for (const k of ['rectangle', 'square', 'triangle', 'parallelogram']) c[k].settings = { ...c[k].settings, ...s };
     for (const k of Object.keys(c.activities || {})) c.activities[k].settings = { ...c.activities[k].settings, ...s };
     c.map = { assigned: window.areaActs.LIST.map(a => a.id), sequential: false, path: 'all', ...map };
@@ -841,4 +842,121 @@ test('小幫手：學生一直在動但一直答錯——同一個錯答案提�
   const log = await buddyLog(p.page);
   for (const a of ['同一個錯答案', '同一步做很久']) assert.ok(log.includes(a), a);
   assert.deepEqual(p.errors, []);
+});
+
+// ---------- 第 22 版：現場試用紀錄（Google 試算表） ----------
+const SHEET_URL = 'https://script.google.com/macros/s/TESTdeployment1234/exec';
+async function fieldStudent(settings = {}, opts = {}) {
+  const posts = [], state = { fail: false };
+  const p = await student('rectangle', { buddyVoice: false, __research: { url: SHEET_URL, key: 'field-2026', teachers: 4, students: 6 }, ...settings }, undefined, {
+    ...opts,
+    init: opts.init
+  });
+  await p.page.context().route(SHEET_URL, async route => {
+    if (state.fail) return route.abort();
+    const body = JSON.parse(route.request().postData()); posts.push(body);
+    route.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body.key === 'field-2026' ? { ok: true, saved: (body.rows || []).map(r => r.rid) } : { ok: false, error: 'bad_key' }) });
+  });
+  const rows = sheet => posts.flatMap(b => b.rows || []).filter(r => !sheet || r.sheet === sheet);
+  return { ...p, posts, rows, state };
+}
+async function pickWho(page, { teacher = 'T01', num = '03', device = '電腦', camera = 'no', names = '' } = {}) {
+  await page.waitForSelector('#researchWho[open]');
+  if (names) { await page.click('#researchWho .names summary'); await page.fill('#researchNames', names); }
+  for (const [g, v] of [['teacher', teacher], ['num', num], ['device', device], ['camera', camera]]) await page.click(`#researchWho [data-pick="${g}"] [data-v="${v}"]`);
+  await page.click('#researchStart');
+}
+
+test('現場試用：開始前老師點選代號（不用打字）；沒選齊不能開始；也可以選老師自己試用不記錄', { skip: skip || !distReady }, async () => {
+  const p = await fieldStudent();
+  await p.page.waitForSelector('#researchWho[open]');
+  await p.page.click('#researchStart');
+  assert.match(await p.text('#researchWhyNot'), /教師代號.*學生號碼.*鏡頭同意/);
+  await p.page.click('#researchWho [data-pick="teacher"] [data-v="T02"]'); await p.page.click('#researchWho [data-pick="num"] [data-v="05"]'); await p.page.click('#researchWho [data-pick="camera"] [data-v="yes"]');
+  await p.page.click('#researchStart');
+  assert.match(await p.text('#researchBar .who'), /T02-S05/);
+  await p.page.click('#researchFlush'); await p.page.waitForTimeout(300);
+  const start = p.rows('場次')[0];
+  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v22');
+  assert.ok(p.rows('教師設定').some(r => r.actId === 'rectangle' && r.buddy === '開'), '記下老師這次的設定');
+  assert.ok(!JSON.stringify(p.posts).match(/姓名/), '不傳姓名欄位');
+
+  const q = await fieldStudent();
+  await q.page.waitForSelector('#researchWho[open]'); await q.page.click('#researchSkip');
+  assert.equal(await q.page.$('#researchBar'), null, '老師自己試用：沒有試用工具列');
+  await q.start(); await q.choose('target', 'border'); await q.check(); await q.page.waitForTimeout(300);
+  assert.equal(q.posts.length, 0, '不記錄就不上傳');
+  assert.deepEqual([...p.errors, ...q.errors], []);
+});
+
+test('現場試用：每筆紀錄帶代號上傳；老師即時按鈕、教師觀察勾選；姓名會被擋下；斷線先存著再補傳', { skip: skip || !distReady }, async () => {
+  const p = await fieldStudent();
+  await pickWho(p.page, { names: '王小明\n阿華' });
+  await p.start(); await p.choose('target', 'border'); await p.check();
+  await p.page.click('[data-quick="help"]'); await p.page.click('[data-quick="wrongBuddy"]');
+  await p.page.click('#teacher'); await p.page.selectOption('#buddyReact', '覺得煩'); await p.page.fill('#evidence', '王小明一直看窗外'); await p.page.click('#saveObservation');
+  assert.match(await p.text('#observed'), /自動上傳/); await p.page.click('#closeTools');
+  await p.page.click('#researchFlush'); await p.page.waitForTimeout(300);
+  const ops = p.rows('操作紀錄');
+  assert.ok(ops.some(r => r.event === '步驟檢核' && r.correct === '否' && r.student === 'T01-S03'));
+  const obs = p.rows('教師觀察');
+  assert.deepEqual(obs.filter(r => r.kind === '教師即時紀錄').map(r => r.tag), ['老師幫忙了', '小方這次不準']);
+  const o = obs.find(r => r.kind === '教師觀察');
+  assert.equal(o.buddyReact, '覺得煩'); assert.equal(o.note, '○○一直看窗外', '姓名改成○○');
+  assert.ok(!JSON.stringify(p.posts).includes('王小明'), '姓名完全沒有上傳');
+  assert.match(await p.text('#researchCount'), /都上傳了/);
+
+  p.state.fail = true;
+  await p.page.click('[data-quick="engaged"]'); await p.page.click('#researchFlush'); await p.page.waitForTimeout(300);
+  assert.match(await p.text('#researchCount'), /上傳失敗/);
+  assert.ok(await p.page.evaluate(() => areaResearch.pending()) > 0, '失敗的留在佇列');
+  p.state.fail = false;
+  await p.page.click('#researchFlush'); await p.page.waitForTimeout(300);
+  assert.equal(await p.page.evaluate(() => areaResearch.pending()), 0);
+  assert.ok(p.rows('教師觀察').some(r => r.tag === '很投入'), '補傳成功');
+  assert.deepEqual(p.errors, []);
+});
+
+test('現場試用：做完一題學生選心情、每題摘要；換學生先回答 3 題；這節課結束填教師短表；沒有家長同意就不開鏡頭', { skip: skip || !distReady }, async () => {
+  const init = () => { window.areaBuddyTestDetector = { detect: () => ({ face: true, turn: 0 }) }; };
+  const p = await fieldStudent({ attention: true }, { init });
+  await pickWho(p.page, { camera: 'no' });
+  await p.start();
+  assert.doesNotMatch(await buddySays(p.page), /鏡頭/, '沒有家長同意，小方不問鏡頭');
+  await p.page.evaluate(() => areaResearch.record({ event: '整題完成', shape: '長方形', shapeKey: 'rectangle', actId: 'rectangle', cycle: 1, activity: 7, secs: 95, errors: 2, hints: 1, firstTry: 5, goalMet: true, badges: ['done'] }));
+  await p.page.waitForSelector('#researchMood[open]');
+  await p.page.click('[data-mood="great"]');
+  await p.page.click('#researchNext');
+  await p.page.click('#researchEnd [data-pick="fun"] [data-v="yes"]'); await p.page.click('#researchEnd [data-pick="buddyHelp"] [data-v="soso"]');
+  assert.equal(await p.page.$('#researchEnd [data-pick="camFeel"]'), null, '沒用鏡頭就不問鏡頭');
+  await p.page.click('#researchEndSave');
+  await p.page.waitForSelector('#researchWho[open]');
+  await pickWho(p.page, { num: '04', camera: 'yes' });
+  await p.page.click('#researchClass');
+  for (const [g, v] of [['engage', '4'], ['timing', 'late'], ['buddyUseful', '5'], ['camAccurate', 'some'], ['assists', '1-2']]) await p.page.click(`#researchTeacher [data-pick="${g}"] [data-v="${v}"]`);
+  await p.page.fill('#researchFix', '小方等太久才出現'); await p.page.click('#researchTeacherSave');
+  await p.page.click('#researchFlush'); await p.page.waitForTimeout(400);
+  const sum = p.rows('每題摘要')[0];
+  assert.equal(sum.secs, 95); assert.equal(sum.errors, 2); assert.equal(sum.student, 'T01-S03');
+  const fb = p.rows('學生回饋');
+  assert.ok(fb.some(r => r.kind === '學生心情' && r.mood === '😀 很好'));
+  assert.ok(fb.some(r => r.kind === '學生回饋' && r.fun === '😀 好玩' && r.buddyHelp === '😐 一點點'));
+  assert.ok(p.rows('場次').some(r => r.kind === '結束' && r.student === 'T01-S03'));
+  assert.ok(p.rows('場次').some(r => r.kind === '開始' && r.student === 'T01-S04'));
+  const t = p.rows('教師回饋')[0];
+  assert.deepEqual([t.teacher, t.engage, t.timing, t.fix], ['T01', '4', '太晚', '小方等太久才出現']);
+  assert.match(await buddySays(p.page), /鏡頭/, '下一位學生家長同意，小方才問鏡頭');
+  assert.deepEqual(p.errors, []);
+});
+
+test('教師備課：現場試用紀錄的網址、通行碼可以儲存；網址不對不能儲存', { skip: skip || !distReady }, async () => {
+  await setup(); await publish({});
+  const page = await browser.newPage(); await page.goto(base + '/teacher.html'); await page.waitForSelector('#researchUrl');
+  await page.fill('#researchUrl', 'https://example.com/hook'); await page.fill('#researchKey', 'field-2026'); await page.click('#saveDraft');
+  await page.waitForFunction(() => /Apps Script/.test(document.getElementById('status').textContent));
+  await page.fill('#researchUrl', SHEET_URL); await page.fill('#researchTeachers', '4'); await page.click('#saveDraft');
+  await page.waitForFunction(() => /草稿已儲存/.test(document.getElementById('status').textContent));
+  const r = await page.evaluate(async () => (await (await fetch('/api/teacher/lessons')).json()).draft.research);
+  assert.deepEqual(r, { url: SHEET_URL, key: 'field-2026', teachers: 4, students: 6 });
+  await page.close();
 });
