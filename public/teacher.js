@@ -1,5 +1,5 @@
 'use strict';
-// 教師備課頁（第 19 版：學習地圖與指派；每個活動可個別設定）
+// 教師備課頁（第 22 版：學習小幫手、現場試用紀錄；第 19 版：學習地圖與指派；每個活動可個別設定）
 (() => {
   const $ = id => document.getElementById(id);
   const F = window.learningFlow, C = window.lessonContent, A = window.areaActs;
@@ -46,6 +46,28 @@
       document.querySelectorAll('[data-path]').forEach(b => b.setAttribute('aria-pressed', 'false')); count();
     });
     document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => { collect(); $('shape').value = b.dataset.edit; draw(); $('sec-target').scrollIntoView({ behavior: 'smooth' }); });
+  }
+
+  // ---------- 第 22 版：現場試用紀錄（Google 試算表） ----------
+  function drawResearch() {
+    const r = config.research = config.research || { url: '', key: '', teachers: 4, students: 6 };
+    $('researchSection').innerHTML = `<h2>📋 現場試用紀錄（Google 試算表）</h2>
+      <p class="subtle">填好後，學生頁一開始會請老師點選教師代號和學生號碼，紀錄自動上傳到您的 Google 試算表（斷線時先存在學生的電腦，連上再補傳）。不填網址就不記錄。部署方法見 research 資料夾的「部署說明」。</p>
+      <label>Apps Script 網頁應用程式網址<input id="researchUrl" type="url" placeholder="https://script.google.com/macros/s/……/exec" value="${esc(r.url)}"></label>
+      <label>通行碼（和 Apps Script 裡設定的一樣，4～40 字）<input id="researchKey" maxlength="40" autocomplete="off" value="${esc(r.key)}"></label>
+      <div class="field-grid"><label>教師人數<input id="researchTeachers" type="number" min="1" max="12" value="${r.teachers || 4}"></label><label>每位老師最多幾位學生<input id="researchStudents" type="number" min="1" max="20" value="${r.students || 6}"></label></div>
+      <button type="button" id="researchPing">測試連線</button><p id="researchPingMsg" class="subtle" role="status"></p>`;
+    const read = () => { r.url = $('researchUrl').value.trim(); r.key = $('researchKey').value.trim(); r.teachers = Math.max(1, Math.min(12, Number($('researchTeachers').value) || 4)); r.students = Math.max(1, Math.min(20, Number($('researchStudents').value) || 6)); };
+    ['researchUrl', 'researchKey', 'researchTeachers', 'researchStudents'].forEach(id => $(id).oninput = read);
+    $('researchPing').onclick = async () => {
+      read(); const msg = $('researchPingMsg');
+      if (!r.url) { msg.textContent = '請先貼上網址。'; return; }
+      // 網址格式不對就不送，避免把通行碼送到錯的網站
+      if (!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]{10,200}\/exec$/.test(r.url)) { msg.textContent = '網址要是 https://script.google.com/macros/s/……/exec，請重新複製「網頁應用程式網址」。'; return; }
+      msg.textContent = '連線中……';
+      try { const out = await (await fetch(r.url, { method: 'POST', headers: { 'content-type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ key: r.key, ping: true }) })).json(); msg.textContent = out.ok ? `✓ 連線成功：${out.spreadsheet || '試算表'}。記得按「發布給學生」。` : out.error === 'bad_key' ? '通行碼不對。' : '連線失敗：' + (out.error || ''); }
+      catch { msg.textContent = '連不上。請確認網址、部署時「誰可以存取」選「所有人」。'; }
+    };
   }
 
   function buildSelect() {
@@ -108,6 +130,15 @@
       <label class="check"><input id="handsOn" type="checkbox" ${s.handsOn ? 'checked' : ''}>開始前提醒「先用方格紙或剪紙做做看」</label>
       <p class="subtle"><a href="hands-on.html" target="_blank" rel="noopener">🖨 列印實物操作卡 ↗</a></p>
 
+      <h2 id="sec-buddy">🤖 學習小幫手「小方」</h2>
+      <p class="subtle">解題時，右下角有一個小機器人。學生很久沒有動，它會問「要不要我幫你？」，學生按「好」就打開第 1 層提示；再過一樣久，會幫學生打開「我卡住了」。學生一直在動、但同一步一直過不了時：同一個錯答案又試一次，會提醒「換一個想法」；10 秒內又答錯，會說「慢慢來，先看提示」；答錯 3 次打開「我卡住了」；在同一步待了 3 倍等待時間（例如 60 秒 × 3 = 3 分鐘），不論有沒有在動，都會問要不要幫忙。小測驗只鼓勵、不給提示。</p>
+      <label class="check"><input id="buddy" type="checkbox" ${s.buddy ? 'checked' : ''}>使用學習小幫手</label>
+      <label>學生同一步沒有動多久，小幫手才問要不要幫忙<select id="buddyWait"><option value="30">30 秒</option><option value="60">60 秒（建議）</option><option value="90">90 秒：給學生多一點思考時間</option></select></label>
+      <label class="check"><input id="buddyVoice" type="checkbox" ${s.buddyVoice ? 'checked' : ''}>小幫手把話唸出來</label>
+      <label class="check"><input id="attention" type="checkbox" ${s.attention ? 'checked' : ''}>📷 專心提醒：用鏡頭看學生的臉有沒有朝向螢幕，轉頭或離開太久就輕聲提醒</label>
+      <label>轉頭或離開幾秒才提醒<select id="attentionSec"><option value="3">3 秒</option><option value="5">5 秒（建議）</option><option value="8">8 秒</option></select></label>
+      <p class="subtle">鏡頭影像只在學生的電腦上判斷，不錄影、不存檔、不上傳；紀錄只有「提醒了幾次」。學生會先看到說明並按「好」才開鏡頭，隨時可以按「關掉」。低頭寫字不算分心。使用前請先取得家長同意。第一次使用時會從網路下載約 4 MB 的臉部模型。</p>
+
       <h2 id="sec-aids">閱讀輔助（預設值，學生上課時也可以自己切換）</h2>
       <label class="check"><input id="zhuyin" type="checkbox" ${s.zhuyin ? 'checked' : ''}>國字加注音</label>
       <label>字的大小<select id="textSize"><option value="normal">一般</option><option value="large">大</option><option value="xlarge">特大</option></select></label>
@@ -137,6 +168,7 @@
     $('difficulty').value = plugin && s.difficulty === 'custom' ? 'standard' : s.difficulty; $('lessonSupport').value = s.support; $('rate').value = s.rate || 'normal';
     if (!plugin) { $('flow').value = s.flow; $('labels').value = s.labels; }
     $('video').value = s.video || 'hint'; drawVideos(id);
+    $('buddyWait').value = String(s.buddyWait || 60); $('attentionSec').value = String(s.attentionSec || 5);
     $('mode').value = s.mode; $('goalKind').value = s.goalKind; $('rest').value = String(s.rest || 0); $('textSize').value = s.textSize || 'normal';
     document.querySelectorAll('[data-method]').forEach(e => e.onchange = () => { if (!document.querySelector('[data-method]:checked')) { e.checked = true; $('status').textContent = '至少要留一個方法。'; } });
     if (!plugin) {
@@ -167,7 +199,7 @@
       collect(); const src = sec(id).settings;
       const copy = target => { const keepOwn = { difficulty: target.settings?.difficulty || 'standard' }; if (isP(id) && target.problems) Object.assign(keepOwn, { flow: target.settings.flow, keep: target.settings.keep, labels: target.settings.labels, grid: target.settings.grid, ai: target.settings.ai, methods: target.settings.methods }); target.settings = { ...src, ...keepOwn }; };
       SHAPES.forEach(k => copy(config[k])); A.available().filter(a => isP(a.id)).forEach(a => copy(sec(a.id)));
-      $('status').textContent = '已把支持程度、教學階段、自我調整與閱讀輔助設定套用到全部活動（難度不變）。記得儲存或發布。';
+      $('status').textContent = '已把支持程度、教學階段、自我調整、學習小幫手與閱讀輔助設定套用到全部活動（難度不變）。記得儲存或發布。';
     };
   }
 
@@ -257,7 +289,8 @@
       mode: $('mode').value, goalKind: $('goalKind').value, confidence: $('confidence').checked, selfAsk: $('selfAsk').checked, badges: $('badges').checked,
       voice: $('voice').checked, rest: Number($('rest').value), video: $('video').value, handsOn: $('handsOn').checked, fading: val('fading', e => e.checked),
       methods: (() => { const m = [...document.querySelectorAll('[data-method]:checked')].map(e => e.dataset.method); return plugin && old.methods.includes('row') ? [...m, 'row'] : m; })(),
-      zhuyin: $('zhuyin').checked, textSize: $('textSize').value, contrast: $('contrast').checked, convert: val('convert', e => e.checked)
+      zhuyin: $('zhuyin').checked, textSize: $('textSize').value, contrast: $('contrast').checked, convert: val('convert', e => e.checked),
+      buddy: $('buddy').checked, buddyWait: Number($('buddyWait').value), buddyVoice: $('buddyVoice').checked, attention: $('attention').checked, attentionSec: Number($('attentionSec').value)
     };
     if (!d.settings.methods.length) d.settings.methods = ['mark', 'row', 'self'];
     return config;
@@ -275,6 +308,9 @@
       if (section.hints.some(h => h.length < 3)) return `${names[shape]}的第 1 層提示都要填寫。`;
     }
     if (!config.map.assigned.length) return '請至少指派一個活動。';
+    const r = config.research;
+    if (r && r.url && !/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]{10,200}\/exec$/.test(r.url)) return '現場試用紀錄的網址要是 Apps Script 網頁應用程式的網址（https://script.google.com/macros/s/……/exec）。';
+    if (r && r.url && (r.key.length < 4 || r.key.length > 40)) return '現場試用紀錄的通行碼要 4～40 個字。';
     return '';
   }
 
@@ -308,7 +344,7 @@
       $('editor').hidden = false;
       $('status').textContent = testWorkspace ? '測試工作區：可編修與發布，正式教材不受影響。' : data.draft ? '已載入草稿，可繼續編修。' : '已載入目前發布版本。';
       buildSelect(); $('shape').value = 'rectangle';
-      drawMap(); draw();
+      drawMap(); drawResearch(); draw();
       $('shape').onchange = () => { collect(); draw(); };
       $('saveDraft').onclick = () => save('draft'); $('publish').onclick = () => save('published');
       $('preview').onclick = async e => { e.preventDefault(); if (await save('draft')) location.href = $('preview').href; };   // 試用版：在同一個畫面預覽

@@ -1,0 +1,37 @@
+/* 學習小幫手「小方」（第 22 版）：固定在右下角；整塊不擋點擊，只有臉和對話框的按鈕可以按 */
+.buddy{position:fixed;right:16px;bottom:16px;z-index:40;display:flex;flex-direction:column;align-items:flex-end;gap:8px;max-width:min(320px,calc(100vw - 32px));pointer-events:none}
+body.has-buddy main{padding-bottom:120px}
+.buddy-face{pointer-events:auto;width:76px;height:76px;min-height:0;padding:6px;border-radius:50%;border:2px solid #9eb8e6;background:#fff;box-shadow:0 6px 18px #17305a26}
+.buddy-face svg{width:100%;height:100%;display:block;overflow:visible}
+.buddy .b-head{fill:#dbe8ff;stroke:#2157da;stroke-width:2.5}
+.buddy .b-screen{fill:#1d2f55}
+.buddy .b-eyes{fill:#7ee0ff;transform-origin:32px 31px;animation:b-blink 5s infinite}
+.buddy .b-mouth{fill:none;stroke:#7ee0ff;stroke-width:2.5;stroke-linecap:round}
+.buddy .b-ant{stroke:#2157da;stroke-width:2.5}
+.buddy .b-tip{fill:#f5a524}
+.buddy[data-mood=happy] .b-mouth{d:path("M24 45 Q32 53 40 45")}
+.buddy[data-mood=happy] .buddy-face{animation:b-hop .6s ease-out 2}
+.buddy[data-mood=worried] .b-mouth{d:path("M26 49 Q32 46 38 49")}
+.buddy[data-mood=worried] .b-tip,.buddy[data-mood=look] .b-tip{fill:#ff6b5a}
+.buddy[data-mood=look] .b-eyes{transform:scale(1.25)}
+.buddy[data-mood=talk] .b-mouth{animation:b-talk .5s ease-in-out 4}
+.buddy.wave .buddy-face{animation:b-wave .9s ease-in-out 2}
+.buddy.face-only .buddy-face{width:60px;height:60px}
+.buddy-bubble{pointer-events:none;position:relative;background:#fff;border:2px solid #2157da;border-radius:16px;padding:12px 14px;box-shadow:0 8px 24px #17305a2e;font-size:19px;line-height:1.6;color:#172b4d}
+.buddy-bubble::after{content:"";position:absolute;right:30px;bottom:-10px;width:16px;height:16px;background:#fff;border-right:2px solid #2157da;border-bottom:2px solid #2157da;transform:rotate(45deg)}
+.buddy-bubble p{margin:0;font-weight:600}
+.buddy-bubble.interactive{pointer-events:auto}
+.buddy-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.buddy-actions button{flex:1 1 auto;min-height:52px;font-size:18px;font-weight:700}
+.buddy-actions button:first-child{background:#2157da;color:#fff;border-color:#2157da}
+.buddy-cam{pointer-events:auto;margin:0;display:flex;align-items:center;gap:6px;font-size:14px;background:#fff7e6;border:1px solid #e0a63a;border-radius:20px;padding:2px 4px 2px 12px}
+.buddy-cam[hidden]{display:none}
+.buddy-cam button{min-height:34px;padding:4px 10px;font-size:14px}
+html.contrast .buddy-bubble,html.contrast .buddy-face{border-color:#000}
+html.contrast .buddy-bubble::after{border-color:#000}
+@keyframes b-blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@keyframes b-hop{50%{transform:translateY(-10px)}}
+@keyframes b-talk{50%{transform:scaleY(.6)}}
+@keyframes b-wave{25%{transform:rotate(-12deg)}75%{transform:rotate(12deg)}}
+@media(max-width:760px){.buddy{right:10px;bottom:10px}.buddy-face{width:62px;height:62px}.buddy-bubble{font-size:17px}}
+@media(prefers-reduced-motion:reduce){.buddy *,.buddy{animation:none!important}}

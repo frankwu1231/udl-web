@@ -92,7 +92,7 @@ test('learning settings persist, old lessons still load, invalid settings are re
   assert.deepEqual((await call('/api/lessons',{user:owner})).data.config.rectangle.settings,config.rectangle.settings);
   config.rectangle.settings.keep=[5];
   assert.equal((await call('/api/teacher/lessons',{method:'POST',user:owner,body:{kind:'draft',config}})).status,400);
-  for(const bad of [{methods:[]},{methods:['jump']},{mode:'auto'},{goalKind:'time'},{rest:5},{textSize:'huge'},{zhuyin:'yes'}]){   // 第 18 版設定也要檢查
+  for(const bad of [{methods:[]},{methods:['jump']},{mode:'auto'},{goalKind:'time'},{rest:5},{textSize:'huge'},{zhuyin:'yes'},{buddy:'yes'},{buddyWait:45},{attention:1},{attentionSec:10}]){   // 第 18 版設定也要檢查
     config.rectangle.settings={flow:'seven',support:'full',hintGate:false,difficulty:'standard',...bad};
     assert.equal((await call('/api/teacher/lessons',{method:'POST',user:owner,body:{kind:'draft',config}})).status,400,JSON.stringify(bad));
   }
@@ -196,4 +196,12 @@ test('new activities can ask AI with the activity and step name; perimeter is al
  const teacher={kind:'teacher',shape:'word',stepTitle:'選算式',cycle:1,step:1,method:'mark',goal:'check',hints:1,errors:1,incorrect:false,steps:[1,0,0,0],backtracks:0,completed:1,helpRequests:1};
  assert.equal((await call('/api/ai-support',{method:'POST',cookie,body:teacher})).status,200);
  }finally{globalThis.fetch=originalFetch;}
+});
+
+test('field trial logging settings (v22): Apps Script URL and passcode are validated',async()=>{
+  const config=structuredClone(feedbackDefaults);
+  const save=async research=>(await call('/api/teacher/lessons',{method:'POST',user:owner,body:{kind:'draft',config:{...config,research}}})).status;
+  assert.equal(await save({url:'https://script.google.com/macros/s/AKfycbx1234567890/exec',key:'field-2026',teachers:4,students:6}),200);
+  assert.equal(await save({url:'',key:''}),200,'empty means not recording');
+  for(const bad of [{url:'https://example.com/x',key:'abcd'},{url:'https://script.google.com/macros/s/AKfycbx1234567890/exec',key:'ab'},{url:'',key:'',teachers:40},{url:'',key:'',extra:1},'yes'])assert.equal(await save(bad),400,JSON.stringify(bad));
 });
