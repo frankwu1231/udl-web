@@ -862,7 +862,7 @@ async function fieldStudent(settings = {}, opts = {}) {
 }
 async function pickWho(page, { teacher = 'T01', num = '03', device = '電腦', camera = 'no', names = '' } = {}) {
   await page.waitForSelector('#researchWho[open]');
-  if (names) { await page.click('#researchWho .names summary'); await page.fill('#researchNames', names); }
+  if (names) { assert.equal(await page.$eval('#researchWho .names', d => d.open), true, '還沒填姓名清單時預設展開'); await page.fill('#researchNames', names); }
   for (const [g, v] of [['teacher', teacher], ['num', num], ['device', device], ['camera', camera]]) await page.click(`#researchWho [data-pick="${g}"] [data-v="${v}"]`);
   await page.click('#researchStart');
 }
@@ -914,16 +914,25 @@ test('現場試用：每筆紀錄帶代號上傳；老師即時按鈕、教師�
   await p.page.click('#researchFlush'); await p.page.waitForTimeout(300);
   assert.equal(await p.page.evaluate(() => areaResearch.pending()), 0);
   assert.ok(p.rows('教師觀察').some(r => r.tag === '很投入'), '補傳成功');
+
+  // 一批不超過 30 KB（離頁時 keepalive 上限 64 KB），中文很多時自動分成好幾批
+  const before = p.posts.length;
+  await p.page.evaluate(() => { for (let i = 0; i < 60; i++) areaResearch.record({ event: '測試', shape: '長方形', cycle: 1, note: '中文說明'.repeat(300) }); });
+  await p.page.click('#researchFlush'); await p.page.waitForTimeout(600);
+  const sizes = p.posts.slice(before).map(b => Buffer.byteLength(JSON.stringify(b)));
+  assert.ok(sizes.length >= 3 && sizes.every(n => n <= 30000), '每批大小：' + sizes.join(','));
+  assert.equal(await p.page.evaluate(() => areaResearch.pending()), 0);
   assert.deepEqual(p.errors, []);
 });
 
-test('現場試用：做完一題學生選心情、每題摘要；換學生先回答 3 題；這節課結束填教師短表；沒有家長同意就不開鏡頭', { skip: skip || !distReady }, async () => {
+test('現場試用：做完一題學生選心情（記在完成的那一題）、每題摘要；換學生先回答問題、關鏡頭、清掉上一位的進度、記住教師代號；這節課結束先收最後一位再填教師短表；沒有家長同意就不開鏡頭', { skip: skip || !distReady }, async () => {
   const init = () => { window.areaBuddyTestDetector = { detect: () => ({ face: true, turn: 0 }) }; };
   const p = await fieldStudent({ attention: true }, { init });
   await pickWho(p.page, { camera: 'no' });
   await p.start();
   assert.doesNotMatch(await buddySays(p.page), /鏡頭/, '沒有家長同意，小方不問鏡頭');
-  await p.page.evaluate(() => areaResearch.record({ event: '整題完成', shape: '長方形', shapeKey: 'rectangle', actId: 'rectangle', cycle: 1, activity: 7, secs: 95, errors: 2, hints: 1, firstTry: 5, goalMet: true, badges: ['done'] }));
+  await p.choose('target', 'border'); await p.check();   // 上一位學生答錯一次
+  await p.page.evaluate(() => areaResearch.record({ event: '整題完成', shape: '長方形', shapeKey: 'rectangle', actId: 'rectangle', cycle: 3, activity: 7, secs: 95, errors: 2, hints: 1, firstTry: 5, goalMet: true, badges: ['done'] }));
   await p.page.waitForSelector('#researchMood[open]');
   await p.page.click('[data-mood="great"]');
   await p.page.click('#researchNext');
@@ -931,21 +940,39 @@ test('現場試用：做完一題學生選心情、每題摘要；換學生先�
   assert.equal(await p.page.$('#researchEnd [data-pick="camFeel"]'), null, '沒用鏡頭就不問鏡頭');
   await p.page.click('#researchEndSave');
   await p.page.waitForSelector('#researchWho[open]');
-  await pickWho(p.page, { num: '04', camera: 'yes' });
+  assert.equal(await p.page.getAttribute('#researchWho [data-pick="teacher"] [data-v="T01"]', 'aria-checked'), 'true', '記住上一位的教師代號');
+  assert.equal(await p.page.getAttribute('#researchWho [data-pick="camera"] [data-v="yes"]', 'aria-checked'), 'false', '鏡頭同意每位學生重選');
+  await p.page.click('#researchWho [data-pick="num"] [data-v="04"]'); await p.page.click('#researchWho [data-pick="camera"] [data-v="yes"]'); await p.page.click('#researchStart');
+  const kept = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16') || '[]').map(r => r.studentId || ''));
+  assert.ok(kept.every(x => x === 'T01-S04'), '上一位學生的紀錄已清掉：' + kept.join(','));
+  assert.match(await p.text('.eyebrow'), /第 1 題/, '從第 1 題開始');
+  assert.match(await buddySays(p.page), /鏡頭/, '下一位學生家長同意，小方才問鏡頭');
+  await p.page.click('#buddyBubble [data-buddy="0"]'); await p.page.waitForTimeout(500);
+  assert.ok(await p.page.isVisible('#buddyCam'), '鏡頭開著');
   await p.page.click('#researchClass');
+  await p.page.waitForSelector('#researchEnd[open]');
+  assert.ok(!(await p.page.isVisible('#buddyCam')), '一開始收尾就先關鏡頭');
+  assert.ok(await p.page.$('#researchEnd [data-pick="camFeel"]'), '用過鏡頭才問鏡頭感受');
+  await p.page.click('#researchEndSkip');
+  await p.page.waitForSelector('#researchTeacher[open]');
   for (const [g, v] of [['engage', '4'], ['timing', 'late'], ['buddyUseful', '5'], ['camAccurate', 'some'], ['assists', '1-2']]) await p.page.click(`#researchTeacher [data-pick="${g}"] [data-v="${v}"]`);
   await p.page.fill('#researchFix', '小方等太久才出現'); await p.page.click('#researchTeacherSave');
-  await p.page.click('#researchFlush'); await p.page.waitForTimeout(400);
+  await p.page.waitForSelector('#researchDone[open]');
+  await p.page.click('#researchDoneUpload'); await p.page.waitForTimeout(400);
+  assert.match(await p.text('#researchDoneCount'), /都上傳了/);
   const sum = p.rows('每題摘要')[0];
   assert.equal(sum.secs, 95); assert.equal(sum.errors, 2); assert.equal(sum.student, 'T01-S03');
   const fb = p.rows('學生回饋');
-  assert.ok(fb.some(r => r.kind === '學生心情' && r.mood === '😀 很好'));
+  const mood = fb.find(r => r.kind === '學生心情');
+  assert.equal(mood.mood, '😀 很好'); assert.equal(mood.cycle, 3, '心情記在完成的那一題');
   assert.ok(fb.some(r => r.kind === '學生回饋' && r.fun === '😀 好玩' && r.buddyHelp === '😐 一點點'));
   assert.ok(p.rows('場次').some(r => r.kind === '結束' && r.student === 'T01-S03'));
   assert.ok(p.rows('場次').some(r => r.kind === '開始' && r.student === 'T01-S04'));
+  assert.ok(p.rows('場次').some(r => r.kind === '結束' && r.student === 'T01-S04'), '下課時最後一位學生的場次也結束');
   const t = p.rows('教師回饋')[0];
-  assert.deepEqual([t.teacher, t.engage, t.timing, t.fix], ['T01', '4', '太晚', '小方等太久才出現']);
-  assert.match(await buddySays(p.page), /鏡頭/, '下一位學生家長同意，小方才問鏡頭');
+  assert.deepEqual([t.teacher, t.student, t.engage, t.timing, t.fix], ['T01', '', '4', '太晚', '小方等太久才出現']);
+  await p.page.click('#researchDoneNext');
+  await p.page.waitForSelector('#researchWho[open]');
   assert.deepEqual(p.errors, []);
 });
 

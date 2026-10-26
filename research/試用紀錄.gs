@@ -25,8 +25,8 @@ const SHEETS = {
     ['attentionReminds', '專心提醒'], ['teacherHelp', '老師幫忙'], ['buddyWrong', '小方不準'], ['stuckPressed', '自己按我卡住了']],
   '教師設定': [...COMMON, ...ACT, ['mode', '教學階段'], ['support', '提示程度'], ['flow', '流程'], ['difficulty', '難度'], ['buddy', '小方'], ['buddyWait', '小方等待秒數'], ['buddyVoice', '小方說話'],
     ['attention', '專心提醒'], ['attentionSec', '專心提醒秒數'], ['cameraConsent', '家長同意鏡頭'], ['zhuyin', '注音'], ['textSize', '字級'], ['contrast', '高對比'], ['video', '示範影片'], ['ai', 'AI'], ['fading', '例題逐步留空'], ['selfAsk', '自問卡'], ['rest', '休息提醒']],
-  '教師觀察': [...COMMON, ...ACT, ['cycle', '第幾題'], ['step', '步驟'], ['stepTitle', '步驟名稱'], ['kind', '類型'], ['tag', '快速紀錄'], ['phase', '觀察階段'], ['level', '支持程度'], ['buddyReact', '對小方的反應'], ['note', '實際行為']],
-  '學生回饋': [...COMMON, ...ACT, ['cycle', '第幾題'], ['kind', '類型'], ['mood', '這題的心情'], ['fun', '好玩嗎'], ['buddyHelp', '小方有幫忙嗎'], ['camFeel', '鏡頭提醒感受']],
+  '教師觀察': [...COMMON, ...ACT, ['cycle', '第幾題'], ['step', '步驟'], ['stepTitle', '步驟名稱'], ['mode', '教學階段'], ['studyPhase', '研究階段'], ['kind', '類型'], ['tag', '快速紀錄'], ['phase', '觀察階段'], ['level', '支持程度'], ['buddyReact', '對小方的反應'], ['note', '實際行為']],
+  '學生回饋': [...COMMON, ...ACT, ['cycle', '第幾題'], ['step', '步驟'], ['stepTitle', '步驟名稱'], ['mode', '教學階段'], ['studyPhase', '研究階段'], ['kind', '類型'], ['mood', '這題的心情'], ['fun', '好玩嗎'], ['buddyHelp', '小方有幫忙嗎'], ['camFeel', '鏡頭提醒感受']],
   '教師回饋': [...COMMON, ['engage', '學生投入'], ['timing', '小方提醒時機'], ['buddyUseful', '小方有幫助'], ['camAccurate', '鏡頭提醒準確'], ['assists', '老師介入次數'], ['fix', '最需要改的地方']],
   '技術問題': [...COMMON, ['kind', '類型'], ['message', '訊息'], ['page', '頁面'], ['online', '有網路'], ['browser', '瀏覽器']]
 };
@@ -43,8 +43,14 @@ function setup() {
 }
 function header(book, name, titles) {
   const sh = book.getSheetByName(name) || book.insertSheet(name);
-  if (titles.length && sh.getLastRow() === 0) { sh.getRange(1, 1, 1, titles.length).setValues([titles]).setFontWeight('bold'); sh.setFrozenRows(1); }
+  if (titles.length && sh.getLastRow() === 0) { room(sh, 1, titles.length); sh.getRange(1, 1, 1, titles.length).setValues([titles]).setFontWeight('bold'); sh.setFrozenRows(1); }
   return sh;
+}
+// 新工作表預設只有 1000 列、26 欄；寫入前先補足，不然超過範圍會寫不進去
+function room(sh, lastRow, lastCol) {
+  const rows = sh.getMaxRows(), cols = sh.getMaxColumns();
+  if (lastRow > rows) sh.insertRowsAfter(rows, Math.max(lastRow - rows, 500));
+  if (lastCol > cols) sh.insertColumnsAfter(cols, lastCol - cols);
 }
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('試用紀錄').addItem('建立或補齊工作表', 'setup').addItem('更新學生與教師摘要', 'buildSummaries').addItem('每小時自動更新摘要', 'installTrigger').addToUi();
@@ -56,12 +62,17 @@ function installTrigger() {
 
 // ---------- 接收網站的紀錄 ----------
 function reply(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
-// 開頭是 = + - @ 的文字會被試算表當成公式，前面加 ' 讓它保持文字
+// 開頭是 = + - @（前面有空白或 Tab 也算）的文字會被試算表當成公式，前面加 ' 讓它保持文字
 function safe(v) {
   if (v === null || v === undefined) return '';
   if (typeof v === 'number' || typeof v === 'boolean') return v;
   const s = String(v).slice(0, 2000);
-  return /^[=+\-@]/.test(s) ? "'" + s : s;
+  return /^[\s]*[=+\-@]/.test(s) ? "'" + s : s;
+}
+// 這張表已經有的紀錄編號（第 1 欄），用來擋下超過快取時間才重送、或寫到一半失敗後重送的紀錄
+function savedIds(sh) {
+  const n = sh.getLastRow() - 1;
+  return new Set(n > 0 ? sh.getRange(2, 1, n, 1).getValues().map(r => String(r[0])) : []);
 }
 function doPost(e) {
   let body;
@@ -76,19 +87,26 @@ function doPost(e) {
     // 同一筆重送（網路不穩時）只寫一次
     const cache = CacheService.getScriptCache(), ids = rows.map(r => r && typeof r.rid === 'string' ? r.rid.slice(0, 40) : '');
     const seen = ids.filter(Boolean).length ? cache.getAll(ids.filter(Boolean).map(id => 'rid:' + id)) : {};
-    const bySheet = {}, saved = [];
+    const bySheet = {}, saved = [], inBatch = new Set();
     rows.forEach((r, i) => {
       const id = ids[i];
       if (!id || !r || !Object.prototype.hasOwnProperty.call(SHEETS, r.sheet)) return;
       saved.push(id);
-      if (seen['rid:' + id]) return;
-      const cols = SHEETS[r.sheet], known = new Set(cols.map(c => c[0]).concat('sheet'));
-      const extra = Object.fromEntries(Object.entries(r).filter(([k]) => !known.has(k)));
-      (bySheet[r.sheet] = bySheet[r.sheet] || []).push(cols.map(c => safe(r[c[0]])).concat(safe(Object.keys(extra).length ? JSON.stringify(extra) : '')));
+      if (seen['rid:' + id] || inBatch.has(id)) return;
+      inBatch.add(id);
+      (bySheet[r.sheet] = bySheet[r.sheet] || []).push(r);
     });
-    for (const [name, values] of Object.entries(bySheet)) {
-      const sh = header(book, name, SHEETS[name].map(c => c[1]).concat(OTHER));
-      sh.getRange(sh.getLastRow() + 1, 1, values.length, values[0].length).setValues(values);
+    for (const [name, list] of Object.entries(bySheet)) {
+      const cols = SHEETS[name], known = new Set(cols.map(c => c[0]).concat('sheet'));
+      const sh = header(book, name, cols.map(c => c[1]).concat(OTHER)), have = savedIds(sh);
+      const values = list.filter(r => !have.has(r.rid.slice(0, 40))).map(r => {
+        const extra = Object.fromEntries(Object.entries(r).filter(([k]) => !known.has(k)));
+        return cols.map(c => safe(c[0] === 'rid' ? r.rid.slice(0, 40) : r[c[0]])).concat(safe(Object.keys(extra).length ? JSON.stringify(extra) : ''));
+      });
+      if (!values.length) continue;
+      const start = sh.getLastRow() + 1;
+      room(sh, start + values.length - 1, values[0].length);
+      sh.getRange(start, 1, values.length, values[0].length).setValues(values);
     }
     const mark = {}; saved.forEach(id => { mark['rid:' + id] = '1'; }); if (saved.length) cache.putAll(mark, 21600);
     return reply({ ok: true, saved });
@@ -133,6 +151,6 @@ function buildSummaries() {
   const book = SpreadsheetApp.getActiveSpreadsheet(), out = summaries(book);
   for (const [name, values] of [['學生摘要', out.student], ['教師摘要', out.teacher]]) {
     const sh = book.getSheetByName(name) || book.insertSheet(name);
-    sh.clearContents(); sh.getRange(1, 1, values.length, values[0].length).setValues(values); sh.getRange(1, 1, 1, values[0].length).setFontWeight('bold'); sh.setFrozenRows(1);
+    sh.clearContents(); room(sh, values.length, values[0].length); sh.getRange(1, 1, values.length, values[0].length).setValues(values); sh.getRange(1, 1, 1, values[0].length).setFontWeight('bold'); sh.setFrozenRows(1);
   }
 }

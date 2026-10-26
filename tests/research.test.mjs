@@ -7,14 +7,19 @@ import vm from 'node:vm';
 function fakeBook() {
   const sheets = new Map();
   const sheet = name => {
-    const rows = [];
+    const rows = [], size = { rows: 1000, cols: 26 };   // 和 Google 試算表的新工作表一樣
     const sh = {
-      name, rows,
+      name, rows, size,
       getLastRow: () => rows.length,
-      getRange: (r, c, nr = 1, nc = 1) => ({
+      getMaxRows: () => size.rows, getMaxColumns: () => size.cols,
+      insertRowsAfter: (after, n) => { size.rows += n; }, insertColumnsAfter: (after, n) => { size.cols += n; },
+      getRange: (r, c, nr = 1, nc = 1) => {
+        if (r + nr - 1 > size.rows || c + nc - 1 > size.cols) throw new Error('範圍超出工作表');
+        return {
         setValues(v) { assert.equal(v.length, nr); v.forEach((row, i) => { assert.equal(row.length, nc); rows[r - 1 + i] = [...(rows[r - 1 + i] || [])]; row.forEach((x, j) => { rows[r - 1 + i][c - 1 + j] = x; }); }); return this; },
-        setFontWeight() { return this; }
-      }),
+        setFontWeight() { return this; },
+        getValues: () => Array.from({ length: nr }, (_, i) => Array.from({ length: nc }, (_, j) => (rows[r - 1 + i] || [])[c - 1 + j] ?? ''))
+      }; },
       getDataRange: () => ({ getValues: () => rows.map(r => [...r]) }),
       setFrozenRows() {}, clearContents() { rows.length = 0; }
     };
@@ -29,6 +34,7 @@ function fakeBook() {
 }
 function load(passcode = 'field-2026') {
   const book = fakeBook(), cache = new Map();
+  const clearCache = () => cache.clear();
   const ctx = {
     SpreadsheetApp: { getActiveSpreadsheet: () => book },
     ContentService: { MimeType: { JSON: 'json' }, createTextOutput: t => ({ setMimeType: () => JSON.parse(t) }) },
@@ -38,7 +44,7 @@ function load(passcode = 'field-2026') {
   const src = fs.readFileSync(new URL('../research/試用紀錄.gs', import.meta.url), 'utf8').replace("const PASSCODE = '請改成你的通行碼';", `const PASSCODE = '${passcode}';`);
   vm.createContext(ctx); vm.runInContext(src + '\nthis.api = { setup, doPost, buildSummaries, summaries, SHEETS };', ctx);
   const post = body => ctx.api.doPost({ postData: { contents: JSON.stringify(body) } });
-  return { book, api: ctx.api, post };
+  return { book, api: ctx.api, post, clearCache };
 }
 const row = (sheet, extra = {}) => ({ rid: Math.random().toString(36).slice(2), sheet, time: '2026-10-27 09:00:00', version: 'v22', sessionId: '20261027-T01-S01-ab12', teacher: 'T01', student: 'T01-S01', ...extra });
 
@@ -88,4 +94,19 @@ test('試用紀錄：學生摘要與教師摘要（接受率、專心提醒、�
   const t = book.sheets.get('教師摘要').rows, th = t[0], t1 = t.find(r => r[0] === 'T01');
   assert.equal(t1[th.indexOf('學生數')], 1); assert.equal(t1[th.indexOf('平均學生投入')], 4); assert.equal(t1[th.indexOf('平均小方有幫助')], 5); assert.equal(t1[th.indexOf('最需要改的地方')], '提醒太快');
   assert.ok(t.find(r => r[0] === 'T02'), '第二位老師也有摘要');
+});
+
+test('試用紀錄：超過 1000 列、超過 26 欄也寫得進去；快取過期或同一批重複也不重複寫；前面有空白的公式也擋下', () => {
+  const { book, api, post, clearCache } = load();
+  api.setup();
+  assert.ok(book.sheets.get('每題摘要').rows[0].length > 26, '每題摘要的標題超過 26 欄');
+  for (let i = 0; i < 11; i++) assert.equal(post({ key: 'field-2026', rows: Array.from({ length: 100 }, () => row('操作紀錄', { event: '步驟檢核' })) }).ok, true);
+  assert.equal(book.sheets.get('操作紀錄').rows.length, 1101);
+  const a = row('教師觀察', { note: ' \t=1+1' });
+  post({ key: 'field-2026', rows: [a, a] });
+  clearCache();   // 超過 6 小時，快取已經沒有了
+  assert.deepEqual(post({ key: 'field-2026', rows: [a] }).saved, [a.rid]);
+  const obs = book.sheets.get('教師觀察').rows;
+  assert.equal(obs.length, 2, '只寫一次');
+  assert.equal(obs[1][obs[0].indexOf('實際行為')], "' \t=1+1");
 });

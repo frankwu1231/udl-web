@@ -62,6 +62,8 @@
     $('researchPing').onclick = async () => {
       read(); const msg = $('researchPingMsg');
       if (!r.url) { msg.textContent = '請先貼上網址。'; return; }
+      // 網址格式不對就不送，避免把通行碼送到錯的網站
+      if (!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]{10,200}\/exec$/.test(r.url)) { msg.textContent = '網址要是 https://script.google.com/macros/s/……/exec，請重新複製「網頁應用程式網址」。'; return; }
       msg.textContent = '連線中……';
       try { const out = await (await fetch(r.url, { method: 'POST', headers: { 'content-type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ key: r.key, ping: true }) })).json(); msg.textContent = out.ok ? `✓ 連線成功：${out.spreadsheet || '試算表'}。記得按「發布給學生」。` : out.error === 'bad_key' ? '通行碼不對。' : '連線失敗：' + (out.error || ''); }
       catch { msg.textContent = '連不上。請確認網址、部署時「誰可以存取」選「所有人」。'; }

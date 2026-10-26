@@ -1158,7 +1158,7 @@
     $('saveObservation').onclick = () => { const evidence = $('evidence').value.trim(); if (!evidence && !$('buddyReact').value && $('level').selectedIndex === 0) { $('observed').textContent = '請先勾選支持程度、小方反應，或寫下實際行為。'; return; } log('教師觀察', { activity: step(), phase: $('observe').value, level: $('level').value, buddyReact: $('buddyReact').value, evidence }); $('observed').textContent = window.areaResearch?.active() ? '已記下，會自動上傳到試算表。' : '已記下，可以下載 CSV。'; };
     if ($('aiSummary')) $('aiSummary').onclick = () => askAI('teacher', 6, $('aiSummaryText'));
     $('export').onclick = exportData;
-    $('clearRecords').onclick = () => { if ($('clearRecords').dataset.confirm !== '1') { $('clearRecords').dataset.confirm = '1'; $('clearRecords').textContent = '確定清除？再按一次'; return; } records = []; saveRecords(); cycle = 1; try { sessionStorage.removeItem(FADE_KEY); } catch { /* 略過 */ } fadeFull = false; retryQ = false; carry = null; if (type) startQuestion(); $('clearMsg').textContent = '已清除。下一位學生可以開始了。'; };
+    $('clearRecords').onclick = () => { if ($('clearRecords').dataset.confirm !== '1') { $('clearRecords').dataset.confirm = '1'; $('clearRecords').textContent = '確定清除？再按一次'; return; } resetStudent(); $('clearMsg').textContent = '已清除。下一位學生可以開始了。'; };
     $('tools').showModal();
   };
   $('closeTools').onclick = () => $('tools').close();
@@ -1170,6 +1170,13 @@
   $('clearKey').onclick = () => { sessionApiKey = ''; sessionProvider = 'openai'; $('keyDialog').close(); };
 
   // ---------- 閱讀輔助：注音、字級、高對比（學生自己切換的會蓋過老師的預設） ----------
+  // 換下一位學生：清掉上一位的紀錄、題號、逐步留空進度和閱讀輔助，從第 1 題重新開始
+  function resetStudent() {
+    records = []; saveRecords(); cycle = 1; voices = {}; fadeFull = false; retryQ = false; carry = null;
+    try { sessionStorage.removeItem(FADE_KEY); sessionStorage.removeItem(AID_KEY); } catch { /* 略過 */ }
+    applyReading();
+    if (type) startQuestion(); else render();
+  }
   const AID_KEY = 'area-reading-v18';
   function aidPrefs() { try { return JSON.parse(sessionStorage.getItem(AID_KEY) || '{}') || {}; } catch { return {}; } }
   function reading() { const p = aidPrefs(); return { zhuyin: p.zhuyin ?? !!settings.zhuyin, textSize: p.textSize ?? settings.textSize ?? 'normal', contrast: p.contrast ?? !!settings.contrast }; }
@@ -1244,7 +1251,7 @@
       if (P()) { settings = F.settings(L()); if (!settings.ai) $('apiSettings').hidden = true; pProblem = P().makeProblem(level(), index, Math.random); }
       else if (type) { settings = F.settings(L()); orders.lines = F.shuffle(['A', 'B', 'C']); if (!settings.ai) $('apiSettings').hidden = true; if (settings.mode === 'probe') probeDims = F.randomProblem(type, settings.difficulty === 'custom' ? 'standard' : settings.difficulty); }
       attachBuddy(); applyReading();
-      window.areaResearch?.init(lessons.research, { records: () => records, settings: () => settings, activity: () => ({ id: type || '', name: type ? nameOf() : '' }), step, log, changed: () => render() });
+      window.areaResearch?.init(lessons.research, { records: () => records, settings: () => settings, activity: () => ({ id: type || '', name: type ? nameOf() : '' }), step, log, changed: () => render(), reset: resetStudent });
       render();
     } catch (error) { shell('教材暫時無法載入', `<p>${esc(error.message)}</p><a href="/">返回入口</a>`); }
   }
