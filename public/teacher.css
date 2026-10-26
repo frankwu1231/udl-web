@@ -1,0 +1,35 @@
+.problem{border:1px solid #ccd9ec;border-radius:12px;padding:14px;margin:14px 0}.problem h2{margin:0 0 8px}.field-grid{display:grid;grid-template-columns:repeat(3,minmax(110px,1fr));gap:12px}.field-grid label{margin:0}.problem input,.hint-list textarea{display:block;width:100%;padding:10px;border:1px solid #8097b8;border-radius:8px}.hint-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}.hint-list label{margin:0}.hint-list textarea{min-height:90px}.preview-link{display:inline-flex;align-items:center;min-height:48px;padding:10px 16px}.actions{justify-content:flex-start}[hidden]{display:none!important}@media(max-width:700px){.field-grid{grid-template-columns:1fr}}
+input[type=checkbox]{width:22px;height:22px;vertical-align:middle;margin-right:8px}#customFlow{border:1px solid #9eafc7;border-radius:10px;padding:14px}#customFlow[hidden]{display:none}
+
+/* 第 16 版 */
+.hint-card{border:1px solid #ccd9ec;border-radius:12px;padding:12px;background:#fbfcff}.hint-card h3{margin:0 0 6px;font-size:18px}
+.hint-card .tier{font-size:15px;color:#526b89;margin:4px 0;line-height:1.5}.hint-card .count{font-size:14px;margin:2px 0;color:#526b89}.hint-card .count.warn{color:#a64b00;font-weight:bold}
+label.check{display:flex;align-items:center;gap:6px}
+.guide{border:2px solid #2157da;border-radius:12px;padding:6px 12px;margin:10px 0 16px;background:#f3f7ff}.guide summary{font-weight:bold;cursor:pointer;padding:8px 0}.guide li{line-height:1.7;margin:4px 0}
+#customFlow label{margin:6px 0}
+.hint-card label.tier{font-size:15px;color:#526b89;margin:6px 0 0}.hint-card label.tier textarea{min-height:60px;font-size:15px}
+.table-wrap{overflow-x:auto}
+/* 第 18 版 */
+#methods{border:1px solid #9eafc7;border-radius:10px;padding:14px}#methods label{margin:6px 0;display:block}
+.problem select{display:block;width:100%;margin-top:4px}
+.video-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
+.video-card{border:1px solid #d9cdf0;border-radius:12px;padding:12px;background:#fbf8ff;min-width:0}.video-card h3{margin:0 0 4px;font-size:18px}
+.vstatus{font-size:15px;margin:4px 0;color:#526b89}.vstatus.own{color:#4a2a8a;font-weight:bold}.vstatus.warn,.warn{color:#a12626;font-weight:bold}
+.vactions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.vactions button{min-height:44px;padding:8px 12px}
+.vactions .upload{display:inline-flex;align-items:center;min-height:44px;padding:8px 12px;border:1px dashed #6b3fc0;border-radius:10px;margin:0;cursor:pointer;color:#4a2a8a;background:#fff}
+.vactions .upload input{position:absolute;width:1px;height:1px;opacity:0}
+.vactions .upload:focus-within{outline:3px solid #d77900;outline-offset:2px}
+.vbody video{width:100%;border-radius:10px;background:#000;max-height:260px}
+/* 第 19 版 */
+.tnav{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:6px;background:#fff;padding:8px 0;border-bottom:2px solid #ccd9ec;margin-bottom:10px}
+.tnav a{padding:6px 10px;border:1px solid #9eafc7;border-radius:8px;text-decoration:none;font-size:15px}
+.path-buttons{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.path-buttons button[aria-pressed=true]{background:#dceaff;border:2px solid #2157da;font-weight:bold}
+.map-assign{border:1px solid #9eafc7;border-radius:10px;padding:8px 14px;margin:10px 0}
+.map-assign legend{font-weight:bold}
+.assign-row{display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px dashed #dde6f2;padding:2px 0}
+.assign-row:last-child{border-bottom:0}
+.assign-row label{margin:6px 0}
+.assign-row .code{font-size:13px;color:#526b89;margin-left:6px}
+button.small{min-height:40px;padding:6px 10px;font-size:15px}
+.target-info{background:#f3f7ff;border-radius:10px;padding:8px 12px}

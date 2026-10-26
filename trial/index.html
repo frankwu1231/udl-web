@@ -1,0 +1,131 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>面積互動教材 第21版</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap">
+<style>
+/* 版面：一欄說明頁，上方三個入口，下方活動捷徑、試用清單與限制 */
+:root{
+  --bg:#f3f6fc; --surface:#ffffff; --fg:#172b4d; --muted:#526b89; --line:#ccd9ec;
+  --accent:#2157da; --accent-ink:#ffffff; --base:#0b7a43; --height:#c2410c; --soft:#e7efff;
+  --font:"Noto Sans TC","Microsoft JhengHei","PingFang TC",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1726; --surface:#172238; --fg:#e6edf8; --muted:#9fb1cc; --line:#2b3a55;
+  --accent:#7aa2ff; --accent-ink:#0f1726; --base:#4cc38a; --height:#ff9a5c; --soft:#1e2d4a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1726; --surface:#172238; --fg:#e6edf8; --muted:#9fb1cc; --line:#2b3a55;
+  --accent:#7aa2ff; --accent-ink:#0f1726; --base:#4cc38a; --height:#ff9a5c; --soft:#1e2d4a; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:17px;line-height:1.75;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 40px}
+main{max-width:780px;margin:0 auto;display:grid;gap:28px}
+h1{font-size:clamp(28px,5vw,40px);font-weight:900;margin:0;line-height:1.25;text-wrap:balance}
+h2{font-size:21px;margin:0 0 6px;text-wrap:balance}
+h3{font-size:16px;margin:12px 0 4px;color:var(--muted)}
+.lead{color:var(--muted);margin:6px 0 0;max-width:62ch}
+.ver{display:inline-block;font-size:13px;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:6px}
+.entries{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.entry{display:grid;gap:6px;padding:20px;border-radius:14px;text-decoration:none;color:var(--fg);background:var(--surface);border:2px solid var(--line);min-width:0}
+.entry:hover,.entry:focus-visible{border-color:var(--accent);outline:none}
+.entry strong{font-size:22px}
+.entry span{color:var(--muted);font-size:15px}
+.entry.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.entry.primary span{color:var(--accent-ink);opacity:.85}
+.shapes{display:flex;flex-wrap:wrap;gap:8px}
+.shapes a{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);text-decoration:none;font-size:15px}
+.shapes a:hover,.shapes a:focus-visible{border-color:var(--accent);outline:none}
+section{min-width:0}
+ol,ul{margin:8px 0 0;padding-left:1.4em;display:grid;gap:8px}
+li{max-width:66ch}
+.tag{font-weight:700}
+.note{background:var(--soft);border-radius:12px;padding:14px 18px}
+.note ul{margin-top:4px}
+button{font:inherit;font-size:15px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+#resetMsg{color:var(--muted);font-size:15px;margin-left:8px}
+/* 頁面在同一個畫面裡開啟，讓試用版的 AI（Claude）在每一頁都能用 */
+#app{position:fixed;inset:0;z-index:10;display:none;flex-direction:column;background:var(--bg)}
+#app.open{display:flex}
+#appBar{display:flex;align-items:center;gap:10px;padding:6px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line);background:var(--surface)}
+#appBar button{padding:6px 12px}
+#appFrame{flex:1;border:0;width:100%;background:#fff}
+.ai-note{font-size:15px;color:var(--muted)}
+</style>
+
+<main>
+  <header>
+    <span class="ver">第 21 版 · 試用版</span>
+    <h1>面積互動教材：學習地圖</h1>
+    <p class="lead">依 108 課綱擴充為 5 個單元、17 個活動。學生從學習地圖進入，老師用課綱路徑指派。每個活動都有完整的自我調整循環（定目標 → 評把握 → 作答 → 對照結果 → 找原因 → 調整）、三層提示、老師示範與示範影片。不用安裝，平板、手機、電腦都能直接開。教材設定只存在你這台裝置的這個瀏覽器，不會影響正式網站。</p>
+  </header>
+
+  <div class="entries">
+    <a class="entry primary" href="seven.html"><strong>學生頁：學習地圖</strong><span>依單元選活動；老師指派的才會出現</span></a>
+    <a class="entry" href="seven-guide.html"><strong>📘 教師使用手冊</strong><span>第 21 版：學習地圖與指派、單元與課綱對照、建議路徑、示範影片、紀錄</span></a>
+    <a class="entry" href="teacher.html"><strong>教師備課</strong><span>課綱路徑一鍵指派、依序解鎖，再個別調整每個活動；按「發布給學生」後再開學生頁</span></a>
+  </div>
+
+  <section>
+    <h2>直接開某個活動</h2>
+    <h3>單元 1 面積是什麼</h3>
+    <div class="shapes"><a href="seven.html?a=compare">1-1 比一比</a><a href="seven.html?a=tile">1-2 鋪方格</a><a href="seven.html?a=conserve">1-3 剪開再拼</a><a href="seven.html?a=estimate">1-4 估一估</a></div>
+    <h3>單元 2 周長和面積</h3>
+    <div class="shapes"><a href="seven.html?a=perimeter">2-1 周長</a><a href="seven.html?a=which">2-2 面積還是周長</a><a href="seven.html?a=samePerimeter">2-3 周長一樣，面積呢</a></div>
+    <h3>單元 3 長方形和正方形</h3>
+    <div class="shapes"><a href="seven.html?a=rectangle">3-1 長方形</a><a href="seven.html?a=square">3-1 正方形</a><a href="seven.html?a=inverse">3-2 找邊長</a><a href="seven.html?a=arrange">3-3 排長方形</a><a href="seven.html?a=composite">3-4 複合圖形</a><a href="seven.html?a=squareMeter">3-5 平方公尺</a></div>
+    <h3>單元 4 三角形和四邊形 · 單元 5 用在生活</h3>
+    <div class="shapes"><a href="seven.html?a=parallelogram">4-1 平行四邊形</a><a href="seven.html?a=triangle">4-2 三角形</a><a href="seven.html?a=trapezoid">4-3 梯形</a><a href="seven.html?a=word">5-1 生活應用題</a></div>
+  </section>
+
+  <section>
+    <h2>建議這樣試（第 21 版新功能）</h2>
+    <ol>
+      <li><span class="tag">📖 例題逐步留空（第 21 版新）</span>：教師備課的「教學階段」下勾選後，第 1 題每一步都是做好的例題；之後每題把最後幾步換學生做。答得順就多換一步，答錯兩次以上就退回一步。只在「自己做」「一起做」作用，預設關閉。</li>
+      <li><span class="tag">🤔 問問自己（新）</span>：每一步下面有一句跟這一步有關的自我檢查，例如找高時問「這條線和底有直角嗎？」（老師關掉「自問卡」就不顯示）。</li>
+      <li><span class="tag">😣 我卡住了（新）</span>：每一步都可以按，選「看一個提示／看示範／請老師來幫我／先休息一下」，教師觀察會記錄學生選了什麼。</li>
+      <li><span class="tag">⌨️ 鍵盤也能操作（新）</span>：新活動圖上的格子、邊、切線可以用 Tab 選到，按 Enter 或空白鍵操作；畫面更新後停在原來的位置。</li>
+      <li><span class="tag">📈 我的進步（調整）</span>：先肯定達到目標、自己檢查，不再只用「少用提示」代表進步。</li>
+      <li><span class="tag">學習地圖</span>：學生頁依 5 個單元列出活動卡片，每完成一題得到一顆星星；每一頁上方的「🗺️ 學習地圖」可以回來。</li>
+      <li><span class="tag">老師指派</span>：教師備課最上面按「四年級版」等課綱路徑，再增減勾選；打開「依序解鎖」，學生要做完前一個才開下一個。</li>
+      <li><span class="tag">面積是什麼（1-1～1-4）</span>：比一比、用方塊鋪滿、剪開再拼面積不變、先估再數（兩個半格算一格）。</li>
+      <li><span class="tag">周長和面積（2-1～2-3）</span>：點邊算周長、從生活情境判斷算面積還是周長、周長一樣面積不一定一樣。</li>
+      <li><span class="tag">長方形延伸（3-2～3-5）</span>：知道面積找邊長、12 格排長方形、複合圖形切開再加、平方公尺（換算預設關閉，老師在 3-5 的設定可以打開）。</li>
+      <li><span class="tag">梯形（4-3）</span>：拿一片一樣的梯形轉過來，拼成平行四邊形，理解（上底＋下底）×高÷2。</li>
+      <li><span class="tag">生活應用題（5-1）</span>：找關鍵字判斷面積或周長 → 選算式 → 計算 → 選單位，附情境簡圖。</li>
+      <li><span class="tag">🤖 AI 提示（新）</span>：看過 2 層提示後出現「🤖 問 AI」，17 個活動都可以用；AI 不會說出數字答案。完成畫面可以「請 AI 問我一個問題」，教師觀察可以「請 AI 整理本題紀錄」。</li>
+      <li><span class="tag">沿用第 18 版</span>：數字目標與把握、三層提示、老師示範與 🎬 示範影片（老師可上傳取代）、注音／字級／高對比、休息、進步曲線。</li>
+      <li><span class="tag">實物操作卡</span>：<a href="hands-on.html">11 張可列印的卡片</a>，標有對應的活動編號（比一比卡、L 形剪拼、半格估測、梯形、做 1 平方公尺等）。</li>
+    </ol>
+  </section>
+
+  <section class="note">
+    <h2>試用版和正式網站的差別</h2>
+    <ul>
+      <li>AI 由 Claude 提供（用檢視者自己的 Claude 帳號，第一次會詢問是否允許）；正式網站的測試帳號用 DeepSeek。不允許或無法使用時，會改顯示固定提示。</li>
+      <li>試用版不需要登入；測試帳號（test）只在正式網站使用。</li>
+      <li>錄音功能在試用版的預覽畫面可能無法使用麥克風；正式網站可以。</li>
+      <li>上傳的示範影片只存在這個瀏覽器；正式網站會存在伺服器，所有學生都看得到。</li>
+      <li>不能下載 CSV：會改成顯示在框內，可以全選複製貼到 Excel。</li>
+      <li>教材設定與紀錄只存在這個瀏覽器；換裝置或清除瀏覽資料就會回到預設。</li>
+    </ul>
+    <p><button id="reset" type="button">恢復預設教材</button><span id="resetMsg" role="status"></span></p>
+  </section>
+</main>
+
+<div id="app" role="dialog" aria-label="教材頁面"><div id="appBar"><button id="appClose" type="button">← 試用首頁</button><span class="ai-note">🤖 AI 由 Claude 提供，第一次使用會詢問是否允許</span></div><iframe id="appFrame" title="教材頁面"></iframe></div>
+<script>
+const app = document.getElementById('app'), frame = document.getElementById('appFrame');
+window.closeApp = () => { app.classList.remove('open'); frame.src = 'about:blank'; };
+document.getElementById('appClose').onclick = window.closeApp;
+document.addEventListener('click', e => {
+  const a = e.target.closest('main a[href$=".html"], main a[href*=".html?"]');
+  if (!a) return;
+  e.preventDefault(); frame.src = a.getAttribute('href'); app.classList.add('open');
+});
+document.getElementById('reset').onclick = () => {
+  try { for (const k of ['draft', 'published']) localStorage.removeItem('area-demo-lessons-v19' + k); } catch (e) { /* 無法清除 */ }
+  document.getElementById('resetMsg').textContent = '已恢復預設教材。';
+};
+</script>
+
+
+</body></html>

@@ -1,0 +1,55 @@
+/* 示範影片（動畫示範與老師上傳的影片） */
+.video-btn{border-color:#6b3fc0;color:#4a2a8a;background:#f6f0ff}
+.video-slot{margin:12px 0 4px;padding:12px;border:3px solid #6b3fc0;border-radius:14px;background:#fbf8ff}
+.video-close{margin-top:8px;min-height:44px}
+.sd-stage{position:relative;min-height:170px;background:#fff;border:1px solid #d9cdf0;border-radius:12px;padding:12px;overflow:hidden}
+.sd-body{display:flex;flex-direction:column;align-items:center;gap:10px}
+.sd-fig{width:min(100%,420px)}
+.sd-fig svg{width:100%;height:auto;max-height:230px;display:block}
+.sd-pulse{animation:sd-glow 1.2s ease-in-out 2}
+@keyframes sd-glow{50%{filter:drop-shadow(0 0 10px #ffd077)}}
+.sd-grid{display:grid;grid-template-columns:repeat(var(--cols),44px);justify-content:center;width:auto}
+.sd-cell{width:44px;height:44px;border:1px solid #244b85;background:#dce8ff;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;color:#7a3d00}
+.sd-cell.on{background:#ffd077}.sd-cell.edge{box-shadow:inset 0 0 0 4px #0b7a43}.sd-cell.count{background:#e5f4ed}
+.sd-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.sd-chip{border:2px solid #9eafc7;border-radius:10px;padding:8px 12px;background:#fff;font-size:17px}
+.sd-chip.on{background:#dceaff;border-color:#2157da;font-weight:bold}.sd-chip.on::before{content:"✓ ";color:#2157da}
+.sd-input{font-size:19px;font-weight:bold;margin:0}.sd-input b{display:inline-block;min-width:72px;min-height:44px;border:2px solid #8097b8;border-radius:10px;padding:4px 10px;text-align:center;vertical-align:middle}.sd-input b.ok{border-color:#207449;background:#e5f4ed}
+.sd-eq{font-size:28px;font-weight:bold}.sd-eq b{display:inline-block;min-width:64px;min-height:52px;border:2px solid #8097b8;border-radius:10px;text-align:center;vertical-align:middle;line-height:48px}
+.sd-calc{font-size:30px;font-weight:bold;margin:30px 0}.sd-calc b{color:#2157da}
+.sd-finger{position:absolute;left:0;top:0;font-size:34px;opacity:0;transition:left .55s ease,top .55s ease,opacity .3s;pointer-events:none;z-index:3;filter:drop-shadow(0 2px 2px #0004)}
+.sd-finger.show{opacity:1}.sd-finger.tap{transform:scale(.8) translateY(4px)}
+.sd-caption{font-size:20px;font-weight:bold;min-height:2.4em;margin:10px 0 6px;background:#fff7d6;border-radius:10px;padding:8px 12px}
+.sd-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sd-bar button{min-height:48px}.sd-bar .sd-slow[aria-pressed=true]{background:#dceaff;border:2px solid #2157da;font-weight:bold}
+.sd-count{font-size:15px;color:#526b89}
+.sd-end{font-size:22px;font-weight:bold;color:#207449;margin:8px 0 0}
+.teacher-video video{width:100%;max-height:360px;border-radius:12px;background:#000}
+@media(prefers-reduced-motion:reduce){.sd-finger{transition:none}.sd-pulse{animation:none}}
+@media(max-width:600px){.sd-grid{grid-template-columns:repeat(var(--cols),36px)}.sd-cell{width:36px;height:36px}.sd-caption{font-size:18px}}
+
+/* 備課頁預覽動畫時也要用到的圖形樣式（和 seven.css 相同） */
+.sd .geometry-svg{max-height:340px}
+.sd .geometry-svg .lbl{font-size:22px;font-weight:bold;paint-order:stroke;stroke:#fff;stroke-width:6px;stroke-linejoin:round}
+.sd .geometry-svg .lbl-base{fill:#0b7a43}
+.sd .geometry-svg .lbl-height{fill:#c2410c}
+.sd .geometry-svg .tag{font-size:18px;fill:#fff;stroke:none}
+.sd .geometry-svg .line-tag circle{fill:#2157da}
+.sd .geometry-svg .line-tag.selected-line circle{fill:#d77900}
+.sd .geometry-svg [data-line-hit],.geometry-svg .base-hit{cursor:pointer}
+.sd .geometry-svg .selected-line{stroke-width:8!important;filter:drop-shadow(0 0 3px #d77900)}
+.sd .geometry-svg .ghost{fill:none;stroke:#546b89;stroke-dasharray:5 5;opacity:.6}
+.sd .geometry-svg .transform-piece{transform-box:view-box}
+.sd .geometry-svg .slide-piece{animation:piece-slide 3s ease-in-out both}
+.sd .geometry-svg .rotate-piece{animation:piece-turn 3.2s ease-in-out both;transform-origin:var(--pivot)}
+.sd .geometry-svg .drag-piece{cursor:grab;touch-action:none}
+.sd .geometry-svg .drag-piece.dragging{cursor:grabbing;opacity:.85}
+.sd .geometry-svg .pulse-line{animation:line-pulse 1s ease-in-out infinite}
+.sd .geometry-svg .pulse-fill{animation:fill-pulse 1.2s ease-in-out infinite}
+.sd .geometry-svg .pulse-piece polygon{animation:fill-pulse 1.2s ease-in-out infinite}
+.sd .geometry-svg .hint-arrow{animation:bob 1s ease-in-out infinite}
+@keyframes piece-slide{from{transform:translate(var(--fx,0px),0)}to{transform:translate(var(--move),0)}}
+@keyframes piece-turn{0%{transform:translate(var(--fx),var(--fy)) rotate(0deg)}45%{transform:translate(calc(var(--fx) * .35),calc(var(--fy) * .35)) rotate(0deg)}100%{transform:translate(0,0) rotate(180deg)}}
+@keyframes line-pulse{50%{opacity:.35;stroke-width:9}}
+@keyframes fill-pulse{50%{fill:#ffe08a}}
+@keyframes bob{50%{transform:translate(var(--bx,0),-5px)}}

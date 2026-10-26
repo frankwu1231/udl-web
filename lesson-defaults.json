@@ -1,0 +1,776 @@
+{
+  "rectangle": {
+    "problems": [
+      {
+        "a": 4,
+        "b": 2,
+        "offset": 0,
+        "prompt": "請算出這個長方形的面積是多少平方公分。"
+      },
+      {
+        "a": 5,
+        "b": 3,
+        "offset": 0,
+        "prompt": "請算出這個長方形的面積是多少平方公分。"
+      },
+      {
+        "a": 3,
+        "b": 2,
+        "offset": 0,
+        "prompt": "請算出這個長方形的面積是多少平方公分。"
+      }
+    ],
+    "hints": [
+      "面積要算哪裡？看一看圖。",
+      "一格一格點，不要漏掉。",
+      "數一數加粗的這一排。",
+      "數一數左邊加粗的格子。",
+      "想一想：一排幾格，有幾排？",
+      "把算式算出來。",
+      "面積的單位是什麼？"
+    ],
+    "hintVersion": 3,
+    "settings": {
+      "flow": "seven",
+      "keep": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "support": "full",
+      "labels": "reveal",
+      "ai": true,
+      "reward": true,
+      "sound": true,
+      "hintGate": false,
+      "difficulty": "standard",
+      "grid": false,
+      "rate": "normal",
+      "mode": "self",
+      "goalKind": "hints",
+      "confidence": true,
+      "selfAsk": true,
+      "badges": true,
+      "voice": false,
+      "rest": 0,
+      "handsOn": false,
+      "methods": [
+        "mark",
+        "row",
+        "self"
+      ],
+      "zhuyin": false,
+      "textSize": "normal",
+      "contrast": false,
+      "video": "hint"
+    }
+  },
+  "square": {
+    "problems": [
+      {
+        "a": 3,
+        "b": 3,
+        "offset": 0,
+        "prompt": "請算出這個正方形的面積是多少平方公分。"
+      },
+      {
+        "a": 4,
+        "b": 4,
+        "offset": 0,
+        "prompt": "請算出這個正方形的面積是多少平方公分。"
+      },
+      {
+        "a": 5,
+        "b": 5,
+        "offset": 0,
+        "prompt": "請算出這個正方形的面積是多少平方公分。"
+      }
+    ],
+    "hints": [
+      "面積要算哪裡？看一看圖。",
+      "一格一格點，不要漏掉。",
+      "數一數加粗的這一排。",
+      "數一數左邊加粗的格子。",
+      "想一想：一排幾格，有幾排？",
+      "把算式算出來。",
+      "面積的單位是什麼？"
+    ],
+    "hintVersion": 3,
+    "settings": {
+      "flow": "seven",
+      "keep": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "support": "full",
+      "labels": "reveal",
+      "ai": true,
+      "reward": true,
+      "sound": true,
+      "hintGate": false,
+      "difficulty": "standard",
+      "grid": false,
+      "rate": "normal",
+      "mode": "self",
+      "goalKind": "hints",
+      "confidence": true,
+      "selfAsk": true,
+      "badges": true,
+      "voice": false,
+      "rest": 0,
+      "handsOn": false,
+      "methods": [
+        "mark",
+        "row",
+        "self"
+      ],
+      "zhuyin": false,
+      "textSize": "normal",
+      "contrast": false,
+      "video": "hint"
+    }
+  },
+  "triangle": {
+    "problems": [
+      {
+        "a": 6,
+        "b": 4,
+        "offset": 2,
+        "prompt": "請算出這個三角形的面積是多少平方公分。"
+      },
+      {
+        "a": 5,
+        "b": 3,
+        "offset": 0,
+        "prompt": "請算出這個三角形的面積是多少平方公分。"
+      },
+      {
+        "a": 5,
+        "b": 3,
+        "offset": -1,
+        "prompt": "請算出這個三角形的面積是多少平方公分。"
+      }
+    ],
+    "hints": [
+      "面積要算哪裡？看一看圖。",
+      "按按鈕，拿一片一樣的三角形。",
+      "找最下面的邊，點一下。",
+      "找有直角記號的線。",
+      "拼好的是底×高，一片呢？",
+      "把算式算出來。",
+      "面積的單位是什麼？"
+    ],
+    "hintVersion": 3,
+    "settings": {
+      "flow": "seven",
+      "keep": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "support": "full",
+      "labels": "reveal",
+      "ai": true,
+      "reward": true,
+      "sound": true,
+      "hintGate": false,
+      "difficulty": "standard",
+      "grid": false,
+      "rate": "normal",
+      "mode": "self",
+      "goalKind": "hints",
+      "confidence": true,
+      "selfAsk": true,
+      "badges": true,
+      "voice": false,
+      "rest": 0,
+      "handsOn": false,
+      "methods": [
+        "mark",
+        "row",
+        "self"
+      ],
+      "zhuyin": false,
+      "textSize": "normal",
+      "contrast": false,
+      "video": "hint"
+    }
+  },
+  "parallelogram": {
+    "problems": [
+      {
+        "a": 6,
+        "b": 4,
+        "offset": 3,
+        "prompt": "請算出這個平行四邊形的面積是多少平方公分。"
+      },
+      {
+        "a": 5,
+        "b": 3,
+        "offset": 2,
+        "prompt": "請算出這個平行四邊形的面積是多少平方公分。"
+      },
+      {
+        "a": 4,
+        "b": 2,
+        "offset": 1,
+        "prompt": "請算出這個平行四邊形的面積是多少平方公分。"
+      }
+    ],
+    "hints": [
+      "面積要算哪裡？看一看圖。",
+      "按按鈕，沿著高剪開。",
+      "找最下面的邊，點一下。",
+      "找有直角記號的線。",
+      "剪移後，變成什麼形狀？",
+      "把算式算出來。",
+      "面積的單位是什麼？"
+    ],
+    "hintVersion": 3,
+    "settings": {
+      "flow": "seven",
+      "keep": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "support": "full",
+      "labels": "reveal",
+      "ai": true,
+      "reward": true,
+      "sound": true,
+      "hintGate": false,
+      "difficulty": "standard",
+      "grid": false,
+      "rate": "normal",
+      "mode": "self",
+      "goalKind": "hints",
+      "confidence": true,
+      "selfAsk": true,
+      "badges": true,
+      "voice": false,
+      "rest": 0,
+      "handsOn": false,
+      "methods": [
+        "mark",
+        "row",
+        "self"
+      ],
+      "zhuyin": false,
+      "textSize": "normal",
+      "contrast": false,
+      "video": "hint"
+    }
+  },
+  "map": {
+    "assigned": [
+      "compare",
+      "tile",
+      "conserve",
+      "estimate",
+      "perimeter",
+      "which",
+      "samePerimeter",
+      "rectangle",
+      "square",
+      "inverse",
+      "arrange",
+      "composite",
+      "squareMeter",
+      "parallelogram",
+      "triangle",
+      "trapezoid",
+      "word"
+    ],
+    "sequential": false,
+    "path": "all"
+  },
+  "activities": {
+    "compare": {
+      "settings": {
+        "flow": "seven",
+        "keep": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "support": "full",
+        "labels": "reveal",
+        "ai": true,
+        "reward": true,
+        "sound": true,
+        "hintGate": false,
+        "difficulty": "standard",
+        "grid": false,
+        "rate": "normal",
+        "mode": "self",
+        "goalKind": "hints",
+        "confidence": true,
+        "selfAsk": true,
+        "badges": true,
+        "voice": false,
+        "rest": 0,
+        "handsOn": false,
+        "methods": [
+          "mark",
+          "row",
+          "self"
+        ],
+        "zhuyin": false,
+        "textSize": "normal",
+        "contrast": false,
+        "video": "hint"
+      }
+    },
+    "tile": {
+      "settings": {
+        "flow": "seven",
+        "keep": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "support": "full",
+        "labels": "reveal",
+        "ai": true,
+        "reward": true,
+        "sound": true,
+        "hintGate": false,
+        "difficulty": "standard",
+        "grid": false,
+        "rate": "normal",
+        "mode": "self",
+        "goalKind": "hints",
+        "confidence": true,
+        "selfAsk": true,
+        "badges": true,
+        "voice": false,
+        "rest": 0,
+        "handsOn": false,
+        "methods": [
+          "mark",
+          "row",
+          "self"
+        ],
+        "zhuyin": false,
+        "textSize": "normal",
+        "contrast": false,
+        "video": "hint"
+      }
+    },
+    "conserve": {
+      "settings": {
+        "flow": "seven",
+        "keep": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "support": "full",
+        "labels": "reveal",
+        "ai": true,
+        "reward": true,
+        "sound": true,
+        "hintGate": false,
+        "difficulty": "standard",
+        "grid": false,
+        "rate": "normal",
+        "mode": "self",
+        "goalKind": "hints",
+        "confidence": true,
+        "selfAsk": true,
+        "badges": true,
+        "voice": false,
+        "rest": 0,
+        "handsOn": false,
+        "methods": [
+          "mark",
+          "row",
+          "self"
+        ],
+        "zhuyin": false,
+        "textSize": "normal",
+        "contrast": false,
+        "video": "hint"
+      }
+    },
+    "estimate": {
+      "settings": {
+        "flow": "seven",
+        "keep": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "support": "full",
+        "labels": "reveal",
+        "ai": true,
+        "reward": true,
+        "sound": true,
+        "hintGate": false,
+        "difficulty": "standard",
+        "grid": false,
+        "rate": "normal",
+        "mode": "self",
+        "goalKind": "hints",
+        "confidence": true,
+        "selfAsk": true,
+        "badges": true,
+        "voice": false,
+        "rest": 0,
+        "handsOn": false,
+        "methods": [
+          "mark",
+          "row",
+          "self"
+        ],
+        "zhuyin": false,
+        "textSize": "normal",
+        "contrast": false,
+        "video": "hint"
+      }
+    },
+    "perimeter": {
+      "settings": {
+        "flow": "seven",
+        "keep": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "support": "full",
+        "labels": "reveal",
+        "ai": true,
+        "reward": true,
+        "sound": true,
+        "hintGate": false,
+        "difficulty": "standard",
+        "grid": false,
+        "rate": "normal",
+        "mode": "self",
+        "goalKind": "hints",
+        "confidence": true,
+        "selfAsk": true,
+        "badges": true,
+        "voice": false,
+        "rest": 0,
+        "handsOn": false,
+        "methods": [
+          "mark",
+          "row",
+          "self"
+        ],
+        "zhuyin": false,
+        "textSize": "normal",
+        "contrast": false,
+        "video": "hint"
+      }
+    },
+    "which": {
+      "settings": {
+        "flow": "seven",
+        "keep": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "support": "full",
+        "labels": "reveal",
+        "ai": true,
+        "reward": true,
+        "sound": true,
+        "hintGate": false,
+        "difficulty": "standard",
+        "grid": false,
+        "rate": "normal",
+        "mode": "self",
+        "goalKind": "hints",
+        "confidence": true,
+        "selfAsk": true,
+        "badges": true,
+        "voice": false,
+        "rest": 0,
+        "handsOn": false,
+        "methods": [
+          "mark",
+          "row",
+          "self"
+        ],
+        "zhuyin": false,
+        "textSize": "normal",
+        "contrast": false,
+        "video": "hint"
+      }
+    },
+    "samePerimeter": {
+      "settings": {
+        "flow": "seven",
+        "keep": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "support": "full",
+        "labels": "reveal",
+        "ai": true,
+        "reward": true,
+        "sound": true,
+        "hintGate": false,
+        "difficulty": "standard",
+        "grid": false,
+        "rate": "normal",
+        "mode": "self",
+        "goalKind": "hints",
+        "confidence": true,
+        "selfAsk": true,
+        "badges": true,
+        "voice": false,
+        "rest": 0,
+        "handsOn": false,
+        "methods": [
+          "mark",
+          "row",
+          "self"
+        ],
+        "zhuyin": false,
+        "textSize": "normal",
+        "contrast": false,
+        "video": "hint"
+      }
+    },
+    "inverse": {
+      "settings": {
+        "flow": "seven",
+        "keep": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "support": "full",
+        "labels": "reveal",
+        "ai": true,
+        "reward": true,
+        "sound": true,
+        "hintGate": false,
+        "difficulty": "standard",
+        "grid": false,
+        "rate": "normal",
+        "mode": "self",
+        "goalKind": "hints",
+        "confidence": true,
+        "selfAsk": true,
+        "badges": true,
+        "voice": false,
+        "rest": 0,
+        "handsOn": false,
+        "methods": [
+          "mark",
+          "row",
+          "self"
+        ],
+        "zhuyin": false,
+        "textSize": "normal",
+        "contrast": false,
+        "video": "hint"
+      }
+    },
+    "arrange": {
+      "settings": {
+        "flow": "seven",
+        "keep": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "support": "full",
+        "labels": "reveal",
+        "ai": true,
+        "reward": true,
+        "sound": true,
+        "hintGate": false,
+        "difficulty": "standard",
+        "grid": false,
+        "rate": "normal",
+        "mode": "self",
+        "goalKind": "hints",
+        "confidence": true,
+        "selfAsk": true,
+        "badges": true,
+        "voice": false,
+        "rest": 0,
+        "handsOn": false,
+        "methods": [
+          "mark",
+          "row",
+          "self"
+        ],
+        "zhuyin": false,
+        "textSize": "normal",
+        "contrast": false,
+        "video": "hint"
+      }
+    },
+    "composite": {
+      "settings": {
+        "flow": "seven",
+        "keep": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "support": "full",
+        "labels": "reveal",
+        "ai": true,
+        "reward": true,
+        "sound": true,
+        "hintGate": false,
+        "difficulty": "standard",
+        "grid": false,
+        "rate": "normal",
+        "mode": "self",
+        "goalKind": "hints",
+        "confidence": true,
+        "selfAsk": true,
+        "badges": true,
+        "voice": false,
+        "rest": 0,
+        "handsOn": false,
+        "methods": [
+          "mark",
+          "row",
+          "self"
+        ],
+        "zhuyin": false,
+        "textSize": "normal",
+        "contrast": false,
+        "video": "hint"
+      }
+    },
+    "squareMeter": {
+      "settings": {
+        "flow": "seven",
+        "keep": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "support": "full",
+        "labels": "reveal",
+        "ai": true,
+        "reward": true,
+        "sound": true,
+        "hintGate": false,
+        "difficulty": "standard",
+        "grid": false,
+        "rate": "normal",
+        "mode": "self",
+        "goalKind": "hints",
+        "confidence": true,
+        "selfAsk": true,
+        "badges": true,
+        "voice": false,
+        "rest": 0,
+        "handsOn": false,
+        "methods": [
+          "mark",
+          "row",
+          "self"
+        ],
+        "zhuyin": false,
+        "textSize": "normal",
+        "contrast": false,
+        "video": "hint"
+      }
+    },
+    "trapezoid": {
+      "settings": {
+        "flow": "seven",
+        "keep": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "support": "full",
+        "labels": "reveal",
+        "ai": true,
+        "reward": true,
+        "sound": true,
+        "hintGate": false,
+        "difficulty": "standard",
+        "grid": false,
+        "rate": "normal",
+        "mode": "self",
+        "goalKind": "hints",
+        "confidence": true,
+        "selfAsk": true,
+        "badges": true,
+        "voice": false,
+        "rest": 0,
+        "handsOn": false,
+        "methods": [
+          "mark",
+          "row",
+          "self"
+        ],
+        "zhuyin": false,
+        "textSize": "normal",
+        "contrast": false,
+        "video": "hint"
+      }
+    },
+    "word": {
+      "settings": {
+        "flow": "seven",
+        "keep": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "support": "full",
+        "labels": "reveal",
+        "ai": true,
+        "reward": true,
+        "sound": true,
+        "hintGate": false,
+        "difficulty": "standard",
+        "grid": false,
+        "rate": "normal",
+        "mode": "self",
+        "goalKind": "hints",
+        "confidence": true,
+        "selfAsk": true,
+        "badges": true,
+        "voice": false,
+        "rest": 0,
+        "handsOn": false,
+        "methods": [
+          "mark",
+          "row",
+          "self"
+        ],
+        "zhuyin": false,
+        "textSize": "normal",
+        "contrast": false,
+        "video": "hint"
+      }
+    }
+  }
+}

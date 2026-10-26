@@ -1,0 +1,63 @@
+/* 第 19 版：學習地圖與新活動 */
+.map-unit{margin:18px 0 8px}
+.map-unit h2{font-size:22px;margin:6px 0 10px}
+.map-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.map-card{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto auto;column-gap:10px;row-gap:2px;align-items:center;padding:14px;border:2px solid #a6bbdb;border-radius:14px;background:#fff;text-decoration:none;color:#172b4d;min-height:110px}
+.map-card:hover,.map-card:focus-visible{border-color:#2157da;background:#f3f7ff}
+.map-icon{grid-row:1/4;font-size:34px}
+.map-no{font-size:14px;color:#526b89}
+.map-title{font-size:19px;font-weight:bold;line-height:1.35}
+.map-stars{font-size:16px;letter-spacing:2px;color:#a66b00}
+.map-status{grid-column:2;font-size:14px;color:#526b89}
+.map-card.locked{opacity:.55;cursor:not-allowed;background:#f1f3f7}
+.map-card.off{border-style:dashed;opacity:.6}
+.map-link{text-decoration:none;font-weight:bold;margin-right:4px}
+/* 新活動的圖 */
+.ac-svg{width:100%;height:auto;max-height:330px;display:block;margin:auto}
+.ac-grid{stroke:#b9c7dc;stroke-width:1;fill:none}
+.ac-fill{fill:#a9c7ff;stroke:#244b85;stroke-width:1}
+.ac-a{fill:#a9c7ff;stroke:#244b85;stroke-width:1}
+.ac-b{fill:#ffd9a8;stroke:#8a4b00;stroke-width:1}
+.ac-mark{fill:#ffd077!important}
+.ac-mark2{fill:#f7b267!important}
+.ac-tile{fill:#7fb2ff;stroke:#1e4f9a;stroke-width:2}
+.ac-empty{fill:#fff;stroke:#c6d3e6;stroke-width:1;stroke-dasharray:4 3}
+.ac-half{fill:#c9dbff;stroke:#244b85;stroke-width:1}
+.ac-piece0{fill:#a9c7ff;stroke:#244b85;stroke-width:1}
+.ac-piece1{fill:#ffd077;stroke:#8a4b00;stroke-width:1}
+.ac-outline{fill:none;stroke:#172b4d;stroke-width:3;stroke-linecap:square}
+.ac-num{font-size:18px;font-weight:bold;fill:#7a3d00}
+.ac-tag{font-size:20px;font-weight:bold;fill:#172b4d}
+.ac-len{font-size:22px;font-weight:bold;fill:#0b7a43;paint-order:stroke;stroke:#fff;stroke-width:5px}
+.ac-hit{cursor:pointer}
+.ac-hit:hover{opacity:.85}
+.ac-pulse{animation:ac-pulse 1.1s ease-in-out infinite}
+@keyframes ac-pulse{50%{fill:#fff2b3}}
+.ac-side{stroke:#7d93b5;stroke-width:4;fill:none}
+.ac-side.on{stroke:#0b7a43;stroke-width:7}
+.ac-side-hit{stroke:transparent;stroke-width:34;fill:none;cursor:pointer}
+.ac-pulse-line{animation:ac-line 1s ease-in-out infinite}
+@keyframes ac-line{50%{stroke:#ffb020;stroke-width:9}}
+.ac-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end}
+.ac-fig{margin:0}.ac-fig figcaption{text-align:center;font-weight:bold;color:#36506f;font-size:16px}
+.ac-sit{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:72px;line-height:1}
+.ac-sitrow{display:flex;justify-content:center;gap:24px;font-size:56px}
+.ac-mini{width:160px}.ac-mini-fill{fill:#7fb2ff;stroke:#1e4f9a;stroke-width:3}.ac-mini-in{fill:#eef4ff}.ac-mini-edge{fill:none;stroke:#0b7a43;stroke-width:8;stroke-dasharray:14 6}
+/* 動畫示範裡的新活動畫面 */
+.sd-plugin{width:100%}.sd-plugin .sd-pfig{max-width:420px;margin:auto}.sd-plugin .sd-ans{margin-top:6px}
+.sd-plugin .choice button{min-height:40px;padding:6px 10px;font-size:16px}.sd-plugin .field input{font-size:18px;padding:4px 8px}
+.sd-plugin input.sd-filled{border-color:#207449;background:#e5f4ed}
+@media(prefers-reduced-motion:reduce){.ac-pulse,.ac-pulse-line{animation:none}}
+@media(max-width:600px){.map-cards{grid-template-columns:1fr}.ac-pair{grid-template-columns:1fr}}
+html.contrast .map-card{border-color:#000}html.contrast .ac-outline{stroke:#000}
+.ac-big{font-size:22px;font-weight:bold;text-align:center}
+.ac-stepper{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:19px}
+.ac-stepper span{min-width:5em}.ac-stepper b{min-width:2em;text-align:center;font-size:24px}
+.ac-stepper button{min-height:48px;min-width:56px;font-size:20px;padding:6px}
+.ac-cut{stroke:#7a3d00;stroke-width:4;stroke-dasharray:10 6;fill:none}
+.ac-cut.on{stroke:#c2410c;stroke-width:6;stroke-dasharray:none}
+.ac-m2{display:flex;flex-direction:column;align-items:center;gap:8px}
+.ac-m2-sq{width:min(240px,70vw);aspect-ratio:1;border:4px solid #172b4d;background:repeating-linear-gradient(0deg,#f4efe1 0 49%,#cfc6ad 49% 50%,#f4efe1 50% 100%),#f4efe1;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:20px;position:relative}
+.ac-m2-sq::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 49.5%,#cfc6ad 49.5% 50.5%,transparent 50.5%)}
+.ac-m2-sq span{position:relative;z-index:1;background:#fff;padding:4px 10px;border-radius:8px}
+.ac-per{stroke:#c2410c;stroke-width:7}

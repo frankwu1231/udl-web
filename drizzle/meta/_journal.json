@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1791800000000,
+      "tag": "0000_lesson_documents",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1791800001000,
+      "tag": "0001_test_login_attempts",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792200000000,
+      "tag": "0002_lesson_videos",
+      "breakpoints": true
+    }
+  ]
+}

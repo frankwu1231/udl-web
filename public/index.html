@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>長方形面積實驗室</title><meta name="description" content="用虛擬正方形鋪排、點數、累加與乘法，理解長方形面積。提供教學、獨立練習及教師紀錄。"><link rel="icon" href="favicon.svg"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="visual.css"></head>
+<body>
+<header><a class="brand" href="./"><span class="brand-icon" aria-hidden="true">▦</span><span>長方形面積<span class="brand-small">虛擬操作教材</span></span></a><div class="header-actions"><a class="shape-menu" href="shapes.html">▦ 選圖形</a><button id="read" class="quiet">朗讀題目</button><button id="teacher" class="quiet">教師工具</button></div></header>
+<aside style="max-width:1032px;margin:12px auto;padding:16px;background:#e7efff;border-radius:12px"><a href="seven.html" style="font-size:20px;font-weight:bold">新：圖像七步解題 →</a>　<span>原有概念活動保留於本頁</span></aside><main>
+<div class="modebar"><div role="group" aria-label="學習模式"><button id="learnMode" class="mode active" aria-pressed="true">一起學</button><button id="testMode" class="mode" aria-pressed="false">自己試試</button></div><span id="lessonLabel">每次做好一個步驟</span></div>
+<nav id="steps" aria-label="教學步驟"></nav>
+<section class="workspace" aria-labelledby="title">
+<div class="instruction"><div id="eyebrow" class="eyebrow"></div><h1 id="title" tabindex="-1"></h1><p id="instruction"></p></div>
+<div id="cyclePanel" class="cycle-panel" aria-live="polite"></div>
+<div class="workgrid"><div class="manipulative"><div class="board-top"><span id="unitNote">每個小正方形代表 1 平方公分</span><span id="boardTag" class="tag">操作區</span></div><div id="boardWrap"><div id="boardFrame"><div id="lengthLabel"></div><div id="widthLabel"></div><div id="board" aria-label="長方形操作板"></div></div></div><div id="boardActions" class="board-actions"></div><p id="boardCaption" class="caption"></p></div><div class="answer-panel"><div id="task"></div><div id="feedback" role="status" aria-live="polite"></div><div id="actionBar" class="actionbar"></div></div></div>
+<div id="reflection" class="reflection"><span>我的檢查</span><button id="selfCheck" class="check-chip" aria-pressed="false">我檢查過沒有空隙</button><span id="selfNote"></span></div>
+</section>
+<div class="below"><p id="bottomNote">方塊是放大的示意單位，螢幕上的邊長不等於實際 1 公分。</p><button id="reset" class="text-button">這一步重來</button></div>
+</main>
+<dialog id="teacherDialog" aria-labelledby="teacherTitle"><div class="dialog-top"><h2 id="teacherTitle">教師工具</h2><button id="closeTeacher" aria-label="關閉教師工具">關閉</button></div><div id="teacherBody"></div></dialog>
+<dialog id="confirmDialog" aria-labelledby="confirmTitle"><h2 id="confirmTitle">離開這份練習？</h2><p>尚未完成的作答會結束，已留下的本次紀錄仍會保留。</p><div class="dialog-actions"><button id="stay">繼續作答</button><button id="leave" class="primary">離開練習</button></div></dialog>
+<dialog id="visualDialog" aria-labelledby="visualDialogTitle"></dialog>
+<script src="app.js"></script></body></html>
