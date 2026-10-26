@@ -31,7 +31,13 @@
     // 閱讀輔助（學生也可以自己切換）
     zhuyin: false,
     textSize: 'normal',     // normal｜large｜xlarge
-    contrast: false
+    contrast: false,
+    // 第 22 版：學習小幫手「小方」
+    buddy: true,            // 解題時右下角的小幫手：很久沒動或一直答錯時主動幫忙
+    buddyWait: 60,          // 同一步幾秒沒有動，小幫手才問要不要幫忙：30｜60｜90
+    buddyVoice: true,       // 小幫手把話唸出來
+    attention: false,       // 鏡頭專心提醒（學生按「好」才開；影像只在本機，不上傳）
+    attentionSec: 5         // 轉頭或離開幾秒才提醒：3｜5｜8
   };
   const METHODS = ['mark', 'row', 'self'];
   const MODES = ['self', 'together', 'demo', 'probe'];
@@ -67,7 +73,8 @@
       && ['easy', 'standard', 'challenge', 'custom'].includes(s.difficulty)
       && ['slow', 'normal', undefined].includes(s.rate)
       && (s.keep === undefined || (Array.isArray(s.keep) && s.keep.every(v => OPTIONAL.includes(v))))
-      && ['confidence', 'selfAsk', 'badges', 'voice', 'handsOn', 'zhuyin', 'contrast', 'convert', 'fading'].every(k => s[k] === undefined || typeof s[k] === 'boolean')
+      && ['confidence', 'selfAsk', 'badges', 'voice', 'handsOn', 'zhuyin', 'contrast', 'convert', 'fading', 'buddy', 'buddyVoice', 'attention'].every(k => s[k] === undefined || typeof s[k] === 'boolean')
+      && [undefined, 30, 60, 90].includes(s.buddyWait) && [undefined, 3, 5, 8].includes(s.attentionSec)
       && [undefined, ...MODES].includes(s.mode) && [undefined, 'hints', 'firstTry'].includes(s.goalKind)
       && [undefined, 'off', 'hint', 'always'].includes(s.video) && [undefined, 'normal', 'large', 'xlarge'].includes(s.textSize) && [undefined, 0, 2, 3].includes(s.rest)
       && (s.methods === undefined || (Array.isArray(s.methods) && s.methods.length > 0 && s.methods.every(v => METHODS.includes(v))));

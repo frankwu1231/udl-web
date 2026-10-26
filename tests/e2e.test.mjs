@@ -42,10 +42,12 @@ async function publish(settings) {
   }, { flow: 'seven', keep: [0, 1, 2, 3], support: 'full', labels: 'reveal', ai: true, reward: false, sound: false, hintGate: false, mode: 'self', goalKind: 'hints', confidence: true, selfAsk: true, badges: true, voice: false, rest: 0, handsOn: false, methods: ['mark', 'row', 'self'], zhuyin: false, textSize: 'normal', contrast: false, video: 'hint', difficulty: 'standard', convert: false, ...settings });
   await page.close(); assert.equal(status, 200);
 }
-async function student(shape, settings = {}, viewport = { width: 820, height: 1180 }) {
+async function student(shape, settings = {}, viewport = { width: 820, height: 1180 }, opts = {}) {
   await setup(); await publish(settings);
   const ctx = await browser.newContext({ viewport, acceptDownloads: true });
   const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(e.message));
+  if (opts.clock) await page.clock.install();   // 第 22 版：小幫手要等幾十秒，用假時鐘快轉
+  if (opts.init) await page.addInitScript(opts.init);
   await page.goto(`${base}/seven.html?shape=${shape}`); await page.waitForSelector('#start');
   const p = {
     page, errors,
@@ -738,4 +740,84 @@ test('新活動也可以問 AI：送出活動與步驟名稱，不送題目數�
   await p.page.click('#aiHint0'); await p.page.waitForTimeout(150);
   assert.match(await p.text('#aiMsg0'), /AI 現在不能用/);
   assert.deepEqual(p.errors, []);
+});
+
+// ---------- 第 22 版：學習小幫手 ----------
+const buddySays = page => page.evaluate(() => document.querySelector('#buddyBubble:not([hidden])')?.innerText ?? '');
+const buddyLog = page => page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16') || '[]').filter(r => r.event === '小幫手').map(r => r.action));
+
+test('小幫手：很久沒動先問要不要幫忙，按「好」打開提示；再等一樣久幫忙打開「我卡住了」；有動作就重新計時', { skip: skip || !distReady }, async () => {
+  const p = await student('rectangle', { buddyWait: 30, buddyVoice: false, support: 'faded' }, undefined, { clock: true });
+  await p.start();
+  assert.ok(await p.page.$('#buddy'), '解題頁有小幫手');
+  await p.page.clock.runFor(20000); assert.equal(await buddySays(p.page), '', '還沒到時間');
+  await p.page.click('h1'); await p.page.clock.runFor(20000);
+  assert.equal(await buddySays(p.page), '', '學生有動作就重新計時');
+  await p.page.clock.runFor(11000);
+  assert.match(await buddySays(p.page), /要不要我幫你/);
+  await p.page.click('#buddyBubble [data-buddy="0"]');
+  assert.match(await p.text('#hintText0'), /提示 1／3/, '按「好」打開第 1 層提示');
+  await p.page.clock.runFor(31000); assert.match(await buddySays(p.page), /要不要我幫你/);
+  await p.page.clock.runFor(30000);
+  assert.ok(await p.page.$('#stuckPanel0'), '再等一樣久就打開「我卡住了」');
+  assert.match(await buddySays(p.page), /我卡住了/);
+  const log = await buddyLog(p.page);
+  for (const a of ['主動問要不要幫忙', '接受提示', '主動打開我卡住了']) assert.ok(log.includes(a), a);
+  assert.deepEqual(p.errors, []);
+});
+
+test('小幫手：同一步答錯 2 次鼓勵、3 次打開「我卡住了」；答對會稱讚；小測驗只鼓勵不給提示；老師可以關掉', { skip: skip || !distReady }, async () => {
+  let p = await student('rectangle', { buddyVoice: false });
+  await p.start();
+  await p.choose('target', 'border'); await p.check(); assert.equal(await buddySays(p.page), '');
+  await p.choose('target', 'corner'); await p.check(); assert.match(await buddySays(p.page), /再試一次/);
+  await p.check(); assert.ok(await p.page.$('#stuckPanel0'), '答錯 3 次打開我卡住了');
+  await p.choose('target', 'inside'); await p.check(); assert.match(await buddySays(p.page), /答對了|做得好|做到了/);
+  assert.deepEqual(p.errors, []);
+
+  p = await student('rectangle', { buddyWait: 30, buddyVoice: false, mode: 'probe' }, undefined, { clock: true });
+  await p.start(); await p.page.clock.runFor(31000);
+  assert.match(await buddySays(p.page), /慢慢想/);
+  assert.equal(await p.page.$('#hintText0:not([hidden])'), null, '小測驗不給提示');
+
+  p = await student('rectangle', { buddy: false });
+  await p.start(); assert.equal(await p.page.$('#buddy'), null, '老師關掉就沒有小幫手');
+  assert.deepEqual(p.errors, []);
+});
+
+test('專心提醒：先問學生可不可以用鏡頭；轉頭或看不到臉幾秒後提醒、回來說歡迎；可以關掉鏡頭', { skip: skip || !distReady }, async () => {
+  const init = () => { window.__g = { face: true, turn: 0 }; window.areaBuddyTestDetector = { detect: () => window.__g }; };
+  const p = await student('rectangle', { attention: true, attentionSec: 3, buddyVoice: false }, undefined, { clock: true, init });
+  await p.start();
+  assert.match(await buddySays(p.page), /不會存起來/, '先說明並問學生');
+  assert.ok(!(await p.page.isVisible('#buddyCam')), '還沒同意，鏡頭不開');
+  await p.page.click('#buddyBubble [data-buddy="0"]'); await p.page.clock.runFor(500);
+  assert.ok(await p.page.isVisible('#buddyCam'), '同意後顯示「鏡頭開著」');
+  await p.page.evaluate(() => { window.__g = { face: true, turn: 0.8 }; });
+  await p.page.clock.runFor(2000); assert.doesNotMatch(await buddySays(p.page), /眼睛看這裡/, '轉頭不到 3 秒不提醒');
+  await p.page.clock.runFor(1500); assert.match(await buddySays(p.page), /眼睛看這裡/);
+  await p.page.evaluate(() => { window.__g = { face: true, turn: 0.1 }; });
+  await p.page.clock.runFor(500); assert.match(await buddySays(p.page), /歡迎回來/);
+  await p.page.evaluate(() => { window.__g = { face: false, turn: 0 }; });
+  await p.page.clock.runFor(5000); assert.doesNotMatch(await buddySays(p.page), /眼睛看這裡/, '兩次提醒至少隔 20 秒');
+  await p.page.clock.runFor(20000); assert.match(await buddySays(p.page), /眼睛看這裡/, '看不到臉也提醒');
+  // 臉的方向：鼻尖在兩眼中間是正面，偏到一邊是轉頭
+  const turn = await p.page.evaluate(() => { const pts = Array.from({ length: 478 }, () => ({ x: 0.5, y: 0.5 })); pts[33] = { x: 0.4 }; pts[263] = { x: 0.6 }; pts[1] = { x: 0.5 }; const a = areaBuddy.gaze(pts); pts[1] = { x: 0.59 }; const b = areaBuddy.gaze(pts); return [areaBuddy.looking(a), areaBuddy.looking(b), areaBuddy.looking(areaBuddy.gaze(undefined))]; });
+  assert.deepEqual(turn, [true, false, false]);
+  await p.page.click('#buddyCamOff'); assert.ok(!(await p.page.isVisible('#buddyCam')));
+  const log = await buddyLog(p.page);
+  for (const a of ['同意用鏡頭', '鏡頭開始', '專心提醒', '回來看螢幕', '學生關掉鏡頭']) assert.ok(log.includes(a), a);
+  assert.deepEqual(p.errors, []);
+});
+
+test('教師備課：學習小幫手與專心提醒的設定可以儲存', { skip: skip || !distReady }, async () => {
+  await setup(); await publish({ buddy: true, buddyWait: 60, buddyVoice: true, attention: false, attentionSec: 5 });
+  const page = await browser.newPage(); await page.goto(base + '/teacher.html'); await page.waitForSelector('#buddy');
+  assert.ok(await page.$eval('#buddy', e => e.checked), '預設開啟小幫手');
+  assert.ok(!(await page.$eval('#attention', e => e.checked)), '鏡頭預設關閉');
+  await page.selectOption('#buddyWait', '90'); await page.check('#attention'); await page.selectOption('#attentionSec', '8'); await page.uncheck('#buddyVoice');
+  await page.click('#saveDraft'); await page.waitForFunction(() => /儲存|草稿/.test(document.getElementById('status').textContent));
+  const s = await page.evaluate(async () => { const r = await (await fetch('/api/teacher/lessons')).json(); return r.draft.rectangle.settings; });
+  assert.deepEqual([s.buddy, s.buddyWait, s.buddyVoice, s.attention, s.attentionSec], [true, 90, false, true, 8]);
+  await page.close();
 });

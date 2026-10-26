@@ -92,7 +92,7 @@ test('learning settings persist, old lessons still load, invalid settings are re
   assert.deepEqual((await call('/api/lessons',{user:owner})).data.config.rectangle.settings,config.rectangle.settings);
   config.rectangle.settings.keep=[5];
   assert.equal((await call('/api/teacher/lessons',{method:'POST',user:owner,body:{kind:'draft',config}})).status,400);
-  for(const bad of [{methods:[]},{methods:['jump']},{mode:'auto'},{goalKind:'time'},{rest:5},{textSize:'huge'},{zhuyin:'yes'}]){   // 第 18 版設定也要檢查
+  for(const bad of [{methods:[]},{methods:['jump']},{mode:'auto'},{goalKind:'time'},{rest:5},{textSize:'huge'},{zhuyin:'yes'},{buddy:'yes'},{buddyWait:45},{attention:1},{attentionSec:10}]){   // 第 18 版設定也要檢查
     config.rectangle.settings={flow:'seven',support:'full',hintGate:false,difficulty:'standard',...bad};
     assert.equal((await call('/api/teacher/lessons',{method:'POST',user:owner,body:{kind:'draft',config}})).status,400,JSON.stringify(bad));
   }

@@ -108,6 +108,15 @@
       <label class="check"><input id="handsOn" type="checkbox" ${s.handsOn ? 'checked' : ''}>開始前提醒「先用方格紙或剪紙做做看」</label>
       <p class="subtle"><a href="hands-on.html" target="_blank" rel="noopener">🖨 列印實物操作卡 ↗</a></p>
 
+      <h2 id="sec-buddy">🤖 學習小幫手「小方」</h2>
+      <p class="subtle">解題時，右下角有一個小機器人。學生很久沒有動，它會問「要不要我幫你？」，學生按「好」就打開第 1 層提示；再過一樣久，會幫學生打開「我卡住了」。同一步答錯 2 次會鼓勵，答錯 3 次打開「我卡住了」。小測驗只鼓勵、不給提示。</p>
+      <label class="check"><input id="buddy" type="checkbox" ${s.buddy ? 'checked' : ''}>使用學習小幫手</label>
+      <label>學生同一步沒有動多久，小幫手才問要不要幫忙<select id="buddyWait"><option value="30">30 秒</option><option value="60">60 秒（建議）</option><option value="90">90 秒：給學生多一點思考時間</option></select></label>
+      <label class="check"><input id="buddyVoice" type="checkbox" ${s.buddyVoice ? 'checked' : ''}>小幫手把話唸出來</label>
+      <label class="check"><input id="attention" type="checkbox" ${s.attention ? 'checked' : ''}>📷 專心提醒：用鏡頭看學生的臉有沒有朝向螢幕，轉頭或離開太久就輕聲提醒</label>
+      <label>轉頭或離開幾秒才提醒<select id="attentionSec"><option value="3">3 秒</option><option value="5">5 秒（建議）</option><option value="8">8 秒</option></select></label>
+      <p class="subtle">鏡頭影像只在學生的電腦上判斷，不錄影、不存檔、不上傳；紀錄只有「提醒了幾次」。學生會先看到說明並按「好」才開鏡頭，隨時可以按「關掉」。低頭寫字不算分心。使用前請先取得家長同意。第一次使用時會從網路下載約 4 MB 的臉部模型。</p>
+
       <h2 id="sec-aids">閱讀輔助（預設值，學生上課時也可以自己切換）</h2>
       <label class="check"><input id="zhuyin" type="checkbox" ${s.zhuyin ? 'checked' : ''}>國字加注音</label>
       <label>字的大小<select id="textSize"><option value="normal">一般</option><option value="large">大</option><option value="xlarge">特大</option></select></label>
@@ -137,6 +146,7 @@
     $('difficulty').value = plugin && s.difficulty === 'custom' ? 'standard' : s.difficulty; $('lessonSupport').value = s.support; $('rate').value = s.rate || 'normal';
     if (!plugin) { $('flow').value = s.flow; $('labels').value = s.labels; }
     $('video').value = s.video || 'hint'; drawVideos(id);
+    $('buddyWait').value = String(s.buddyWait || 60); $('attentionSec').value = String(s.attentionSec || 5);
     $('mode').value = s.mode; $('goalKind').value = s.goalKind; $('rest').value = String(s.rest || 0); $('textSize').value = s.textSize || 'normal';
     document.querySelectorAll('[data-method]').forEach(e => e.onchange = () => { if (!document.querySelector('[data-method]:checked')) { e.checked = true; $('status').textContent = '至少要留一個方法。'; } });
     if (!plugin) {
@@ -167,7 +177,7 @@
       collect(); const src = sec(id).settings;
       const copy = target => { const keepOwn = { difficulty: target.settings?.difficulty || 'standard' }; if (isP(id) && target.problems) Object.assign(keepOwn, { flow: target.settings.flow, keep: target.settings.keep, labels: target.settings.labels, grid: target.settings.grid, ai: target.settings.ai, methods: target.settings.methods }); target.settings = { ...src, ...keepOwn }; };
       SHAPES.forEach(k => copy(config[k])); A.available().filter(a => isP(a.id)).forEach(a => copy(sec(a.id)));
-      $('status').textContent = '已把支持程度、教學階段、自我調整與閱讀輔助設定套用到全部活動（難度不變）。記得儲存或發布。';
+      $('status').textContent = '已把支持程度、教學階段、自我調整、學習小幫手與閱讀輔助設定套用到全部活動（難度不變）。記得儲存或發布。';
     };
   }
 
@@ -257,7 +267,8 @@
       mode: $('mode').value, goalKind: $('goalKind').value, confidence: $('confidence').checked, selfAsk: $('selfAsk').checked, badges: $('badges').checked,
       voice: $('voice').checked, rest: Number($('rest').value), video: $('video').value, handsOn: $('handsOn').checked, fading: val('fading', e => e.checked),
       methods: (() => { const m = [...document.querySelectorAll('[data-method]:checked')].map(e => e.dataset.method); return plugin && old.methods.includes('row') ? [...m, 'row'] : m; })(),
-      zhuyin: $('zhuyin').checked, textSize: $('textSize').value, contrast: $('contrast').checked, convert: val('convert', e => e.checked)
+      zhuyin: $('zhuyin').checked, textSize: $('textSize').value, contrast: $('contrast').checked, convert: val('convert', e => e.checked),
+      buddy: $('buddy').checked, buddyWait: Number($('buddyWait').value), buddyVoice: $('buddyVoice').checked, attention: $('attention').checked, attentionSec: Number($('attentionSec').value)
     };
     if (!d.settings.methods.length) d.settings.methods = ['mark', 'row', 'self'];
     return config;

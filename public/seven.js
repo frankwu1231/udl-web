@@ -1,5 +1,5 @@
 'use strict';
-// 學生解題頁（第 21 版：例題逐步留空；第 20 版：每步自問、我卡住了、鍵盤操作；第 19 版：學習地圖與新活動；第 18 版：自我調整循環、教學階段、閱讀輔助）
+// 學生解題頁（第 22 版：學習小幫手；第 21 版：例題逐步留空；第 20 版：每步自問、我卡住了、鍵盤操作；第 19 版：學習地圖與新活動；第 18 版：自我調整循環、教學階段、閱讀輔助）
 (() => {
   const $ = id => document.getElementById(id);
   const F = window.learningFlow, C = window.lessonContent;
@@ -93,12 +93,14 @@
     if (carry && carry.method && !methodOptions().some(o => o[0] === carry.method)) delete answers.method;
     orders.lines = F.shuffle(['A', 'B', 'C']);
     fixWorked();
+    window.areaBuddy?.newQuestion();
     phase = 'plan'; render();
   }
 
   function render() {
-    if (!type) return mapView();
-    if (phase === 'reflect') reflect(); else if (phase === 'plan') plan(); else solve();
+    if (!type) mapView();
+    else if (phase === 'reflect') reflect(); else if (phase === 'plan') plan(); else solve();
+    window.areaBuddy?.update();
   }
 
   // ---------- ① 看題與選方法 ----------
@@ -736,7 +738,8 @@
       else if (r.partial || (s === 3 && lineOk && r.code === 'second' && partial)) showStatus($('feedback' + s), '找到了！', true);
       else showStatus($('feedback' + s), r.msg);
     }
-    if (ok) { showStatus(groupBox(), phase === 'reflect' ? '單位答對了！' : '全部答對了，可以按「下一步」。', true); if (phase !== 'reflect') celebrate(); }
+    for (const s of list) if (msgs[s] && !msgs[s].partial && !msgs[s].soft) window.areaBuddy?.wrong(s);
+    if (ok) { showStatus(groupBox(), phase === 'reflect' ? '單位答對了！' : '全部答對了，可以按「下一步」。', true); if (phase !== 'reflect') celebrate(); window.areaBuddy?.right(list[list.length - 1]); }
     else if (partial) showStatus(groupBox(), '找到高了！再填它的長度。', true);
     else if (list.every(s => checked.has(s) || msgs[s]?.soft)) showStatus(groupBox(), '快好了！照上面的說明再做一步。');
     else showStatus(groupBox(), mode() === 'probe' ? '有地方要再看一下，再試一次。' : '有地方要再看一下。看上面的提示。');
@@ -969,7 +972,7 @@
   // ---------- 休息一下 ----------
   function openRest(why) {
     const d = $('restDialog'); if (!d || d.open) return;
-    log('休息', { why: why === 'time' ? '教師設定的休息時間' : '學生自己按休息' });
+    log('休息', { why: why === 'time' ? '教師設定的休息時間' : why === 'buddy' ? '小幫手提醒' : '學生自己按休息' });
     let left = 60; $('restLeft').textContent = left;
     clearInterval(openRest.timer);
     openRest.timer = setInterval(() => { left = Math.max(0, left - 1); $('restLeft').textContent = left; if (!left) clearInterval(openRest.timer); }, 1000);
@@ -1205,6 +1208,21 @@
     document.querySelectorAll('.map-card.locked').forEach(a => a.onclick = e => { e.preventDefault(); });
   }
 
+  // ---------- 第 22 版：學習小幫手（buddy.js）只透過這些函式讀狀態、做動作 ----------
+  function attachBuddy() {
+    window.areaBuddy?.attach({
+      settings: () => settings, mode, step,
+      phase: () => type ? phase : 'map',
+      steps: () => current().filter(s => !isWorked(s)),
+      passed: s => checked.has(s), hintLevel: s => hintLevel[s] || 0, stuckOpen: s => stuckOpen === s,
+      busy: () => hintPending !== false || videoOpen.size > 0,
+      hint: s => { if (hintLevel[s] < 3) showHint(s, true); },
+      stuck: s => { if (stuckOpen === s) return; stuckOpen = s; log('我卡住了', { activity: s + 1, by: '小幫手' }); rerenderKeep(); },
+      rest: () => openRest('buddy'),
+      log, voice: pickVoice
+    });
+  }
+
   async function init() {
     try {
       const session = await (await fetch('/api/session', { cache: 'no-store' })).json();
@@ -1221,7 +1239,7 @@
       loadRecords();
       if (P()) { settings = F.settings(L()); if (!settings.ai) $('apiSettings').hidden = true; pProblem = P().makeProblem(level(), index, Math.random); }
       else if (type) { settings = F.settings(L()); orders.lines = F.shuffle(['A', 'B', 'C']); if (!settings.ai) $('apiSettings').hidden = true; if (settings.mode === 'probe') probeDims = F.randomProblem(type, settings.difficulty === 'custom' ? 'standard' : settings.difficulty); }
-      applyReading(); render();
+      attachBuddy(); applyReading(); render();
     } catch (error) { shell('教材暫時無法載入', `<p>${esc(error.message)}</p><a href="/">返回入口</a>`); }
   }
   init();
