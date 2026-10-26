@@ -34,7 +34,7 @@
   const qKey = () => QUEUE_KEY + ':' + (cfg ? cfg.url.split('/s/')[1] || cfg.url : '');
   const queue = () => memQueue || load(localStorage, qKey(), []);
   const setQueue = q => {
-    if (!memQueue && keep(localStorage, qKey(), q)) { paintCount(); return; }
+    if (keep(localStorage, qKey(), q)) { memQueue = null; paintCount(); return; }   // 又存得進去了，就回到這台電腦的佇列
     // 這台電腦存不了（無痕模式、空間滿）：先留在這一頁，提醒老師不要關掉
     if (!memQueue) toast('這台電腦存不了紀錄，請先不要關掉這一頁，等上傳完成。');
     memQueue = q; paintCount();
@@ -63,7 +63,7 @@
   // 依位元組切批：最多 MAX_ROWS 筆、MAX_BYTES 位元組
   const bytes = x => new TextEncoder().encode(JSON.stringify(x)).length;
   function nextBatch(q) {
-    const batch = []; let size = 200;
+    const batch = []; let size = bytes({ key: cfg.key, rows: [] });
     for (const r of q) { const b = bytes(r) + 1; if (batch.length && (batch.length >= MAX_ROWS || size + b > MAX_BYTES)) break; batch.push(r); size += b; }
     return batch;
   }
@@ -94,7 +94,7 @@
     sending = true;
     try {
       // 同時開好幾個分頁時，一次只讓一個分頁上傳
-      if (navigator.locks && !keepalive) await navigator.locks.request('area-research-upload', { ifAvailable: true }, lock => lock ? upload(false) : null);
+      if (navigator.locks && !keepalive) await navigator.locks.request('area-research-upload', { ifAvailable: true }, lock => lock ? upload(false) : paintCount());
       else await upload(keepalive);
     } finally { sending = false; }
   }
@@ -147,7 +147,8 @@
 
   // ---------- 畫面 ----------
   function toast(text) {
-    let t = $('researchToast'); if (!t) { t = document.createElement('p'); t.id = 'researchToast'; t.className = 'research-toast'; t.setAttribute('role', 'status'); document.body.append(t); }
+    let t = $('researchToast'); if (!t) { t = document.createElement('p'); t.id = 'researchToast'; t.className = 'research-toast'; t.setAttribute('role', 'status'); }
+    (document.querySelector('dialog[open]') || document.body).append(t);   // 有視窗開著時放進視窗裡，才不會被蓋住
     t.textContent = text; t.hidden = false; clearTimeout(toast.timer); toast.timer = setTimeout(() => { t.hidden = true; }, 3500);
   }
   function paintCount(note) {
@@ -232,12 +233,14 @@
     window.areaBuddy?.newStudent(); bar(); api.changed();
   }
   // 換學生前：學生回答 3 題（可以跳過），上傳後讓老師選下一位；then：之後要做的事（預設是選下一位）
-  function endStudent(then = chooseWho) {
+  function endStudent(then = chooseWho, last = false) {
     const st = {};
     const qs = END_QS.filter(([k]) => k !== 'camFeel' || who.camera);
-    window.areaBuddy?.newStudent();   // 問問題時就先關鏡頭
+    window.areaBuddy?.pauseCamera?.();   // 問問題時就先關鏡頭；按「回去」會再打開，換人時才清掉同意
+    const go = last ? '' : '，換下一位';
     const d = dialog('researchEnd', `<h2>做完了！回答 ${qs.length} 個問題</h2>${qs.map(([k, q, items]) => `<h3 data-say>${q}</h3>${pickRow(k, items, '')}`).join('')}
-      <div class="actions"><button type="button" id="researchEndSave" class="primary">送出，換下一位</button><button type="button" id="researchEndSkip">跳過問題，換下一位</button><button type="button" id="researchEndBack">還沒做完，回去</button></div>`);
+      <div class="actions"><button type="button" id="researchEndSave" class="primary">送出${go}</button><button type="button" id="researchEndSkip">跳過問題${go}</button><button type="button" id="researchEndBack">還沒做完，回去</button></div>`);
+    d.oncancel = e => e.preventDefault();   // 不讓 Esc 關掉，場次才不會停在一半
     bindPicks(d, st);
     const next = () => { d.close(); closeStudent(); then(); };
     $('researchEndSave').onclick = () => {
@@ -249,7 +252,7 @@
     $('researchEndBack').onclick = () => { d.close(); api.changed(); };
   }
   // 每節課結束：最後一位學生先回答問題、結束場次，再請老師填短表
-  function classEnd() { const teacher = who.teacher; endStudent(() => teacherForm(teacher)); }
+  function classEnd() { const teacher = who.teacher; endStudent(() => teacherForm(teacher), true); }
   function teacherForm(teacher) {
     const st = {};
     const d = dialog('researchTeacher', `<h2>📝 這節課的教師回饋（${esc(teacher)}）</h2>${TEACHER_QS.map(([k, q, items]) => `<h3>${q}</h3>${pickRow(k, items, '')}`).join('')}

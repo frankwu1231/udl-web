@@ -1172,7 +1172,7 @@
   // ---------- 閱讀輔助：注音、字級、高對比（學生自己切換的會蓋過老師的預設） ----------
   // 換下一位學生：清掉上一位的紀錄、題號、逐步留空進度和閱讀輔助，從第 1 題重新開始
   function resetStudent() {
-    records = []; saveRecords(); cycle = 1; voices = {}; fadeFull = false; retryQ = false; carry = null;
+    records = []; saveRecords(); cycle = 1; index = 0; keepProblem = false; pProblem = null; voices = {}; fadeFull = false; retryQ = false; carry = null;
     try { sessionStorage.removeItem(FADE_KEY); sessionStorage.removeItem(AID_KEY); } catch { /* 略過 */ }
     applyReading();
     if (type) startQuestion(); else render();

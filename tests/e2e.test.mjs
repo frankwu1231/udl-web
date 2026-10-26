@@ -949,10 +949,17 @@ test('現場試用：做完一題學生選心情（記在完成的那一題）�
   assert.match(await buddySays(p.page), /鏡頭/, '下一位學生家長同意，小方才問鏡頭');
   await p.page.click('#buddyBubble [data-buddy="0"]'); await p.page.waitForTimeout(500);
   assert.ok(await p.page.isVisible('#buddyCam'), '鏡頭開著');
+  await p.page.click('#researchNext'); await p.page.waitForSelector('#researchEnd[open]');
+  assert.ok(!(await p.page.isVisible('#buddyCam')), '換學生的視窗一打開就先關鏡頭');
+  await p.page.keyboard.press('Escape');
+  assert.ok(await p.page.$('#researchEnd[open]'), 'Esc 不會關掉換學生的視窗');
+  await p.page.click('#researchEndBack'); await p.page.waitForTimeout(500);
+  assert.ok(await p.page.isVisible('#buddyCam'), '按錯了回去：同一位學生不用重新同意，鏡頭自動再開');
   await p.page.click('#researchClass');
   await p.page.waitForSelector('#researchEnd[open]');
   assert.ok(!(await p.page.isVisible('#buddyCam')), '一開始收尾就先關鏡頭');
   assert.ok(await p.page.$('#researchEnd [data-pick="camFeel"]'), '用過鏡頭才問鏡頭感受');
+  assert.equal(await p.text('#researchEndSkip'), '跳過問題', '下課時最後一位學生不寫「換下一位」');
   await p.page.click('#researchEndSkip');
   await p.page.waitForSelector('#researchTeacher[open]');
   for (const [g, v] of [['engage', '4'], ['timing', 'late'], ['buddyUseful', '5'], ['camAccurate', 'some'], ['assists', '1-2']]) await p.page.click(`#researchTeacher [data-pick="${g}"] [data-v="${v}"]`);

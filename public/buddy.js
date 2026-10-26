@@ -123,7 +123,7 @@
   const looking = g => g.face && g.turn < 0.45;
 
   function askCamera() {
-    if (!cfg.attention || cam || asked || where === 'map') return;
+    if (!cfg.attention || cam || asked || where === 'map' || document.querySelector('dialog.research-dialog[open]')) return;   // 老師選代號、學生回答問題時不開
     asked = true;   // 這一頁只問一次
     let saved = ''; try { saved = sessionStorage.getItem(CONSENT_KEY) || ''; } catch { /* 略過 */ }
     if (saved === 'no') return;
@@ -141,21 +141,26 @@
     const lm = await make('GPU').catch(() => make('CPU'));
     return { detect: () => gaze(lm.detectForVideo(video, performance.now()).faceLandmarks?.[0]), close: () => lm.close() };
   }
+  // 鏡頭啟動到一半就被關掉（例如換學生）：把已經拿到的鏡頭和模型關掉
+  const drop = c => { c.stream?.getTracks().forEach(t => t.stop()); try { c.detector?.close?.(); } catch { /* 略過 */ } };
   async function startCamera() {
     if (cam) return;
-    cam = { away: false, awaySince: 0, lastRemind: -Infinity, reminds: [] };
+    const mine = cam = { away: false, awaySince: 0, lastRemind: -Infinity, reminds: [] }, gone = () => cam !== mine;
     try {
       if (!window.areaBuddyTestDetector) {
-        cam.stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240, facingMode: 'user' }, audio: false });
-        cam.video = Object.assign(document.createElement('video'), { muted: true, playsInline: true, srcObject: cam.stream });
-        await cam.video.play();
+        mine.stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240, facingMode: 'user' }, audio: false });
+        if (gone()) return drop(mine);
+        mine.video = Object.assign(document.createElement('video'), { muted: true, playsInline: true, srcObject: mine.stream });
+        await mine.video.play();
+        if (gone()) return drop(mine);
       }
-      cam.detector = await makeDetector(cam.video);
-      if (!cam) return;   // 載入時已經關掉
+      mine.detector = await makeDetector(mine.video);
+      if (gone()) return drop(mine);
       root.querySelector('#buddyCam').hidden = false;
       api.log('小幫手', { action: '鏡頭開始' });
       cam.timer = setInterval(look, LOOK_EVERY);
     } catch (e) {
+      if (gone()) return drop(mine);
       stopCamera(); api.log('小幫手', { action: '鏡頭打不開', error: String(e && e.name || e) }); say(SAY.camFail, { mood: 'calm', ttl: 4000 });
     }
   }
@@ -219,6 +224,8 @@
     },
     // 換學生：鏡頭同意要重新問這位學生
     newStudent() { stopCamera(); asked = false; try { sessionStorage.removeItem(CONSENT_KEY); } catch { /* 略過 */ } hide(); wrongs = {}; lastWrong = {}; idle = 0; stage = 0; onStep = 0; },
+    // 暫停鏡頭（老師在換學生的視窗裡）：保留這位學生的同意，回來時自動再開
+    pauseCamera() { stopCamera(); asked = false; },
     newQuestion() { wrongs = {}; lastWrong = {}; idle = 0; stage = 0; onStep = 0; },
     // 測試與教師說明用
     gaze, looking, lastSaid: () => lastSpoken, idle: () => idle
