@@ -78,6 +78,10 @@ if(s.buddyWait!==undefined&&![30,60,90].includes(s.buddyWait))return false;
 if(s.attentionSec!==undefined&&![3,5,8].includes(s.attentionSec))return false;
 if(s.mode!==undefined&&!['self','together','demo','probe'].includes(s.mode))return false;
 if(s.goalKind!==undefined&&!['hints','firstTry'].includes(s.goalKind))return false;
+// 第 23 版：目標詢問頻率、這次做幾題、自訂步驟名稱
+if(s.srlAsk!==undefined&&!['first','every3','always','off'].includes(s.srlAsk))return false;
+if(s.lessonGoal!==undefined&&![0,3,5,8,10].includes(s.lessonGoal))return false;
+if(s.stepNames!==undefined&&!(s.stepNames&&typeof s.stepNames==='object'&&!Array.isArray(s.stepNames)&&Object.entries(s.stepNames).every(([k,v])=>/^[0-6]$/.test(k)&&typeof v==='string'&&v.trim().length<=12)))return false;
 if(s.textSize!==undefined&&!['normal','large','xlarge'].includes(s.textSize))return false;
 if(s.rest!==undefined&&![0,2,3].includes(s.rest))return false;
 if(s.video!==undefined&&!['off','hint','always'].includes(s.video))return false;

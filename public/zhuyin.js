@@ -48,9 +48,11 @@
       flush();
       const r = document.createElement('ruby'); r.className = 'zy'; r.append(ch);
       // 每個符號一個 span（直排），聲調另外標出來放在旁邊
-      const rt = document.createElement('rt'), neutral = z.startsWith('˙'), tone = /[ˊˇˋ]$/.test(z) ? z.at(-1) : '';
-      for (const c of z.replace(/^˙/, '').replace(/[ˊˇˋ]$/, '')) { const e = document.createElement('z-b'); e.textContent = c; rt.append(e); }
-      if (neutral) { const e = document.createElement('z-b'); e.className = 'zn'; e.textContent = '˙'; rt.prepend(e); }
+      // 第 23 版：符號一欄直排，聲調放在這一欄的右邊（不再疊在最後一個符號下面）
+      const rt = document.createElement('rt'), col = document.createElement('z-b'), neutral = z.startsWith('˙'), tone = /[ˊˇˋ]$/.test(z) ? z.at(-1) : '';
+      col.className = 'zc'; rt.append(col);
+      for (const c of z.replace(/^˙/, '').replace(/[ˊˇˋ]$/, '')) { const e = document.createElement('z-b'); e.textContent = c; col.append(e); }
+      if (neutral) { const e = document.createElement('z-b'); e.className = 'zn'; e.textContent = '˙'; col.prepend(e); }
       if (tone) { const e = document.createElement('z-b'); e.className = 'zt'; e.textContent = tone; rt.append(e); }
       r.append(rt); frag.append(r);
     }

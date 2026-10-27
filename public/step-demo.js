@@ -35,7 +35,7 @@
       { say: '面積是圖形裡面的大小，所以選這一個。', act: async P => { await P.tapChip(0); } }
     ];
     if (s === 1 && g && method === 'row') return [
-      { say: `一次點一排。每點一排，排尾的數字就加上 ${a}。`, stage: 'grid', act: async P => { for (let r = 0; r < b; r++) await P.markRow(r); } },
+      { say: `一次點一排。每點一排，排尾的數字就加上 ${a}。`, stage: 'grid', sum: true, act: async P => { for (let r = 0; r < b; r++) await P.markRow(r); } },
       { say: `最後的數字是 ${A}，一共有 ${A} 格。`, stage: 'keep+input', label: '一共有幾格？', act: async P => { await P.type(A); } }
     ];
     if (s === 1 && g) return [
@@ -45,7 +45,8 @@
     if (s === 1 && type === 'triangle') return [
       { say: '按按鈕，拿一片一樣大的三角形。', stage: 'figure', fig: { frame: 0 }, act: async P => { await P.point('.sd-fig'); await P.figure({ frame: 1 }); } },
       { say: '轉過來，拼在一起，變成平行四邊形。', act: async P => { await P.figure({ frame: 2 }); await wait(2600); } },
-      { say: '所以，一片是拼好圖形的一半。', stage: 'keep+chips', chips: opts(type, 'relation').map(x => x[1]), act: async P => { await P.tapChip(0); } }
+      { say: '數一數：藍色一片、橘色一片，一共 2 片。', stage: 'keep+chips', chips: ['1 片', '2 片', '3 片'], act: async P => { await P.tapChip(1); } },
+      { say: '拼好的是 2 片，所以 1 片是拼好圖形的一半。', stage: 'keep+chips', chips: opts(type, 'relation').map(x => x[1]), act: async P => { await P.tapChip(0); } }
     ];
     if (s === 1) return [
       { say: '沿著有直角記號的高，剪開。', stage: 'figure', fig: { frame: 0 }, act: async P => { await P.point('.sd-fig'); await P.figure({ frame: 1 }); } },
@@ -107,9 +108,24 @@
       async tapChip(i) { const c = body.querySelectorAll('.sd-chip')[i]; if (!c) return; await P.tap(c); c.classList.add('on'); await wait(500 * k()); },
       async markCell(i, n) { const c = body.querySelectorAll('.sd-cell')[i]; await P.tap(c); c.classList.add('on'); c.textContent = n; },
       async countCell(i, n) { const c = body.querySelectorAll('.sd-cell')[i]; await P.point(c); c.classList.add('count'); c.textContent = n; await wait(200 * k()); },
+      // 第 23 版：一排的格子一格一格亮起來，排尾寫上加到現在的總數，字幕顯示「6 + 6 = 12」
       async markRow(r) {
         const cells = [...body.querySelectorAll('.sd-cell')].slice(r * ex[0], (r + 1) * ex[0]);
-        await P.tap(cells[0]); cells.forEach(c => c.classList.add('on')); cells.at(-1).textContent = (r + 1) * ex[0]; await wait(350 * k());
+        await P.tap(cells[0]);
+        for (const c of cells) { c.classList.add('on'); await wait(160 * k()); }
+        cells.at(-1).textContent = (r + 1) * ex[0];
+        const sum = $('.sd-sum'); if (sum) sum.textContent = r ? `${Array(r + 1).fill(ex[0]).join(' + ')} = ${(r + 1) * ex[0]}` : `第 1 排：${ex[0]} 格`;
+        await wait(500 * k());
+      },
+      els: sel => [...body.querySelectorAll(sel)],
+      // 第 23 版：指向一整塊（例如圖形 A 的所有格子），並讓那一塊亮起來，不會指在兩塊中間
+      async pointGroup(sel) {
+        const list = P.els(sel); if (!list.length) return;
+        const rs = list.map(e => e.getBoundingClientRect()), s = $('.sd-stage').getBoundingClientRect();
+        const l = Math.min(...rs.map(r => r.left)), t = Math.min(...rs.map(r => r.top)), r = Math.max(...rs.map(r => r.right)), b = Math.max(...rs.map(r => r.bottom));
+        body.querySelectorAll('.sd-focus').forEach(e => e.classList.remove('sd-focus')); list.forEach(e => e.classList.add('sd-focus'));
+        finger.style.left = ((l + r) / 2 - s.left - 10) + 'px'; finger.style.top = ((t + b) / 2 - s.top - 4) + 'px';
+        finger.classList.add('show'); await wait(900 * k());
       },
       async pointAll(sel) { const list = [...body.querySelectorAll(sel)].slice(0, 4); for (const el of list) await P.tap(el); },
       async type(v) { const box = body.querySelector('.sd-input b'); if (!box) return; await P.tap(box); for (const ch of String(v)) { box.textContent += ch; await wait(220 * k()); } box.classList.add('ok'); },
@@ -142,7 +158,7 @@
       if (!keep) {
         body.innerHTML = '';
         if (st.includes('figure')) { figOpts = { ...(scene.fig || {}) }; body.insertAdjacentHTML('beforeend', '<div class="sd-fig"></div>'); drawFigure(); }
-        if (st === 'grid') body.insertAdjacentHTML('beforeend', gridHtml(scene.edge));
+        if (st === 'grid') body.insertAdjacentHTML('beforeend', gridHtml(scene.edge) + (scene.sum ? '<p class="sd-sum" aria-hidden="true"></p>' : ''));
         if (st === 'equation') body.insertAdjacentHTML('beforeend', `<div class="sd-eq"><b></b> ${type === 'triangle' ? '×' : '×'} <b></b>${type === 'triangle' ? ' ÷ 2' : ''}</div>`);
         if (st === 'calc') body.insertAdjacentHTML('beforeend', '<p class="sd-calc"></p>');
       } else if (scene.fig) { figOpts = { ...figOpts, ...scene.fig }; drawFigure(); }

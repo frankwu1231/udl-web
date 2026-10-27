@@ -37,8 +37,14 @@
     buddyWait: 60,          // 同一步幾秒沒有動，小幫手才問要不要幫忙：30｜60｜90
     buddyVoice: true,       // 小幫手把話唸出來
     attention: false,       // 鏡頭專心提醒（學生按「好」才開；影像只在本機，不上傳）
-    attentionSec: 5         // 轉頭或離開幾秒才提醒：3｜5｜8
+    attentionSec: 5,        // 轉頭或離開幾秒才提醒：3｜5｜8
+    // 第 23 版：依第 19 版教師回饋
+    srlAsk: 'first',        // 目標和把握什麼時候問：first 每個活動的第一題｜every3 每 3 題｜always 每一題｜off 不問（只問「你想先怎麼做」）
+    lessonGoal: 0,          // 這次要做幾題（0＝不限）；畫面顯示「第 2／5 題」，做完提醒休息
+    stepNames: {}           // 自訂步驟名稱：{ '0': '看題目', … }，每個最多 12 字
   };
+  const SRL_ASK = ['first', 'every3', 'always', 'off'], LESSON_GOALS = [0, 3, 5, 8, 10];
+  const validNames = n => n === undefined || (!!n && typeof n === 'object' && !Array.isArray(n) && Object.entries(n).every(([k, v]) => /^[0-6]$/.test(k) && typeof v === 'string' && v.trim().length <= 12));
   const METHODS = ['mark', 'row', 'self'];
   const MODES = ['self', 'together', 'demo', 'probe'];
 
@@ -49,6 +55,9 @@
     if (!Array.isArray(s.methods) || !s.methods.some(m => METHODS.includes(m))) s.methods = defaults.methods.slice();
     s.methods = METHODS.filter(m => s.methods.includes(m));
     if (!MODES.includes(s.mode)) s.mode = 'self';
+    if (!SRL_ASK.includes(s.srlAsk)) s.srlAsk = defaults.srlAsk;
+    if (!LESSON_GOALS.includes(s.lessonGoal)) s.lessonGoal = 0;
+    s.stepNames = validNames(s.stepNames) && s.stepNames ? { ...s.stepNames } : {};
     delete s.breaks;
     return s;
   }
@@ -77,7 +86,8 @@
       && [undefined, 30, 60, 90].includes(s.buddyWait) && [undefined, 3, 5, 8].includes(s.attentionSec)
       && [undefined, ...MODES].includes(s.mode) && [undefined, 'hints', 'firstTry'].includes(s.goalKind)
       && [undefined, 'off', 'hint', 'always'].includes(s.video) && [undefined, 'normal', 'large', 'xlarge'].includes(s.textSize) && [undefined, 0, 2, 3].includes(s.rest)
-      && (s.methods === undefined || (Array.isArray(s.methods) && s.methods.length > 0 && s.methods.every(v => METHODS.includes(v))));
+      && (s.methods === undefined || (Array.isArray(s.methods) && s.methods.length > 0 && s.methods.every(v => METHODS.includes(v))))
+      && [undefined, ...SRL_ASK].includes(s.srlAsk) && [undefined, ...LESSON_GOALS].includes(s.lessonGoal) && validNames(s.stepNames);
   }
 
   // 小測驗用：在難度範圍內隨機出題（每次不同）
@@ -113,5 +123,5 @@
     }));
   }
 
-  window.learningFlow = { defaults, OPTIONAL, METHODS, MODES, randomProblem, settings, pages, active, hasActivity, targetInPlan, unitInReflect, valid, shuffle, preset };
+  window.learningFlow = { defaults, OPTIONAL, METHODS, MODES, SRL_ASK, LESSON_GOALS, randomProblem, settings, pages, active, hasActivity, targetInPlan, unitInReflect, valid, shuffle, preset };
 })();

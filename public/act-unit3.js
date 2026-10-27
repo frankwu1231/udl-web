@@ -15,6 +15,12 @@
     const label = p.square ? `<text x="${w * U40 / 2}" y="-10" text-anchor="middle" class="ac-len">邊長 ${n} 公分</text>` : `<text x="${w * U40 / 2}" y="-10" text-anchor="middle" class="ac-len">${p.a} 公分</text><text x="${w * U40 + 10}" y="${h * U40 / 2 + 6}" class="ac-len">${opts.showB ? n + ' 公分' : '？'}</text>`;
     return gridSVG({ cols: Math.max(w, 1), rows: Math.max(h, 1), cells, outline: outlineOf(rectCells(w, h)), extra: label, pad: 60, aria: p.square ? `正方形，邊長 ${n} 公分，${n * n} 格` : `一排 ${p.a} 格，排了 ${n} 排，一共 ${p.a * n} 格` });
   }
+  // 示範：沿著最左邊一行，由上往下一排一排數，最後指向答案
+  async function countRowsDemo(D, ex) {
+    const p = ex.problem, w = p.square ? p.b : p.a, cells = D.els('.sd-pfig rect.ac-tile, .sd-pfig rect.ac-a');
+    for (let r = 0; r < p.b; r++) { const c = cells[r * w]; if (!c) break; await D.tap(c); c.classList.add('sd-focus'); }
+    await D.pointAll('.sd-ans input.sd-filled');
+  }
   const invTotal = ctx => ctx.problem.square ? (ctx.state.n || 1) ** 2 : ctx.problem.a * (ctx.state.n || 1);
   A.register('inverse', {
     methods: genericMethods,
@@ -34,12 +40,13 @@
           <p class="ac-big" data-read data-say>現在一共 ${invTotal(ctx)} 格，要剛好 ${ctx.problem.area} 格。</p>`,
         bind: ctx => { const ch = d => { ctx.state.n = Math.max(1, Math.min(10, (ctx.state.n || 1) + d)); ctx.answers.rows = String(ctx.state.n); ctx.invalidate(1); ctx.rerender(); }; const m = document.getElementById('moreRow'), l = document.getElementById('lessRow'); if (m) m.onclick = () => ch(1); if (l) l.onclick = () => ch(-1); },
         check: ctx => { const t = invTotal(ctx), area = ctx.problem.area; return t === area ? null : { code: 'rows', msg: t < area ? `還差 ${area - t} 格，再加一些。` : `多了 ${t - area} 格，拿掉一些。` }; },
-        solve: ctx => { ctx.state.n = ctx.problem.b; ctx.answers.rows = String(ctx.problem.b); }, say: ex => ex.problem.square ? `${ex.problem.b} 乘 ${ex.problem.b} 剛好是 ${ex.problem.area}。` : `排了 ${ex.problem.b} 排，剛好 ${ex.problem.area} 格。` },
+        solve: ctx => { ctx.state.n = ctx.problem.b; ctx.answers.rows = String(ctx.problem.b); }, demo: countRowsDemo, say: ex => ex.problem.square ? `${ex.problem.b} 乘 ${ex.problem.b} 剛好是 ${ex.problem.area}。` : `排了 ${ex.problem.b} 排，剛好 ${ex.problem.area} 格。` },
       { title: '寫邊長', ids: ['side'], hints: ['排了幾排，邊長就是幾公分。', '看圖上的排數。', ''].map(h => h || '一排一格是 1 公分，幾排就是幾公分。'),
         think: '排了幾排，這條邊就是幾公分。', together: '一起想：排了幾排？',
         figure: ctx => invFig(ctx), answer: ctx => fieldHtml(ctx, 'side', ctx.problem.square ? '邊長是幾公分？' : '寬是幾公分？', 2),
         check: ctx => { const v = num(ctx.answers.side); return v === null ? { code: 'side', msg: '請填邊長。' } : v === ctx.problem.b ? null : { code: 'side', msg: v === ctx.problem.area ? '這是面積。要填邊長（排數）。' : '看排了幾排，再填一次。' }; },
-        solve: ctx => { ctx.state.n = ctx.problem.b; ctx.answers.side = String(ctx.problem.b); }, say: ex => `邊長是 ${ex.problem.b} 公分。` },
+        solve: ctx => { ctx.state.n = ctx.problem.b; ctx.answers.side = String(ctx.problem.b); }, demo: countRowsDemo,
+        say: ex => ex.problem.square ? `排了 ${ex.problem.b} 排，邊長是 ${ex.problem.b} 公分。` : `從上往下數，排了 ${ex.problem.b} 排，寬是 ${ex.problem.b} 公分。` },
       { title: '用乘法檢查', ids: ['product'], hints: ['把兩條邊乘起來。', '乘出來要等於面積。', ''].map(h => h || '長 × 寬 = 面積，乘乘看對不對。'),
         think: '兩條邊乘起來，要等於面積。', together: '一起乘：等於面積嗎？',
         figure: ctx => invFig(ctx, { showB: true }),
@@ -61,27 +68,40 @@
     const cells = rectCells(w, h).slice(0, used).map((c, i) => ({ x: c[0], y: c[1], cls: i < N ? 'ac-tile' : 'ac-b' }));
     return gridSVG({ cols: Math.max(w, 1), rows: Math.max(h, 1), cells, u: 32, outline: outlineOf(rectCells(w, h), 32), pad: 20, aria: `一排 ${w} 格，${h} 排，一共 ${w * h} 格` });
   }
+  // 排好的長方形畫成小圖；轉過來的和排過的一樣時，把兩個疊在一起給學生看
+  const mini = (w, h, u = 10) => `<svg class="ac-mini" width="${w * u + 2}" height="${h * u + 2}" viewBox="-1 -1 ${w * u + 2} ${h * u + 2}" aria-hidden="true">${rectCells(w, h).map(([x, y]) => `<rect x="${x * u}" y="${y * u}" width="${u}" height="${u}"/>`).join('')}</svg>`;
+  const foundPics = ctx => (ctx.state.found || []).map(k => { const [a, b] = (ctx.state.seen || {})[k] || k.split('×').map(Number).reverse(); return `<figure class="ac-found">${mini(a, b)}<figcaption>一排 ${a} 格，${b} 排</figcaption></figure>`; }).join('');
+  function dupNote(ctx, s) {
+    const w = ctx.state.w || 1, h = ctx.state.h || 1, k = pk(w, h), prev = (ctx.state.seen || {})[k];
+    if (!s || w * h !== ctx.problem.n || !prev || ctx.state.lastNew === s + ':' + k || !(ctx.state.found || []).includes(k)) return '';
+    if (prev[0] === w) return `<p class="ac-dup-note" data-read data-say>這個已經排過了，換一種。</p>`;
+    const u = 10, box = (a, b, cls) => `<svg width="${a * u + 6}" height="${b * u + 6}" viewBox="-3 -3 ${a * u + 6} ${b * u + 6}" aria-hidden="true">${cls.map(c => `<rect class="${c}" width="${a * u}" height="${b * u}"/>`).join('')}</svg>`;
+    return `<div class="ac-dup"><div class="ac-dup-pics" role="img" aria-label="你排的轉過來，和排過的疊在一起，一樣大"><figure>${box(prev[0], prev[1], ['old'])}<figcaption>排過的</figcaption></figure><figure>${box(w, h, ['mine'])}<figcaption>你排的</figcaption></figure><span aria-hidden="true">轉過來 →</span><figure>${box(prev[0], prev[1], ['old', 'now'])}<figcaption>疊在一起</figcaption></figure></div>
+      <p data-read data-say>你排的轉過來，和排過的完全疊在一起，所以是同一種。換一種。</p></div>`;
+  }
   function arrControls(ctx, s) {
     const w = ctx.state.w || 1, h = ctx.state.h || 1, N = ctx.problem.n;
     return `<div class="ac-stepper"><span data-read>一排幾格</span>${btn(`wl${s}`, '➖', 'aria-label="一排少一格"')}<b>${w}</b>${btn(`wm${s}`, '➕', 'aria-label="一排多一格"')}</div>
       <div class="ac-stepper"><span data-read>排幾排</span>${btn(`hl${s}`, '➖', 'aria-label="少一排"')}<b>${h}</b>${btn(`hm${s}`, '➕', 'aria-label="多一排"')}</div>
-      <p class="ac-big" data-read data-say>用了 ${w * h} 格（要剛好 ${N} 格）。</p>${(ctx.state.found || []).length ? `<p data-read data-say>找到了：${ctx.state.found.join('、')}</p>` : ''}`;
+      <p class="ac-big" data-read data-say>用了 ${w * h} 格（要剛好 ${N} 格）。</p>${dupNote(ctx, s)}${(ctx.state.found || []).length ? `<p data-read data-say>已經排出 ${ctx.state.found.length} 種（共 ${pairs(N).length} 種）：</p><div class="ac-found-list">${foundPics(ctx)}</div>` : ''}`;
   }
   function arrBind(ctx, s) {
-    const set = (k, d) => { ctx.state[k] = Math.max(1, Math.min(ctx.problem.n, (ctx.state[k] || 1) + d)); ctx.answers['shape' + s] = pk(ctx.state.w || 1, ctx.state.h || 1); ctx.invalidate(s); ctx.rerender(); };
+    const set = (k, d) => { ctx.state[k] = Math.max(1, Math.min(ctx.problem.n, (ctx.state[k] || 1) + d)); ctx.state.lastNew = ''; ctx.answers['shape' + s] = pk(ctx.state.w || 1, ctx.state.h || 1); ctx.invalidate(s); ctx.rerender(); };
     [['wl', 'w', -1], ['wm', 'w', 1], ['hl', 'h', -1], ['hm', 'h', 1]].forEach(([b, k, d]) => { const e = document.getElementById(b + s); if (e) e.onclick = () => set(k, d); });
   }
   function arrCheck(ctx, s) {
     const w = ctx.state.w || 1, h = ctx.state.h || 1, N = ctx.problem.n;
     if (w * h !== N) return { code: 'shape', msg: w * h < N ? `還差 ${N - w * h} 格。` : `多了 ${w * h - N} 格。` };
-    const f = ctx.state.found = ctx.state.found || [], k = pk(w, h);
+    const f = ctx.state.found = ctx.state.found || [], k = pk(w, h), seen = ctx.state.seen = ctx.state.seen || {};
     if (s === 1 && f[0] === k) return { code: 'same', msg: '這個和第一個一樣（轉過來也算一樣），排一個不一樣的。' };
-    if (!f.includes(k)) f.push(k);
+    const fresh = !f.includes(k) || ctx.state.lastNew === s + ':' + k;   // 同一次檢查可能被呼叫兩次
+    if (!f.includes(k)) { f.push(k); seen[k] = [w, h]; ctx.state.lastNew = s + ':' + k; }
+    if (s === 2) { const all = pairs(N).length; if (f.length < all) return fresh ? { code: 'more', soft: true, msg: `排出第 ${f.length} 種了！還有 ${all - f.length} 種，換一排的格數再試。` } : { code: 'same', msg: `這一種排過了（轉過來也一樣）。還有 ${all - f.length} 種，換一種。` }; }
     return null;
   }
   A.register('arrange', {
     methods: genericMethods,
-    makeProblem(level, i) { const n = pick(ARR[level] || ARR.standard, i); return { n, prompt: `用 ${n} 個 1 平方公分的小方塊，可以排成哪些長方形？` }; },
+    makeProblem(level, i) { const n = pick(ARR[level] || ARR.standard, i); return { n, prompt: `用 ${n} 個 1 平方公分的小方塊，排出 ${pairs(n).length} 種不一樣的長方形。（轉過來的算同一種）` }; },
     planFigure: ctx => `<p class="ac-big" data-read data-say>${ctx.problem.n} 個小方塊 ${'🟦'.repeat(Math.min(ctx.problem.n, 12))}${ctx.problem.n > 12 ? '…' : ''}</p>`,
     steps: [
       { title: '排一個長方形', ids: ['shape0'], hints: ['用按鈕改「一排幾格」和「排幾排」。', '一排幾格 × 排幾排，要剛好等於小方塊的數量。', '先試一排 1 格，或一排 2 格，看要排幾排。'],
@@ -92,13 +112,12 @@
         think: '老師換一個一排的格數，再試一次。', together: '一起試：換一排幾格？',
         figure: ctx => arrFig(ctx), answer: ctx => arrControls(ctx, 1), bind: ctx => arrBind(ctx, 1), check: ctx => arrCheck(ctx, 1),
         solve: ctx => { const l = pairs(ctx.problem.n), first = ctx.state.found && ctx.state.found[0]; const p = l.find(x => pk(x[0], x[1]) !== first) || l[0]; ctx.state.w = p[1]; ctx.state.h = p[0]; ctx.state.found = [...new Set([...(ctx.state.found || [pk(...l.at(-1))]), pk(p[0], p[1])])]; ctx.answers.shape1 = pk(p[0], p[1]); }, say: ex => `再換一種排法，格數一樣是 ${ex.problem.n} 格。` },
-      { title: '一共有幾種', ids: ['kinds'], hints: ['從一排 1 格開始，一個一個試。', '轉過來的算同一種。', '試到一排的格數比排數多，就試完了。'],
-        think: '老師從一排 1 格開始，一個一個試。', together: '一起數：一共有幾種？',
+      { title: '把每一種都排出來', ids: ['shape2'], hints: ['從一排 1 格開始，一個一個試。', '轉過來的算同一種：排好後看下面的小圖有沒有一樣的。', '一排 1 格、2 格、3 格……能剛好排完的就是一種。'],
+        think: '老師從一排 1 格開始，一個一個試。', together: '一起排：還有哪一種沒排過？',
         figure: ctx => arrFig(ctx),
-        answer: ctx => `<p data-read data-say>可以繼續用上面的按鈕試。</p>${arrControls(ctx, 2)}${fieldHtml(ctx, 'kinds', `${ctx.problem.n} 格一共可以排出幾種不同的長方形？`, 2)}`,
-        bind: ctx => arrBind(ctx, 2),
-        check: ctx => { const v = num(ctx.answers.kinds), k = pairs(ctx.problem.n).length; return v === null ? { code: 'kinds', msg: '請填幾種。' } : v === k ? null : { code: 'kinds', msg: v > k ? '轉過來的算同一種，再數一次。' : '還有別的排法，從一排 1 格開始試。' }; },
-        solve: ctx => { ctx.answers.kinds = String(pairs(ctx.problem.n).length); ctx.state.found = pairs(ctx.problem.n).map(p => pk(...p)); }, say: ex => `一共有 ${pairs(ex.problem.n).length} 種：${pairs(ex.problem.n).map(p => p[0] + '×' + p[1]).join('、')}。` },
+        answer: ctx => `<p data-read data-say>排好一種就按「檢查」，排出全部 ${pairs(ctx.problem.n).length} 種。</p>${arrControls(ctx, 2)}`,
+        bind: ctx => arrBind(ctx, 2), check: ctx => arrCheck(ctx, 2),
+        solve: ctx => { const l = pairs(ctx.problem.n); ctx.state.found = l.map(p => pk(...p)); ctx.state.seen = Object.fromEntries(l.map(p => [pk(...p), [p[1], p[0]]])); ctx.state.w = l[0][1]; ctx.state.h = l[0][0]; ctx.answers.shape2 = pk(...l[0]); }, say: ex => `一共有 ${pairs(ex.problem.n).length} 種：${pairs(ex.problem.n).map(p => p[0] + '×' + p[1]).join('、')}。` },
       { title: '想一想', ids: ['concl'], hints: ['每一種都用了幾格？', '格數一樣，面積呢？', '排法不同，面積一樣。'],
         think: '每一種都用一樣多的格子，面積一樣。', together: '一起想：面積有沒有變？',
         figure: ctx => arrFig(ctx),
@@ -117,7 +136,7 @@
   function compFig(ctx, opts = {}) {
     const { W, H, cw, ch } = ctx.problem, cut = opts.cut, gridOn = ctx.level === 'easy' || opts.grid;
     const cells = [];
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { if (x >= W - cw && y < ch) continue; const inA = cut === 'v' ? x < W - cw : cut === 'h' ? y < ch : false; cells.push({ x, y, cls: cut ? (inA ? 'ac-a' : 'ac-b') : 'ac-fill' }); }
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { if (x >= W - cw && y < ch) continue; const inA = cut === 'v' ? x < W - cw : cut === 'h' ? y < ch : false; cells.push({ x, y, cls: cut ? (inA ? 'ac-a' : 'ac-b' + (opts.split ? ' ac-split-' + cut : '')) : 'ac-fill' }); }
     const u = U40, L = (x, y, t, a = 'middle') => `<text x="${x}" y="${y}" text-anchor="${a}" class="ac-len">${t}</text>`;
     let extra = L(W * u / 2, H * u + 26, `${W} 公分`) + L(-10, H * u / 2 + 6, `${H} 公分`, 'end') + L((W - cw) * u / 2, -12, `${W - cw} 公分`) + L(W * u + 10, (ch + (H - ch) / 2) * u + 6, `${H - ch} 公分`, 'start');
     if (opts.inner) extra += L((W - cw / 2) * u, ch * u - 10, `${cw}`) + L((W - cw) * u + 8, ch * u / 2 + 6, `${ch}`, 'start');
@@ -147,10 +166,10 @@
     steps: [
       { title: '怎麼切', ids: ['cut'], hints: ['切開後，每一塊都要是長方形。', '看看哪幾條線切完是兩個長方形。', '直的或橫的切都可以；斜的切會變成三角形。'],
         think: '老師切一刀，讓它變成兩個長方形。', together: '一起想：哪一條線切完是兩個長方形？',
-        figure: ctx => compFig(ctx, { choices: true }),
-        answer: ctx => ctx.choice('cut', '要沿著哪一條線切？（也可以點圖上的線）', [['v', '① 直的切'], ['h', '② 橫的切'], ['d', '③ 斜的切']], true),
+        figure: ctx => compFig(ctx, { choices: true, cut: ['v', 'h'].includes(ctx.answers.cut) ? ctx.answers.cut : undefined, split: true }),
+        answer: ctx => `<p data-read data-say>沿著一條虛線切成兩個長方形。選好後，圖會切開給你看。</p>` + ctx.choice('cut', '要沿著哪一條虛線切？（也可以點圖上的線）', [['v', '① 直的切'], ['h', '② 橫的切'], ['d', '③ 斜的切']], true),
         bind: ctx => document.querySelectorAll('#figure0 [data-cut]').forEach(el => el.onclick = () => { ctx.answers.cut = el.dataset.cut; ctx.invalidate(0); ctx.rerender(); }),
-        check: ctx => !ctx.answers.cut ? { code: 'cut', msg: '選一條線。' } : ctx.answers.cut === 'd' ? { code: 'cut', msg: '斜著切會變成三角形，不好算。換直的或橫的。' } : null,
+        check: ctx => !ctx.answers.cut ? { code: 'cut', msg: '選一條虛線。' } : ctx.answers.cut === 'd' ? { code: 'cut', msg: '斜著切會變成三角形，不好算。換直的或橫的。' } : null,
         solve: ctx => { ctx.answers.cut = 'v'; }, say: () => '直的切一刀，變成兩個長方形。' },
       pieceStep(0), pieceStep(1),
       { title: '加起來', ids: ['total'], hints: ['兩塊的面積加起來。', '第一塊 + 第二塊。', '整個圖形 = 兩塊合起來。'],
@@ -174,6 +193,11 @@
   const ITEMS = [['📮', '一張郵票', 'cm2'], ['📘', '課本的封面', 'cm2'], ['🗒️', '一張便利貼', 'cm2'], ['📱', '手機螢幕', 'cm2'], ['🏫', '教室的地板', 'm2'], ['🏀', '籃球場', 'm2'], ['⬛', '教室的黑板', 'm2'], ['🛏️', '房間的地板', 'm2']];
   const EST = [['🏫', '教室的地板', ['6', '60', '600'], '60'], ['🏀', '籃球場', ['4', '40', '400'], '400'], ['🛏️', '家裡一個房間的地板', ['1', '10', '100'], '10']];
   const CALC = { easy: [[3, 2], [4, 2], [5, 2]], standard: [[6, 4], [8, 5], [7, 3]], challenge: [[12, 8], [15, 6], [20, 9]] };
+  // 1 平方公尺 ≈ 4 張學生課桌併在一起（對照圖）
+  const desks = () => `<figure class="ac-desks"><svg viewBox="-30 -30 300 300" width="220" height="220" role="img" aria-label="4 張課桌併在一起，大約是 1 平方公尺">
+    ${[[0, 0], [120, 0], [0, 120], [120, 120]].map(([x, y]) => `<g transform="translate(${x + 4} ${y + 4})"><rect width="112" height="112" rx="6" class="desk"/><text x="56" y="64" text-anchor="middle">課桌</text></g>`).join('')}
+    <rect width="240" height="240" class="m2"/><text x="120" y="-10" text-anchor="middle">約 1 公尺</text><text x="-10" y="120" text-anchor="middle" transform="rotate(-90 -10 120)">約 1 公尺</text></svg>
+    <figcaption data-read data-say>4 張課桌併在一起，大約是 1 平方公尺。</figcaption></figure>`;
   function unitStep() {
     return { title: '選單位', ids: ['u0', 'u1', 'u2'], hints: ['想一想：東西很小，還是很大？', '小的東西用平方公分，很大的地方用平方公尺。', '桌面以下的大小用平方公分；地板、球場用平方公尺。'],
       think: '小的東西用平方公分，大的地方用平方公尺。', together: '一起想：它很小還是很大？',
@@ -184,16 +208,16 @@
   A.register('squareMeter', {
     methods: [['mark', '✋ 先用報紙拼拼看'], ['self', '🧠 先自己想，需要時看提示']],
     makeProblem(level, i, random = Math.random) { const items = U.shuffle(ITEMS, random); const pickd = [items.find(x => x[2] === 'cm2'), items.find(x => x[2] === 'm2'), items.filter(x => x[2] === 'cm2')[1] || items[2]]; return { items: U.shuffle(pickd, random), est: pick(EST, i), calc: pick(CALC[level] || CALC.standard, i), prompt: '認識「平方公尺」：比平方公分大很多的面積單位。' }; },
-    planFigure: () => `<div class="ac-m2"><div class="ac-m2-sq" role="img" aria-label="邊長 1 公尺的正方形"><span>1 平方公尺</span></div><p data-read data-say>邊長 1 公尺（100 公分）的正方形，大約是 4 張全開報紙拼起來。</p></div>`,
+    planFigure: () => `<div class="ac-m2"><div class="ac-m2-sq" role="img" aria-label="邊長 1 公尺的正方形"><span>1 平方公尺</span></div><p data-read data-say>邊長 1 公尺（100 公分）的正方形，大約是 4 張全開報紙拼起來。</p>${desks()}</div>`,
     steps: [
       { title: '認識 1 平方公尺', ids: ['what'], hints: ['1 平方公分是邊長 1 公分的正方形。', '把「公分」換成「公尺」想想看。', '邊長 1 公尺的正方形，面積是 1 平方公尺。'],
         think: '邊長 1 公尺的正方形，面積是 1 平方公尺。', together: '一起想：1 平方公尺有多大？',
-        figure: () => `<div class="ac-m2"><div class="ac-m2-sq"><span>1 公尺 × 1 公尺</span></div></div>`,
+        figure: () => `<div class="ac-m2"><div class="ac-m2-sq"><span>1 公尺 × 1 公尺</span></div>${desks()}</div>`,
         answer: ctx => ctx.choice('what', '1 平方公尺是多大？', [['m', '邊長 1 公尺的正方形'], ['cm', '邊長 1 公分的正方形'], ['line', '1 公尺長的一條線']]),
         check: ctx => !ctx.answers.what ? { code: 'what', msg: '選一個答案。' } : ctx.answers.what === 'm' ? null : { code: 'what', msg: ctx.answers.what === 'cm' ? '這是 1 平方公分，很小。' : '線是長度，不是面積。' },
         solve: ctx => { ctx.answers.what = 'm'; }, say: () => '邊長 1 公尺的正方形，面積是 1 平方公尺。' },
       unitStep(),
-      { title: '估估看', ids: ['est'], hints: ['想像 1 平方公尺：大約 4 張報紙。', '這個地方大約可以鋪幾張報紙？', '估的時候，選最接近的數字。'],
+      { title: '估估看', ids: ['est'], hints: ['想像 1 平方公尺：大約 4 張課桌併起來。', '這個地方大約可以鋪幾張報紙？', '估的時候，選最接近的數字。'],
         think: '老師想像用報紙鋪滿，大約要幾個 1 平方公尺。', together: '一起估：大約幾平方公尺？',
         figure: ctx => `<div class="ac-sit"><span aria-hidden="true">${ctx.problem.est[0]}</span></div>`,
         answer: ctx => ctx.choice('est', `${ctx.problem.est[1]}大約是幾平方公尺？`, ctx.problem.est[2].map(v => [v, `大約 ${v} 平方公尺`]), true),

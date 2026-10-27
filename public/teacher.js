@@ -96,6 +96,8 @@
       <p class="subtle" id="flowNote"></p>
       <fieldset id="customFlow"><legend>自訂：保留哪些步驟？（「列算式」「算一算」「寫單位」一定保留）</legend>
         ${F.OPTIONAL.map(n => `<label><input type="checkbox" data-keep="${n}" ${s.keep.includes(n) ? 'checked' : ''}>${titles[n]}</label>`).join('')}</fieldset>`}
+      <details class="step-names"><summary>改步驟名稱（換成班上習慣的說法，留空就用原本的）</summary>
+        ${titles.map((t, i) => `<label>第 ${i + 1} 步<input data-stepname="${i}" maxlength="12" placeholder="${esc(t)}" value="${esc((s.stepNames || {})[i] || '')}"></label>`).join('')}</details>
 
       <h2 id="sec-support">支持程度（和難度分開設定）</h2>
       <label>提示<select id="lessonSupport"><option value="full">完整引導：自動顯示第一個提示</option><option value="faded">減少提示：學生需要時再按${plugin ? '' : '；可用乘法代替點格子'}</option></select></label>
@@ -115,11 +117,13 @@
 
       <h2>自我調整（目標、把握、回顧）</h2>
       <label>學生要設定的目標<select id="goalKind"><option value="hints">最多看幾個提示（0 個／1 個以內／3 個以內／不限）</option><option value="firstTry">幾步要一次就答對（每一步／最多 1 步再試／做完就好）</option></select></label>
+      <label>目標和把握什麼時候問<select id="srlAsk"><option value="first">每個活動第一題問，之後沿用（建議）</option><option value="every3">每 3 題問一次</option><option value="always">每一題都問</option><option value="off">不問（只做題和回顧）</option></select></label>
       <label class="check"><input id="confidence" type="checkbox" ${s.confidence ? 'checked' : ''}>作答前問「有多少把握」（3 個表情）</label>
       <label class="check"><input id="selfAsk" type="checkbox" ${s.selfAsk ? 'checked' : ''}>解題時顯示「我的自問卡」（我在找什麼？我用什麼方法？我檢查了嗎？）</label>
       <label class="check"><input id="badges" type="checkbox" ${s.badges ? 'checked' : ''}>集章：達到目標、會用提示、自己檢查、說出想法、完成一題</label>
       <label class="check"><input id="voice" type="checkbox" ${s.voice ? 'checked' : ''}>回顧時可以錄音說給老師聽（錄音只存在該分頁，不會上傳）</label>
       <label>示範影片（分步示範：看一段 → 自己做一步）<select id="video"><option value="hint">老師示範模式，以及看到第 3 層提示時出現</option><option value="always">每一步都可以按「看示範影片」</option><option value="off">不使用</option></select></label>
+      <label>這次做幾題<select id="lessonGoal">${F.LESSON_GOALS.map(n => `<option value="${n}">${n ? n + ' 題（畫面顯示「第幾／' + n + ' 題」，做完提醒休息）' : '不限'}</option>`).join('')}</select></label>
       <label>休息提醒<select id="rest"><option value="0">不提醒（學生仍可自己按「休息一下」）</option><option value="2">每做 2 題提醒休息 1 分鐘</option><option value="3">每做 3 題提醒休息 1 分鐘</option></select></label>
 
       <h2>可以選的方法</h2>
@@ -128,7 +132,7 @@
         ${plugin ? '' : `<label><input type="checkbox" data-method="row" ${s.methods.includes('row') ? 'checked' : ''}>一排一排加（只有長方形、正方形）</label>`}
         <label><input type="checkbox" data-method="self" ${s.methods.includes('self') ? 'checked' : ''}>${plugin ? '🧠 先自己想，需要時看提示' : '用乘法、先自己算'}</label></fieldset>
       <label class="check"><input id="handsOn" type="checkbox" ${s.handsOn ? 'checked' : ''}>開始前提醒「先用方格紙或剪紙做做看」</label>
-      <p class="subtle"><a href="hands-on.html" target="_blank" rel="noopener">🖨 列印實物操作卡 ↗</a></p>
+      <p class="subtle"><a href="hands-on.html" target="_blank" rel="noopener">🖨 先看並列印實物操作卡 ↗</a>　<a href="hands-on.pdf" download="實物操作卡.pdf">⬇ 下載 PDF</a></p>
 
       <h2 id="sec-buddy">🤖 學習小幫手「小方」</h2>
       <p class="subtle">解題時，右下角有一個小機器人。學生很久沒有動，它會問「要不要我幫你？」，學生按「好」就打開第 1 層提示；再過一樣久，會幫學生打開「我卡住了」。學生一直在動、但同一步一直過不了時：同一個錯答案又試一次，會提醒「換一個想法」；10 秒內又答錯，會說「慢慢來，先看提示」；答錯 3 次打開「我卡住了」；在同一步待了 3 倍等待時間（例如 60 秒 × 3 = 3 分鐘），不論有沒有在動，都會問要不要幫忙。小測驗只鼓勵、不給提示。</p>
@@ -169,7 +173,7 @@
     if (!plugin) { $('flow').value = s.flow; $('labels').value = s.labels; }
     $('video').value = s.video || 'hint'; drawVideos(id);
     $('buddyWait').value = String(s.buddyWait || 60); $('attentionSec').value = String(s.attentionSec || 5);
-    $('mode').value = s.mode; $('goalKind').value = s.goalKind; $('rest').value = String(s.rest || 0); $('textSize').value = s.textSize || 'normal';
+    $('mode').value = s.mode; $('goalKind').value = s.goalKind; $('rest').value = String(s.rest || 0); $('srlAsk').value = s.srlAsk || 'first'; $('lessonGoal').value = String(s.lessonGoal || 0); $('textSize').value = s.textSize || 'normal';
     document.querySelectorAll('[data-method]').forEach(e => e.onchange = () => { if (!document.querySelector('[data-method]:checked')) { e.checked = true; $('status').textContent = '至少要留一個方法。'; } });
     if (!plugin) {
       const flowNote = () => {
@@ -197,7 +201,7 @@
     $('resetHints').onclick = () => { collect(); const d = sec(id); if (plugin) delete d.hints; else d.hints = C.tier1[id].slice(); delete d.hints2; delete d.hints3; draw(); $('status').textContent = '已恢復預設提示。記得儲存或發布。'; };
     $('applyAll').onclick = () => {
       collect(); const src = sec(id).settings;
-      const copy = target => { const keepOwn = { difficulty: target.settings?.difficulty || 'standard' }; if (isP(id) && target.problems) Object.assign(keepOwn, { flow: target.settings.flow, keep: target.settings.keep, labels: target.settings.labels, grid: target.settings.grid, ai: target.settings.ai, methods: target.settings.methods }); target.settings = { ...src, ...keepOwn }; };
+      const copy = target => { const keepOwn = { difficulty: target.settings?.difficulty || 'standard', stepNames: target.settings?.stepNames || {} }; if (isP(id) && target.problems) Object.assign(keepOwn, { flow: target.settings.flow, keep: target.settings.keep, labels: target.settings.labels, grid: target.settings.grid, ai: target.settings.ai, methods: target.settings.methods }); target.settings = { ...src, ...keepOwn }; };
       SHAPES.forEach(k => copy(config[k])); A.available().filter(a => isP(a.id)).forEach(a => copy(sec(a.id)));
       $('status').textContent = '已把支持程度、教學階段、自我調整、學習小幫手與閱讀輔助設定套用到全部活動（難度不變）。記得儲存或發布。';
     };
@@ -287,7 +291,8 @@
       support: $('lessonSupport').value, labels: val('labels', e => e.value), grid: val('grid', e => e.checked), rate: $('rate').value, ai: val('ai', e => e.checked), reward: $('reward').checked, sound: $('sound').checked,
       hintGate: $('hintGate').checked, difficulty: $('difficulty').value,
       mode: $('mode').value, goalKind: $('goalKind').value, confidence: $('confidence').checked, selfAsk: $('selfAsk').checked, badges: $('badges').checked,
-      voice: $('voice').checked, rest: Number($('rest').value), video: $('video').value, handsOn: $('handsOn').checked, fading: val('fading', e => e.checked),
+      voice: $('voice').checked, rest: Number($('rest').value), srlAsk: $('srlAsk').value, lessonGoal: Number($('lessonGoal').value),
+      stepNames: Object.fromEntries([...document.querySelectorAll('[data-stepname]')].map(e => [e.dataset.stepname, e.value.trim()]).filter(x => x[1])), video: $('video').value, handsOn: $('handsOn').checked, fading: val('fading', e => e.checked),
       methods: (() => { const m = [...document.querySelectorAll('[data-method]:checked')].map(e => e.dataset.method); return plugin && old.methods.includes('row') ? [...m, 'row'] : m; })(),
       zhuyin: $('zhuyin').checked, textSize: $('textSize').value, contrast: $('contrast').checked, convert: val('convert', e => e.checked),
       buddy: $('buddy').checked, buddyWait: Number($('buddyWait').value), buddyVoice: $('buddyVoice').checked, attention: $('attention').checked, attentionSec: Number($('attentionSec').value)

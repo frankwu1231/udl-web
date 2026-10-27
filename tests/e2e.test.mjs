@@ -113,6 +113,9 @@ test('三角形：第二片先出現在旁邊；比較題在操作後才出現�
   assert.match(await p.page.$eval('.drag-piece', g => g.getAttribute('transform')), /translate\(\d/);
   await p.page.click('#transform');
   assert.doesNotMatch(await p.text('.activity'), /一片是一半/);
+  assert.equal(await p.page.$('[data-choice="relation"]'), null);   // 第 23 版：先數拼好的是幾片
+  await p.choose('pieces', '1'); await p.check(); assert.match(await p.text('#feedback1'), /再數一次/);
+  await p.choose('pieces', '2');
   await p.choose('relation', 'same'); await p.check();
   assert.match(await p.text('#feedback1'), /一片比較小/);
   await p.choose('relation', 'half'); await p.check();
@@ -289,17 +292,18 @@ test('第 17 版修正：答對後提示收起、點完格子提示改變、先�
   await p.page.fill('#first', '4'); await p.check(); await p.next();
   await p.page.fill('#second', '2'); await p.check(); await p.next();
   await p.choose('formula', 'product'); await p.page.fill('#a', '4'); await p.page.fill('#b', '2'); await p.check(); await p.next();
+  await p.page.fill('#total', '9'); await p.check(); await p.check();   // 第 23 版：算錯時才看提示
   await p.page.fill('#total', '8'); await p.check();
-  assert.match(await p.text('#feedback5'), /算對了/);
-  assert.equal(await p.page.$('#hintText5:not([hidden])'), null, '只差比一比時不升提示');
+  assert.match(await p.text('#feedback5'), /答對了/, '第 23 版：算對就自動比對，不用再按比一比');
+  assert.equal(await p.page.$('[data-choice="verify"]'), null);
   await p.page.click('#teacher');
-  assert.match(await p.text('.stats'), /算一算、比一比\s+0/);
+  assert.match(await p.text('.stats'), /算一算、比一比\s+2/);
   await p.page.click('#closeTools');
   // AI 回覆在下一個動作後仍在
   await p.page.fill('#total', '9'); await p.check(); await p.check();
   await p.page.click('#aiHint5'); await p.page.waitForTimeout(150);
   assert.match(await p.text('#hintText5'), /AI 現在不能用/);
-  await p.page.fill('#total', '8'); await p.page.waitForTimeout(50); await p.choose('verify', 'match');
+  await p.page.fill('#total', '8'); await p.page.waitForTimeout(50);
   assert.match(await p.text('#hintText5'), /AI 現在不能用/);
   // 換圖形後紀錄仍在
   const before = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16')).length);
@@ -648,8 +652,14 @@ test('3-2 知道面積找邊長、3-3 排長方形', { skip: skip || !distReady 
   for (let i = 0; i < 2; i++) await q.page.click('#wm1');   // 6×3 = 18
   await q.check(); assert.match(await q.text('#feedback1'), /多了 6 格/);
   await q.page.click('#hl1'); await q.check(); assert.match(await q.text('#feedback1'), /答對了/); await q.next();   // 6×2
-  await q.page.fill('#kinds', '6'); await q.check(); assert.match(await q.text('#feedback2'), /轉過來/);
-  await q.page.fill('#kinds', '3'); await q.check(); await q.next();
+  assert.match(await q.text('.activity'), /已經排出 2 種/);   // 小圖列出已排的
+  for (let i = 0; i < 4; i++) await q.page.click('#wl2'); for (let i = 0; i < 4; i++) await q.page.click('#hm2');
+  assert.ok(await q.page.$('.ac-dup'), '轉過來的會疊在一起給學生看');
+  await q.check(); assert.match(await q.text('#feedback2'), /排過了/);
+  await q.page.click('#wl2'); for (let i = 0; i < 6; i++) await q.page.click('#hm2');   // 1×12
+  await q.check(); assert.match(await q.text('#feedback2'), /答對了/);
+  assert.equal(await q.page.$$eval('.ac-found', e => e.length), 3);
+  await q.next();
   await q.choose('concl', 'same'); await q.check(); await q.next();
   assert.match(await q.text('.done-banner'), /1×12、2×6、3×4/);
   assert.deepEqual([...p.errors, ...q.errors], []);
@@ -993,4 +1003,41 @@ test('教師備課：現場試用紀錄的網址、通行碼可以儲存；網�
   const r = await page.evaluate(async () => (await (await fetch('/api/teacher/lessons')).json()).draft.research);
   assert.deepEqual(r, { url: SHEET_URL, key: 'field-2026', teachers: 4, students: 6 });
   await page.close();
+});
+
+test('第 23 版：目標只在第一題問、這次做幾題、改步驟名稱、反思可複選', { skip: skip || !distReady }, async () => {
+  const p = await student('rectangle', { flow: 'three', lessonGoal: 3, stepNames: { 6: '寫出單位' } });
+  assert.match(await p.text('.eyebrow'), /這次：第 1／3 題/);
+  await p.choose('target', 'inside'); await p.choose('goal', 'g3'); await p.choose('confidence', 'mid'); await p.choose('method', 'mark'); await p.page.click('#start');
+  await p.choose('formula', 'product'); await p.page.fill('#a', '4'); await p.page.fill('#b', '2'); await p.page.fill('#total', '8'); await p.check(); await p.next();
+  assert.match(await p.text('.activity h2'), /寫出單位/, '老師改的步驟名稱');
+  await p.choose('unit', 'cm2'); await p.check();
+  await p.choose('selfMet', 'yes');
+  await p.page.click('[data-choice="reason"][data-value="formula"]'); await p.page.click('[data-choice="reason"][data-value="alone"]');
+  assert.equal(await p.page.$$eval('[data-choice="reason"][aria-pressed="true"]', e => e.length), 2, '可以複選');
+  await p.choose('nextMethod', 'mark'); await p.page.click('#new'); await p.page.waitForTimeout(80);
+  assert.equal(await p.page.$('[data-choice="goal"]'), null, '第二題不再問目標');
+  assert.equal(await p.page.$('[data-choice="confidence"]'), null);
+  assert.match(await p.text('.keep-goal'), /和上一題一樣/);
+  assert.match(await p.text('.eyebrow'), /第 2／3 題/);
+  assert.match(await p.text('.carry'), /選對算式、我自己想|我自己想、選對算式/);
+  const recs = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16')));
+  assert.match(recs.find(r => r.event === '反思與下一輪調整').choice, /幫助我的：.+、/);
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 23 版：回去看之後可以「回到剛才那一步」；列算式點方格時圖上亮出那條邊', { skip: skip || !distReady }, async () => {
+  const p = await student('rectangle'); await p.start('self');
+  await p.choose('target', 'inside'); await p.check(); await p.next();
+  await p.page.click('#useProduct'); await p.check(); await p.next();
+  await p.page.fill('#first', '4'); await p.check(); await p.next();
+  await p.page.fill('#second', '2'); await p.check(); await p.next();
+  await p.page.focus('#a'); assert.ok(await p.page.$('#figure4 .pulse-line'), '點底的方格，圖上那條邊會亮');
+  await p.choose('formula', 'product'); await p.page.fill('#a', '4'); await p.page.fill('#b', '2'); await p.check(); await p.next();
+  await p.page.click('#compare summary'); await p.page.click('[data-return="4"]');
+  assert.ok(await p.page.$('#resume'));
+  await p.page.click('#resume'); await p.page.waitForTimeout(80);
+  assert.ok(await p.page.$('#total'), '回到算一算那一頁');
+  assert.equal(await p.page.$('#resume'), null);
+  assert.deepEqual(p.errors, []);
 });

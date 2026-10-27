@@ -53,3 +53,7 @@
 @keyframes line-pulse{50%{opacity:.35;stroke-width:9}}
 @keyframes fill-pulse{50%{fill:#ffe08a}}
 @keyframes bob{50%{transform:translate(var(--bx,0),-5px)}}
+/* 第 23 版：示範時手指指到的那一塊亮起來；一排一排加的累加算式 */
+.sd .sd-focus{stroke:#d9480f;stroke-width:4px;filter:drop-shadow(0 0 4px #ffb37a)}
+.sd .sd-cell.sd-focus{box-shadow:inset 0 0 0 4px #d9480f}
+.sd-sum{font-size:24px;font-weight:bold;color:#2157da;margin:12px 0 0;min-height:1.4em}

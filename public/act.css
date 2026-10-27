@@ -61,3 +61,24 @@ html.contrast .map-card{border-color:#000}html.contrast .ac-outline{stroke:#000}
 .ac-m2-sq::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 49.5%,#cfc6ad 49.5% 50.5%,transparent 50.5%)}
 .ac-m2-sq span{position:relative;z-index:1;background:#fff;padding:4px 10px;border-radius:8px}
 .ac-per{stroke:#c2410c;stroke-width:7}
+/* 第 23 版：3-3 已排的小圖、轉過來重疊 */
+.ac-found-list{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.ac-found{margin:0;text-align:center;font-size:15px}
+.ac-mini rect{fill:#a5d8ff;stroke:#1c7ed6;stroke-width:1}
+.ac-dup{background:#fff4e6;border-radius:10px;padding:8px 12px;margin:8px 0}
+.ac-dup-pics{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}.ac-dup-pics figure{margin:0;text-align:center;font-size:14px}.ac-dup-pics svg{flex-shrink:0}.ac-dup-pics span{font-weight:bold;align-self:center}
+.ac-dup rect.old{fill:#a5d8ff;stroke:#1c7ed6;stroke-width:2}
+.ac-dup rect.mine{fill:#ffd8a8;stroke:#d9480f;stroke-width:2}
+.ac-dup rect.now{fill:none;stroke:#d9480f;stroke-width:4;stroke-dasharray:8 5}
+.ac-dup-note{color:#9c3d00;font-weight:bold}
+/* 3-4：切開的小動畫，橘色那塊滑開再回來 */
+.ac-split-v,.ac-split-h{transform-box:fill-box;animation:acSplitV 1.8s ease-in-out 1}
+.ac-split-h{animation-name:acSplitH}
+@keyframes acSplitV{40%,60%{transform:translateX(14px)}}
+@keyframes acSplitH{40%,60%{transform:translateY(14px)}}
+@media (prefers-reduced-motion:reduce){.ac-split-v,.ac-split-h{animation:none}}
+/* 3-5：4 張課桌 ≈ 1 平方公尺 */
+.ac-desks{margin:0;text-align:center}.ac-desks figcaption{font-size:18px}
+.ac-desks .desk{fill:#e8c48a;stroke:#8a5a1c;stroke-width:3}
+.ac-desks .m2{fill:none;stroke:#d9480f;stroke-width:5;stroke-dasharray:12 6}
+.ac-desks text{font-size:22px;fill:#172b4d;font-weight:bold}
