@@ -16,7 +16,7 @@ async function setup() {
   if (server) return;
   const worker = (await import('../dist/server/index.js')).default;
   const { makeD1 } = await import('../scripts/d1-sqlite.mjs');
-  const env = { TEACHER_EMAIL: 'preview@example.test', DB: makeD1() };
+  const env = { TEACHER_EMAIL: 'preview@example.test', DB: makeD1(), TEST_SESSION_SECRET: 'e2e-session-secret-for-class-codes' };
   server = http.createServer(async (req, res) => {
     const chunks = []; for await (const c of req) chunks.push(c);
     const headers = new Headers(req.headers); headers.set('oai-authenticated-user-id', 'local'); headers.set('oai-authenticated-user-email', 'preview@example.test');
@@ -1058,4 +1058,27 @@ test('第 23 版：示範題就算亂數一直抽到學生的題目，也會換�
   assert.equal(r.cur, 12);
   assert.doesNotMatch(r.html, /剛好 12 格/, '示範題不是 12 格');
   assert.deepEqual(p.errors, []);
+});
+
+test('第 24 版：老師建立班級代碼，學生掃 QR code 的連結就進入學生頁，不能進教師備課', { skip: skip || !distReady }, async () => {
+  await setup(); await publish({});
+  const t = await browser.newPage(); const errors = []; t.on('pageerror', e => errors.push(e.message));
+  await t.goto(base + '/teacher.html'); await t.waitForSelector('#classCreate');
+  await t.fill('#classLabel', '<b>'); await t.click('#classCreate'); assert.match(await t.textContent('#classMsg'), /班級名稱/);
+  await t.fill('#classLabel', '三年甲班'); await t.click('#classCreate'); await t.waitForSelector('.class-card');
+  const code = (await t.textContent('.class-card .class-code')).trim();
+  assert.match(code, /^[2-9A-HJKMNP-Z]{6}$/); assert.ok(await t.$('.class-card .class-qr svg'), '有 QR code');
+  await t.click('[data-class-show]'); assert.ok(await t.$('dialog.class-big[open] svg')); await t.click('dialog.class-big button');
+  const ctx = await browser.newContext(); const s = await ctx.newPage(); s.on('pageerror', e => errors.push(e.message));
+  await s.goto(`${base}/?class=${code.toLowerCase()}`); await s.waitForURL(/seven\.html/); await s.waitForSelector('.map, #start, .map-unit, main');
+  const session = await s.evaluate(async () => (await fetch('/api/session')).json());
+  assert.equal(session.student, true); assert.equal(session.className, '三年甲班');
+  await s.goto(base + '/teacher.html'); assert.match(s.url(), /seven\.html$/, '學生進不了教師備課');
+  // 打錯代碼會提示
+  const ctx2 = await browser.newContext(); const w = await ctx2.newPage(); await w.goto(base + '/?class=ZZZZZZ'); await w.waitForFunction(() => /找不到這個代碼/.test(document.getElementById('status').textContent));
+  // 停用後學生就進不去
+  t.once('dialog', d => d.accept()); await t.click('[data-class-off]'); await t.waitForTimeout(150);
+  assert.equal((await s.evaluate(async () => (await fetch('/api/session')).json())).student, false);
+  assert.deepEqual(errors, []);
+  await ctx.close(); await ctx2.close(); await t.close();
 });

@@ -1282,7 +1282,7 @@
       const session = await (await fetch('/api/session', { cache: 'no-store' })).json();
       if (!session.authenticated) { return; }
       $('teacher').hidden = !session.teacher;
-      if (session.test) { sessionProvider = 'deepseek'; $('apiSettings').hidden = true; }
+      if (session.test || session.student) { sessionProvider = 'deepseek'; $('apiSettings').hidden = true; }
       const draft = session.teacher && new URLSearchParams(location.search).get('draft') === '1';
       const res = await fetch(draft ? '/api/teacher/lessons' : '/api/lessons', { cache: 'no-store' }), result = await res.json();
       if (!res.ok) throw new Error(result.error || 'load_failed');

@@ -7,16 +7,17 @@ const origin='https://lesson.example';
 const owner='owner-1';
 const feedbackDefaults=JSON.parse(fs.readFileSync(new URL('../lesson-defaults.json',import.meta.url),'utf8'));
 function database(){const lessons=new Map(),attempts=new Map(),usage=new Map();return {prepare(sql){return {bind(...args){return {async first(){if(sql.includes('FROM lesson_documents'))return lessons.get(args[0])||null;if(sql.includes('FROM test_login_attempts'))return attempts.get(args[0])||null;if(sql.includes('INTO test_ai_usage')){const calls=(usage.get(args[0])||0)+1;if(calls>50)return null;usage.set(args[0],calls);return {calls};}return null;},async run(){if(sql.includes('INTO lesson_documents')){const [kind,config_json,revision]=args;lessons.set(kind,{config_json,revision});}else if(sql.includes('INTO test_login_attempts'))attempts.set(args[0],{failures:args[1],reset_at:args[2]});else if(sql.includes('DELETE FROM test_login_attempts'))attempts.delete(args[0]);return {success:true};}};}};}};}
-const env={DB:database(),TEACHER_EMAIL:'owner@example.test',TEST_PASSWORD:'test-pass',TEST_SESSION_SECRET:'a-long-test-session-secret',TEST_DEEPSEEK_API_KEY:'sk-test-only-example-secret-value'};
+const {makeD1}=await import('../scripts/d1-sqlite.mjs');
+const env={DB:makeD1(),TEACHER_EMAIL:'owner@example.test',TEST_PASSWORD:'test-pass',TEST_SESSION_SECRET:'a-long-test-session-secret',TEST_DEEPSEEK_API_KEY:'sk-test-only-example-secret-value'};
 function req(path,{method='GET',user,body,cookie}={}){return new Request(origin+path,{method,headers:{...(user?{'oai-authenticated-user-id':user,'oai-authenticated-user-email':user===owner?'owner@example.test':'other@example.test'}:{}),...(body?{'content-type':'application/json',origin}: {}),...(cookie?{cookie}:{})},body:body?JSON.stringify(body):undefined});}
 const call=async(path,options)=>{const response=await worker.fetch(req(path,options),env);return {status:response.status,data:await response.json(),headers:response.headers};};
 async function testCookie(){const login=await call('/api/test-login',{method:'POST',body:{username:'test',password:'test-pass'}});assert.equal(login.status,200);return login.headers.get('set-cookie').split(';')[0];}
 
 test('owner, tester and other visitor have separate access',async()=>{
   const cookie=await testCookie();
-  assert.deepEqual((await call('/api/session',{cookie})).data,{authenticated:true,teacher:true,test:true,aiProvider:'deepseek'});
-  assert.deepEqual((await call('/api/session',{user:owner,cookie})).data,{authenticated:true,teacher:true,test:true,aiProvider:'deepseek'});
-  assert.deepEqual((await call('/api/session',{user:owner})).data,{authenticated:true,teacher:true,test:false,aiProvider:null});
+  assert.deepEqual((await call('/api/session',{cookie})).data,{authenticated:true,teacher:true,test:true,student:false,workspace:'test',className:'',aiProvider:'deepseek'});
+  assert.deepEqual((await call('/api/session',{user:owner,cookie})).data,{authenticated:true,teacher:true,test:true,student:false,workspace:'test',className:'',aiProvider:'deepseek'});
+  assert.deepEqual((await call('/api/session',{user:owner})).data,{authenticated:true,teacher:true,test:false,student:false,workspace:'main',className:'',aiProvider:null});
   assert.equal((await call('/api/session',{user:'other'})).data.authenticated,false);
   assert.equal((await call('/api/teacher/lessons',{cookie})).status,200);
   assert.equal((await call('/api/teacher/lessons')).status,401);
@@ -204,4 +205,61 @@ test('field trial logging settings (v22): Apps Script URL and passcode are valid
   assert.equal(await save({url:'https://script.google.com/macros/s/AKfycbx1234567890/exec',key:'field-2026',teachers:4,students:6}),200);
   assert.equal(await save({url:'',key:''}),200,'empty means not recording');
   for(const bad of [{url:'https://example.com/x',key:'abcd'},{url:'https://script.google.com/macros/s/AKfycbx1234567890/exec',key:'ab'},{url:'',key:'',teachers:40},{url:'',key:'',extra:1},'yes'])assert.equal(await save(bad),400,JSON.stringify(bad));
+});
+
+test('第 24 版：每位老師（教師代號）有自己的工作區；班級代碼讓學生不用密碼就能進學生頁',async()=>{
+  const login=async teacher=>{const r=await call('/api/test-login',{method:'POST',body:{username:'test',password:'test-pass',teacher}});assert.equal(r.status,200);return r.headers.get('set-cookie').split(';')[0];};
+  assert.equal((await call('/api/test-login',{method:'POST',body:{username:'test',password:'test-pass',teacher:'T99'}})).status,400);
+  const t1=await login('T01'),t2=await login('T02');
+  assert.equal((await call('/api/session',{cookie:t1})).data.workspace,'T01');
+  // 兩位老師各自發布，互不覆蓋
+  const base=(await call('/api/teacher/lessons',{cookie:t1})).data.published;
+  const c1=structuredClone(base);c1.rectangle.hints[0]='T01 老師的提示。';
+  assert.equal((await call('/api/teacher/lessons',{method:'POST',cookie:t1,body:{kind:'published',config:c1}})).status,200);
+  assert.equal((await call('/api/lessons',{cookie:t1})).data.config.rectangle.hints[0],'T01 老師的提示。');
+  assert.notEqual((await call('/api/lessons',{cookie:t2})).data.config.rectangle.hints[0],'T01 老師的提示。');
+  // 建立班級代碼
+  assert.equal((await call('/api/teacher/classes',{method:'POST',cookie:t1,body:{label:'<b>',days:7}})).status,400);
+  assert.equal((await call('/api/teacher/classes',{method:'POST',cookie:t1,body:{label:'三年甲班',days:5}})).status,400);
+  const made=await call('/api/teacher/classes',{method:'POST',cookie:t1,body:{label:'三年甲班',days:7}});
+  assert.equal(made.status,200);const code=made.data.class.code;assert.match(code,/^[2-9A-HJKMNP-Z]{6}$/);
+  assert.deepEqual((await call('/api/teacher/classes',{cookie:t1})).data.classes.map(c=>c.code),[code]);
+  assert.deepEqual((await call('/api/teacher/classes',{cookie:t2})).data.classes,[],'別的老師看不到');
+  assert.equal((await call('/api/teacher/classes/'+code,{method:'DELETE',cookie:t2})).status,404,'別的老師不能停用');
+  assert.equal((await call('/api/teacher/classes')).status,401);
+  // 學生用代碼登入（小寫、空格都可以）
+  assert.equal((await call('/api/class-login',{method:'POST',body:{code:'ZZZZZ'}})).status,400);
+  const s=await call('/api/class-login',{method:'POST',body:{code:' '+code.slice(0,3).toLowerCase()+' '+code.slice(3)}});
+  assert.equal(s.status,200);assert.equal(s.data.className,'三年甲班');
+  const sc=s.headers.get('set-cookie').split(';')[0];assert.match(s.headers.get('set-cookie'),/HttpOnly; Secure/);
+  assert.deepEqual((await call('/api/session',{cookie:sc})).data,{authenticated:true,teacher:false,test:false,student:true,workspace:'T01',className:'三年甲班',aiProvider:'deepseek'});
+  assert.equal((await call('/api/lessons',{cookie:sc})).data.config.rectangle.hints[0],'T01 老師的提示。','學生看到自己老師發布的教材');
+  assert.equal((await call('/api/teacher/lessons',{cookie:sc})).status,403);
+  assert.equal((await call('/api/teacher/lessons',{method:'POST',cookie:sc,body:{kind:'published',config:c1}})).status,403);
+  assert.equal((await call('/api/teacher/classes',{cookie:sc})).status,403);
+  assert.equal((await worker.fetch(req('/seven.html',{cookie:sc}),env)).status,200);
+  const tp=await worker.fetch(req('/teacher.html',{cookie:sc}),env);assert.equal(tp.status,302);assert.match(tp.headers.get('location'),/seven\.html$/);
+  assert.equal((await worker.fetch(req('/teacher.js',{cookie:sc}),env)).status,403);
+  assert.equal((await worker.fetch(new Request(origin+'/api/teacher/videos',{method:'POST',headers:{cookie:sc,'content-type':'video/mp4'},body:new Uint8Array(20)}),env)).status,403);
+  // 偽造的代碼 cookie 不能用
+  assert.equal((await call('/api/session',{cookie:sc.replace(code,'ABCDEF')})).data.authenticated,false);
+  // 停用後學生就進不去
+  assert.equal((await call('/api/teacher/classes/'+code,{method:'DELETE',cookie:t1})).status,200);
+  assert.equal((await call('/api/session',{cookie:sc})).data.authenticated,false);
+  assert.equal((await call('/api/class-login',{method:'POST',body:{code}})).status,401);
+});
+
+test('第 24 版：班級代碼打錯 30 次才暫停；AI 次數每位老師分開算',async()=>{
+  const venv={...env,DB:makeD1()},c=async(path,o)=>{const r=await worker.fetch(req(path,o),venv);return {status:r.status,data:await r.json(),headers:r.headers};};
+  for(let i=0;i<30;i++)assert.equal((await c('/api/class-login',{method:'POST',body:{code:'ABCDEF'}})).status,401);
+  assert.equal((await c('/api/class-login',{method:'POST',body:{code:'ABCDEF'}})).status,429);
+  const originalFetch=globalThis.fetch;globalThis.fetch=async()=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({message:'先看圖形。'})}}]}));
+  try{
+    const t1=(await c('/api/test-login',{method:'POST',body:{username:'test',password:'test-pass',teacher:'T01'}})).headers.get('set-cookie').split(';')[0];
+    const t2=(await c('/api/test-login',{method:'POST',body:{username:'test',password:'test-pass',teacher:'T02'}})).headers.get('set-cookie').split(';')[0];
+    const body={kind:'hint',shape:'rectangle',cycle:1,step:0,method:'mark',goal:'check',hints:0,errors:0,incorrect:false};
+    for(let i=0;i<50;i++)assert.equal((await c('/api/ai-support',{method:'POST',cookie:t1,body})).status,200);
+    assert.equal((await c('/api/ai-support',{method:'POST',cookie:t1,body})).status,429);
+    assert.equal((await c('/api/ai-support',{method:'POST',cookie:t2,body})).status,200,'另一位老師還可以用');
+  }finally{globalThis.fetch=originalFetch;}
 });

@@ -70,6 +70,48 @@
     };
   }
 
+  // ---------- 第 24 版：班級代碼（學生不用密碼：輸入 6 個字或掃 QR code） ----------
+  const classUrl = code => `${location.origin}/?class=${code}`;
+  const qrSvg = (text, cell = 6) => { try { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createSvgTag(cell, 2); } catch { return ''; } };
+  async function drawClasses() {
+    const box = $('classSection');
+    box.innerHTML = `<h2>🏫 班級代碼（學生不用密碼）</h2>
+      <p class="subtle">建立代碼後，學生在入口頁輸入 6 個字，或用平板掃 QR code，就會直接進入學生頁，看到的是您發布的教材。學生不能進教師備課。代碼到期或按「停用」後就不能再用。</p>
+      <div class="field-grid"><label>班級名稱（學生會看到）<input id="classLabel" maxlength="20" placeholder="例如：三年甲班"></label>
+      <label>可以用多久<select id="classDays"><option value="1">1 天</option><option value="7" selected>7 天</option><option value="30">30 天</option></select></label></div>
+      <button type="button" id="classCreate">建立班級代碼</button><p id="classMsg" class="subtle" role="status"></p><div id="classList" class="class-list"></div>`;
+    const msg = $('classMsg');
+    const list = async () => {
+      try {
+        const r = await fetch('/api/teacher/classes', { cache: 'no-store' }); const d = await r.json(); if (!r.ok) throw new Error(d.error);
+        $('classList').innerHTML = d.classes.length ? d.classes.map(c => `<div class="class-card"><div class="class-qr" aria-hidden="true">${qrSvg(classUrl(c.code), 4)}</div><div><p class="class-name">${esc(c.label)}</p><p class="class-code" aria-label="代碼 ${c.code.split('').join(' ')}">${c.code}</p>
+          <p class="subtle">到 ${new Date(c.expiresAt).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })} 為止</p>
+          <div class="actions"><button type="button" data-class-show="${c.code}" data-label="${esc(c.label)}">放大給學生掃</button><button type="button" data-class-copy="${c.code}">複製連結</button><button type="button" data-class-off="${c.code}">停用</button></div></div></div>`).join('') : '<p class="subtle">還沒有班級代碼。</p>';
+        document.querySelectorAll('[data-class-show]').forEach(b => b.onclick = () => showClass(b.dataset.classShow, b.dataset.label));
+        document.querySelectorAll('[data-class-copy]').forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText(classUrl(b.dataset.classCopy)); msg.textContent = '已複製連結。'; } catch { msg.textContent = '請手動複製：' + classUrl(b.dataset.classCopy); } });
+        document.querySelectorAll('[data-class-off]').forEach(b => b.onclick = async () => {
+          if (!confirm(`停用代碼 ${b.dataset.classOff}？已經用這個代碼進入的學生也會被登出。`)) return;
+          const r2 = await fetch('/api/teacher/classes/' + b.dataset.classOff, { method: 'DELETE', cache: 'no-store' }); msg.textContent = r2.ok ? '已停用。' : '停用失敗，請再試一次。'; list();
+        });
+      } catch { $('classList').innerHTML = '<p class="subtle">這個環境不能使用班級代碼（試用版或尚未設定資料庫）。</p>'; $('classCreate').disabled = true; }
+    };
+    $('classCreate').onclick = async () => {
+      const label = $('classLabel').value.trim();
+      if (!/^[\u4e00-\u9fff0-9A-Za-z \-（）()]{1,20}$/.test(label)) { msg.textContent = '班級名稱請用 1～20 個中文、英文或數字。'; return; }
+      $('classCreate').disabled = true;
+      try { const r = await fetch('/api/teacher/classes', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ label, days: Number($('classDays').value) }), cache: 'no-store' }); const d = await r.json();
+        msg.textContent = r.ok ? `已建立：${d.class.code}` : d.error === 'too_many_classes' ? '同時最多 20 個代碼，請先停用不用的。' : '建立失敗，請再試一次。'; if (r.ok) $('classLabel').value = ''; }
+      catch { msg.textContent = '建立失敗，請再試一次。'; }
+      finally { $('classCreate').disabled = false; list(); }
+    };
+    await list();
+  }
+  function showClass(code, label) {
+    const d = document.createElement('dialog'); d.className = 'class-big';
+    d.innerHTML = `<p class="class-name">${esc(label)}</p><div class="class-qr-big">${qrSvg(classUrl(code), 10)}</div><p class="class-code">${code}</p><p>用平板掃 QR code，或在 ${esc(location.host)} 輸入代碼</p><button type="button" class="primary">關閉</button>`;
+    document.body.append(d); d.querySelector('button').onclick = () => d.close(); d.onclose = () => d.remove(); d.showModal();
+  }
+
   function buildSelect() {
     $('shape').innerHTML = A.UNITS.map(u => { const acts = A.available().filter(a => a.unit === u.id); return acts.length ? `<optgroup label="${esc(u.title)}">${acts.map(a => `<option value="${a.id}">${a.no} ${esc(a.title)}</option>`).join('')}</optgroup>` : ''; }).join('');
   }
@@ -347,9 +389,9 @@
       config.map = config.map || { assigned: A.LIST.map(a => a.id), sequential: false, path: 'all' };
       for (const a of A.available()) if (isP(a.id)) sec(a.id).settings = F.settings(sec(a.id));
       $('editor').hidden = false;
-      $('status').textContent = testWorkspace ? '測試工作區：可編修與發布，正式教材不受影響。' : data.draft ? '已載入草稿，可繼續編修。' : '已載入目前發布版本。';
+      $('status').textContent = testWorkspace ? `測試工作區${/^T\d\d$/.test(data.workspace) ? `（教師代號 ${data.workspace}，只有您的學生看得到）` : ''}：可編修與發布，正式教材不受影響。` : data.draft ? '已載入草稿，可繼續編修。' : '已載入目前發布版本。';
       buildSelect(); $('shape').value = 'rectangle';
-      drawMap(); drawResearch(); draw();
+      drawMap(); drawClasses(); drawResearch(); draw();
       $('shape').onchange = () => { collect(); draw(); };
       $('saveDraft').onclick = () => save('draft'); $('publish').onclick = () => save('published');
       $('preview').onclick = async e => { e.preventDefault(); if (await save('draft')) location.href = $('preview').href; };   // 試用版：在同一個畫面預覽
