@@ -40,7 +40,7 @@ async function publish(settings) {
     for (const k of Object.keys(c.activities || {})) c.activities[k].settings = { ...c.activities[k].settings, ...s };
     c.map = { assigned: window.areaActs.LIST.map(a => a.id), sequential: false, path: 'all', ...map };
     return (await fetch('/api/teacher/lessons', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'published', config: c }) })).status;
-  }, { flow: 'seven', keep: [0, 1, 2, 3], support: 'full', labels: 'reveal', ai: true, reward: false, sound: false, hintGate: false, mode: 'self', goalKind: 'hints', confidence: true, selfAsk: true, badges: true, voice: false, rest: 0, handsOn: false, methods: ['mark', 'row', 'self'], zhuyin: false, textSize: 'normal', contrast: false, video: 'hint', difficulty: 'standard', convert: false, ...settings });
+  }, { flow: 'seven', keep: [0, 1, 2, 3], support: 'full', labels: 'reveal', ai: true, reward: false, sound: false, hintGate: false, mode: 'self', goalKind: 'hints', confidence: true, selfAsk: true, badges: true, voice: false, rest: 0, handsOn: false, methods: ['mark', 'row', 'self'], zhuyin: false, textSize: 'normal', contrast: false, video: 'hint', difficulty: 'standard', convert: false, srlAsk: 'first', lessonGoal: 0, stepNames: {}, attention: false, ...settings });
   await page.close(); assert.equal(status, 200);
 }
 async function student(shape, settings = {}, viewport = { width: 820, height: 1180 }, opts = {}) {
@@ -333,7 +333,7 @@ async function threeStep(p, side, { wrongFirst = false } = {}) {
 }
 
 test('自我調整循環：數字目標與把握 → 目標和結果對照 → 自己判斷 → 找原因與建議 → 下一題帶著建議與章、看得到進步', { skip: skip || !distReady }, async () => {
-  const p = await student('square', { flow: 'three' }), page = p.page;
+  const p = await student('square', { flow: 'three', srlAsk: 'always' }), page = p.page;
   assert.match(await p.text('.srl-card'), /最多看幾個提示/);
   assert.deepEqual(await page.$$eval('[data-choice="confidence"]', b => b.map(x => x.dataset.value)), ['low', 'mid', 'high'], '把握的表情照順序');
   await p.choose('target', 'inside'); await page.click('#start');
@@ -1021,6 +1021,11 @@ test('第 23 版：目標只在第一題問、這次做幾題、改步驟名稱�
   assert.match(await p.text('.keep-goal'), /和上一題一樣/);
   assert.match(await p.text('.eyebrow'), /第 2／3 題/);
   assert.match(await p.text('.carry'), /選對算式、我自己想|我自己想、選對算式/);
+  await p.choose('target', 'inside'); await p.choose('method', 'mark'); await p.page.click('#start'); await p.page.waitForTimeout(80);
+  const goals = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16')).filter(r => r.event === '整題定標').map(r => r.goal));
+  assert.deepEqual(goals, ['g3', 'g3'], '沿用的目標要真的存下來，不是變成不限');
+  await p.page.reload(); await p.page.waitForSelector('#start');
+  assert.match(await p.text('.eyebrow'), /這次：第 1／3 題/, '重新進入活動時重新計數');
   const recs = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16')));
   assert.match(recs.find(r => r.event === '反思與下一輪調整').choice, /幫助我的：.+、/);
   assert.deepEqual(p.errors, []);
@@ -1039,5 +1044,18 @@ test('第 23 版：回去看之後可以「回到剛才那一步」；列算式�
   await p.page.click('#resume'); await p.page.waitForTimeout(80);
   assert.ok(await p.page.$('#total'), '回到算一算那一頁');
   assert.equal(await p.page.$('#resume'), null);
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 23 版：示範題就算亂數一直抽到學生的題目，也會換一題答案不同的', { skip: skip || !distReady }, async () => {
+  const p = await act('arrange');   // 一般難度每題都是 12 格
+  const r = await p.page.evaluate(() => {
+    const pl = window.areaActs.get('arrange'), cur = pl.makeProblem('standard', 0, Math.random);
+    Math.random = () => 0;   // 固定亂數
+    const scenes = window.areaActs.demoScenes(pl, 0, 'standard', {}, cur);
+    const host = document.createElement('div'); host.innerHTML = scenes[0].html(); return { cur: cur.n, html: host.textContent };
+  });
+  assert.equal(r.cur, 12);
+  assert.doesNotMatch(r.html, /剛好 12 格/, '示範題不是 12 格');
   assert.deepEqual(p.errors, []);
 });

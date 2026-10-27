@@ -38,7 +38,10 @@
   const current = () => pages()[page];
   const has = n => P() ? n < P().steps.length : F.hasActivity(settings, n);
   const titles = () => { const names = settings.stepNames || {}; if (P()) return P().steps.map((x, i) => names[i] || x.title); const t = C.titles(type).slice(); if (!has(1)) t[5] = '算一算'; if (method === 'row' && grid()) t[1] = '一排一排加'; return t.map((x, i) => names[i] || x); };
-  const doneHere = () => records.filter(r => r.event === '整題完成' && (r.actId || r.shapeKey) === type).length;
+  // 「這次做幾題」只算這次進入活動後做完的題目（以前的紀錄仍保留在「我的進步」）
+  let doneBase = 0;
+  const doneAll = () => records.filter(r => r.event === '整題完成' && (r.actId || r.shapeKey) === type).length;
+  const doneHere = () => doneAll() - doneBase;
   const number = id => { const v = String(answers[id] ?? '').trim(); return /^\d+(\.\d+)?$/.test(v) ? Number(v) : null; };
   const button = (id, text, cls = '', extra = '') => `<button id="${id}" class="${cls}" ${extra}>${text}</button>`;
   const field = (id, label, cls = '') => `<label class="field ${cls}"><span data-read data-say>${label}</span><input id="${id}" data-answer="${id}" inputmode="decimal" autocomplete="off" value="${esc(answers[id] ?? '')}"></label>`;
@@ -134,7 +137,7 @@
     const fadeNote = workedSet ? `<p class="notice fade-note" data-read data-say>${carry && carry.fadeMsg ? esc(carry.fadeMsg) + ' ' : ''}${fadePlanText()}</p>${!fadeFull && fadeLevel() > 0 ? button('fullExample', '📖 這題我想先看完整的例題') : ''}` : '';
     const prev = (carry ? `<div class="notice carry" data-read data-say>${carry.badges && carry.badges.length ? `上一題得到：${carry.badges.map(b => C.badges[b][0] + ' ' + C.badges[b][1]).join('、')}。` : ''}上一題，你說「${esc(carry.reason)}」有幫助。${tip ? ' ' + tip : ''}</div>` : '') + fadeNote;
     const probe = mode() === 'probe', ask = !probe && askGoal(), keepGoal = !probe && !ask && lastGoal();
-    if (keepGoal) answers.goal = lastGoal[type];
+    if (keepGoal) answers.goal = keepGoal;
     shell('看題、選方法', `${prev}${contextCard()}
       <p class="lesson-prompt" data-read data-say>${esc(problem().prompt)}</p>
       <div class="figure">${P() ? P().planFigure(ctx()) : window.sevenDiagram(type, dims(), {})}</div>
@@ -1212,7 +1215,7 @@
   // ---------- 閱讀輔助：注音、字級、高對比（學生自己切換的會蓋過老師的預設） ----------
   // 換下一位學生：清掉上一位的紀錄、題號、逐步留空進度和閱讀輔助，從第 1 題重新開始
   function resetStudent() {
-    records = []; saveRecords(); cycle = 1; index = 0; keepProblem = false; pProblem = null; voices = {}; fadeFull = false; retryQ = false; carry = null;
+    records = []; saveRecords(); doneBase = 0; cycle = 1; index = 0; keepProblem = false; pProblem = null; voices = {}; fadeFull = false; retryQ = false; carry = null;
     try { sessionStorage.removeItem(FADE_KEY); sessionStorage.removeItem(AID_KEY); } catch { /* 略過 */ }
     applyReading();
     if (type) startQuestion(); else render();
@@ -1287,7 +1290,7 @@
       isTeacher = !!session.teacher;
       lessons.activities = lessons.activities || {};
       if (P() && !lessons.activities[type]) lessons.activities[type] = {};
-      loadRecords();
+      loadRecords(); doneBase = doneAll();
       if (P()) { settings = F.settings(L()); if (!settings.ai) $('apiSettings').hidden = true; pProblem = P().makeProblem(level(), index, Math.random); }
       else if (type) { settings = F.settings(L()); orders.lines = F.shuffle(['A', 'B', 'C']); if (!settings.ai) $('apiSettings').hidden = true; if (settings.mode === 'probe') probeDims = F.randomProblem(type, settings.difficulty === 'custom' ? 'standard' : settings.difficulty); }
       attachBuddy(); applyReading();

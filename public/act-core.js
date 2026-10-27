@@ -90,13 +90,15 @@
     // 這一步做完時填的數字（選項不算，選項本來就會一樣）
     const numbers = problem => { const e = blank(problem); try { st.solve(e); } catch { return ''; } return Object.values(e.answers).filter(v => /^\d/.test(String(v ?? ''))).join('|'); };
     const target = current ? numbers(current) : '', same = p => current && JSON.stringify(p) === JSON.stringify(current);
+    const ok = p => !same(p) && (!target || numbers(p) !== target);
+    // 固定種子的亂數，讓「隨機都抽不到」時可以有系統地找
+    const seeded = seed => () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
     const make = () => {
-      let problem = null;
-      for (let i = 0; i < 30; i++) {
-        problem = pl.makeProblem(level, 1 + Math.floor(Math.random() * 6), Math.random);
-        if (!same(problem) && (!target || numbers(problem) !== target)) break;
-      }
-      return blank(problem);
+      for (let i = 0; i < 30; i++) { const p = pl.makeProblem(level, 1 + Math.floor(Math.random() * 6), Math.random); if (ok(p)) return blank(p); }
+      // 再依序找：先找同一個難度，再找其他難度（例如 3-3 一般難度每題都是 12 格，只能換難度）
+      for (const lv of [level, ...['easy', 'standard', 'challenge'].filter(x => x !== level)])
+        for (let i = 0; i < 6; i++) for (let seed = 1; seed <= 20; seed++) { const p = pl.makeProblem(lv, i, seeded(seed)); if (ok(p)) return blank(p); }
+      return blank(pl.makeProblem(level, 1, Math.random));   // 這一步的答案和數字無關（例如選單位），用哪一題都一樣
     };
     let ex = make();
     const view = () => `<div class="sd-plugin">${st.figure ? `<div class="sd-pfig">${st.figure(ex)}</div>` : ''}<div class="sd-ans">${st.answer(ex)}</div></div>`;
