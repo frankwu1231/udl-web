@@ -263,3 +263,20 @@ test('第 24 版：班級代碼打錯 30 次才暫停；AI 次數每位老師分
     assert.equal((await c('/api/ai-support',{method:'POST',cookie:t2,body})).status,200,'另一位老師還可以用');
   }finally{globalThis.fetch=originalFetch;}
 });
+
+test('第 24 版審查修正：影片只能由同一位老師刪；同時大量猜代碼也會被擋；可設定每位老師自己的密碼',async()=>{
+  const venv={...env,DB:makeD1(),TEST_TEACHER_PASSWORDS:'T01:teacher-one-pass,T02:teacher-two-pass'},w=(path,o)=>worker.fetch(req(path,o),venv);
+  const login=async(teacher,password)=>{const r=await w('/api/test-login',{method:'POST',body:{username:'test',password,teacher}});return {status:r.status,cookie:r.headers.get('set-cookie')?.split(';')[0]};};
+  assert.equal((await login('T01','test-pass')).status,401,'設了個別密碼後，共用密碼不能選教師代號');
+  assert.equal((await login('T01','teacher-two-pass')).status,401,'不能用別的老師的密碼');
+  assert.equal((await login('T03','test-pass')).status,401,'沒有設定密碼的代號不能用');
+  const t1=(await login('T01','teacher-one-pass')).cookie,t2=(await login('T02','teacher-two-pass')).cookie;
+  assert.ok(t1&&t2);assert.equal((await login('','test-pass')).status,200,'不選代號仍可用共用密碼');
+  const mp4=fs.readFileSync(new URL('./fixtures/sample.mp4',import.meta.url));
+  const up=await worker.fetch(new Request(origin+'/api/teacher/videos',{method:'POST',headers:{cookie:t1,'content-type':'video/mp4'},body:mp4}),venv);assert.equal(up.status,200);const {id}=await up.json();
+  assert.equal((await w('/api/teacher/videos/'+id,{method:'DELETE',cookie:t2})).status,403,'T02 不能刪 T01 的影片');
+  assert.equal((await w('/api/teacher/videos/'+id,{method:'DELETE',cookie:t1})).status,200);
+  const results=await Promise.all(Array.from({length:40},()=>w('/api/class-login',{method:'POST',body:{code:'ABCDEF'}})));
+  assert.equal(results.filter(r=>r.status===401).length+results.filter(r=>r.status===429).length,40);
+  assert.equal((await w('/api/class-login',{method:'POST',body:{code:'ABCDEF'}})).status,429,'同時送 40 次也都有算到');
+});
