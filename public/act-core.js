@@ -79,19 +79,34 @@
   const fieldHtml = (ctx, id, label, step) => `<label class="field"><span data-read data-say>${label}</span><input id="${id}" data-answer="${id}" data-step="${step}" inputmode="decimal" autocomplete="off" value="${esc(ctx.answers[id] ?? '')}"></label>`;
 
   // 動畫示範的兩個畫面：先看題（例題），再看做好的樣子。例題每次重新產生，數字和學生的題目不同。
-  function demoScenes(pl, s, level = 'standard', settings = {}) {
+  // current：學生這一題的題目。第 23 版：例題的數字答案一定和學生這一題不同，照抄示範不會矇對。
+  function demoScenes(pl, s, level = 'standard', settings = {}, current = null) {
     const st = pl.steps[s];
-    const make = () => {
-      const ex = { answers: {}, state: {}, plugin: pl, settings, method: 'mark', level, hint: () => 0, checked: () => false, invalidate() {}, refreshFigure() {}, rerender() {}, log() {} };
-      ex.problem = pl.makeProblem(level, 1 + Math.floor(Math.random() * 3), Math.random);
+    const blank = problem => {
+      const ex = { answers: {}, state: {}, plugin: pl, settings, method: 'mark', level, hint: () => 0, checked: () => false, invalidate() {}, refreshFigure() {}, rerender() {}, log() {}, problem };
       ex.choice = (id, title, items) => `<fieldset class="choice"><legend>${title}</legend><div class="options">${items.map(x => `<button type="button" aria-pressed="${ex.answers[id] === x[0]}">${x[1]}</button>`).join('')}</div></fieldset>`;
       return ex;
+    };
+    // 這一步做完時填的數字（選項不算，選項本來就會一樣）
+    const numbers = problem => { const e = blank(problem); try { st.solve(e); } catch { return ''; } return Object.values(e.answers).filter(v => /^\d/.test(String(v ?? ''))).join('|'); };
+    const target = current ? numbers(current) : '', same = p => current && JSON.stringify(p) === JSON.stringify(current);
+    const ok = p => !same(p) && (!target || numbers(p) !== target);
+    // 固定種子的亂數，讓「隨機都抽不到」時可以有系統地找
+    const seeded = seed => () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const make = () => {
+      for (let i = 0; i < 30; i++) { const p = pl.makeProblem(level, 1 + Math.floor(Math.random() * 6), Math.random); if (ok(p)) return blank(p); }
+      // 再依序找：先找同一個難度，再找其他難度（例如 3-3 一般難度每題都是 12 格，只能換難度）
+      for (const lv of [level, ...['easy', 'standard', 'challenge'].filter(x => x !== level)])
+        for (let i = 0; i < 6; i++) for (let seed = 1; seed <= 20; seed++) { const p = pl.makeProblem(lv, i, seeded(seed)); if (ok(p)) return blank(p); }
+      return blank(pl.makeProblem(level, 1, Math.random));   // 這一步的答案和數字無關（例如選單位），用哪一題都一樣
     };
     let ex = make();
     const view = () => `<div class="sd-plugin">${st.figure ? `<div class="sd-pfig">${st.figure(ex)}</div>` : ''}<div class="sd-ans">${st.answer(ex)}</div></div>`;
     return [
-      { say: st.think || st.hints[0], html: () => { ex = make(); return view(); }, act: async D => { await D.point('.sd-pfig svg, .sd-pfig, .sd-ans'); } },
-      { say: () => st.say ? st.say(ex) : st.hints[2], html: () => { st.solve(ex); return view(); }, act: async D => { await D.pointAll('.sd-ans [aria-pressed=true], .sd-ans input.sd-filled, .sd-pfig .ac-mark, .sd-pfig .ac-tile, .sd-pfig .ac-side.on'); } }
+      // 有 A、B 兩個圖形時，手指分別指 A 和 B（第 23 版：不再指在兩個圖形中間）
+      { say: st.think || st.hints[0], html: () => { ex = make(); return view(); }, act: async D => { if (D.els('.sd-pfig .ac-a').length && D.els('.sd-pfig .ac-b').length) { await D.pointGroup('.sd-pfig .ac-a'); await D.pointGroup('.sd-pfig .ac-b'); } else await D.point('.sd-pfig svg, .sd-pfig, .sd-ans'); } },
+      // 步驟可以自訂示範動作（st.demo），例如 3-2 沿著左邊一排一排往下數
+      { say: () => st.say ? st.say(ex) : st.hints[2], html: () => { st.solve(ex); return view(); }, act: async D => { if (st.demo) { await st.demo(D, ex); return; } await D.pointAll('.sd-ans [aria-pressed=true], .sd-ans input.sd-filled, .sd-pfig .ac-mark, .sd-pfig .ac-tile, .sd-pfig .ac-side.on'); } }
     ];
   }
 

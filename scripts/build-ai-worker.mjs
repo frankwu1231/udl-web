@@ -1,6 +1,6 @@
 import fs from 'node:fs';import path from 'node:path';
 const root=path.resolve(import.meta.dirname,'..'),publicDir=path.join(root,'public'),dist=path.join(root,'dist');
-const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml'};
+const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.pdf':'application/pdf'};
 const files=fs.readdirSync(publicDir,{withFileTypes:true}).filter(x=>x.isFile()&&mime[path.extname(x.name)]);
 const map=files.map(f=>['/'+f.name,[mime[path.extname(f.name)],fs.readFileSync(path.join(publicDir,f.name)).toString('base64')]]);
 const defaults=JSON.parse(fs.readFileSync(path.join(root,'lesson-defaults.json'),'utf8'));

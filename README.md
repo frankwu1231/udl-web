@@ -8,6 +8,15 @@
 - 建置與測試：`node scripts/build-ai-worker.mjs`，再 `npm test`（46 項，含 Playwright 瀏覽器測試）。
 - 金鑰與密碼不在 repo 裡，請在主機的環境變數設定（見 `開啟與修改說明.md`）。
 
+## 2026-10-27：第 23 版（依第 19 版教師回饋修改）
+
+- 回饋整理見 Claude Doc「第 19 版教師回饋整理與改進建議」。
+- 示範（`step-demo.js`、`act-core.js`、`act-unit3.js`）：示範題的數字答案一定和學生的題目不同；3-2 沿最左邊一行一排一排數，長方形說「寬」；一排一排加逐格亮起並寫出累加算式；比較兩塊時先亮 A 再亮 B（`pointGroup`）。
+- 顯示：注音聲調放大到 1.35em；沒有中文語音時顯示一次提醒。
+- 流程（`seven.js`、`learning-flow.js`、`worker/index.js`）：新設定 `srlAsk`（first／every3／always／off，預設 first）、`lessonGoal`（0／3／5／8／10）、`stepNames`（第 0～6 步，12 字以內）。算對面積就自動比對（拿掉「比完了，結果怎麼樣？」）；「回去看」後可「回到剛才那一步」；回顧「哪些有幫助你」可複選；減少裝飾用 emoji。
+- 活動：列算式時聚焦方格會亮出圖上的邊；3-3 改成「把每一種都排出來」並列出小圖、轉過來重複時疊圖；3-4 切開小動畫；3-5 課桌對照圖；4-2 先數拼好的是幾片再比大小。
+- 實物操作卡 PDF：`node scripts/hands-on-pdf.mjs` 產生 `public/hands-on.pdf`（改了 `hands-on.html` 要重跑）。
+
 ## 2026-10-26：第 22 版（學習小幫手「小方」，先以輕度智能障礙學生為主）
 
 - 解題頁右下角的小機器人（`public/buddy.js`、`buddy.css`）。它不另外寫提示，而是在對的時候幫學生打開原本的三層提示和「我卡住了」。

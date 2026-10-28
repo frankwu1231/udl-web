@@ -160,9 +160,10 @@ html[data-size=large] #app{zoom:1.15}
 html[data-size=xlarge] #app{zoom:1.3}
 /* 注音：照課本的樣子，直排在國字右邊 */
 ruby.zy{display:inline-flex;align-items:center;vertical-align:middle;margin:0 .04em}
-ruby.zy rt{display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.4em;padding:0!important;background:none!important;line-height:1;font-weight:normal;margin-left:.08em;color:inherit;font-family:"Microsoft JhengHei","PingFang TC","Noto Sans CJK TC",sans-serif;min-height:2.6em}
+ruby.zy rt{display:flex;flex-direction:row;align-items:center;justify-content:center;font-size:.4em;padding:0!important;background:none!important;line-height:1;font-weight:normal;margin-left:.08em;color:inherit;font-family:"Microsoft JhengHei","PingFang TC","Noto Sans CJK TC",sans-serif;min-height:2.6em}
 ruby.zy z-b{display:block;padding:0;margin:0}
-ruby.zy rt .zt{font-size:.9em;line-height:.6}
+ruby.zy rt .zc{display:flex;flex-direction:column;align-items:center}
+ruby.zy rt .zt{font-size:1.3em;line-height:1;font-weight:bold;margin-left:.02em;align-self:flex-end;transform:translateY(-.15em)}   /* 第 23 版：聲調放大、放在注音右邊，老師反映看不到 */
 ruby.zy rt .zn{order:-1;line-height:.6}
 html.zhuyin-on #app p,html.zhuyin-on #app li,html.zhuyin-on #app legend,html.zhuyin-on #app summary,html.zhuyin-on #app button,html.zhuyin-on #app h1,html.zhuyin-on #app h2,html.zhuyin-on #app label span{line-height:1.9}
 /* 教學階段提示條 */
@@ -248,3 +249,8 @@ html.contrast .step-ask,html.contrast .stuck-panel{border-color:#000;background:
 .your-turn{margin:0 0 8px;padding:6px 12px;border-left:5px solid #c2410c;background:#fff4ec;border-radius:8px;font-size:19px;font-weight:bold}
 .fade-note{border-left:5px solid #2157da}
 html.contrast .worked-tag,html.contrast .your-turn{border-color:#000;background:#fff;color:#000}
+/* 第 23 版：沒有中文語音的提醒 */
+.voice-note{position:fixed;left:50%;transform:translateX(-50%);top:12px;z-index:60;max-width:min(92vw,560px);margin:0;padding:10px 16px;border-radius:12px;background:#fff4e0;border:2px solid #e9a23b;color:#5b3b00;font-size:16px;box-shadow:0 4px 12px #0002}
+/* 第 23 版：這次做幾題、回顧可複選 */
+.lesson-goal{font-weight:bold;color:#0b5394}
+.choice.multi button[aria-pressed="true"]::before{content:"✓ "}

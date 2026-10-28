@@ -78,6 +78,10 @@ if(s.buddyWait!==undefined&&![30,60,90].includes(s.buddyWait))return false;
 if(s.attentionSec!==undefined&&![3,5,8].includes(s.attentionSec))return false;
 if(s.mode!==undefined&&!['self','together','demo','probe'].includes(s.mode))return false;
 if(s.goalKind!==undefined&&!['hints','firstTry'].includes(s.goalKind))return false;
+// 第 23 版：目標詢問頻率、這次做幾題、自訂步驟名稱
+if(s.srlAsk!==undefined&&!['first','every3','always','off'].includes(s.srlAsk))return false;
+if(s.lessonGoal!==undefined&&![0,3,5,8,10].includes(s.lessonGoal))return false;
+if(s.stepNames!==undefined&&!(s.stepNames&&typeof s.stepNames==='object'&&!Array.isArray(s.stepNames)&&Object.entries(s.stepNames).every(([k,v])=>/^[0-6]$/.test(k)&&typeof v==='string'&&v.trim().length<=12)))return false;
 if(s.textSize!==undefined&&!['normal','large','xlarge'].includes(s.textSize))return false;
 if(s.rest!==undefined&&![0,2,3].includes(s.rest))return false;
 if(s.video!==undefined&&!['off','hint','always'].includes(s.video))return false;
@@ -111,7 +115,7 @@ async function teacherGet(request,env,role){if(role==='none')return json({error:
 async function teacherSave(request,env,role){if(role==='none')return json({error:'signin_required'},401);if(!env.DB)return json({error:'lesson_storage_unavailable'},503);const origin=request.headers.get('origin');if(origin&&origin!==new URL(request.url).origin)return json({error:'origin'},403);if(Number(request.headers.get('content-length')||0)>60000)return json({error:'too_large'},413);let body;try{body=await request.json();}catch{return json({error:'invalid_json'},400);}if(!body||!['draft','published'].includes(body.kind)||!validLesson(body.config,true))return json({error:'invalid_input'},400);const config=JSON.stringify(body.config);if(config.length>60000)return json({error:'too_large'},413);const kind=role==='test'?'test_'+body.kind:body.kind;
 try{const existing=await lessonRow(env,kind),revision=(existing?.revision||0)+1;await env.DB.prepare('INSERT INTO lesson_documents (kind,config_json,revision,updated_at) VALUES (?,?,?,?) ON CONFLICT(kind) DO UPDATE SET config_json=excluded.config_json,revision=excluded.revision,updated_at=excluded.updated_at').bind(kind,config,revision,new Date().toISOString()).run();return json({ok:true,revision});}catch{return json({error:'lesson_storage_unavailable'},503);}}
 const publicAssets=new Set(['/portal.html','/portal.css','/portal.js','/shapes.css','/favicon.svg']);
-const studentAssets=new Set(['/seven.html','/seven.js','/seven.css','/seven-geometry.js','/learning-flow.js','/lesson-content.js','/zhuyin.js','/hands-on.html','/step-demo.js','/step-demo.css','/seven-guide.html','/act-core.js','/act-unit12.js','/act-unit3.js','/act-unit45.js','/act.css','/buddy.js','/buddy.css','/research.js','/research.css']);
+const studentAssets=new Set(['/seven.html','/seven.js','/seven.css','/seven-geometry.js','/learning-flow.js','/lesson-content.js','/zhuyin.js','/hands-on.html','/hands-on.pdf','/step-demo.js','/step-demo.css','/seven-guide.html','/act-core.js','/act-unit12.js','/act-unit3.js','/act-unit45.js','/act.css','/buddy.js','/buddy.css','/research.js','/research.css']);
 export default {async fetch(request,env){const url=new URL(request.url);if(url.pathname==='/api/test-login')return request.method==='POST'?testLogin(request,env):json({error:'method'},405);
 if(url.pathname==='/api/test-logout'){if(request.method!=='POST')return json({error:'method'},405);const origin=request.headers.get('origin');if(origin&&origin!==url.origin)return json({error:'origin'},403);return jsonCookie({ok:true},200,sessionCookie('',0));}
 const role=await requestRole(request,env);

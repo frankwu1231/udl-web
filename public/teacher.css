@@ -33,3 +33,5 @@ label.check{display:flex;align-items:center;gap:6px}
 .assign-row .code{font-size:13px;color:#526b89;margin-left:6px}
 button.small{min-height:40px;padding:6px 10px;font-size:15px}
 .target-info{background:#f3f7ff;border-radius:10px;padding:8px 12px}
+/* 第 23 版：改步驟名稱 */
+.step-names{margin:8px 0}.step-names label{display:flex;gap:8px;align-items:center;margin:6px 0}.step-names input{flex:1;max-width:16em}
