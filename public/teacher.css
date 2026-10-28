@@ -35,3 +35,7 @@ button.small{min-height:40px;padding:6px 10px;font-size:15px}
 .target-info{background:#f3f7ff;border-radius:10px;padding:8px 12px}
 /* 第 23 版：改步驟名稱 */
 .step-names{margin:8px 0}.step-names label{display:flex;gap:8px;align-items:center;margin:6px 0}.step-names input{flex:1;max-width:16em}
+/* 第 24 版：班級代碼 */
+.class-list{display:grid;gap:12px;margin-top:10px}.class-card{display:flex;gap:16px;align-items:center;border:1px solid #ccd9ec;border-radius:12px;padding:12px;flex-wrap:wrap}
+.class-qr svg{display:block;width:120px;height:120px}.class-name{font-weight:bold;margin:0}.class-code{font-size:34px;font-weight:bold;letter-spacing:.25em;margin:4px 0;font-family:ui-monospace,Consolas,monospace}
+dialog.class-big{text-align:center;padding:24px 32px;border-radius:16px;max-width:95vw}.class-big .class-qr-big svg{width:min(70vh,80vw);height:auto}.class-big .class-code{font-size:56px}
