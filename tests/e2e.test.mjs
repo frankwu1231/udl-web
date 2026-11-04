@@ -1082,3 +1082,57 @@ test('第 24 版：老師建立班級代碼，學生掃 QR code 的連結就進�
   assert.deepEqual(errors, []);
   await ctx.close(); await ctx2.close(); await t.close();
 });
+
+test('第 25 版：高對比主按鈕看得到字；選錯先看圖 3 秒；1-2 鋪一排與已鋪塊數；第 3 個提示要先試一次；3-4 長寬寫反會提醒；4-3 拼合動畫與數字；示範數到最後', { skip: skip || !distReady }, async () => {
+  const c = await student('rectangle', { contrast: true });
+  const col = await c.page.$eval('#start', e => { const s = getComputedStyle(e); return [s.color, s.backgroundColor]; });
+  assert.notEqual(col[0], col[1], '主按鈕字和底色不同'); assert.equal(col[0], 'rgb(255, 255, 255)');
+  const p = await act('tile');
+  await p.choose('rule', 'any'); await p.check();
+  await p.page.waitForFunction(() => document.querySelector('[data-choice="rule"][data-value="ok"]').disabled, null, { timeout: 3000 });
+  assert.match(await p.text('#feedback0'), /先看一看圖/);
+  await p.page.waitForFunction(() => !document.querySelector('[data-choice="rule"][data-value="ok"]').disabled, null, { timeout: 5000 });
+  await p.choose('rule', 'ok'); await p.check(); await p.next();
+  // 先點第 2 格，再點第 1 格：數字照位置排
+  await p.page.locator('#figure1 [data-tile-at]').nth(1).dispatchEvent('click'); await p.page.locator('#figure1 [data-tile-at]').nth(0).dispatchEvent('click');
+  assert.deepEqual(await p.page.$$eval('#figure1 .ac-num', l => l.map(x => x.textContent)), ['1', '2']);
+  assert.match(await p.text('.ac-tally'), /已經鋪了 2 塊/);
+  // 第 3 個提示：先試一次
+  await p.page.click('#hint1'); await p.page.click('#hint1');
+  assert.ok(await p.page.$eval('#hint1', b => b.disabled && /先試一次/.test(b.textContent)));
+  await p.check(); await p.page.waitForFunction(() => /提示 3／3/.test(document.getElementById('hintText1')?.textContent || ''), null, { timeout: 5000 });
+  await p.page.click('#tileRow'); assert.match(await p.text('.ac-tally'), /還有/);
+  while (await p.page.$('#tileRow')) await p.page.click('#tileRow');
+  assert.match(await p.text('.ac-tally'), /鋪滿了/);
+  const n = await p.page.locator('#figure1 [data-tile-at]').count();
+  const last = await p.page.$$eval('#figure1 .ac-num', l => l.map(x => x.textContent).at(-1)); assert.equal(last, String(n), '右下角是總數');
+  // 示範：從 1 數到最後
+  const demo = await p.page.evaluate(async () => {
+    const host = document.createElement('div'); document.body.prepend(host);
+    const A = window.areaActs, pl = A.get('tile'), d = window.stepDemo.mount(host, { scenes: A.demoScenes(pl, 2, 'easy', {}, null), recap: '右下角最後一格的數字，就是一共用了幾塊。' });
+    await d.play(); return { nums: host.querySelectorAll('.sd-num').length, tiles: host.querySelectorAll('.ac-tile').length, cap: host.querySelector('.sd-caption').textContent };
+  });
+  assert.equal(demo.nums, demo.tiles); assert.ok(demo.nums > 4, '不只數到 4'); assert.match(demo.cap, /^記住：/);
+  // 老師可以關掉「先試一次」
+  const q = await act('tile', { tryFirst: false });
+  await q.choose('rule', 'ok'); await q.check(); await q.next(); await q.page.click('#hint1'); await q.page.click('#hint1'); await q.page.click('#hint1');
+  await q.page.waitForFunction(() => /提示 3／3/.test(document.getElementById('hintText1')?.textContent || ''), null, { timeout: 5000 });
+  // 3-4：長和寬寫反也對，但會提醒
+  const r = await act('composite', { difficulty: 'easy' });
+  await r.page.locator('#figure0 [data-cut="h"]').dispatchEvent('click'); await r.check(); await r.next();
+  await r.page.fill('#l0', '2'); await r.page.fill('#w0', '3'); await r.page.fill('#a0', '6'); await r.check();
+  await r.page.waitForFunction(() => /答對了！小提醒：比較長的邊叫「長」/.test(document.getElementById('feedback1')?.textContent || ''), null, { timeout: 5000 });
+  // 4-3：拼合時第二片有動畫；列算式和算一算的圖一直有上底、下底、高
+  const t = await act('trapezoid');
+  await t.choose('target', 'inside'); await t.check(); await t.next();
+  await t.page.click('#trTake'); await t.page.click('#trJoin');
+  assert.ok(await t.page.$('#figure1 .ac-join'), '轉過來拼的動畫');
+  const fig = await t.page.evaluate(() => window.areaActs.get('trapezoid').steps[5].figure({ problem: { t: 3, b: 7, h: 4, off: 2 }, answers: {}, state: {}, checked: () => false, hint: () => 0 }));
+  assert.match(fig, /上底 3/); assert.match(fig, /下底 7/); assert.match(fig, /高 4/);
+  // 2-2：兩張小圖一開始就在；看過第 2 個提示後標出關鍵字
+  const w = await act('which');
+  assert.equal(await w.page.$$eval('#figure0 .ac-sitcard', l => l.length), 2);
+  await w.page.click('#hint0'); await w.page.click('#hint0');
+  const prompt = await w.page.$eval('.lesson-prompt', e => e.innerHTML); if (/圍一圈|繞著|沿著|一圈|鋪滿|貼滿|刷滿|種滿|蓋滿/.test(prompt)) assert.match(prompt, /<mark>/);
+  for (const x of [c, p, q, r, t, w]) assert.deepEqual(x.errors, []);
+});

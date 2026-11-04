@@ -40,21 +40,26 @@ const safeText = (value,max=80)=>typeof value==='string'&&value.length>0&&value.
 const schema={type:'object',properties:{message:{type:'string'}},required:['message'],additionalProperties:false};
 const stepNames=['看題目','點格子或操作圖形','找底或第一個邊長','找高或第二個邊長','列算式','計算並比一比','寫單位'];
 const issueNames={none:'無',target:'選錯要找什麼',count:'格子沒點完或總數不對',relation:'操作後的比較選錯',base:'還沒點底',first:'底或第一個邊長填錯',line:'選錯高的線',height:'選錯高的線',second:'高或第二個邊長填錯',formula:'算式選錯',ab:'算式裡的數字填錯',total:'計算結果不對',verify:'還沒比一比',unit:'單位選錯',final:'答案不對'};
+// 第 25 版：每個活動學生實際在做什麼、有哪些工具，AI 的提示不能跳出這些（例如 1-1 沒有三角形、1-2 不用尺量）
+const actTools={compare:'看 A、B 兩個圖形裡的方格，一格一格數，格子多的面積比較大。圖上只有方格，沒有三角形，也不用尺量。',tile:'點長方形裡的空位，放 1 平方公分的小方塊，鋪滿後數一共用了幾塊；也可以按「鋪滿下一排」。不用尺量。',conserve:'把圖形剪開、移動、拼成新圖形，再數格子比較面積。',estimate:'數整格，再數半格，兩個半格算一格。',perimeter:'沿著圖形的邊，一格一格數邊有多長，四條邊加起來。',which:'讀情境，判斷是沿著邊走一圈，還是蓋滿裡面；看關鍵字：圍、繞、沿著是一圈，鋪滿、貼滿、刷滿是蓋滿。',samePerimeter:'用長加寬加長加寬算一圈，用長乘寬或數格子算面積，再比較 A 和 B。',inverse:'已經知道面積和一條邊，想幾乘幾會等於面積。',arrange:'用固定的格子數，排出不同形狀的長方形；轉過來的算同一種。',composite:'沿著虛線切成兩個長方形，每一塊長乘寬，再加起來。',squareMeter:'1 平方公尺是邊長 1 公尺的正方形，大約 4 張課桌併起來；小東西用平方公分，大地方用平方公尺。',trapezoid:'拿一片一樣的梯形，轉過來拼成平行四邊形；上底加下底當作底，乘高，再除以 2。',word:'讀題目，判斷要算面積還是周長，找出長和寬再計算。'};
+const hintRe=/^[\u3000-\u303f\u4e00-\u9fff\uff00-\uffef0-9A-Za-z +×÷=\-()（）、，。？！：；「」.]{1,60}$/;
 const banned='公式、一致、依據、垂直、全等、周長、對應、驗證、策略、概念、檢核';
 const concepts={rectangle:['辨認面積','逐格標記','每排格數','排數','長乘寬的意義','點數與計算對照','平方公分'],square:['辨認面積','逐格標記','邊長','相鄰等長邊','邊長乘邊長的意義','點數與計算對照','平方公分'],triangle:['辨認面積','兩片全等三角形拼合','底','與底垂直的高','兩片面積與一片面積','拼合結果與計算對照','平方公分'],parallelogram:['辨認面積','沿高剪移、面積不變','底','與底垂直的高','底乘高的意義','剪移後面積對照','平方公分']};
 function validate(body){const act=body&&typeof body==='object'&&Object.hasOwn(actTitles,body.shape);if(act&&!(typeof body.stepTitle==='string'&&/^[\u4e00-\u9fff0-9A-Za-z ，、（）？]{1,16}$/.test(body.stepTitle)))return false;if(!body||typeof body!=='object'||Array.isArray(body)||!modes.has(body.kind)||!(shapes.has(body.shape)||act)||!whole(body.cycle,50)||!whole(body.step,act?7:6)||!methods.has(body.method)||!goals.has(body.goal)||!whole(body.hints,50)||!whole(body.errors,50)||typeof body.incorrect!=='boolean')return false;
 if(Object.hasOwn(body,'operationComplete')&&typeof body.operationComplete!=='boolean'||Object.hasOwn(body,'comparisonOpened')&&typeof body.comparisonOpened!=='boolean')return false;
 if(Object.hasOwn(body,'issue')&&!(act&&/^[a-z][A-Za-z0-9]{0,11}$/.test(body.issue))&&!['none','target','count','relation','base','first','line','height','second','formula','ab','total','verify','unit','final'].includes(body.issue))return false;
 if(Object.hasOwn(body,'hintLevel')&&!whole(body.hintLevel,3))return false;
+if(Object.hasOwn(body,'stepHints')&&!(Array.isArray(body.stepHints)&&body.stepHints.length<=3&&body.stepHints.every(h=>typeof h==='string'&&hintRe.test(h))))return false;
 if(Object.hasOwn(body,'apiKey')&&!(typeof body.apiKey==='string'&&/^sk-[^\s]{20,400}$/.test(body.apiKey)))return false;
 if(Object.hasOwn(body,'provider')&&!providers.has(body.provider))return false;
 if(body.kind==='teacher'){return Array.isArray(body.steps)&&(act?body.steps.length>=1&&body.steps.length<=8:body.steps.length===7)&&body.steps.every(x=>whole(x,100))&&whole(body.backtracks,100)&&whole(body.completed,50)&&whole(body.helpRequests,100);}
 return true;}
 function instruction(data){const base='你是國小面積教材的繁體中文學習支持。對象可能閱讀較慢。只輸出一則短訊息，不用 Markdown。不能給出數值答案、代填算式、假稱已判斷學生錯因，或使用診斷標籤。保留學生思考與選擇。';
 const act=Object.hasOwn(actTitles,data.shape),words=act&&perimeterActs.has(data.shape)?banned.replace('周長、',''):banned;
-const context=act?`活動=${actTitles[data.shape]}，目前步驟=${data.step+1} ${data.stepTitle}，方法=${data.method}，學生已看到第${data.hintLevel||0}層提示（共3層），本題提示次數=${data.hints}，答錯次數=${data.errors}，剛剛答錯=${data.incorrect}，錯在=${data.issue&&data.issue!=='none'?'這一步的答案（代碼 '+data.issue+'）':'無'}。`:`圖形=${data.shape}，目前步驟=${data.step+1} ${stepNames[data.step]}，概念=${concepts[data.shape][data.step]}，方法=${data.method}，學生已看到第${data.hintLevel||0}層提示（共3層），本題提示次數=${data.hints}，答錯次數=${data.errors}，剛剛答錯=${data.incorrect}，錯在=${issueNames[data.issue||'none']||'無'}，操作已完成=${data.operationComplete===true}，比一比已打開=${data.comparisonOpened===true}。`;
-if(data.kind==='hint')return {system:base+`對象是國小三到五年級、可能有學習困難的學生。用國小中年級的口語，一句話，不超過25個字，只說一個動作，例如「看綠色的線，數它有幾格」。不要用這些詞：${words}。不要重複學生已看過的提示，要換一個說法或指出圖上要看的地方。針對「錯在」的地方提示。操作已完成時，不可叫學生繼續點格子或重新拼合。三角形是拿兩片一樣大的拼起來，高不是切開的線。不可說出數字答案，也不可直接說哪個選項對。`,user:context};
-if(data.kind==='reflection')return {system:base+`對象是國小三到五年級、可能有學習困難的學生。問一個很簡單、能用一句話回答的問題，不超過30個字，用國小中年級的口語，例如「你是怎麼知道高是哪一條線的？」。不要用這些詞：${words}。只問一件事，不替學生回答。`,user:context};
+const own=Array.isArray(data.stepHints)&&data.stepHints.length?`這一步原本的提示：${data.stepHints.map((h,i)=>`（${i+1}）${h}`).join(' ')}。`:'';
+const context=act?`活動=${actTitles[data.shape]}，學生在這個活動做的事：${actTools[data.shape]}${own}目前步驟=${data.step+1} ${data.stepTitle}，方法=${data.method}，學生已看到第${data.hintLevel||0}層提示（共3層），本題提示次數=${data.hints}，答錯次數=${data.errors}，剛剛答錯=${data.incorrect}，錯在=${data.issue&&data.issue!=='none'?'這一步的答案（代碼 '+data.issue+'）':'無'}。`:`圖形=${data.shape}，目前步驟=${data.step+1} ${stepNames[data.step]}，概念=${concepts[data.shape][data.step]}，方法=${data.method}，學生已看到第${data.hintLevel||0}層提示（共3層），本題提示次數=${data.hints}，答錯次數=${data.errors}，剛剛答錯=${data.incorrect}，錯在=${issueNames[data.issue||'none']||'無'}，操作已完成=${data.operationComplete===true}，比一比已打開=${data.comparisonOpened===true}。${own}`;
+if(data.kind==='hint')return {system:base+`對象是國小三到五年級、可能有學習困難的學生。用國小中年級的口語，一句話，不超過25個字，只說一個動作，例如「看綠色的線，數它有幾格」。不要用這些詞：${words}。不要重複學生已看過的提示，要換一個說法或指出圖上要看的地方。提示要和「這一步原本的提示」做同一件事，只能用這個活動裡有的東西和動作，不可以叫學生用尺量、數三角形，或做活動裡沒有的事。針對「錯在」的地方提示。操作已完成時，不可叫學生繼續點格子或重新拼合。${act?'':'三角形是拿兩片一樣大的拼起來，高不是切開的線。'}不可說出數字答案，也不可直接說哪個選項對。`,user:context};
+if(data.kind==='reflection')return {system:base+`對象是國小三到五年級、可能有學習困難的學生。問一個很簡單、具體的問題，不超過20個字，學生可以用「是／不是」、選一個或指一指圖來回答，例如「你是數格子找到答案的嗎？」「你看了圖上哪一條線？」。不要問抽象的感想，不要拐彎抹角。不要用這些詞：${words}。只問一件事，不替學生回答。`,user:context};
 return {system:base+'面向教師，請用不超過180字整理：觀察事實、待教師確認的可能困難、下一次可觀察什麼。事實與推測須分清；統計只代表點擊與檢核，不代表學生已具備SRL能力。',user:context+`各步檢核未通過次數=${data.steps.join(',')}；返回修正=${data.backtracks}次；整題完成=${data.completed}輪；主動求助=${data.helpRequests}次。`};}
 async function ai(request,env,who){const role=who.role,server=role==='test'||role==='student';const origin=request.headers.get('origin');if(origin&&origin!==new URL(request.url).origin)return json({error:'origin'},403);if(role==='none')return json({error:'signin_required'},401);
 const size=Number(request.headers.get('content-length')||0);if(size>4096)return json({error:'too_large'},413);
@@ -85,7 +90,7 @@ if(s.breaks!==undefined&&!(Array.isArray(s.breaks)&&s.breaks.length<=6&&s.breaks
 if(s.keep!==undefined&&!(Array.isArray(s.keep)&&s.keep.length<=4&&s.keep.every(v=>[0,1,2,3].includes(v))))return false;
 if(s.labels!==undefined&&!['reveal','always'].includes(s.labels))return false;
 if(s.rate!==undefined&&!['slow','normal'].includes(s.rate))return false;
-for(const k of ['ai','reward','sound','grid','confidence','selfAsk','badges','voice','handsOn','zhuyin','contrast','convert','fading','buddy','buddyVoice','attention'])if(s[k]!==undefined&&typeof s[k]!=='boolean')return false;
+for(const k of ['ai','reward','sound','grid','confidence','selfAsk','badges','voice','handsOn','zhuyin','contrast','convert','fading','buddy','buddyVoice','attention','tryFirst'])if(s[k]!==undefined&&typeof s[k]!=='boolean')return false;
 if(s.buddyWait!==undefined&&![30,60,90].includes(s.buddyWait))return false;
 if(s.attentionSec!==undefined&&![3,5,8].includes(s.attentionSec))return false;
 if(s.mode!==undefined&&!['self','together','demo','probe'].includes(s.mode))return false;

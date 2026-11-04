@@ -155,8 +155,10 @@
       check: ctx => { const [x, y] = pieces(ctx.problem, ctx.answers.cut)[n], l = num(ctx.answers[ids[0]]), w = num(ctx.answers[ids[1]]), a = num(ctx.answers[ids[2]]);
         if (l === null || w === null) return { code: 'side', msg: '先填這一塊的長和寬。' };
         if (!((l === x && w === y) || (l === y && w === x))) return { code: 'side', msg: '看這一塊的邊。如果圖上沒有寫，用大的邊減掉小的邊。' };
-        if (a === null) return { code: 'area', msg: '再填這一塊的面積。' }; return a === x * y ? null : { code: 'area', msg: '長 × 寬，再算一次。' }; },
-      solve: ctx => { if (!ctx.answers.cut) ctx.answers.cut = 'v'; const [x, y] = pieces(ctx.problem, ctx.answers.cut)[n]; ctx.answers[ids[0]] = String(x); ctx.answers[ids[1]] = String(y); ctx.answers[ids[2]] = String(x * y); },
+        if (a === null) return { code: 'area', msg: '再填這一塊的面積。' }; if (a !== x * y) return { code: 'area', msg: '長 × 寬，再算一次。' };
+        // 第 25 版：長和寬寫反了也算對（乘法順序不影響答案），答對後提醒一句
+        return l < w ? { note: `小提醒：比較長的邊叫「長」，這一塊的長是 ${w}、寬是 ${l}。` } : null; },
+      solve: ctx => { if (!ctx.answers.cut) ctx.answers.cut = 'v'; const [x, y] = pieces(ctx.problem, ctx.answers.cut)[n]; ctx.answers[ids[0]] = String(Math.max(x, y)); ctx.answers[ids[1]] = String(Math.min(x, y)); ctx.answers[ids[2]] = String(x * y); },
       say: ex => { const [x, y] = pieces(ex.problem, ex.answers.cut || 'v')[n]; return `這一塊是 ${x} 乘 ${y}，等於 ${x * y}。`; } };
   }
   A.register('composite', {
@@ -206,9 +208,9 @@
       solve: ctx => ctx.problem.items.forEach((it, i) => { ctx.answers['u' + i] = it[2]; }), say: ex => ex.problem.items.map(it => `${it[1]}用${it[2] === 'm2' ? '平方公尺' : '平方公分'}`).join('，') + '。' };
   }
   A.register('squareMeter', {
-    methods: [['mark', '✋ 先用報紙拼拼看'], ['self', '🧠 先自己想，需要時看提示']],
+    methods: [['mark', '✋ 先想像 4 張課桌併起來'], ['self', '🧠 先自己想，需要時看提示']],
     makeProblem(level, i, random = Math.random) { const items = U.shuffle(ITEMS, random); const pickd = [items.find(x => x[2] === 'cm2'), items.find(x => x[2] === 'm2'), items.filter(x => x[2] === 'cm2')[1] || items[2]]; return { items: U.shuffle(pickd, random), est: pick(EST, i), calc: pick(CALC[level] || CALC.standard, i), prompt: '認識「平方公尺」：比平方公分大很多的面積單位。' }; },
-    planFigure: () => `<div class="ac-m2"><div class="ac-m2-sq" role="img" aria-label="邊長 1 公尺的正方形"><span>1 平方公尺</span></div><p data-read data-say>邊長 1 公尺（100 公分）的正方形，大約是 4 張全開報紙拼起來。</p>${desks()}</div>`,
+    planFigure: () => `<div class="ac-m2"><div class="ac-m2-sq" role="img" aria-label="邊長 1 公尺的正方形"><span>1 平方公尺</span></div><p data-read data-say>邊長 1 公尺（100 公分）的正方形，大約是 4 張課桌併起來。</p>${desks()}</div>`,
     steps: [
       { title: '認識 1 平方公尺', ids: ['what'], hints: ['1 平方公分是邊長 1 公分的正方形。', '把「公分」換成「公尺」想想看。', '邊長 1 公尺的正方形，面積是 1 平方公尺。'],
         think: '邊長 1 公尺的正方形，面積是 1 平方公尺。', together: '一起想：1 平方公尺有多大？',
@@ -217,8 +219,8 @@
         check: ctx => !ctx.answers.what ? { code: 'what', msg: '選一個答案。' } : ctx.answers.what === 'm' ? null : { code: 'what', msg: ctx.answers.what === 'cm' ? '這是 1 平方公分，很小。' : '線是長度，不是面積。' },
         solve: ctx => { ctx.answers.what = 'm'; }, say: () => '邊長 1 公尺的正方形，面積是 1 平方公尺。' },
       unitStep(),
-      { title: '估估看', ids: ['est'], hints: ['想像 1 平方公尺：大約 4 張課桌併起來。', '這個地方大約可以鋪幾張報紙？', '估的時候，選最接近的數字。'],
-        think: '老師想像用報紙鋪滿，大約要幾個 1 平方公尺。', together: '一起估：大約幾平方公尺？',
+      { title: '估估看', ids: ['est'], hints: ['想像 1 平方公尺：大約 4 張課桌併起來。', '這個地方大約可以放幾組「4 張課桌」？', '估的時候，選最接近的數字。'],
+        think: '老師想像用「4 張課桌」鋪滿，大約要幾個 1 平方公尺。', together: '一起估：大約幾平方公尺？',
         figure: ctx => `<div class="ac-sit"><span aria-hidden="true">${ctx.problem.est[0]}</span></div>`,
         answer: ctx => ctx.choice('est', `${ctx.problem.est[1]}大約是幾平方公尺？`, ctx.problem.est[2].map(v => [v, `大約 ${v} 平方公尺`]), true),
         check: ctx => !ctx.answers.est ? { code: 'est', msg: '選一個答案。' } : ctx.answers.est === ctx.problem.est[3] ? null : { code: 'est', msg: Number(ctx.answers.est) < Number(ctx.problem.est[3]) ? '再想大一點。' : '再想小一點。' },
@@ -236,8 +238,8 @@
         check: ctx => { const v = num(ctx.answers.conv); return v === null ? { code: 'conv', msg: '請填數字。' } : v === 10000 ? null : { code: 'conv', msg: v === 100 ? '100 是一排的格數，還要乘有幾排。' : '100 × 100，再算一次。' }; },
         solve: ctx => { ctx.answers.conv = '10000'; }, say: () => '1 平方公尺等於 10000 平方公分。' }
     ],
-    reasons: [['paper', '想像報紙'], ['compare', '和平方公分比'], ['hint', '看提示'], ['alone', '我自己想']],
+    reasons: [['paper', '想像課桌'], ['compare', '和平方公分比'], ['hint', '看提示'], ['alone', '我自己想']],
     done: ctx => { const [a, b] = ctx.problem.calc; return `花圃是 ${a * b} 平方公尺。大的地方用平方公尺，小的東西用平方公分。`; },
-    chant: '1 平方公尺：邊長 1 公尺的正方形。', transfer: '量一量：用報紙拼出 1 平方公尺，上面可以站幾個人？'
+    chant: '1 平方公尺：邊長 1 公尺的正方形。', transfer: '量一量：用膠帶在地上貼出 1 平方公尺，上面可以站幾個人？'
   });
 })();

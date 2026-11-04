@@ -224,7 +224,7 @@ html.contrast,html.contrast body{background:#fff;color:#000}
 html.contrast .surface{border:3px solid #000}
 html.contrast p,html.contrast li,html.contrast legend,html.contrast label,html.contrast .subtle,html.contrast .figure-note,html.contrast .eyebrow{color:#000}
 html.contrast button:not(.say){border:2px solid #000;color:#000}
-html.contrast .primary{background:#000;color:#fff;border-color:#000}
+html.contrast .primary,html.contrast button.primary:not(.say){background:#000;color:#fff;border-color:#000}
 html.contrast .choice button[aria-pressed=true],html.contrast .aids button[aria-pressed=true]{background:#ffe600;border:4px solid #000}
 html.contrast .choice button[aria-pressed=true]::before{color:#000}
 html.contrast .feedback.correct{background:#fff;border:3px solid #006b2e;color:#000}
@@ -254,3 +254,13 @@ html.contrast .worked-tag,html.contrast .your-turn{border-color:#000;background:
 /* 第 23 版：這次做幾題、回顧可複選 */
 .lesson-goal{font-weight:bold;color:#0b5394}
 .choice.multi button[aria-pressed="true"]::before{content:"✓ "}
+/* 第 25 版：選擇題答錯後先看圖 */
+.figure.look-here{outline:4px solid #f0a500;outline-offset:4px;border-radius:12px;animation:look-here 1s ease-in-out 3}
+@keyframes look-here{50%{outline-color:#ffe08a}}
+.choice button.wait-look{opacity:.55}
+@media (prefers-reduced-motion:reduce){.figure.look-here{animation:none}}
+/* 第 25 版：平板上按鈕至少 48 像素高，字大一點（第 7 份回饋） */
+header button,.aids button{min-height:48px;font-size:16px}
+.lesson-controls button,.hint-actions button,.answer .actions button{min-height:52px;font-size:19px}
+.self-ask summary,.progress-panel summary{min-height:48px}
+@media (pointer:coarse){.choice button{min-height:56px;font-size:20px}.answer input{min-height:52px;font-size:22px}}

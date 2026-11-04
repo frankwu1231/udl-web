@@ -77,8 +77,10 @@
   // =============== 1-2 鋪方格 ===============
   const TILE = { easy: [[3, 2], [2, 2], [4, 2]], standard: [[4, 3], [3, 3], [5, 2]], challenge: [[5, 3], [4, 4], [6, 3]] };
   function tileFig(ctx, opts = {}) {
-    const [w, h] = ctx.problem.size, tiles = ctx.state.tiles || [];
-    const cells = rectCells(w, h).map(c => { const k = key(c), o = tiles.indexOf(k); return { x: c[0], y: c[1], cls: `${o >= 0 ? 'ac-tile' : 'ac-empty'}${opts.clickable ? ' ac-hit' : ''}${opts.pulse && o < 0 ? ' ac-pulse' : ''}`, label: o >= 0 ? o + 1 : '', attrs: opts.clickable ? `data-tile-at="${k}" role="button" aria-label="${o >= 0 ? '已鋪' : '還沒鋪'}的位置"` : '' }; });
+    const [w, h] = ctx.problem.size, tiles = ctx.state.tiles || [], last = tiles[tiles.length - 1];
+    // 第 25 版：數字照位置排（由左到右、由上到下），不管先點哪一格；鋪滿時右下角就是總數。剛放的那塊加框
+    let rank = 0;
+    const cells = rectCells(w, h).map(c => { const k = key(c), o = tiles.indexOf(k); if (o >= 0) rank++; return { x: c[0], y: c[1], cls: `${o >= 0 ? 'ac-tile' : 'ac-empty'}${o >= 0 && k === last && opts.clickable ? ' ac-last' : ''}${opts.clickable ? ' ac-hit' : ''}${opts.pulse && o < 0 ? ' ac-pulse' : ''}`, label: o >= 0 ? rank : '', attrs: opts.clickable ? `data-tile-at="${k}" role="button" aria-label="${o >= 0 ? '已鋪' : '還沒鋪'}的位置"` : '' }; });
     return gridSVG({ cols: w, rows: h, cells, outline: `M0 0H${w * U40}V${h * U40}H0Z`, lines: !!opts.lines, aria: `${w} 公分、${h} 公分的長方形` }) + (opts.legend ? '<p class="figure-note" data-read data-say>一塊小方塊：邊長 1 公分，面積 1 平方公分。</p>' : '');
   }
   A.register('tile', {
@@ -95,15 +97,19 @@
       { title: '鋪鋪看', ids: ['tiles'], hints: ['點一個空的位置，放一塊小方塊。', '看看還有沒有空的地方（閃爍的地方）。', '從左上開始，一排一排鋪，鋪到沒有空隙。'],
         think: '老師從左上開始，一排一排鋪。', together: '一起鋪：一塊一塊放，不要留空。',
         figure: ctx => tileFig(ctx, { clickable: true, pulse: ctx.hint(1) >= 2 }),
-        answer: ctx => `<p data-read data-say>點長方形裡空的位置，放一塊小方塊。再點一次可以拿掉。</p><p class="subtle" data-read>已經鋪了 ${(ctx.state.tiles || []).length} 塊。</p>`,
-        bind: ctx => document.querySelectorAll('#figure1 [data-tile-at]').forEach(el => el.onclick = () => { const t = ctx.state.tiles = ctx.state.tiles || [], k = el.dataset.tileAt, i = t.indexOf(k); if (i >= 0) t.splice(i, 1); else t.push(k); ctx.invalidate(1); ctx.rerender(); }),
+        answer: ctx => { const [w, h] = ctx.problem.size, n = (ctx.state.tiles || []).length; return `<p data-read data-say>點長方形裡空的位置，放一塊小方塊。再點一次可以拿掉。</p><p class="ac-tally" role="status" data-read data-say>已經鋪了 <b>${n}</b> 塊${n < w * h ? `，還有 <b>${w * h - n}</b> 個空位` : '，鋪滿了'}。</p>${n < w * h ? '<div class="actions"><button type="button" id="tileRow" class="primary-soft">鋪滿下一排</button></div>' : ''}`; },
+        bind: ctx => {
+          document.querySelectorAll('#figure1 [data-tile-at]').forEach(el => el.onclick = () => { const t = ctx.state.tiles = ctx.state.tiles || [], k = el.dataset.tileAt, i = t.indexOf(k); if (i >= 0) t.splice(i, 1); else t.push(k); ctx.invalidate(1); ctx.rerender(); });
+          // 第 25 版：一次鋪一排，跳來跳去點的學生可以改用這個
+          const row = document.getElementById('tileRow'); if (row) row.onclick = () => { const [w, h] = ctx.problem.size, t = ctx.state.tiles = ctx.state.tiles || []; for (let y = 0; y < h; y++) { const miss = rectCells(w, 1, 0, y).map(key).filter(k => !t.includes(k)); if (miss.length) { t.push(...miss); break; } } ctx.invalidate(1); ctx.rerender(); };
+        },
         check: ctx => { const [w, h] = ctx.problem.size, n = (ctx.state.tiles || []).length; return n < w * h ? { code: 'gap', msg: `還有 ${w * h - n} 個空隙，要鋪滿。` } : null; },
         solve: ctx => { const [w, h] = ctx.problem.size; ctx.state.tiles = rectCells(w, h).map(key); }, say: () => '一排一排鋪，鋪滿了，沒有空隙。' },
-      { title: '用了幾塊', ids: ['count'], hints: ['數一數，一共用了幾塊小方塊。', '看最後一塊的數字。', '最後一塊的數字，就是一共用了幾塊。'],
-        think: '最後一塊的數字，就是一共用了幾塊。', together: '一起數：一共用了幾塊？',
+      { title: '用了幾塊', ids: ['count'], hints: ['數一數，一共用了幾塊小方塊。', '看右下角最後一格的數字。', '右下角最後一格的數字，就是一共用了幾塊。'],
+        think: '右下角最後一格的數字，就是一共用了幾塊。', together: '一起數：一共用了幾塊？',
         figure: ctx => tileFig(ctx, {}),
         answer: ctx => fieldHtml(ctx, 'count', '一共用了幾塊小方塊？', 2),
-        check: ctx => { const [w, h] = ctx.problem.size, v = num(ctx.answers.count); return v === null ? { code: 'count', msg: '請填一共用了幾塊。' } : v === w * h ? null : { code: 'count', msg: '看最後一塊的數字，再填一次。' }; },
+        check: ctx => { const [w, h] = ctx.problem.size, v = num(ctx.answers.count); return v === null ? { code: 'count', msg: '請填一共用了幾塊。' } : v === w * h ? null : { code: 'count', msg: '看右下角最後一格的數字，再填一次。' }; },
         solve: ctx => { const [w, h] = ctx.problem.size; ctx.state.tiles = rectCells(w, h).map(key); ctx.answers.count = String(w * h); }, say: ex => `一共用了 ${ex.problem.size[0] * ex.problem.size[1]} 塊。` },
       { title: '面積是多少', ids: ['area', 'unit'], hints: ['一塊是 1 平方公分。', '用了幾塊，就是幾平方公分。', '面積 = 塊數，單位是平方公分。'],
         think: '一塊是 1 平方公分，用了幾塊，就是幾平方公分。', together: '一起想：一塊是多少？',
@@ -278,8 +284,12 @@
     const id = 'sit' + n;
     return { title: '情境 ' + (n + 1), ids: [id], hints: ['想一想：是沿著邊，還是蓋滿裡面？', '沿著邊走一圈 → 周長；蓋滿裡面 → 面積。', '圍、繞、沿著邊 → 周長；鋪、貼滿、刷滿 → 面積。'],
       think: '老師想：是沿著邊，還是蓋滿裡面？', together: '一起想：這是沿著邊，還是蓋滿？',
-      figure: ctx => { const s = ctx.problem.sits[n], ans = ctx.checked && ctx.checked(n); return `<div class="ac-sit"><span aria-hidden="true">${s[0]}</span>${ans ? `<svg viewBox="-10 -10 140 100" class="ac-mini" role="img" aria-label="${s[2] === 'per' ? '沿著邊' : '蓋滿裡面'}">${s[2] === 'per' ? '<rect x="0" y="0" width="120" height="80" class="ac-mini-in"/><rect x="0" y="0" width="120" height="80" class="ac-mini-edge"/>' : '<rect x="0" y="0" width="120" height="80" class="ac-mini-fill"/>'}</svg>` : ''}</div>`; },
-      answer: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.sits[n][1])}</p>${ctx.choice(id, '要算面積，還是周長？', [['area', '面積（蓋滿裡面）'], ['per', '周長（沿著邊一圈）']], true)}`,
+      // 第 25 版：一開始就並排兩張小圖（沿著邊走一圈／蓋滿裡面），邊會動、面會塗滿，比文字好想像；答對後亮出對的那張
+      figure: ctx => { const s = ctx.problem.sits[n], ans = ctx.checked && ctx.checked(n);
+        const card = (k, label, svg) => `<figure class="ac-sitcard${ans && s[2] === k ? ' on' : ''}${ans && s[2] !== k ? ' off' : ''}"><svg viewBox="-10 -10 140 100" class="ac-mini" aria-hidden="true">${svg}</svg><figcaption data-read>${label}</figcaption></figure>`;
+        return `<div class="ac-sit"><span aria-hidden="true">${s[0]}</span><div class="ac-sitpair">${card('per', '周長：沿著邊走一圈', '<rect x="0" y="0" width="120" height="80" class="ac-mini-in"/><rect x="0" y="0" width="120" height="80" class="ac-mini-edge ac-trace"/>')}${card('area', '面積：蓋滿裡面', '<rect x="0" y="0" width="120" height="80" class="ac-mini-in"/><rect x="0" y="0" width="120" height="80" class="ac-mini-fill ac-grow"/>')}</div></div>`; },
+      // 看到第 2 個提示後，句子裡的關鍵字（圍、繞、沿著、鋪、貼滿……）會標出來
+      answer: ctx => { const t = esc(ctx.problem.sits[n][1]), key = ctx.hint(n) >= 2 ? t.replace(/(圍一圈|繞著|沿著|一圈|鋪滿|貼滿|刷滿|種滿|蓋滿)/g, '<mark>$1</mark>') : t; return `<p class="lesson-prompt" data-read data-say>${key}</p>${ctx.choice(id, '要算面積，還是周長？', [['area', '面積（蓋滿裡面）'], ['per', '周長（沿著邊一圈）']], true)}`; },
       check: ctx => !ctx.answers[id] ? { code: 'which', msg: '選一個答案。' } : ctx.answers[id] === ctx.problem.sits[n][2] ? null : { code: 'which', msg: ctx.problem.sits[n][2] === 'per' ? '這是沿著邊一圈的長度，是周長。' : '這是要蓋滿裡面，是面積。' },
       solve: ctx => { ctx.answers[id] = ctx.problem.sits[n][2]; }, say: ex => ex.problem.sits[n][2] === 'per' ? '沿著邊一圈，是周長。' : '蓋滿裡面，是面積。' };
   }

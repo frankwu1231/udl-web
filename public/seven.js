@@ -18,6 +18,7 @@
   let index = 0, cycle = 1, phase = 'plan', page = 0, settings = { ...F.defaults }, returnTo = null, edgeFocus = '';   // returnTo：按「回去看」之前在第幾頁（或 'reflect'）
   let goal = 'check', method = 'mark', response = '自行操作';
   let answers = {}, checked = new Set(), orders = {}, frame = 0, tiles = [], revealed = {}, lineOk = false;
+  let tried2 = new Set();   // 第 25 版：看過第 2 個提示後，自己試過（按檢查）的步驟
   let hintLevel = [0, 0, 0, 0, 0, 0, 0], hintsUsed = 0, errors = 0, records = [], carry = null, hintPending = false;
   let aiMsg = {}, replay = 0, dragFrom = null, entered = new Set(), sessionApiKey = '', sessionProvider = 'openai', speechToken = 0, audio = null;
   let probeDims = null, studyPhase = '', voices = {}, recorder = null, startedAt = 0, videoOpen = new Set();
@@ -94,7 +95,7 @@
   function startQuestion() {
     answers = carry ? { method: carry.method } : {};
     checked = new Set(); orders = {}; frame = 0; tiles = []; revealed = {}; lineOk = false; dragFrom = null; aiMsg = {}; videoOpen = new Set(); stuckOpen = null; stuckNote = {};
-    hintLevel = [0, 0, 0, 0, 0, 0, 0]; hintPending = false; errors = 0; hintsUsed = 0; page = 0; entered = new Set(); returnTo = null;
+    hintLevel = [0, 0, 0, 0, 0, 0, 0]; tried2 = new Set(); hintPending = false; errors = 0; hintsUsed = 0; page = 0; entered = new Set(); returnTo = null;
     settings = F.settings(L()); applyReading();
     if (P()) { pState = {}; if (!keepProblem || !pProblem) pProblem = P().makeProblem(level(), index, Math.random); keepProblem = false; }
     probeDims = !P() && mode() === 'probe' ? F.randomProblem(type, settings.difficulty === 'custom' ? 'standard' : settings.difficulty) : null;
@@ -271,7 +272,7 @@
 
     const level = hintLevel[s], passed = checked.has(s), probe = mode() === 'probe';
     const auto = !probe && mode() !== 'demo' && (settings.support === 'full' && method !== 'self' || mode() === 'together') && level === 0 && !passed;
-    const hintBtn = passed || probe ? '' : level < 3 ? button('hint' + s, level === 0 ? '💡 給我提示' : '💡 再給我一個提示', 'hint-btn') : button('hint' + s, '已經看完 3 個提示', 'hint-btn', 'disabled');
+    const hintBtn = passed || probe ? '' : waitTry(s) ? button('hint' + s, '💡 先試一次，再看第 3 個提示', 'hint-btn', 'disabled') : level < 3 ? button('hint' + s, level === 0 ? '💡 給我提示' : '💡 再給我一個提示', 'hint-btn') : button('hint' + s, '已經看完 3 個提示', 'hint-btn', 'disabled');
     const aiBtn = !probe && !passed && settings.ai && level >= 2 ? button('aiHint' + s, '🤖 問 AI', 'hint-btn') : '';
     const canVideo = !probe && !passed && settings.video !== 'off';
     const videoBtn = canVideo && !videoOpen.has(s) && (settings.video === 'always' || mode() === 'demo' || level >= 3) ? button('video' + s, '🎬 看示範影片', 'hint-btn video-btn', `data-video="${s}"`) : '';
@@ -280,7 +281,7 @@
     const askText = stepAskText(s);
     const stepAsk = askText && settings.selfAsk && !passed && mode() !== 'demo' && !probe ? `<p class="step-ask" data-read data-say>問問自己：${esc(askText)}</p>` : '';
     const stuckBtn = passed || probe || mode() === 'demo' ? '' : button('stuck' + s, '😣 我卡住了', 'hint-btn stuck-btn', `data-stuck="${s}" aria-expanded="${stuckOpen === s}" aria-controls="stuckPanel${s}"`);
-    const stuckItems = C.stuckOptions.filter(([k]) => (k !== 'hint' || level < 3) && (k !== 'video' || (canVideo && !videoOpen.has(s))));
+    const stuckItems = C.stuckOptions.filter(([k]) => (k !== 'hint' || (level < 3 && !waitTry(s))) && (k !== 'video' || (canVideo && !videoOpen.has(s))));
     const stuckPanel = stuckOpen === s && !passed ? `<div class="stuck-panel" id="stuckPanel${s}" role="group" aria-labelledby="stuckLead${s}"><p id="stuckLead${s}" data-read data-say>沒關係，卡住的時候，選一個幫自己的方法：</p><div class="options">${stuckItems.map(([k, t]) => `<button type="button" data-stuck-pick="${k}" data-step="${s}">${t}</button>`).join('')}</div>${stuckNote[s] ? `<p class="notice" role="status" data-read data-say>${esc(stuckNote[s])}</p>` : ''}</div>` : '';
     const thinkText = P() ? P().steps[s].think : C.think[type][s], togetherText = P() ? P().steps[s].together : C.together(type)[s];
     const coach = mode() === 'demo' && !passed ? `<div class="think-aloud"><p data-read data-say>${esc(thinkText)}</p>${button('demo' + s, '▶ 看老師做這一步', 'primary-soft', `data-demo="${s}"`)}</div>`
@@ -622,7 +623,7 @@
     const id = L().videos && L().videos[s];
     const animate = note => {
       slot.innerHTML = `${note ? `<p class="subtle">${note}</p>` : ''}<div class="sd-host"></div>${close}`;
-      const player = window.stepDemo.mount(slot.querySelector('.sd-host'), { type, step: s, method, dims: dims(), rate: settings.rate, scenes: P() ? pluginScenes(s) : null,
+      const player = window.stepDemo.mount(slot.querySelector('.sd-host'), { type, step: s, method, dims: dims(), rate: settings.rate, scenes: P() ? pluginScenes(s) : null, recap: hintFor(s, 3),
         onEvent: ev => { if (ev === 'play') log('看示範影片', { activity: s + 1, source: '動畫示範' }); if (ev === 'end') log('看完示範影片', { activity: s + 1, source: '動畫示範' }); } });
       bindClose(); addSayButtons(slot);
       if (autoplay) player.play();
@@ -747,9 +748,11 @@
     if (hintPending !== false) { showStatus(groupBox(), '先看完提示，按「我看完了」。'); return false; }
     if ($('compare')?.open) answers.compared = true;
     let ok = true, partial = false;
+    const notes = {};   // 第 25 版：答對了，但附一句提醒（例如 3-4 長和寬寫反了也算對）
     for (const s of list) {
       if (checked.has(s)) continue;
-      const r = issue(s);
+      let r = issue(s);
+      if (r && r.note) { notes[s] = r.note; r = null; }
       if (r && r.partial) {   // 找高：選對線，接著填長度
         lineOk = true; partial = true; ok = false;
         log('步驟檢核', { activity: s + 1, correct: true, issue: 'line', part: '選線' });
@@ -757,6 +760,7 @@
       }
       if (r && r.soft) { ok = false; log('提醒還差一步', { activity: s + 1, issue: r.code }); continue; }   // 算對了、只差比一比：不算答錯
       log('步驟檢核', { activity: s + 1, correct: !r, issue: r ? r.code : 'none', hintLevel: hintLevel[s], choice: r ? answerText(s, r.code) : undefined });
+      if (r && hintLevel[s] >= 2) tried2.add(s);
       if (r) { ok = false; errors++; checked.delete(s); if (hintLevel[s] < 3 && mode() !== 'probe') { hintLevel[s]++; log('自動提示', { activity: s + 1, hintLevel: hintLevel[s] }); if (settings.hintGate && hintPending === false) hintPending = s; } }
       else checked.add(s);
     }
@@ -766,11 +770,20 @@
     if (hintPending !== false) lockForHint();
     for (const s of list) {
       const r = msgs[s];
-      if (!r) showStatus($('feedback' + s), '答對了！', true);
+      if (!r) showStatus($('feedback' + s), notes[s] ? '答對了！' + notes[s] : '答對了！', true);
       else if (r.partial || (s === 3 && lineOk && r.code === 'second' && partial)) showStatus($('feedback' + s), '找到了！', true);
       else showStatus($('feedback' + s), r.msg);
     }
     for (const s of list) if (msgs[s] && !msgs[s].partial && !msgs[s].soft) window.areaBuddy?.wrong(s, tried[s]);
+    // 第 25 版：選擇題答錯後，選項停 3 秒、圖會亮起來，請學生先看圖再選，避免只用刪去法換另一個
+    if (mode() !== 'demo' && hintPending === false) for (const s of list) {
+      if (!msgs[s] || msgs[s].partial || msgs[s].soft) continue;
+      const opts = [...document.querySelectorAll(`.activity[data-stage="${s}"] [data-choice]`)].filter(b => !b.disabled); if (!opts.length) continue;
+      const fig = $('figure' + s), box = $('feedback' + s);
+      opts.forEach(b => { b.disabled = true; b.classList.add('wait-look'); }); fig?.classList.add('look-here');
+      if (box) box.insertAdjacentHTML('beforeend', '<span class="look-note">　先看一看圖，3 秒後再選。</span>');
+      setTimeout(() => { if (hintPending !== false) return; opts.forEach(b => { if (b.isConnected) { b.disabled = false; b.classList.remove('wait-look'); } }); fig?.classList.remove('look-here'); box?.querySelector('.look-note')?.remove(); }, 3000);
+    }
     if (ok) { showStatus(groupBox(), phase === 'reflect' ? '單位答對了！' : '全部答對了，可以按「下一步」。', true); if (phase !== 'reflect') celebrate(); window.areaBuddy?.right(list[list.length - 1]); }
     else if (partial) showStatus(groupBox(), '找到高了！再填它的長度。', true);
     else if (list.every(s => checked.has(s) || msgs[s]?.soft)) showStatus(groupBox(), '快好了！照上面的說明再做一步。');
@@ -784,8 +797,11 @@
   function goPage(n) { log('返回修正', { to: n + 1 }); hintPending = false; page = Math.max(0, n); phase = 'solve'; render(); focus(); }
 
   // ---------- 提示 ----------
+  // 第 3 個提示很接近答案：自己解題時，要先按「檢查」試一次才開放（老師可以關掉；一起做、老師示範不限制）
+  const waitTry = s => hintLevel[s] === 2 && settings.tryFirst !== false && mode() === 'self' && !tried2.has(s);
   function showHint(s, manual) {
     if (hintLevel[s] >= 3) return;
+    if (waitTry(s)) { const f = $('feedback' + s); if (f) showStatus(f, '先照著提示自己做一次，按「檢查」。還不會，再看第 3 個提示。'); return; }
     hintLevel[s]++; hintsUsed++;
     log('請求提示', { activity: s + 1, hintLevel: hintLevel[s] });
     if (settings.hintGate) hintPending = s;
@@ -799,19 +815,21 @@
     document.querySelectorAll('.activity input,.activity [data-choice],.activity [data-tile],#transform,#revealBase,.hint-actions button,#check,#next,#retry,#new,#useProduct').forEach(e => e.disabled = true);
   }
 
+  // 第 25 版：把這一步的三層提示（老師可改過）一起送給 AI，AI 的提示才不會偏題；只留允許的字，最多 60 字
+  const hintsForAI = s => [1, 2, 3].map(l => String(hintFor(s, l) || '').replace(/[^\u3000-\u303f\u4e00-\u9fff\uff00-\uffef0-9A-Za-z +×÷=\-()（）、，。？！：；「」.]/g, '').trim().slice(0, 60)).filter(Boolean);
   function aiPayload(kind, s) {
     const list = records.filter(r => r.cycle === cycle), wrong = list.filter(r => r.event === '步驟檢核' && !r.correct);
     const last = list.filter(r => r.event === '步驟檢核' && r.activity === s + 1).at(-1);
     if (P()) {   // 新活動：只送活動、步驟名稱與答錯情形，不送題目數字
       const n = P().steps.length;
-      return { kind, shape: type, stepTitle: P().steps[s]?.title || P().steps[0].title, cycle: Math.min(cycle, 50), step: Math.min(s, 7), method: method === 'self' ? 'self' : 'mark', goal: ['g0', 'all'].includes(goal) ? 'independent' : 'check', hints: Math.min(hintsUsed, 50), errors: Math.min(errors, 50),
+      return { kind, shape: type, stepHints: hintsForAI(s), stepTitle: P().steps[s]?.title || P().steps[0].title, cycle: Math.min(cycle, 50), step: Math.min(s, 7), method: method === 'self' ? 'self' : 'mark', goal: ['g0', 'all'].includes(goal) ? 'independent' : 'check', hints: Math.min(hintsUsed, 50), errors: Math.min(errors, 50),
         hintLevel: hintLevel[s] || 0, incorrect: !!last && !last.correct, issue: last && !last.correct && /^[a-z][A-Za-z0-9]{0,11}$/.test(last.issue || '') ? last.issue : 'none',
         steps: Array.from({ length: Math.min(n, 8) }, (_, i) => Math.min(wrong.filter(r => r.activity === i + 1).length, 100)),
         backtracks: Math.min(list.filter(r => r.event === '返回修正').length, 100), completed: Math.min(records.filter(r => r.event === '整題完成').length, 50),
         helpRequests: Math.min(list.filter(r => r.event === '請求AI提示' || r.event === '請求提示').length, 100) };
     }
     return {
-      kind, shape: type, cycle: Math.min(cycle, 50), step: s, method: method === 'self' ? 'self' : 'mark', goal: ['g0', 'all'].includes(goal) ? 'independent' : 'check', hints: Math.min(hintsUsed, 50), errors: Math.min(errors, 50),
+      kind, shape: type, stepHints: hintsForAI(s), cycle: Math.min(cycle, 50), step: s, method: method === 'self' ? 'self' : 'mark', goal: ['g0', 'all'].includes(goal) ? 'independent' : 'check', hints: Math.min(hintsUsed, 50), errors: Math.min(errors, 50),
       hintLevel: hintLevel[s] || 0, incorrect: !!last && !last.correct,
       operationComplete: grid() ? tiles.length === area() || !!answers.useProduct : frame === 2,
       comparisonOpened: !!$('compare')?.open, issue: last && !last.correct ? last.issue : 'none',
@@ -952,7 +970,7 @@
       ${settings.ai && !probe ? `<details><summary>🤖 想多想一點？請 AI 問你一個問題</summary>${button('aiReflect', '請 AI 問我')}<p id="aiReflectText" class="notice" role="status"></p></details>` : ''}
       ${progressPanel(true)}` : ''}
       <p id="reflectFeedback" class="feedback" role="status"></p>
-      <div class="lesson-controls">${button('back', '← 回去看')}${inReflect && !unitDone ? button('check', '✔ 檢查') : ''}${unitDone ? button('retry', '再做一次這題') + button('new', '下一題 →', 'primary') : ''}</div>`);
+      <div class="lesson-controls">${button('back', '← 回去看')}${inReflect && !unitDone ? button('check', '✔ 檢查') : ''}${unitDone ? button('retry', '再做一次這題') + `<a class="map-back" href="seven.html${draftQ ? '?' + draftQ.slice(1) : ''}">🗺️ 回學習地圖</a>` + button('new', '下一題 →', 'primary') : ''}</div>`);
     if (!unitDone) {
       bindActivity();
       $('check').onclick = () => { if (validatePage([6])) focus(); };

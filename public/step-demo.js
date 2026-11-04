@@ -83,7 +83,7 @@
 
   // ---------- 播放器 ----------
   function mount(host, cfg) {
-    const { type, step, method = 'mark', dims = [0, 0, 0], rate = 'normal', onEvent = () => {} } = cfg;
+    const { type, step, method = 'mark', dims = [0, 0, 0], rate = 'normal', recap = '', onEvent = () => {} } = cfg;
     const ex = cfg.scenes ? [0, 0, 0] : example(type, dims), scenes = cfg.scenes || script(type, step, method, ex);
     host.innerHTML = `<div class="sd" role="group" aria-label="示範動畫">
       <div class="sd-stage" aria-hidden="true"><div class="sd-body"></div><span class="sd-finger">👆</span></div>
@@ -92,16 +92,18 @@
       <p class="sd-end" hidden data-read>👉 換你做做看！</p></div>`;
     const $ = sel => host.querySelector(sel), body = $('.sd-body'), finger = $('.sd-finger');
     let token = 0, slow = rate === 'slow', figOpts = {}, playing = false;
-    const k = () => slow ? 1.6 : 1;
+    let at = 0;   // 正在播第幾段
+    // 第 25 版：慢速約是 2 倍；播放中切換時，從這一段重新播，朗讀速度也立刻改變
+    const k = () => slow ? 2.2 : 1;
     const alive = t => t === token && host.isConnected;
-    $('.sd-slow').onclick = () => { slow = !slow; $('.sd-slow').setAttribute('aria-pressed', String(slow)); };
+    $('.sd-slow').onclick = () => { slow = !slow; $('.sd-slow').setAttribute('aria-pressed', String(slow)); onEvent(slow ? 'slow' : 'normal'); if (playing) play(at); };
 
     const P = {
-      async point(sel) {
+      async point(sel, f = 1) {
         const el = typeof sel === 'string' ? body.querySelector(sel) : sel; if (!el) return;
         const r = el.getBoundingClientRect(), s = $('.sd-stage').getBoundingClientRect();
         finger.style.left = (r.left - s.left + r.width / 2 - 10) + 'px'; finger.style.top = (r.top - s.top + r.height / 2 - 4) + 'px';
-        finger.classList.add('show'); await wait(650 * k());
+        finger.classList.add('show'); await wait(650 * f * k());
       },
       async tap(el) { await P.point(el); finger.classList.add('tap'); await wait(260 * k()); finger.classList.remove('tap'); },
       pulseFigure() { body.querySelector('.sd-fig')?.classList.add('sd-pulse'); },
@@ -127,7 +129,19 @@
         finger.style.left = ((l + r) / 2 - s.left - 10) + 'px'; finger.style.top = ((t + b) / 2 - s.top - 4) + 'px';
         finger.classList.add('show'); await wait(900 * k());
       },
-      async pointAll(sel) { const list = [...body.querySelectorAll(sel)].slice(0, 4); for (const el of list) await P.tap(el); },
+      async pointAll(sel) { for (const el of body.querySelectorAll(sel)) await P.tap(el); },
+      // 第 25 版：一個一個數到最後（不再只數到 4），每數一個就在旁邊標上數字；多的時候數快一點
+      async countAll(sel) {
+        const list = P.els(sel), st = $('.sd-stage').getBoundingClientRect(), fast = list.length > 12;
+        body.querySelectorAll('.sd-num').forEach(e => e.remove()); body.classList.add('sd-counting');
+        for (let i = 0; i < list.length; i++) {
+          const el = list[i]; await P.point(el, fast ? 0.45 : 0.7);
+          const r = el.getBoundingClientRect(), n = document.createElement('span');
+          n.className = 'sd-num'; n.textContent = i + 1; n.style.left = (r.left - st.left + r.width / 2) + 'px'; n.style.top = (r.top - st.top + r.height / 2) + 'px';
+          body.appendChild(n); $('.sd-caption').dataset.count = i + 1;
+        }
+        await wait(500 * k());
+      },
       async type(v) { const box = body.querySelector('.sd-input b'); if (!box) return; await P.tap(box); for (const ch of String(v)) { box.textContent += ch; await wait(220 * k()); } box.classList.add('ok'); },
       async figure(o) { figOpts = { ...figOpts, ...o }; drawFigure(); await wait(700 * k()); },
       async pickHeight() { const l = body.querySelector('[data-line].sd-hl') || body.querySelector('.height-line'); const letter = Object.entries(lineMap()).find(([, v]) => v === 'height')[0]; const tag = [...body.querySelectorAll('.line-tag')].find(g => g.textContent.trim() === letter); await P.tap(tag || l); figOpts = { ...figOpts, selected: letter }; drawFigure(); await wait(500 * k()); },
@@ -145,6 +159,7 @@
       return `<div class="sd-fig sd-grid" style="--cols:${a}">${Array.from({ length: a * b }, (_, i) => `<span class="sd-cell ${edge === 'row' && i < a || edge === 'col' && i % a === 0 ? 'edge' : ''}"></span>`).join('')}</div>`;
     }
     function render(scene) {
+      body.classList.remove('sd-counting');
       if (scene.html) {   // 新活動：直接放入示範畫面（拿掉 id 與互動屬性，避免和真的作答區混在一起）
         body.innerHTML = typeof scene.html === 'function' ? scene.html() : scene.html;
         body.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
@@ -172,26 +187,32 @@
         if (!('speechSynthesis' in window)) return fallback();
         try {
           speechSynthesis.cancel();
-          const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-TW'; u.rate = slow ? 0.65 : 0.9; const v = voice(); if (v) u.voice = v;
+          const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-TW'; u.rate = slow ? 0.6 : 0.9; const v = voice(); if (v) u.voice = v;
           let done = false; const end = () => { if (!done) { done = true; resolve(); } };
           u.onend = end; u.onerror = end; setTimeout(end, Math.max(2500, text.length * 450) * k());   // 沒有聲音的裝置也會往下播
           if (alive(t)) speechSynthesis.speak(u); else end();
         } catch { fallback(); }
       });
     }
-    async function play() {
-      const t = ++token; playing = true; $('.sd-end').hidden = true; finger.classList.remove('show');
-      $('.sd-play').textContent = '⏹ 停止'; onEvent('play');
-      for (let i = 0; i < scenes.length; i++) {
+    async function play(from = 0) {
+      const t = ++token, again = playing; playing = true; $('.sd-end').hidden = true; finger.classList.remove('show');
+      try { speechSynthesis.cancel(); } catch { /* 略過 */ }
+      $('.sd-play').textContent = '⏹ 停止'; if (!again) onEvent('play');
+      // 從中間重播時，先把前面幾段的畫面補上（只畫，不播）
+      for (let i = 0; i < from; i++) if (scenes[i].html || !String(scenes[i].stage || 'keep').startsWith('keep')) render(scenes[i]);
+      for (let i = from; i < scenes.length; i++) {
         if (!alive(t)) return;
-        const sc = scenes[i]; render(sc);
+        at = i; const sc = scenes[i]; if (i === from && from > 0 && !sc.html && String(sc.stage || 'keep').startsWith('keep')) { /* 沿用畫面 */ } else render(sc);
         const sayText = typeof sc.say === 'function' ? sc.say() : sc.say;
         $('.sd-caption').textContent = sayText; $('.sd-count').textContent = `第 ${i + 1}／${scenes.length} 段`;
         await Promise.all([speak(sayText, t), (async () => { await wait(250); if (alive(t)) await sc.act(P); })()]);
         if (!alive(t)) return;
-        await wait(450 * k());
+        await wait(slow ? 1400 : 450);
       }
       if (!alive(t)) return;
+      // 第 25 版：最後停在做好的畫面，再說一次「記住」的重點，不會一下就結束
+      const lastSay = scenes.at(-1).say, last = typeof lastSay === 'function' ? lastSay() : lastSay;
+      if (recap && recap !== last) { $('.sd-caption').textContent = '記住：' + recap; finger.classList.remove('show'); await speak('記住：' + recap, t); if (!alive(t)) return; }
       playing = false; finger.classList.remove('show');
       $('.sd-play').textContent = '↻ 再看一次'; $('.sd-end').hidden = false; $('.sd-count').textContent = `共 ${scenes.length} 段`;
       onEvent('end');

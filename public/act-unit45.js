@@ -15,8 +15,13 @@
     let g = '';
     if (o.frame === 2) {   // 兩片拼成平行四邊形：第二片轉 180 度接在右邊
       const R = P.map(q => [x0 + p.b * u + (x0 + (p.off + p.t) * u) - q[0], 2 * y - H - q[1]]);
-      g += `<polygon points="${pts(P)}" class="ac-piece0"/><polygon points="${pts(R)}" class="ac-piece1"/>`;
-      g += `<text x="${x0 + (p.t + p.b) * u / 2}" y="${y + 30}" text-anchor="middle" class="ac-len">上底 + 下底</text>`;
+      // 第 25 版：剛按「拼在一起」時，第二片先在原地轉半圈，再滑過來接上（看得到兩片是一樣的梯形）
+      const c = a => [a.reduce((t, q) => t + q[0], 0) / a.length, a.reduce((t, q) => t + q[1], 0) / a.length], cP = c(P), cR = c(R);
+      const motion = o.animate ? ` style="--dx:${Math.round(cP[0] + (p.b + 2) * u - cR[0])}px;--dy:${Math.round(cP[1] - cR[1])}px;transform-box:view-box;transform-origin:${Math.round(cR[0])}px ${Math.round(cR[1])}px" class="ac-piece1 ac-join"` : ' class="ac-piece1"';
+      g += `<polygon points="${pts(P)}" class="ac-piece0"/><polygon points="${pts(R)}"${motion}/>`;
+      g += `<text x="${x0 + (p.t + p.b) * u / 2}" y="${y + 30}" text-anchor="middle" class="ac-len">${o.nums ? `上底 + 下底 = ${p.t} + ${p.b}` : '上底 + 下底'}</text>`;
+      // 列算式、算一算時，圖上一直標出上底、下底、高，不用回上一步找數字
+      if (o.nums) g += `<text x="${(P[3][0] + P[2][0]) / 2}" y="${P[3][1] - 10}" text-anchor="middle" class="ac-len">上底 ${p.t}</text><text x="${(P[0][0] + P[1][0]) / 2}" y="${y - 8}" text-anchor="middle" class="ac-len">下底 ${p.b}</text><text x="${foot[0] + 8}" y="${y - H / 2}" class="ac-len">高 ${p.h}</text>`;
     } else {
       g += `<polygon points="${pts(P)}" class="ac-fill${o.pulse ? ' ac-pulse' : ''}"/>`;
       if (o.frame === 1) g += `<polygon points="${pts(P.map(q => [q[0] + (p.b + 2) * u, q[1]]))}" class="ac-piece1"/>`;
@@ -29,7 +34,7 @@
     } else if (o.showHeight || o.frame === 2) g += `<path d="M${pts([top])}L${pts([foot])}" class="ac-cut on"/>`;
     if (o.lines || o.showHeight || o.frame === 2) g += `<path d="M${foot[0]} ${y - 12}h12v12" fill="none" stroke="#c2410c" stroke-width="3"/>`;
     if (o.showHeight) g += `<text x="${foot[0] + 8}" y="${y - H / 2}" class="ac-len">高 ${p.h} 公分</text>`;
-    const W = x0 + ((o.frame === 1 ? 2 * p.b + 2 : o.frame === 2 ? p.t + p.b + p.off : p.b) + 1) * u;
+    const W = x0 + ((o.frame === 1 || o.animate ? 2 * p.b + 2 : o.frame === 2 ? Math.max(p.t + p.b + p.off, p.b + p.t) : p.b) + 1) * u;
     return `<svg class="ac-svg" viewBox="-10 -10 ${W + 40} ${y + 50}" role="img" aria-label="梯形${o.showTop ? `，上底 ${p.t} 公分` : ''}${o.showBottom ? `，下底 ${p.b} 公分` : ''}${o.showHeight ? `，高 ${p.h} 公分` : ''}${o.frame === 2 ? '，兩片拼成平行四邊形' : ''}">${g}</svg>`;
   }
   const shown = ctx => ({ showTop: ctx.checked(2) || (ctx.state.edges || []).includes('top'), showBottom: ctx.checked(2) || (ctx.state.edges || []).includes('bottom'), showHeight: ctx.checked(3) || ctx.state.lineOk });
@@ -46,10 +51,10 @@
         solve: ctx => { ctx.answers.target = 'inside'; }, say: () => '面積是圖形裡面的大小。' },
       { title: '拿一片來拼', ids: ['relation'], hints: ['按按鈕，拿一片一樣的梯形。', '把它轉過來，拼在旁邊，變成什麼形狀？', '兩片拼成平行四邊形，一片是一半。'],
         think: '老師拿一片一樣的梯形，轉過來拼成平行四邊形。', together: '一起做：拿一片，轉過來拼起來。',
-        figure: ctx => traFig(ctx, { frame: ctx.state.frame || 0 }),
+        figure: ctx => traFig(ctx, { frame: ctx.state.frame || 0, animate: ctx.state.frame === 2 && ctx.state.anim }),
         answer: ctx => `<div class="actions"><button type="button" id="trTake" class="primary-soft" ${ctx.state.frame >= 1 ? 'disabled' : ''}>拿一片一樣的梯形</button><button type="button" id="trJoin" class="primary-soft" ${ctx.state.frame !== 1 ? 'disabled' : ''}>轉過來，拼在一起</button></div>
           ${ctx.state.frame === 2 ? ctx.choice('relation', '一片梯形和拼好的平行四邊形比，怎麼樣？', [['half', '一片是拼好圖形的一半'], ['same', '一片和拼好圖形一樣大'], ['double', '一片是拼好圖形的兩倍']]) : ''}`,
-        bind: ctx => { const t = document.getElementById('trTake'), j = document.getElementById('trJoin'); if (t) t.onclick = () => { ctx.state.frame = 1; ctx.log('圖形操作', { activity: 2, frame: 1 }); ctx.rerender(); }; if (j) j.onclick = () => { ctx.state.frame = 2; ctx.log('圖形操作', { activity: 2, frame: 2 }); ctx.rerender(); }; },
+        bind: ctx => { const t = document.getElementById('trTake'), j = document.getElementById('trJoin'); if (t) t.onclick = () => { ctx.state.frame = 1; ctx.log('圖形操作', { activity: 2, frame: 1 }); ctx.rerender(); }; if (j) j.onclick = () => { ctx.state.frame = 2; ctx.state.anim = true; ctx.log('圖形操作', { activity: 2, frame: 2 }); ctx.rerender(); setTimeout(() => { ctx.state.anim = false; }, 3000); }; },
         check: ctx => ctx.state.frame !== 2 ? { code: 'relation', msg: '先按上面的按鈕，把兩片拼好。' } : !ctx.answers.relation ? { code: 'relation', msg: '請選一個答案。' } : ctx.answers.relation === 'half' ? null : { code: 'relation', msg: ctx.answers.relation === 'same' ? '兩片才是拼好的圖形，一片比較小。' : '一片比拼好的圖形小喔。' },
         solve: ctx => { ctx.state.frame = 2; ctx.answers.relation = 'half'; }, say: () => '兩片拼成平行四邊形，一片是一半。' },
       { title: '找上底和下底', ids: ['top', 'bottom'], hints: ['點上面和下面兩條平行的邊。', '上面的邊叫上底，下面的邊叫下底。', '點了邊就會看到長度，把數字填進去。'],
@@ -69,7 +74,7 @@
         solve: ctx => { ctx.answers.line = 'B'; ctx.state.lineOk = true; ctx.answers.height = String(ctx.problem.h); }, say: ex => `有直角記號的是高，高 ${ex.problem.h} 公分。` },
       { title: '列算式', ids: ['formula', 'ft', 'fb', 'fh'], hints: ['拼好的平行四邊形，底是上底 + 下底。', '平行四邊形是底 × 高，一片梯形呢？', '梯形面積 =（上底 + 下底）× 高 ÷ 2。'],
         think: '拼好的是（上底 + 下底）× 高，一片要再 ÷ 2。', together: '一起想：要不要 ÷ 2？',
-        figure: ctx => traFig(ctx, { frame: 2 }),
+        figure: ctx => traFig(ctx, { frame: 2, nums: true }),
         answer: ctx => `${ctx.choice('formula', '選一個算梯形面積的算式', [['half', '（上底 + 下底）× 高 ÷ 2'], ['full', '（上底 + 下底）× 高'], ['mul', '上底 × 下底 × 高']])}
           <div class="equation"><span class="op">(</span><label><span>上底</span><input id="ft" data-answer="ft" inputmode="decimal" autocomplete="off" value="${esc(ctx.answers.ft ?? '')}"></label><span class="op">+</span><label><span>下底</span><input id="fb" data-answer="fb" inputmode="decimal" autocomplete="off" value="${esc(ctx.answers.fb ?? '')}"></label><span class="op">) ×</span><label><span>高</span><input id="fh" data-answer="fh" inputmode="decimal" autocomplete="off" value="${esc(ctx.answers.fh ?? '')}"></label><span class="op">÷ 2</span></div>`,
         check: ctx => { const p = ctx.problem; if (!ctx.answers.formula) return { code: 'formula', msg: '先選一個算式。' }; if (ctx.answers.formula !== 'half') return { code: 'formula', msg: ctx.answers.formula === 'full' ? '這是兩片拼好的面積，這題只有一片。' : '梯形不是用上底乘下底。想想拼好的平行四邊形。' };
@@ -78,7 +83,7 @@
         solve: ctx => { const p = ctx.problem; Object.assign(ctx.answers, { formula: 'half', ft: String(p.t), fb: String(p.b), fh: String(p.h) }); }, say: ex => `（${ex.problem.t} + ${ex.problem.b}）× ${ex.problem.h} ÷ 2。` },
       { title: '算一算', ids: ['total'], hints: ['先算上底 + 下底。', '再乘高，最後除以 2。', '答案 × 2，要等於拼好的平行四邊形。'],
         think: '先加，再乘，最後除以 2。', together: '一起算：先加、再乘、再除以 2。',
-        figure: ctx => traFig(ctx, { frame: 2 }),
+        figure: ctx => traFig(ctx, { frame: 2, nums: true }),
         answer: ctx => `<p class="ac-big" data-read data-say>（${ctx.problem.t} + ${ctx.problem.b}）× ${ctx.problem.h} ÷ 2 = ？</p>${fieldHtml(ctx, 'total', '面積是多少？', 5)}`,
         check: ctx => { const v = num(ctx.answers.total), p = ctx.problem; return v === null ? { code: 'total', msg: '請填你算出的面積。' } : v === area(p) ? null : { code: 'total', msg: v === (p.t + p.b) * p.h ? '這是兩片的面積。別忘了 ÷ 2。' : v === p.t + p.b ? '還要乘高、再除以 2。' : '先加、再乘、再除以 2，再算一次。' }; },
         solve: ctx => { ctx.answers.total = String(area(ctx.problem)); }, say: ex => `面積是 ${area(ex.problem)}。` },
