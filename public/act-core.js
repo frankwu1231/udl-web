@@ -57,7 +57,7 @@
     const body = cells.map(c => {
       const x = c.x * u, y = c.y * u, cls = c.cls || 'ac-fill', at = c.attrs || '';
       const shape = c.half ? `<polygon points="${tri[c.half](x, y)}" class="${cls}" ${at}/>` : `<rect x="${x}" y="${y}" width="${u}" height="${u}" class="${cls}" ${at}/>`;
-      const lb = c.label != null && c.label !== '' ? `<text x="${x + u / 2}" y="${y + u / 2 + 6}" text-anchor="middle" class="ac-num">${esc(c.label)}</text>` : '';
+      const lb = c.label != null && c.label !== '' ? `<text x="${x + u / 2}" y="${y + u / 2 + 6}" text-anchor="middle" class="ac-num${c.delay != null ? ' ac-count' : ''}"${c.delay != null ? ` style="animation-delay:${Number(c.delay)}s"` : ''}>${esc(c.label)}</text>` : '';
       return shape + lb;
     }).join('');
     const ol = outline ? `<path d="${outline}" class="ac-outline"/>` : '';
@@ -106,7 +106,8 @@
       // 有 A、B 兩個圖形時，手指分別指 A 和 B（第 23 版：不再指在兩個圖形中間）
       { say: st.think || st.hints[0], html: () => { ex = make(); return view(); }, act: async D => { if (D.els('.sd-pfig .ac-a').length && D.els('.sd-pfig .ac-b').length) { await D.pointGroup('.sd-pfig .ac-a'); await D.pointGroup('.sd-pfig .ac-b'); } else await D.point('.sd-pfig svg, .sd-pfig, .sd-ans'); } },
       // 步驟可以自訂示範動作（st.demo），例如 3-2 沿著左邊一排一排往下數
-      { say: () => st.say ? st.say(ex) : st.hints[2], html: () => { st.solve(ex); return view(); }, act: async D => { if (st.demo) { await st.demo(D, ex); return; } await D.pointAll('.sd-ans [aria-pressed=true], .sd-ans input.sd-filled, .sd-pfig .ac-mark, .sd-pfig .ac-tile, .sd-pfig .ac-side.on'); } }
+      // 第 25 版：格子和記號從 1 數到最後一個（以前只指前 4 個）
+      { say: () => st.say ? st.say(ex) : st.hints[2], html: () => { st.solve(ex); return view(); }, act: async D => { if (st.demo) { await st.demo(D, ex); return; } if (D.els('.sd-pfig .ac-mark, .sd-pfig .ac-tile').length) await D.countAll('.sd-pfig .ac-mark, .sd-pfig .ac-tile'); await D.pointAll('.sd-pfig .ac-side.on, .sd-ans [aria-pressed=true], .sd-ans input.sd-filled'); } }
     ];
   }
 

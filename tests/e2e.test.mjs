@@ -344,7 +344,7 @@ test('自我調整循環：數字目標與把握 → 目標和結果對照 → �
   await page.click('#new'); await page.waitForTimeout(60);
   assert.match(await p.text('#reflectFeedback'), /有沒有達到目標/);
   await p.choose('selfMet', 'yes'); await page.waitForTimeout(60);
-  assert.match(await p.text('.goal-vs'), /用了 2 個提示.*還沒達到.*一起看一下/);
+  assert.match(await p.text('.goal-vs'), /用了 1 個提示.*還沒達到.*一起看一下/);   // 第 25 版：同頁空白的那一步不算錯，不自動給提示
   assert.ok(await page.$('[data-choice="cause"]'), '沒達到才問原因');
   await p.choose('cause', 'tooHigh'); await page.waitForTimeout(60);
   assert.match(await p.text('.goal-vs'), /目標定得剛剛好/);
@@ -608,7 +608,7 @@ test('2-1 周長、2-2 面積還是周長、2-3 周長一樣面積一樣嗎', { 
 
 test('新活動也有提示、動畫示範、紀錄與 CSV 的單元欄位', { skip: skip || !distReady }, async () => {
   const p = await act('tile', { video: 'always' });
-  await p.check(); await p.check(); await p.check();
+  await p.choose('rule', 'any'); await p.check(); await p.check(); await p.check();   // 第 25 版：空白按檢查不給提示，要選了才算
   assert.match(await p.text('#hintText0'), /提示 3／3/);
   await p.page.click('[data-video="0"]'); await p.page.waitForSelector('#videoSlot0 .sd-plugin', { timeout: 8000 });
   assert.equal(await p.page.$('#videoSlot0 [data-choice]'), null, '示範畫面不會出現可作答的按鈕');
@@ -698,6 +698,9 @@ test('4-3 梯形：兩片拼成平行四邊形、找上底下底與高、要除�
   await p.choose('target', 'inside'); await p.check(); await p.next();
   await p.check(); assert.match(await p.text('#feedback1'), /先按上面的按鈕/);
   await p.page.click('#trTake'); await p.page.click('#trJoin');
+  assert.equal(await p.page.$('[data-choice="relation"]'), null);   // 第 25 版：先數用了幾片
+  await p.choose('pieces', '1'); await p.check(); assert.match(await p.text('#feedback1'), /再數一次/);
+  await p.choose('pieces', '2');
   await p.choose('relation', 'same'); await p.check(); assert.match(await p.text('#feedback1'), /兩片/);
   await p.choose('relation', 'half'); await p.check(); await p.next();
   await p.check(); assert.match(await p.text('#feedback2'), /先點上面和下面的邊/);
@@ -1081,4 +1084,100 @@ test('第 24 版：老師建立班級代碼，學生掃 QR code 的連結就進�
   assert.equal((await s.evaluate(async () => (await fetch('/api/session')).json())).student, false);
   assert.deepEqual(errors, []);
   await ctx.close(); await ctx2.close(); await t.close();
+});
+
+test('第 25 版：高對比主按鈕看得到字；選錯指出看哪裡（不鎖）；1-2 鋪滿才數數字；第 3 個提示先提醒一次；3-4 長寬寫反會提醒；4-3 拼合動畫與數字；示範數到最後', { skip: skip || !distReady }, async () => {
+  const c = await student('rectangle', { contrast: true });
+  const col = await c.page.$eval('#start', e => { const s = getComputedStyle(e); return [s.color, s.backgroundColor]; });
+  assert.notEqual(col[0], col[1], '主按鈕字和底色不同'); assert.equal(col[0], 'rgb(255, 255, 255)');
+  const p = await act('tile');
+  // 空白按檢查：不算錯
+  await p.check(); assert.equal(await p.page.$('.look-note'), null);
+  await p.choose('rule', 'any'); await p.check();
+  assert.match(await p.text('#feedback0'), /先看圖再選/);
+  assert.ok(await p.page.$('.look-here'), '圖被標出來');
+  assert.equal(await p.page.$eval('[data-choice="rule"][data-value="ok"]', b => b.disabled), false, '選項不鎖');
+  await p.choose('rule', 'ok'); await p.check(); await p.next();
+  // 鋪的時候不出現數字
+  await p.page.locator('#figure1 [data-tile-at]').nth(1).dispatchEvent('click'); await p.page.locator('#figure1 [data-tile-at]').nth(0).dispatchEvent('click');
+  assert.equal(await p.page.$$eval('#figure1 .ac-num', l => l.length), 0);
+  assert.match(await p.text('.ac-tally'), /已經鋪了 2 塊/);
+  // 第 3 個提示：先提醒一次，再按就給
+  await p.page.click('#hint1'); await p.page.click('#hint1'); await p.page.click('#hint1');
+  assert.match(await p.text('#feedback1'), /先照著提示試一次/);
+  assert.equal(await p.page.$eval('#hint1', b => b.disabled), false);
+  await p.page.click('#hint1');
+  await p.page.waitForFunction(() => /提示 3／3/.test(document.getElementById('hintText1')?.textContent || ''), null, { timeout: 5000 });
+  await p.page.click('#tileRow'); assert.match(await p.text('.ac-tally'), /還有/);
+  while (await p.page.$('#tileRow')) await p.page.click('#tileRow');
+  assert.match(await p.text('.ac-tally'), /鋪滿了/);
+  const n = await p.page.locator('#figure1 [data-tile-at]').count();
+  const nums = await p.page.$$eval('#figure1 .ac-num', l => l.map(x => x.textContent));
+  assert.equal(nums.length, n, '鋪滿後每格都有數字'); assert.equal(nums.at(-1), String(n), '右下角是總數');
+  // 示範：從 1 數到最後
+  const demo = await p.page.evaluate(async () => {
+    const host = document.createElement('div'); document.body.prepend(host);
+    const A = window.areaActs, pl = A.get('tile'), d = window.stepDemo.mount(host, { scenes: A.demoScenes(pl, 2, 'standard', {}, null), recap: '右下角最後一格的數字，就是一共用了幾塊。' });
+    await d.play(); return { nums: host.querySelectorAll('.sd-num').length, tiles: host.querySelectorAll('.ac-tile').length, counting: host.querySelectorAll('.sd-counting').length, cap: host.querySelector('.sd-caption').textContent };
+  });
+  assert.equal(demo.nums, demo.tiles); assert.ok(demo.nums >= 9, '數到最後一塊'); assert.match(demo.cap, /^記住：/);
+  // 示範按停止：數字不再跑
+  const stopped = await p.page.evaluate(async () => {
+    const host = document.createElement('div'); document.body.prepend(host);
+    const A = window.areaActs, pl = A.get('tile'), d = window.stepDemo.mount(host, { scenes: A.demoScenes(pl, 2, 'standard', {}, null) });
+    d.play(); await new Promise(r => setTimeout(r, 1500)); d.stop(); const a = host.querySelectorAll('.sd-num').length;
+    await new Promise(r => setTimeout(r, 1500)); return [a, host.querySelectorAll('.sd-num').length, host.querySelectorAll('.sd-counting').length];
+  });
+  assert.equal(stopped[0], stopped[1], '停止後不再數'); assert.equal(stopped[2], 0);
+  // 老師可以關掉「先試一次」
+  const q = await act('tile', { tryFirst: false });
+  await q.choose('rule', 'ok'); await q.check(); await q.next(); await q.page.click('#hint1'); await q.page.click('#hint1'); await q.page.click('#hint1');
+  await q.page.waitForFunction(() => /提示 3／3/.test(document.getElementById('hintText1')?.textContent || ''), null, { timeout: 5000 });
+  // 3-4：長和寬寫反也對，但會提醒
+  const r = await act('composite', { difficulty: 'easy' });
+  await r.page.locator('#figure0 [data-cut="h"]').dispatchEvent('click'); await r.check(); await r.next();
+  await r.page.fill('#l0', '2'); await r.page.fill('#w0', '3'); await r.page.fill('#a0', '6'); await r.check();
+  await r.page.waitForFunction(() => /答對了！小提醒：比較長的邊叫「長」/.test(document.getElementById('feedback1')?.textContent || ''), null, { timeout: 5000 });
+  // 4-3：拼合時第二片有動畫；列算式和算一算的圖一直有上底、下底、高
+  const t = await act('trapezoid');
+  await t.choose('target', 'inside'); await t.check(); await t.next();
+  await t.page.click('#trTake'); await t.page.click('#trJoin');
+  assert.ok(await t.page.$('#figure1 .ac-join'), '轉過來拼的動畫');
+  const fig = await t.page.evaluate(() => window.areaActs.get('trapezoid').steps[5].figure({ problem: { t: 3, b: 7, h: 4, off: 2 }, answers: {}, state: {}, checked: () => false, hint: () => 0 }));
+  assert.match(fig, /上底 3/); assert.match(fig, /下底 7/); assert.match(fig, /高 4/);
+  // 2-2：兩張小圖一開始就在；看過第 2 個提示後標出關鍵字
+  const w = await act('which');
+  assert.equal(await w.page.$$eval('#figure0 .ac-sitcard', l => l.length), 2);
+  await w.page.click('#hint0'); await w.page.click('#hint0');
+  const prompt = await w.page.$eval('.lesson-prompt', e => e.innerHTML); if (/圍一圈|繞著|沿著|一圈|鋪滿|貼滿|刷滿|種滿|蓋滿/.test(prompt)) assert.match(prompt, /<mark>/);
+  for (const x of [c, p, q, r, t, w]) assert.deepEqual(x.errors, []);
+});
+
+test('第 25 版：學生改網址也跳不過鎖住的活動；反思頁按上面的地圖連結也記成完成', { skip: skip || !distReady }, async () => {
+  await setup(); await publish({ __map: { assigned: ['compare', 'tile', 'rectangle'], sequential: true } });
+  const t = await browser.newPage(); await t.goto(base + '/teacher.html'); await t.waitForSelector('#classCreate');
+  await t.fill('#classLabel', '五年乙班'); await t.click('#classCreate'); await t.waitForSelector('.class-card');
+  const code = (await t.textContent('.class-card .class-code')).trim(); await t.close();
+  const ctx = await browser.newContext({ viewport: { width: 820, height: 1180 } }); const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.goto(`${base}/?class=${code}`); await page.waitForURL(/seven\.html/);
+  await page.goto(base + '/seven.html?a=tile'); await page.waitForSelector('.map-card');
+  assert.doesNotMatch(page.url(), /a=tile/, '鎖住的活動回到地圖');
+  await page.goto(base + '/seven.html?a=perimeter'); await page.waitForSelector('.map-card');
+  assert.doesNotMatch(page.url(), /a=perimeter/, '沒指派的活動回到地圖');
+  // 做完 1-1，在反思頁按上面的「學習地圖」
+  await page.click('[data-map="compare"]'); await page.waitForSelector('#start');
+  const p = { page, choose: (k, v) => page.click(`[data-choice="${k}"][data-value="${v}"]`) };
+  await begin(p);
+  await p.choose('guess', 'A'); await page.click('#check'); await page.click('#next');
+  const nCells = await page.locator('#figure1 [data-cell]').count(); for (let i = 0; i < nCells; i++) await page.locator('#figure1 [data-cell]').nth(i).dispatchEvent('click');
+  const counts = await page.evaluate(() => { const l = [...document.querySelectorAll('#figure1 [data-cell]')].map(e => e.getAttribute('data-cell')[0]); return [l.filter(x => x === 'A').length, l.filter(x => x === 'B').length]; });
+  await page.fill('#countA', String(counts[0])); await page.fill('#countB', String(counts[1])); await page.click('#check'); await page.click('#next');
+  await page.click(`[data-choice="cmp"][data-value="${counts[0] > counts[1] ? 'A' : counts[0] < counts[1] ? 'B' : 'same'}"]`); await page.click('#check'); await page.click('#next');
+  await page.click('[data-choice="reason"]'); await page.click('[data-choice="nextMethod"]');
+  await page.click('.map-link'); await page.waitForSelector('.map-card');
+  assert.match(await page.textContent('[data-map="compare"] .map-stars'), /⭐/);
+  assert.equal(await page.$('.map-card.locked[data-map="tile"]'), null, '完成後解鎖下一個');
+  await page.goto(base + '/seven.html?a=tile'); await page.waitForSelector('#start');
+  assert.deepEqual(errs, []);
+  await ctx.close();
 });

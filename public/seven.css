@@ -78,7 +78,7 @@
 .primary-soft{background:#e7efff;border:2px solid #2157da;font-weight:bold}
 
 /* 單句朗讀 */
-.say{min-height:0;padding:0 6px;margin-left:6px;border:0;background:transparent;font-size:18px;line-height:1;vertical-align:middle;opacity:.75}
+.say{min-height:44px;min-width:44px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;margin-left:6px;border:0;background:transparent;font-size:18px;line-height:1;vertical-align:middle;opacity:.75}
 .say:hover{background:#eaf1ff;opacity:1}
 .reading{background:#ffdf75!important;color:#162b4a!important;outline:3px solid #936100;outline-offset:2px;border-radius:4px}
 
@@ -160,7 +160,7 @@ html[data-size=large] #app{zoom:1.15}
 html[data-size=xlarge] #app{zoom:1.3}
 /* 注音：照課本的樣子，直排在國字右邊 */
 ruby.zy{display:inline-flex;align-items:center;vertical-align:middle;margin:0 .04em}
-ruby.zy rt{display:flex;flex-direction:row;align-items:center;justify-content:center;font-size:.4em;padding:0!important;background:none!important;line-height:1;font-weight:normal;margin-left:.08em;color:inherit;font-family:"Microsoft JhengHei","PingFang TC","Noto Sans CJK TC",sans-serif;min-height:2.6em}
+ruby.zy rt{display:flex;flex-direction:row;align-items:center;justify-content:center;font-size:.55em;padding:0!important;background:none!important;line-height:1;font-weight:normal;margin-left:.08em;color:inherit;font-family:"Microsoft JhengHei","PingFang TC","Noto Sans CJK TC",sans-serif;min-height:2.6em}
 ruby.zy z-b{display:block;padding:0;margin:0}
 ruby.zy rt .zc{display:flex;flex-direction:column;align-items:center}
 ruby.zy rt .zt{font-size:1.3em;line-height:1;font-weight:bold;margin-left:.02em;align-self:flex-end;transform:translateY(-.15em)}   /* 第 23 版：聲調放大、放在注音右邊，老師反映看不到 */
@@ -224,7 +224,7 @@ html.contrast,html.contrast body{background:#fff;color:#000}
 html.contrast .surface{border:3px solid #000}
 html.contrast p,html.contrast li,html.contrast legend,html.contrast label,html.contrast .subtle,html.contrast .figure-note,html.contrast .eyebrow{color:#000}
 html.contrast button:not(.say){border:2px solid #000;color:#000}
-html.contrast .primary{background:#000;color:#fff;border-color:#000}
+html.contrast .primary,html.contrast button.primary:not(.say){background:#000;color:#fff;border-color:#000}
 html.contrast .choice button[aria-pressed=true],html.contrast .aids button[aria-pressed=true]{background:#ffe600;border:4px solid #000}
 html.contrast .choice button[aria-pressed=true]::before{color:#000}
 html.contrast .feedback.correct{background:#fff;border:3px solid #006b2e;color:#000}
@@ -254,3 +254,12 @@ html.contrast .worked-tag,html.contrast .your-turn{border-color:#000;background:
 /* 第 23 版：這次做幾題、回顧可複選 */
 .lesson-goal{font-weight:bold;color:#0b5394}
 .choice.multi button[aria-pressed="true"]::before{content:"✓ "}
+/* 第 25 版：選擇題答錯後先看圖 */
+.figure.look-here{outline:4px solid #f0a500;outline-offset:4px;border-radius:12px;animation:look-here 1s ease-in-out 3}
+@keyframes look-here{50%{outline-color:#ffe08a}}
+@media (prefers-reduced-motion:reduce){.figure.look-here{animation:none}}
+/* 第 25 版：平板上按鈕至少 48 像素高，字大一點（第 7 份回饋） */
+header button,.aids button{min-height:48px;font-size:16px}
+.lesson-controls button,.hint-actions button,.answer .actions button{min-height:52px;font-size:19px}
+.self-ask summary,.progress-panel summary{min-height:48px}
+@media (pointer:coarse){.choice button{min-height:56px;font-size:20px}.answer input{min-height:52px;font-size:22px}}

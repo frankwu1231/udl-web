@@ -275,8 +275,27 @@ test('第 24 版審查修正：影片只能由同一位老師刪；同時大量�
   const mp4=fs.readFileSync(new URL('./fixtures/sample.mp4',import.meta.url));
   const up=await worker.fetch(new Request(origin+'/api/teacher/videos',{method:'POST',headers:{cookie:t1,'content-type':'video/mp4'},body:mp4}),venv);assert.equal(up.status,200);const {id}=await up.json();
   assert.equal((await w('/api/teacher/videos/'+id,{method:'DELETE',cookie:t2})).status,403,'T02 不能刪 T01 的影片');
+  assert.equal((await w('/api/videos/'+id,{cookie:t1})).status,200);assert.equal((await w('/api/videos/'+id,{cookie:t2})).status,404,'第 25 版：T02 也看不到 T01 的影片');
   assert.equal((await w('/api/teacher/videos/'+id,{method:'DELETE',cookie:t1})).status,200);
   const results=await Promise.all(Array.from({length:40},()=>w('/api/class-login',{method:'POST',body:{code:'ABCDEF'}})));
   assert.equal(results.filter(r=>r.status===401).length+results.filter(r=>r.status===429).length,40);
   assert.equal((await w('/api/class-login',{method:'POST',body:{code:'ABCDEF'}})).status,429,'同時送 40 次也都有算到');
+});
+
+test('第 25 版：AI 收到這一步的提示與活動在做的事；提示文字只收允許的字；tryFirst 設定要是布林值',async()=>{
+ const cookie=await testCookie(),originalFetch=globalThis.fetch;let sent;
+ globalThis.fetch=async(_url,options)=>{sent=JSON.parse(options.body);return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({message:'數一數 A 的格子。'})}}]}));};
+ try{const body={kind:'hint',shape:'compare',stepTitle:'數一數',cycle:1,step:1,method:'mark',goal:'check',hints:1,errors:1,incorrect:true,hintLevel:2,issue:'count',stepHints:['數一數 A 有幾格。','一格一格點，不要漏掉。','格子多的比較大。']};
+ assert.equal((await call('/api/ai-support',{method:'POST',cookie,body})).status,200);
+ assert.match(sent.messages[1].content,/這一步原本的提示：（1）數一數 A 有幾格。/);assert.match(sent.messages[1].content,/沒有三角形/);
+ assert.match(sent.messages[0].content,/不可以叫學生用尺量、數三角形/);assert.doesNotMatch(sent.messages[0].content,/三角形是拿兩片/);
+ body.kind='reflection';assert.equal((await call('/api/ai-support',{method:'POST',cookie,body})).status,200);assert.match(sent.messages[0].content,/是／不是/);
+ body.kind='hint';body.stepHints=['<img src=x>'];assert.equal((await call('/api/ai-support',{method:'POST',cookie,body})).status,400);
+ body.stepHints=['一','二','三','四'];assert.equal((await call('/api/ai-support',{method:'POST',cookie,body})).status,400);
+ body.stepHints='數一數';assert.equal((await call('/api/ai-support',{method:'POST',cookie,body})).status,400);
+ }finally{globalThis.fetch=originalFetch;}
+ const r=await call('/api/teacher/lessons',{cookie});const config=r.data.draft||r.data.published;
+ config.rectangle.settings={flow:'seven',support:'full',hintGate:false,difficulty:'standard',tryFirst:false};
+ assert.equal((await call('/api/teacher/lessons',{method:'POST',cookie,body:{kind:'draft',config}})).status,200);
+ config.rectangle.settings.tryFirst='yes';assert.equal((await call('/api/teacher/lessons',{method:'POST',cookie,body:{kind:'draft',config}})).status,400);
 });

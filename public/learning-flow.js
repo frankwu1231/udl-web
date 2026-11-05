@@ -41,10 +41,12 @@
     // 第 23 版：依第 19 版教師回饋
     srlAsk: 'first',        // 目標和把握什麼時候問：first 每個活動的第一題｜every3 每 3 題｜always 每一題｜off 不問（只問「你想先怎麼做」）
     lessonGoal: 0,          // 這次要做幾題（0＝不限）；畫面顯示「第 2／5 題」，做完提醒休息
-    stepNames: {}           // 自訂步驟名稱：{ '0': '看題目', … }，每個最多 12 字
+    stepNames: {},          // 自訂步驟名稱：{ '0': '看題目', … }，每個最多 12 字
+    // 第 25 版：第 3 個提示（會很接近答案）要先自己試一次才開放
+    tryFirst: true
   };
   const SRL_ASK = ['first', 'every3', 'always', 'off'], LESSON_GOALS = [0, 3, 5, 8, 10];
-  const validNames = n => n === undefined || (!!n && typeof n === 'object' && !Array.isArray(n) && Object.entries(n).every(([k, v]) => /^[0-6]$/.test(k) && typeof v === 'string' && v.trim().length <= 12));
+  const validNames = n => n === undefined || (!!n && typeof n === 'object' && !Array.isArray(n) && Object.entries(n).every(([k, v]) => /^[0-6]$/.test(k) && typeof v === 'string' && v.trim().length <= 12 && !/[<>&"'`]/.test(v)));
   const METHODS = ['mark', 'row', 'self'];
   const MODES = ['self', 'together', 'demo', 'probe'];
 
@@ -82,7 +84,7 @@
       && ['easy', 'standard', 'challenge', 'custom'].includes(s.difficulty)
       && ['slow', 'normal', undefined].includes(s.rate)
       && (s.keep === undefined || (Array.isArray(s.keep) && s.keep.every(v => OPTIONAL.includes(v))))
-      && ['confidence', 'selfAsk', 'badges', 'voice', 'handsOn', 'zhuyin', 'contrast', 'convert', 'fading', 'buddy', 'buddyVoice', 'attention'].every(k => s[k] === undefined || typeof s[k] === 'boolean')
+      && ['confidence', 'selfAsk', 'badges', 'voice', 'handsOn', 'zhuyin', 'contrast', 'convert', 'fading', 'buddy', 'buddyVoice', 'attention', 'tryFirst'].every(k => s[k] === undefined || typeof s[k] === 'boolean')
       && [undefined, 30, 60, 90].includes(s.buddyWait) && [undefined, 3, 5, 8].includes(s.attentionSec)
       && [undefined, ...MODES].includes(s.mode) && [undefined, 'hints', 'firstTry'].includes(s.goalKind)
       && [undefined, 'off', 'hint', 'always'].includes(s.video) && [undefined, 'normal', 'large', 'xlarge'].includes(s.textSize) && [undefined, 0, 2, 3].includes(s.rest)

@@ -151,6 +151,7 @@
       <label class="check"><input id="reward" type="checkbox" ${s.reward ? 'checked' : ''}>答對時顯示星星動畫</label>
       <label class="check"><input id="sound" type="checkbox" ${s.sound ? 'checked' : ''}>答對時播放提示音</label>
       <label class="check"><input id="hintGate" type="checkbox" ${s.hintGate ? 'checked' : ''}>看提示後，要按「我看完了」才能繼續作答</label>
+      <label class="check"><input id="tryFirst" type="checkbox" ${s.tryFirst !== false ? 'checked' : ''}>第 3 個提示（很接近答案）要先自己試一次才能看（自己做時）</label>
 
       ${id === 'squareMeter' ? `<label class="check"><input id="convert" type="checkbox" ${s.convert ? 'checked' : ''}>加入「1 平方公尺 = 10000 平方公分」換算步驟（預設關閉）</label>` : ''}
       <h2>教學階段</h2>
@@ -331,10 +332,10 @@
       ...old,
       flow: val('flow', e => e.value), keep: $('customFlow') ? [...document.querySelectorAll('[data-keep]:checked')].map(e => Number(e.dataset.keep)) : old.keep,
       support: $('lessonSupport').value, labels: val('labels', e => e.value), grid: val('grid', e => e.checked), rate: $('rate').value, ai: val('ai', e => e.checked), reward: $('reward').checked, sound: $('sound').checked,
-      hintGate: $('hintGate').checked, difficulty: $('difficulty').value,
+      hintGate: $('hintGate').checked, tryFirst: $('tryFirst').checked, difficulty: $('difficulty').value,
       mode: $('mode').value, goalKind: $('goalKind').value, confidence: $('confidence').checked, selfAsk: $('selfAsk').checked, badges: $('badges').checked,
       voice: $('voice').checked, rest: Number($('rest').value), srlAsk: $('srlAsk').value, lessonGoal: Number($('lessonGoal').value),
-      stepNames: Object.fromEntries([...document.querySelectorAll('[data-stepname]')].map(e => [e.dataset.stepname, e.value.trim()]).filter(x => x[1])), video: $('video').value, handsOn: $('handsOn').checked, fading: val('fading', e => e.checked),
+      stepNames: Object.fromEntries([...document.querySelectorAll('[data-stepname]')].map(e => [e.dataset.stepname, e.value.replace(/[<>&"'`]/g, '').trim()]).filter(x => x[1])), video: $('video').value, handsOn: $('handsOn').checked, fading: val('fading', e => e.checked),
       methods: (() => { const m = [...document.querySelectorAll('[data-method]:checked')].map(e => e.dataset.method); return plugin && old.methods.includes('row') ? [...m, 'row'] : m; })(),
       zhuyin: $('zhuyin').checked, textSize: $('textSize').value, contrast: $('contrast').checked, convert: val('convert', e => e.checked),
       buddy: $('buddy').checked, buddyWait: Number($('buddyWait').value), buddyVoice: $('buddyVoice').checked, attention: $('attention').checked, attentionSec: Number($('attentionSec').value)
