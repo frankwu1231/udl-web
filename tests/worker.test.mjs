@@ -275,6 +275,7 @@ test('第 24 版審查修正：影片只能由同一位老師刪；同時大量�
   const mp4=fs.readFileSync(new URL('./fixtures/sample.mp4',import.meta.url));
   const up=await worker.fetch(new Request(origin+'/api/teacher/videos',{method:'POST',headers:{cookie:t1,'content-type':'video/mp4'},body:mp4}),venv);assert.equal(up.status,200);const {id}=await up.json();
   assert.equal((await w('/api/teacher/videos/'+id,{method:'DELETE',cookie:t2})).status,403,'T02 不能刪 T01 的影片');
+  assert.equal((await w('/api/videos/'+id,{cookie:t1})).status,200);assert.equal((await w('/api/videos/'+id,{cookie:t2})).status,404,'第 25 版：T02 也看不到 T01 的影片');
   assert.equal((await w('/api/teacher/videos/'+id,{method:'DELETE',cookie:t1})).status,200);
   const results=await Promise.all(Array.from({length:40},()=>w('/api/class-login',{method:'POST',body:{code:'ABCDEF'}})));
   assert.equal(results.filter(r=>r.status===401).length+results.filter(r=>r.status===429).length,40);

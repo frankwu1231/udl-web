@@ -335,7 +335,7 @@
       hintGate: $('hintGate').checked, tryFirst: $('tryFirst').checked, difficulty: $('difficulty').value,
       mode: $('mode').value, goalKind: $('goalKind').value, confidence: $('confidence').checked, selfAsk: $('selfAsk').checked, badges: $('badges').checked,
       voice: $('voice').checked, rest: Number($('rest').value), srlAsk: $('srlAsk').value, lessonGoal: Number($('lessonGoal').value),
-      stepNames: Object.fromEntries([...document.querySelectorAll('[data-stepname]')].map(e => [e.dataset.stepname, e.value.trim()]).filter(x => x[1])), video: $('video').value, handsOn: $('handsOn').checked, fading: val('fading', e => e.checked),
+      stepNames: Object.fromEntries([...document.querySelectorAll('[data-stepname]')].map(e => [e.dataset.stepname, e.value.replace(/[<>&"'`]/g, '').trim()]).filter(x => x[1])), video: $('video').value, handsOn: $('handsOn').checked, fading: val('fading', e => e.checked),
       methods: (() => { const m = [...document.querySelectorAll('[data-method]:checked')].map(e => e.dataset.method); return plugin && old.methods.includes('row') ? [...m, 'row'] : m; })(),
       zhuyin: $('zhuyin').checked, textSize: $('textSize').value, contrast: $('contrast').checked, convert: val('convert', e => e.checked),
       buddy: $('buddy').checked, buddyWait: Number($('buddyWait').value), buddyVoice: $('buddyVoice').checked, attention: $('attention').checked, attentionSec: Number($('attentionSec').value)

@@ -96,6 +96,9 @@
     // 第 25 版：慢速約是 2 倍；播放中切換時，從這一段重新播，朗讀速度也立刻改變
     const k = () => slow ? 2.2 : 1;
     const alive = t => t === token && host.isConnected;
+    // 第 25 版修正：按「停止」或切換慢速後，正在做的動作（例如一格一格數）會立刻停下來
+    const STOP = Symbol('stop');
+    const pause = async ms => { const t = token; await wait(ms); if (t !== token || !host.isConnected) throw STOP; };
     $('.sd-slow').onclick = () => { slow = !slow; $('.sd-slow').setAttribute('aria-pressed', String(slow)); onEvent(slow ? 'slow' : 'normal'); if (playing) play(at); };
 
     const P = {
@@ -103,21 +106,21 @@
         const el = typeof sel === 'string' ? body.querySelector(sel) : sel; if (!el) return;
         const r = el.getBoundingClientRect(), s = $('.sd-stage').getBoundingClientRect();
         finger.style.left = (r.left - s.left + r.width / 2 - 10) + 'px'; finger.style.top = (r.top - s.top + r.height / 2 - 4) + 'px';
-        finger.classList.add('show'); await wait(650 * f * k());
+        finger.classList.add('show'); await pause(650 * f * k());
       },
-      async tap(el) { await P.point(el); finger.classList.add('tap'); await wait(260 * k()); finger.classList.remove('tap'); },
+      async tap(el) { await P.point(el); finger.classList.add('tap'); await pause(260 * k()); finger.classList.remove('tap'); },
       pulseFigure() { body.querySelector('.sd-fig')?.classList.add('sd-pulse'); },
-      async tapChip(i) { const c = body.querySelectorAll('.sd-chip')[i]; if (!c) return; await P.tap(c); c.classList.add('on'); await wait(500 * k()); },
+      async tapChip(i) { const c = body.querySelectorAll('.sd-chip')[i]; if (!c) return; await P.tap(c); c.classList.add('on'); await pause(500 * k()); },
       async markCell(i, n) { const c = body.querySelectorAll('.sd-cell')[i]; await P.tap(c); c.classList.add('on'); c.textContent = n; },
-      async countCell(i, n) { const c = body.querySelectorAll('.sd-cell')[i]; await P.point(c); c.classList.add('count'); c.textContent = n; await wait(200 * k()); },
+      async countCell(i, n) { const c = body.querySelectorAll('.sd-cell')[i]; await P.point(c); c.classList.add('count'); c.textContent = n; await pause(200 * k()); },
       // 第 23 版：一排的格子一格一格亮起來，排尾寫上加到現在的總數，字幕顯示「6 + 6 = 12」
       async markRow(r) {
         const cells = [...body.querySelectorAll('.sd-cell')].slice(r * ex[0], (r + 1) * ex[0]);
         await P.tap(cells[0]);
-        for (const c of cells) { c.classList.add('on'); await wait(160 * k()); }
+        for (const c of cells) { c.classList.add('on'); await pause(160 * k()); }
         cells.at(-1).textContent = (r + 1) * ex[0];
         const sum = $('.sd-sum'); if (sum) sum.textContent = r ? `${Array(r + 1).fill(ex[0]).join(' + ')} = ${(r + 1) * ex[0]}` : `第 1 排：${ex[0]} 格`;
-        await wait(500 * k());
+        await pause(500 * k());
       },
       els: sel => [...body.querySelectorAll(sel)],
       // 第 23 版：指向一整塊（例如圖形 A 的所有格子），並讓那一塊亮起來，不會指在兩塊中間
@@ -127,7 +130,7 @@
         const l = Math.min(...rs.map(r => r.left)), t = Math.min(...rs.map(r => r.top)), r = Math.max(...rs.map(r => r.right)), b = Math.max(...rs.map(r => r.bottom));
         body.querySelectorAll('.sd-focus').forEach(e => e.classList.remove('sd-focus')); list.forEach(e => e.classList.add('sd-focus'));
         finger.style.left = ((l + r) / 2 - s.left - 10) + 'px'; finger.style.top = ((t + b) / 2 - s.top - 4) + 'px';
-        finger.classList.add('show'); await wait(900 * k());
+        finger.classList.add('show'); await pause(900 * k());
       },
       async pointAll(sel) { for (const el of body.querySelectorAll(sel)) await P.tap(el); },
       // 第 25 版：一個一個數到最後（不再只數到 4），每數一個就在旁邊標上數字；多的時候數快一點
@@ -140,13 +143,13 @@
           n.className = 'sd-num'; n.textContent = i + 1; n.style.left = (r.left - st.left + r.width / 2) + 'px'; n.style.top = (r.top - st.top + r.height / 2) + 'px';
           body.appendChild(n); $('.sd-caption').dataset.count = i + 1;
         }
-        await wait(500 * k());
+        await pause(500 * k());
       },
-      async type(v) { const box = body.querySelector('.sd-input b'); if (!box) return; await P.tap(box); for (const ch of String(v)) { box.textContent += ch; await wait(220 * k()); } box.classList.add('ok'); },
-      async figure(o) { figOpts = { ...figOpts, ...o }; drawFigure(); await wait(700 * k()); },
-      async pickHeight() { const l = body.querySelector('[data-line].sd-hl') || body.querySelector('.height-line'); const letter = Object.entries(lineMap()).find(([, v]) => v === 'height')[0]; const tag = [...body.querySelectorAll('.line-tag')].find(g => g.textContent.trim() === letter); await P.tap(tag || l); figOpts = { ...figOpts, selected: letter }; drawFigure(); await wait(500 * k()); },
-      async equation(x, y) { const boxes = body.querySelectorAll('.sd-eq b'); for (const [i, v] of [[0, x], [1, y]]) { await P.tap(boxes[i]); boxes[i].textContent = v; await wait(300 * k()); } },
-      async calc(x, y, half) { const r = body.querySelector('.sd-calc'); r.innerHTML = `${x} × ${y} = <b>?</b>`; await P.point(r); await wait(500 * k()); r.innerHTML = `${x} × ${y} = <b>${x * y}</b>`; if (half) { await wait(700 * k()); r.innerHTML += ` ÷ 2 = <b>${x * y / 2}</b>`; } await wait(400 * k()); }
+      async type(v) { const box = body.querySelector('.sd-input b'); if (!box) return; await P.tap(box); for (const ch of String(v)) { box.textContent += ch; await pause(220 * k()); } box.classList.add('ok'); },
+      async figure(o) { figOpts = { ...figOpts, ...o }; drawFigure(); await pause(700 * k()); },
+      async pickHeight() { const l = body.querySelector('[data-line].sd-hl') || body.querySelector('.height-line'); const letter = Object.entries(lineMap()).find(([, v]) => v === 'height')[0]; const tag = [...body.querySelectorAll('.line-tag')].find(g => g.textContent.trim() === letter); await P.tap(tag || l); figOpts = { ...figOpts, selected: letter }; drawFigure(); await pause(500 * k()); },
+      async equation(x, y) { const boxes = body.querySelectorAll('.sd-eq b'); for (const [i, v] of [[0, x], [1, y]]) { await P.tap(boxes[i]); boxes[i].textContent = v; await pause(300 * k()); } },
+      async calc(x, y, half) { const r = body.querySelector('.sd-calc'); r.innerHTML = `${x} × ${y} = <b>?</b>`; await P.point(r); await pause(500 * k()); r.innerHTML = `${x} × ${y} = <b>${x * y}</b>`; if (half) { await pause(700 * k()); r.innerHTML += ` ÷ 2 = <b>${x * y / 2}</b>`; } await pause(400 * k()); }
     };
     const lineMap = () => ({ A: 'side', B: 'height', C: 'dash' });
     function drawFigure() {
@@ -198,14 +201,15 @@
       const t = ++token, again = playing; playing = true; $('.sd-end').hidden = true; finger.classList.remove('show');
       try { speechSynthesis.cancel(); } catch { /* 略過 */ }
       $('.sd-play').textContent = '⏹ 停止'; if (!again) onEvent('play');
-      // 從中間重播時，先把前面幾段的畫面補上（只畫，不播）
-      for (let i = 0; i < from; i++) if (scenes[i].html || !String(scenes[i].stage || 'keep').startsWith('keep')) render(scenes[i]);
+      // 從中間重播時，退回到畫出這張圖的那一段，從那裡重播（「keep」段落沿用前一段的畫面）
+      const keeps = sc => !sc.html && String(sc.stage || 'keep').startsWith('keep');
+      while (from > 0 && keeps(scenes[from])) from--;
       for (let i = from; i < scenes.length; i++) {
         if (!alive(t)) return;
-        at = i; const sc = scenes[i]; if (i === from && from > 0 && !sc.html && String(sc.stage || 'keep').startsWith('keep')) { /* 沿用畫面 */ } else render(sc);
+        at = i; const sc = scenes[i]; render(sc);
         const sayText = typeof sc.say === 'function' ? sc.say() : sc.say;
         $('.sd-caption').textContent = sayText; $('.sd-count').textContent = `第 ${i + 1}／${scenes.length} 段`;
-        await Promise.all([speak(sayText, t), (async () => { await wait(250); if (alive(t)) await sc.act(P); })()]);
+        try { await Promise.all([speak(sayText, t), (async () => { await pause(250); await sc.act(P); })()]); } catch (e) { if (e !== STOP) throw e; return; }
         if (!alive(t)) return;
         await wait(slow ? 1400 : 450);
       }
@@ -217,7 +221,7 @@
       $('.sd-play').textContent = '↻ 再看一次'; $('.sd-end').hidden = false; $('.sd-count').textContent = `共 ${scenes.length} 段`;
       onEvent('end');
     }
-    function stop() { token++; playing = false; try { speechSynthesis.cancel(); } catch { /* 略過 */ } $('.sd-play').textContent = '▶ 播放'; finger.classList.remove('show'); onEvent('stop'); }
+    function stop() { token++; playing = false; body.classList.remove('sd-counting'); try { speechSynthesis.cancel(); } catch { /* 略過 */ } $('.sd-play').textContent = '▶ 播放'; finger.classList.remove('show'); onEvent('stop'); }
     $('.sd-play').onclick = () => playing ? stop() : play();
     render(scenes[0]);
     return { play, stop, scenes: scenes.length, example: ex };

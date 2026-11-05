@@ -57,7 +57,7 @@
     const body = cells.map(c => {
       const x = c.x * u, y = c.y * u, cls = c.cls || 'ac-fill', at = c.attrs || '';
       const shape = c.half ? `<polygon points="${tri[c.half](x, y)}" class="${cls}" ${at}/>` : `<rect x="${x}" y="${y}" width="${u}" height="${u}" class="${cls}" ${at}/>`;
-      const lb = c.label != null && c.label !== '' ? `<text x="${x + u / 2}" y="${y + u / 2 + 6}" text-anchor="middle" class="ac-num">${esc(c.label)}</text>` : '';
+      const lb = c.label != null && c.label !== '' ? `<text x="${x + u / 2}" y="${y + u / 2 + 6}" text-anchor="middle" class="ac-num${c.delay != null ? ' ac-count' : ''}"${c.delay != null ? ` style="animation-delay:${Number(c.delay)}s"` : ''}>${esc(c.label)}</text>` : '';
       return shape + lb;
     }).join('');
     const ol = outline ? `<path d="${outline}" class="ac-outline"/>` : '';

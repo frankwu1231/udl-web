@@ -79,8 +79,9 @@
   function tileFig(ctx, opts = {}) {
     const [w, h] = ctx.problem.size, tiles = ctx.state.tiles || [], last = tiles[tiles.length - 1];
     // 第 25 版：數字照位置排（由左到右、由上到下），不管先點哪一格；鋪滿時右下角就是總數。剛放的那塊加框
-    let rank = 0;
-    const cells = rectCells(w, h).map(c => { const k = key(c), o = tiles.indexOf(k); if (o >= 0) rank++; return { x: c[0], y: c[1], cls: `${o >= 0 ? 'ac-tile' : 'ac-empty'}${o >= 0 && k === last && opts.clickable ? ' ac-last' : ''}${opts.clickable ? ' ac-hit' : ''}${opts.pulse && o < 0 ? ' ac-pulse' : ''}`, label: o >= 0 ? rank : '', attrs: opts.clickable ? `data-tile-at="${k}" role="button" aria-label="${o >= 0 ? '已鋪' : '還沒鋪'}的位置"` : '' }; });
+    // 依老師回饋：鋪的時候不出現數字（避免以為是在數點的次數），鋪滿了才從 1 依序數到最後
+    let rank = 0; const nums = !opts.clickable || tiles.length >= w * h;
+    const cells = rectCells(w, h).map(c => { const k = key(c), o = tiles.indexOf(k); if (o >= 0) rank++; return { x: c[0], y: c[1], cls: `${o >= 0 ? 'ac-tile' : 'ac-empty'}${o >= 0 && k === last && opts.clickable ? ' ac-last' : ''}${opts.clickable ? ' ac-hit' : ''}${opts.pulse && o < 0 ? ' ac-pulse' : ''}`, label: o >= 0 && nums ? rank : '', delay: opts.clickable && nums && o >= 0 ? (rank - 1) * 0.35 : null, attrs: opts.clickable ? `data-tile-at="${k}" role="button" aria-label="${o >= 0 ? '已鋪' : '還沒鋪'}的位置"` : '' }; });
     return gridSVG({ cols: w, rows: h, cells, outline: `M0 0H${w * U40}V${h * U40}H0Z`, lines: !!opts.lines, aria: `${w} 公分、${h} 公分的長方形` }) + (opts.legend ? '<p class="figure-note" data-read data-say>一塊小方塊：邊長 1 公分，面積 1 平方公分。</p>' : '');
   }
   A.register('tile', {
@@ -276,9 +277,9 @@
 
   // =============== 2-2 要算面積還是周長 ===============
   const SIT = [
-    ['🌷', '幫花圃圍一圈籬笆，要買多長的籬笆？', 'per'], ['🟫', '教室地板要鋪滿地墊，要多大的地墊？', 'area'], ['🎀', '沿著卡片的邊貼一圈緞帶，要多長？', 'per'],
+    ['🌷', '幫花圃圍一圈籬笆，要買多長的籬笆？', 'per'], ['🟫', '教室地板要鋪滿地墊，要多大的地墊？', 'area'], ['🎀', '沿著卡片的邊貼一圈彩色膠帶，要多長？', 'per'],
     ['📄', '用色紙貼滿整個桌面，要多大的色紙？', 'area'], ['🏃', '繞著操場跑一圈，跑了多遠？', 'per'], ['🖌️', '把牆壁刷滿油漆，要刷多大？', 'area'],
-    ['🖼️', '幫一幅畫加上一圈畫框，畫框要多長？', 'per'], ['🌱', '在菜園裡種滿青菜，菜園有多大？', 'area'], ['🧵', '沿著桌布的邊縫一圈花邊，要多長？', 'per'], ['🧱', '在牆上貼滿磁磚，要貼多大？', 'area']
+    ['🖼️', '幫一幅畫加上一圈畫框，畫框要多長？', 'per'], ['🌱', '在菜園裡種滿青菜，菜園有多大？', 'area'], ['📏', '沿著書桌的邊貼一圈彩色膠帶，要多長？', 'per'], ['🧱', '在牆上貼滿磁磚，要貼多大？', 'area']
   ];
   function sitStep(n) {
     const id = 'sit' + n;

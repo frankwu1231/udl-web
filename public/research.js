@@ -27,7 +27,7 @@
     ['assists', '我今天需要介入幾次', [['0', '0 次'], ['1-2', '1～2 次'], ['3-5', '3～5 次'], ['6+', '6 次以上']]]
   ];
 
-  let cfg = null, api = null, who = null, sending = false, lastActivity = '', memQueue = null;
+  let cfg = null, api = null, who = null, scopeKey = '', sending = false, lastActivity = '', memQueue = null;
   const load = (store, key, fallback) => { try { const v = JSON.parse(store.getItem(key) || 'null'); return v ?? fallback; } catch { return fallback; } };
   const keep = (store, key, value) => { try { store.setItem(key, JSON.stringify(value)); return true; } catch { return false; } };
   // 每個試算表網址有自己的佇列：換了網址，舊的離線紀錄不會送到新的試算表
@@ -208,12 +208,12 @@
       if (miss.length) { $('researchWhyNot').textContent = '請選：' + miss.join('、'); $('researchWhyNot').hidden = false; return; }
       saveNames();
       const student = `${st.teacher}-S${st.num}`, now = new Date();
-      who = { teacher: st.teacher, student, device: st.device, group: st.group, camera: st.camera === 'yes', sessionId: `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${student}-${Math.random().toString(36).slice(2, 6)}`, startedAt: Date.now() };
+      who = { teacher: st.teacher, student, device: st.device, group: st.group, camera: st.camera === 'yes', sessionId: `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${student}-${Math.random().toString(36).slice(2, 6)}`, startedAt: Date.now(), scope: scopeKey };
       keep(sessionStorage, WHO_KEY, who); keep(sessionStorage, LAST_KEY, { teacher: who.teacher, device: who.device, group: who.group });
       enqueue('場次', { kind: '開始', device: who.device, group: who.group, cameraConsent: who.camera ? '是' : '否', hasCamera: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia), browser: navigator.userAgent.slice(0, 200), screen: `${screen.width}x${screen.height}` });
       d.close(); lastActivity = ''; window.areaBuddy?.newStudent(); bar(); api.reset?.(); settingsRow(); api.changed(); flush();
     };
-    $('researchSkip').onclick = () => { saveNames(); who = { off: true }; keep(sessionStorage, WHO_KEY, who); d.close(); window.areaBuddy?.newStudent(); bar(); api.changed(); };
+    $('researchSkip').onclick = () => { saveNames(); who = { off: true, scope: scopeKey }; keep(sessionStorage, WHO_KEY, who); d.close(); window.areaBuddy?.newStudent(); bar(); api.changed(); };
   }
 
   // 每做完一題：學生選一個表情（可以跳過）
@@ -286,6 +286,10 @@
       api = a;
       if (!config || !config.url || !config.key) return;
       cfg = config; who = load(sessionStorage, WHO_KEY, null);
+      // 第 25 版：代號只在同一個班級、同一個試用表單用；換班級或換表單就重選（不沿用上一班的代號與鏡頭同意）
+      const scope = cfg.url + '|' + (a.scope || '');
+      if (who && who.scope !== scope) { who = null; try { sessionStorage.removeItem(WHO_KEY); } catch { /* 略過 */ } }
+      scopeKey = scope;
       if (!who) chooseWho(); else { bar(); settingsRow(); }
       flush();
     },

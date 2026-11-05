@@ -98,7 +98,7 @@ if(s.goalKind!==undefined&&!['hints','firstTry'].includes(s.goalKind))return fal
 // 第 23 版：目標詢問頻率、這次做幾題、自訂步驟名稱
 if(s.srlAsk!==undefined&&!['first','every3','always','off'].includes(s.srlAsk))return false;
 if(s.lessonGoal!==undefined&&![0,3,5,8,10].includes(s.lessonGoal))return false;
-if(s.stepNames!==undefined&&!(s.stepNames&&typeof s.stepNames==='object'&&!Array.isArray(s.stepNames)&&Object.entries(s.stepNames).every(([k,v])=>/^[0-6]$/.test(k)&&typeof v==='string'&&v.trim().length<=12)))return false;
+if(s.stepNames!==undefined&&!(s.stepNames&&typeof s.stepNames==='object'&&!Array.isArray(s.stepNames)&&Object.entries(s.stepNames).every(([k,v])=>/^[0-6]$/.test(k)&&typeof v==='string'&&v.trim().length<=12&&!/[<>&"'`]/.test(v))))return false;
 if(s.textSize!==undefined&&!['normal','large','xlarge'].includes(s.textSize))return false;
 if(s.rest!==undefined&&![0,2,3].includes(s.rest))return false;
 if(s.video!==undefined&&!['off','hint','always'].includes(s.video))return false;
@@ -147,7 +147,7 @@ if(url.pathname==='/api/teacher/classes')return request.method==='GET'?classList
 if(url.pathname.startsWith('/api/teacher/classes/'))return request.method==='DELETE'?classRevoke(request,env,who,url.pathname.slice(21)):json({error:'method'},405);
 if(url.pathname==='/api/teacher/videos')return request.method==='POST'?videoUpload(request,env,who):json({error:'method'},405);
 if(url.pathname.startsWith('/api/teacher/videos/'))return request.method==='DELETE'?videoDelete(request,env,who,url.pathname.slice(20)):json({error:'method'},405);
-if(url.pathname.startsWith('/api/videos/'))return request.method==='GET'||request.method==='HEAD'?videoGet(request,env,role,url.pathname.slice(12)):json({error:'method'},405);
+if(url.pathname.startsWith('/api/videos/'))return request.method==='GET'||request.method==='HEAD'?videoGet(request,env,who,url.pathname.slice(12)):json({error:'method'},405);
 if(url.pathname==='/api/teacher/lessons')return request.method==='GET'?teacherGet(request,env,who):request.method==='POST'?teacherSave(request,env,who):json({error:'method'},405);
 if(request.method!=='GET'&&request.method!=='HEAD')return new Response('Method not allowed',{status:405});let path=url.pathname;if(path==='/')path='/portal.html';else if(!path.includes('.'))path+='.html';if(!publicAssets.has(path)){if(role==='none')return path.endsWith('.html')?Response.redirect(url.origin+'/',302):new Response('Sign in required',{status:401});if(role==='student'&&!studentAssets.has(path))return path.endsWith('.html')?Response.redirect(url.origin+'/seven.html',302):new Response('Forbidden',{status:403});if(role==='test'&&!studentAssets.has(path)&&!teacherPages.has(path))return new Response('Forbidden',{status:403});}return asset(path);}};
 
@@ -171,8 +171,10 @@ return json({id,mime,size:bytes.length});}
 async function videoDelete(request,env,who,id){const role=who.role;if(role==='none')return json({error:'signin_required'},401);if(role==='student')return json({error:'forbidden'},403);if(!videoId.test(id))return json({error:'not_found'},404);if(!env.DB)return json({error:'video_storage_unavailable'},503);const origin=request.headers.get('origin');if(origin&&origin!==new URL(request.url).origin)return json({error:'origin'},403);
 const row=await env.DB.prepare('SELECT owner FROM lesson_videos WHERE id = ?').bind(id).first();if(!row)return json({error:'not_found'},404);if(row.owner!==videoOwner(who))return json({error:'forbidden'},403);
 await env.DB.batch([env.DB.prepare('DELETE FROM lesson_video_chunks WHERE video_id = ?').bind(id),env.DB.prepare('DELETE FROM lesson_videos WHERE id = ?').bind(id)]);return json({ok:true});}
-async function videoGet(request,env,role,id){if(role==='none')return new Response('Sign in required',{status:401});if(!videoId.test(id)||!env.DB)return new Response('Not found',{status:404});
-const meta=await env.DB.prepare('SELECT mime, size, chunks FROM lesson_videos WHERE id = ?').bind(id).first();if(!meta)return new Response('Not found',{status:404});
+// 第 25 版：影片只給同一個工作區看（學生看自己班級老師的影片）；正式教師可看全部；舊的共用測試影片 'test' 大家都能看
+const videoReadable=(who,owner)=>who.role==='teacher'||owner==='test'||owner===(who.ws==='main'?'teacher':who.ws==='test'?'test':'test:'+who.ws);
+async function videoGet(request,env,who,id){const role=who.role;if(role==='none')return new Response('Sign in required',{status:401});if(!videoId.test(id)||!env.DB)return new Response('Not found',{status:404});
+const meta=await env.DB.prepare('SELECT owner, mime, size, chunks FROM lesson_videos WHERE id = ?').bind(id).first();if(!meta||!videoReadable(who,meta.owner))return new Response('Not found',{status:404});
 const size=meta.size,head={'content-type':meta.mime,'accept-ranges':'bytes','x-content-type-options':'nosniff','cache-control':'private, max-age=3600'};
 let start=0,end=size-1,partial=false;const range=request.headers.get('range');
 if(range){const m=/^bytes=(\d*)-(\d*)$/.exec(range.trim());if(!m||(m[1]===''&&m[2]==='')||(m[1]!==''&&Number(m[1])>=size))return new Response(null,{status:416,headers:{'content-range':`bytes */${size}`}});

@@ -46,7 +46,7 @@
     tryFirst: true
   };
   const SRL_ASK = ['first', 'every3', 'always', 'off'], LESSON_GOALS = [0, 3, 5, 8, 10];
-  const validNames = n => n === undefined || (!!n && typeof n === 'object' && !Array.isArray(n) && Object.entries(n).every(([k, v]) => /^[0-6]$/.test(k) && typeof v === 'string' && v.trim().length <= 12));
+  const validNames = n => n === undefined || (!!n && typeof n === 'object' && !Array.isArray(n) && Object.entries(n).every(([k, v]) => /^[0-6]$/.test(k) && typeof v === 'string' && v.trim().length <= 12 && !/[<>&"'`]/.test(v)));
   const METHODS = ['mark', 'row', 'self'];
   const MODES = ['self', 'together', 'demo', 'probe'];
 

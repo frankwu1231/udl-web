@@ -35,3 +35,6 @@ html.contrast .buddy-bubble::after{border-color:#000}
 @keyframes b-wave{25%{transform:rotate(-12deg)}75%{transform:rotate(12deg)}}
 @media(max-width:760px){.buddy{right:10px;bottom:10px}.buddy-face{width:62px;height:62px}.buddy-bubble{font-size:17px}}
 @media(prefers-reduced-motion:reduce){.buddy *,.buddy{animation:none!important}}
+/* 第 25 版：小方不擋住「下一步」：下方按鈕列右邊留出小方的位置 */
+body.has-buddy .lesson-controls{padding-right:108px}
+@media (max-width:640px){body.has-buddy .lesson-controls{padding-right:84px}.buddy-face{width:60px;height:60px}}

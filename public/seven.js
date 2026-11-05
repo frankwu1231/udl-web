@@ -14,11 +14,12 @@
   const P = () => { const pl = ACT && type && ACT.get(type); if (!pl) return null; return pl.steps.some(x => x.when) ? { ...pl, steps: pl.steps.filter(x => !x.when || x.when(settings)) } : pl; };
   const nameOf = (k = type) => names[k] || ((ACT && ACT.info(k)) || {}).title || '';
   const draftQ = params.get('draft') === '1' ? '&draft=1' : '';
+  const mapUrl = () => 'seven.html' + (draftQ ? '?' + draftQ.slice(1) : '');
   let pProblem = null, pState = {}, keepProblem = false, isTeacher = false;
   let index = 0, cycle = 1, phase = 'plan', page = 0, settings = { ...F.defaults }, returnTo = null, edgeFocus = '';   // returnTo：按「回去看」之前在第幾頁（或 'reflect'）
   let goal = 'check', method = 'mark', response = '自行操作';
   let answers = {}, checked = new Set(), orders = {}, frame = 0, tiles = [], revealed = {}, lineOk = false;
-  let tried2 = new Set();   // 第 25 版：看過第 2 個提示後，自己試過（按檢查）的步驟
+  let tried2 = new Set(), nudged = new Set();   // 第 25 版：看過第 2 個提示後自己試過（按檢查）的步驟；已經提醒過「先試試看」的步驟
   let hintLevel = [0, 0, 0, 0, 0, 0, 0], hintsUsed = 0, errors = 0, records = [], carry = null, hintPending = false;
   let aiMsg = {}, replay = 0, dragFrom = null, entered = new Set(), sessionApiKey = '', sessionProvider = 'openai', speechToken = 0, audio = null;
   let probeDims = null, studyPhase = '', voices = {}, recorder = null, startedAt = 0, videoOpen = new Set();
@@ -38,7 +39,8 @@
   const pages = () => P() ? P().steps.map((_, i) => [i]) : F.pages(settings);
   const current = () => pages()[page];
   const has = n => P() ? n < P().steps.length : F.hasActivity(settings, n);
-  const titles = () => { const names = settings.stepNames || {}; if (P()) return P().steps.map((x, i) => names[i] || x.title); const t = C.titles(type).slice(); if (!has(1)) t[5] = '算一算'; if (method === 'row' && grid()) t[1] = '一排一排加'; return t.map((x, i) => names[i] || x); };
+  // 第 25 版修正：老師自訂的步驟名稱拿掉 < > & 引號，不會弄壞學生頁
+  const titles = () => { const names = Object.fromEntries(Object.entries(settings.stepNames || {}).map(([k, v]) => [k, String(v).replace(/[<>&"'`]/g, '').trim()]).filter(([, v]) => v)); if (P()) return P().steps.map((x, i) => names[i] || x.title); const t = C.titles(type).slice(); if (!has(1)) t[5] = '算一算'; if (method === 'row' && grid()) t[1] = '一排一排加'; return t.map((x, i) => names[i] || x); };
   // 「這次做幾題」只算這次進入活動後做完的題目（以前的紀錄仍保留在「我的進步」）
   let doneBase = 0;
   const doneAll = () => records.filter(r => r.event === '整題完成' && (r.actId || r.shapeKey) === type).length;
@@ -81,7 +83,7 @@
     const meter = total > 1 ? `<div class="step-meter" aria-label="解題步驟 ${page + 1}／${total}"><span class="meter-label">解題步驟</span>${pages().map((_, i) => `<span class="dot ${i < page ? 'done' : i === page ? 'now' : ''}">${i + 1}</span>`).join('')}</div>` : '';
     const steps = type ? `<nav class="progress" aria-label="學習階段"><span class="stage-label">學習階段</span><span class="${phase === 'plan' ? 'active' : ''}">① 看題、選方法</span><span class="${phase === 'solve' ? 'active' : ''}">② 動手算</span><span class="${phase === 'reflect' ? 'active' : ''}">③ 檢查、回顧</span></nav>${meter}` : '';
     const banner = type ? { together: '一起做：老師和你一起想、一起做。', demo: '老師示範：先看老師怎麼做，聽老師說出想法。', probe: '小測驗：這次沒有提示，自己試試看就好。' }[mode()] : '';
-    $('app').innerHTML = `<section class="surface"><div class="head"><p class="eyebrow">${type ? `<a class="map-link" href="seven.html${draftQ ? '?' + draftQ.slice(1) : ''}">🗺️ 學習地圖</a>　${(ACT && ACT.info(type) || {}).no || ''} ${nameOf()} · 第 ${cycle} 題${settings.lessonGoal ? `<span class="lesson-goal">　這次：第 ${Math.min(doneHere() + 1, settings.lessonGoal)}／${settings.lessonGoal} 題</span>` : ''}` : '四種圖形面積'}</p><h1 tabindex="-1" data-read>${title}</h1></div>${steps}${banner ? `<p class="mode-banner mode-${mode()}" data-read data-say>${banner}</p>` : ''}<div class="body">${body}</div></section>`;
+    $('app').innerHTML = `<section class="surface"><div class="head"><p class="eyebrow">${type ? `<a class="map-link" href="${mapUrl()}">🗺️ 學習地圖</a>　${(ACT && ACT.info(type) || {}).no || ''} ${nameOf()} · 第 ${cycle} 題${settings.lessonGoal ? `<span class="lesson-goal">　這次：第 ${Math.min(doneHere() + 1, settings.lessonGoal)}／${settings.lessonGoal} 題</span>` : ''}` : '四種圖形面積'}</p><h1 tabindex="-1" data-read>${title}</h1></div>${steps}${banner ? `<p class="mode-banner mode-${mode()}" data-read data-say>${banner}</p>` : ''}<div class="body">${body}</div></section>`;
     addSayButtons($('app'));
   }
   function focus() { document.querySelector('h1')?.focus({ preventScroll: true }); window.scrollTo({ top: 0 }); }
@@ -95,7 +97,7 @@
   function startQuestion() {
     answers = carry ? { method: carry.method } : {};
     checked = new Set(); orders = {}; frame = 0; tiles = []; revealed = {}; lineOk = false; dragFrom = null; aiMsg = {}; videoOpen = new Set(); stuckOpen = null; stuckNote = {};
-    hintLevel = [0, 0, 0, 0, 0, 0, 0]; tried2 = new Set(); hintPending = false; errors = 0; hintsUsed = 0; page = 0; entered = new Set(); returnTo = null;
+    hintLevel = [0, 0, 0, 0, 0, 0, 0]; tried2 = new Set(); nudged = new Set(); hintPending = false; errors = 0; hintsUsed = 0; page = 0; entered = new Set(); returnTo = null;
     settings = F.settings(L()); applyReading();
     if (P()) { pState = {}; if (!keepProblem || !pProblem) pProblem = P().makeProblem(level(), index, Math.random); keepProblem = false; }
     probeDims = !P() && mode() === 'probe' ? F.randomProblem(type, settings.difficulty === 'custom' ? 'standard' : settings.difficulty) : null;
@@ -272,7 +274,7 @@
 
     const level = hintLevel[s], passed = checked.has(s), probe = mode() === 'probe';
     const auto = !probe && mode() !== 'demo' && (settings.support === 'full' && method !== 'self' || mode() === 'together') && level === 0 && !passed;
-    const hintBtn = passed || probe ? '' : waitTry(s) ? button('hint' + s, '💡 先試一次，再看第 3 個提示', 'hint-btn', 'disabled') : level < 3 ? button('hint' + s, level === 0 ? '💡 給我提示' : '💡 再給我一個提示', 'hint-btn') : button('hint' + s, '已經看完 3 個提示', 'hint-btn', 'disabled');
+    const hintBtn = passed || probe ? '' : level < 3 ? button('hint' + s, level === 0 ? '💡 給我提示' : '💡 再給我一個提示', 'hint-btn') : button('hint' + s, '已經看完 3 個提示', 'hint-btn', 'disabled');
     const aiBtn = !probe && !passed && settings.ai && level >= 2 ? button('aiHint' + s, '🤖 問 AI', 'hint-btn') : '';
     const canVideo = !probe && !passed && settings.video !== 'off';
     const videoBtn = canVideo && !videoOpen.has(s) && (settings.video === 'always' || mode() === 'demo' || level >= 3) ? button('video' + s, '🎬 看示範影片', 'hint-btn video-btn', `data-video="${s}"`) : '';
@@ -281,7 +283,7 @@
     const askText = stepAskText(s);
     const stepAsk = askText && settings.selfAsk && !passed && mode() !== 'demo' && !probe ? `<p class="step-ask" data-read data-say>問問自己：${esc(askText)}</p>` : '';
     const stuckBtn = passed || probe || mode() === 'demo' ? '' : button('stuck' + s, '😣 我卡住了', 'hint-btn stuck-btn', `data-stuck="${s}" aria-expanded="${stuckOpen === s}" aria-controls="stuckPanel${s}"`);
-    const stuckItems = C.stuckOptions.filter(([k]) => (k !== 'hint' || (level < 3 && !waitTry(s))) && (k !== 'video' || (canVideo && !videoOpen.has(s))));
+    const stuckItems = C.stuckOptions.filter(([k]) => (k !== 'hint' || level < 3) && (k !== 'video' || (canVideo && !videoOpen.has(s))));
     const stuckPanel = stuckOpen === s && !passed ? `<div class="stuck-panel" id="stuckPanel${s}" role="group" aria-labelledby="stuckLead${s}"><p id="stuckLead${s}" data-read data-say>沒關係，卡住的時候，選一個幫自己的方法：</p><div class="options">${stuckItems.map(([k, t]) => `<button type="button" data-stuck-pick="${k}" data-step="${s}">${t}</button>`).join('')}</div>${stuckNote[s] ? `<p class="notice" role="status" data-read data-say>${esc(stuckNote[s])}</p>` : ''}</div>` : '';
     const thinkText = P() ? P().steps[s].think : C.think[type][s], togetherText = P() ? P().steps[s].together : C.together(type)[s];
     const coach = mode() === 'demo' && !passed ? `<div class="think-aloud"><p data-read data-say>${esc(thinkText)}</p>${button('demo' + s, '▶ 看老師做這一步', 'primary-soft', `data-demo="${s}"`)}</div>`
@@ -599,15 +601,16 @@
   function bindDrag() {
     const g = document.querySelector('.drag-piece'); if (!g) return;
     const svg = g.ownerSVGElement, kind = g.dataset.drag, tx = Number(g.dataset.tx);
-    let start = null;
+    // 第 25 版修正：平板上拖曳不要被當成捲動（touch-action），取消事件的座標是 0，改用最後一次移動的位置判斷
+    let start = null, lastPt = null; svg.style.touchAction = 'none'; g.style.touchAction = 'none';
     const scale = () => svg.viewBox.baseVal.width / svg.getBoundingClientRect().width;
-    g.addEventListener('pointerdown', e => { start = [e.clientX, e.clientY]; g.setPointerCapture(e.pointerId); g.classList.add('dragging'); e.preventDefault(); });
+    g.addEventListener('pointerdown', e => { start = [e.clientX, e.clientY]; lastPt = start; g.setPointerCapture(e.pointerId); g.classList.add('dragging'); e.preventDefault(); });
     g.addEventListener('pointermove', e => {
-      if (!start) return; const k = scale(), dx = (e.clientX - start[0]) * k, dy = (e.clientY - start[1]) * k;
+      if (!start) return; lastPt = [e.clientX, e.clientY]; const k = scale(), dx = (e.clientX - start[0]) * k, dy = (e.clientY - start[1]) * k;
       g.setAttribute('transform', kind === 'triangle' ? `translate(${tx + dx},${dy})` : `translate(${Math.max(0, dx)},0)`);
     });
     const end = e => {
-      if (!start) return; const k = scale(), dx = (e.clientX - start[0]) * k, dy = (e.clientY - start[1]) * k; start = null; g.classList.remove('dragging');
+      if (!start) return; const pt = e.type === 'pointercancel' ? lastPt : [e.clientX, e.clientY], k = scale(), dx = (pt[0] - start[0]) * k, dy = (pt[1] - start[1]) * k; start = null; g.classList.remove('dragging');
       if (kind === 'triangle' && dx < -tx * 0.4) advanceFrame([tx + dx, dy]);
       else if (kind === 'parallelogram' && dx > tx * 0.4) advanceFrame([Math.max(0, dx), 0]);
       else g.setAttribute('transform', kind === 'triangle' ? `translate(${tx},0)` : 'translate(0,0)');
@@ -743,6 +746,13 @@
     }).filter(Boolean).join('、') || (code === 'count' ? `點了 ${tiles.length} 格` : '');
   }
 
+  function blankStep(s, r = issue(s)) {
+    if (r && answerText(s, r.code)) return false;   // 已經點了格子之類的，不算空白
+    const sec = document.querySelector(`.activity[data-stage="${s}"]`); if (!sec) return false;
+    const inputs = [...sec.querySelectorAll('.answer input:not([type=checkbox]), .answer textarea')], picks = sec.querySelectorAll('[data-choice]');
+    if (!inputs.length && !picks.length) return false;   // 圖形操作的步驟（點格子、拼合）沒有「空白」可言
+    return inputs.every(i => !i.value.trim()) && !sec.querySelector('[data-choice][aria-pressed="true"]');
+  }
   function validatePage(list = current()) {
     const groupBox = () => $('groupFeedback') || $('reflectFeedback');
     if (hintPending !== false) { showStatus(groupBox(), '先看完提示，按「我看完了」。'); return false; }
@@ -760,6 +770,8 @@
       }
       if (r && r.soft) { ok = false; log('提醒還差一步', { activity: s + 1, issue: r.code }); continue; }   // 算對了、只差比一比：不算答錯
       log('步驟檢核', { activity: s + 1, correct: !r, issue: r ? r.code : 'none', hintLevel: hintLevel[s], choice: r ? answerText(s, r.code) : undefined });
+      // 什麼都沒填就按「檢查」：提醒要填，但不算答錯、不自動給提示，也不算「試過」
+      if (r && blankStep(s, r)) { ok = false; log('提醒還沒作答', { activity: s + 1, issue: r.code }); continue; }
       if (r && hintLevel[s] >= 2) tried2.add(s);
       if (r) { ok = false; errors++; checked.delete(s); if (hintLevel[s] < 3 && mode() !== 'probe') { hintLevel[s]++; log('自動提示', { activity: s + 1, hintLevel: hintLevel[s] }); if (settings.hintGate && hintPending === false) hintPending = s; } }
       else checked.add(s);
@@ -774,15 +786,14 @@
       else if (r.partial || (s === 3 && lineOk && r.code === 'second' && partial)) showStatus($('feedback' + s), '找到了！', true);
       else showStatus($('feedback' + s), r.msg);
     }
-    for (const s of list) if (msgs[s] && !msgs[s].partial && !msgs[s].soft) window.areaBuddy?.wrong(s, tried[s]);
-    // 第 25 版：選擇題答錯後，選項停 3 秒、圖會亮起來，請學生先看圖再選，避免只用刪去法換另一個
-    if (mode() !== 'demo' && hintPending === false) for (const s of list) {
-      if (!msgs[s] || msgs[s].partial || msgs[s].soft) continue;
-      const opts = [...document.querySelectorAll(`.activity[data-stage="${s}"] [data-choice]`)].filter(b => !b.disabled); if (!opts.length) continue;
+    for (const s of list) if (msgs[s] && !msgs[s].partial && !msgs[s].soft && !blankStep(s, msgs[s])) window.areaBuddy?.wrong(s, tried[s]);
+    // 第 25 版：選擇題答錯後，圖亮框，並用這一步的提示說要看哪裡，請學生先看圖再選（不鎖按鈕）
+    if (mode() !== 'demo') for (const s of list) {
+      if (!msgs[s] || msgs[s].partial || msgs[s].soft || blankStep(s, msgs[s])) continue;
+      if (!document.querySelector(`.activity[data-stage="${s}"] [data-choice]`)) continue;
       const fig = $('figure' + s), box = $('feedback' + s);
-      opts.forEach(b => { b.disabled = true; b.classList.add('wait-look'); }); fig?.classList.add('look-here');
-      if (box) box.insertAdjacentHTML('beforeend', '<span class="look-note">　先看一看圖，3 秒後再選。</span>');
-      setTimeout(() => { if (hintPending !== false) return; opts.forEach(b => { if (b.isConnected) { b.disabled = false; b.classList.remove('wait-look'); } }); fig?.classList.remove('look-here'); box?.querySelector('.look-note')?.remove(); }, 3000);
+      if (fig) { fig.classList.add('look-here'); setTimeout(() => fig.classList.remove('look-here'), 3000); }
+      if (box) box.insertAdjacentHTML('beforeend', `<span class="look-note" data-read data-say>　先看圖再選：${esc(hintFor(s, 1))}</span>`);
     }
     if (ok) { showStatus(groupBox(), phase === 'reflect' ? '單位答對了！' : '全部答對了，可以按「下一步」。', true); if (phase !== 'reflect') celebrate(); window.areaBuddy?.right(list[list.length - 1]); }
     else if (partial) showStatus(groupBox(), '找到高了！再填它的長度。', true);
@@ -797,11 +808,11 @@
   function goPage(n) { log('返回修正', { to: n + 1 }); hintPending = false; page = Math.max(0, n); phase = 'solve'; render(); focus(); }
 
   // ---------- 提示 ----------
-  // 第 3 個提示很接近答案：自己解題時，要先按「檢查」試一次才開放（老師可以關掉；一起做、老師示範不限制）
-  const waitTry = s => hintLevel[s] === 2 && settings.tryFirst !== false && mode() === 'self' && !tried2.has(s);
+  // 第 3 個提示很接近答案：自己解題、還沒試過時，第一次按先提醒「要不要先試試看」，再按一次就給（不鎖按鈕；老師可以關掉）
+  const waitTry = s => hintLevel[s] === 2 && settings.tryFirst !== false && mode() === 'self' && !tried2.has(s) && !nudged.has(s);
   function showHint(s, manual) {
     if (hintLevel[s] >= 3) return;
-    if (waitTry(s)) { const f = $('feedback' + s); if (f) showStatus(f, '先照著提示自己做一次，按「檢查」。還不會，再看第 3 個提示。'); return; }
+    if (waitTry(s)) { nudged.add(s); log('提醒先試試看', { activity: s + 1 }); const f = $('feedback' + s); if (f) showStatus(f, '要不要先照著提示試一次，按「檢查」？真的不會，再按一次提示。'); return; }
     hintLevel[s]++; hintsUsed++;
     log('請求提示', { activity: s + 1, hintLevel: hintLevel[s] });
     if (settings.hintGate) hintPending = s;
@@ -970,7 +981,7 @@
       ${settings.ai && !probe ? `<details><summary>🤖 想多想一點？請 AI 問你一個問題</summary>${button('aiReflect', '請 AI 問我')}<p id="aiReflectText" class="notice" role="status"></p></details>` : ''}
       ${progressPanel(true)}` : ''}
       <p id="reflectFeedback" class="feedback" role="status"></p>
-      <div class="lesson-controls">${button('back', '← 回去看')}${inReflect && !unitDone ? button('check', '✔ 檢查') : ''}${unitDone ? button('retry', '再做一次這題') + `<a class="map-back" href="seven.html${draftQ ? '?' + draftQ.slice(1) : ''}">🗺️ 回學習地圖</a>` + button('new', '下一題 →', 'primary') : ''}</div>`);
+      <div class="lesson-controls">${button('back', '← 回去看')}${inReflect && !unitDone ? button('check', '✔ 檢查') : ''}${unitDone ? button('retry', '再做一次這題') + button('toMap', '🗺️ 回學習地圖', 'map-back') + button('new', '下一題 →', 'primary') : ''}</div>`);
     if (!unitDone) {
       bindActivity();
       $('check').onclick = () => { if (validatePage([6])) focus(); };
@@ -983,9 +994,10 @@
       $('myReflection').oninput = () => answers.myReflection = $('myReflection').value;
       if ($('aiReflect')) $('aiReflect').onclick = () => askAI('reflection', 6, $('aiReflectText'));
       if ($('recordVoice')) $('recordVoice').onclick = toggleRecord;
-      const finish = next => {
+      // 第 25 版修正：按「回學習地圖」（或上面的地圖連結）也要先把這一題記成完成，地圖才會有星星、解鎖下一個
+      const finish = (next, toMap = false) => {
         const need = [!probe && r.goal !== 'any' && !judged && '有沒有達到目標', !probe && judged && !r.met && !answers.cause && '可能的原因', !answers.reason && '什麼幫助你', !answers.nextMethod && '下一題怎麼做'].filter(Boolean);
-        if (need.length) return showStatus($('reflectFeedback'), '請選：' + need.join('、') + '。');
+        if (need.length) { showStatus($('reflectFeedback'), '請選：' + need.join('、') + '。'); return false; }
         if (recorder) toggleRecord();
         const badges = earned(r), secs = startedAt ? Math.round((Date.now() - startedAt) / 1000) : null;
         log('整題完成', { activity: 7, hints: r.hints, errors, goal: r.goal, goalKind: settings.goalKind, goalMet: r.watched ? false : r.met, watched: !!r.watched, selfMet: answers.selfMet || '', confidence: answers.confidence || '', firstTry: r.firstTry, steps: r.steps, secs, badges, dimensions: dims() });
@@ -994,12 +1006,14 @@
         log('反思與下一輪調整', { activity: 7, choice: `目標：${probe ? '小測驗' : goalItem ? goalItem[1] : '做完就好'}；結果：${resultLine(r).replace('我的結果：', '')}；自己判斷：${answers.selfMet ? chosenText('selfMet') : '—'}；原因：${answers.cause ? chosenText('cause') : '—'}；幫助我的：${chosenText('reason')}；下一題：${chosenText('nextMethod')}${answers.myReflection ? '；學生說：' + answers.myReflection : ''}${voices[cycle] ? '；有錄音' : ''}`, judgment: answers.selfMet || '', reason: carry.reason, cause: answers.cause || '', studentWords: answers.myReflection || '', nextMethod: carry.method, nextAction: next ? '新題' : '重試' });
         if (next) index = (index + 1) % 3; else keepProblem = true;
         cycle++;
+        if (toMap) { location.href = mapUrl(); return; }
         const doneCount = records.filter(x => x.event === '整題完成').length;
         if (settings.lessonGoal && doneHere() === settings.lessonGoal) openRest('goal');
         else if (settings.rest && doneCount % settings.rest === 0) { openRest('time'); }
         startQuestion(); focus();
       };
-      $('retry').onclick = () => finish(false); $('new').onclick = () => finish(true);
+      $('retry').onclick = () => finish(false); $('new').onclick = () => finish(true); $('toMap').onclick = () => finish(true, true);
+      document.querySelector('.map-link')?.addEventListener('click', e => { e.preventDefault(); if (finish(true, true) === false) location.href = mapUrl(); });   // 反思還沒選完：直接回地圖（這題不算完成）
     }
     $('back').onclick = () => { returnTo = 'reflect'; goPage(pages().length - 1); };
   }
@@ -1172,6 +1186,8 @@
       <p class="subtle">滑鼠移到點上可看數字。直的虛線是研究階段改變的地方。詳細數字見上面的表格與 CSV。</p>`;
   }
 
+  // 第 25 版：學生打的字若以 = + - @ 開頭，Excel 會當成公式；前面加 ' 讓它只是文字（純數字如 -3 不動）
+  const csvCell = v => { const t = String(v ?? ''); return /^[=+\-@\t\r]/.test(t) && !/^-?\d+(\.\d+)?$/.test(t) ? "'" + t : t; };
   const CSV_HEAD = ['時間', '圖形', '第幾題', '步驟', '事件', '是否答對', '錯在哪裡', '提示層級', '學生的選擇或內容', '支持程度', '回應方式', '解題流程', '難度', '教學階段', '研究階段', '目標', '把握', '是否達標', '自己判斷', '本題提示數', '一次答對步數', '作答秒數', '得到的章', '單元', '活動編號', '課綱代碼'];
   const issueName = { target: '要找什麼', count: '數格子', relation: '操作後比較', base: '點底', first: '底／第一邊', line: '選高的線', second: '高／第二邊', formula: '選算式', ab: '算式數字', total: '計算', verify: '比一比', unit: '單位', none: '' };
   function exportData() {
@@ -1186,7 +1202,7 @@
       r.goalMet === undefined ? '' : r.goalMet ? '是' : '否', r.selfMet ? (r.selfMet === 'yes' ? '有達到' : '還沒有') : '',
       r.event === '整題完成' ? r.hints ?? '' : '', r.firstTry ?? '', r.secs ?? '', (r.badges || []).map(b => C.badges[b][1]).join('、'),
       ...(() => { const a = ACT && ACT.info(r.actId || r.shapeKey); const u = a && ACT.UNITS.find(x => x.id === a.unit); return a ? [u ? u.title : '', a.no, a.code] : ['', '', '']; })()]);
-    const csv = '﻿' + [CSV_HEAD, ...rows].map(row => row.map(v => '"' + String(v ?? '').replaceAll('"', '""') + '"').join(',')).join('\r\n');
+    const csv = '﻿' + [CSV_HEAD, ...rows].map(row => row.map(v => '"' + csvCell(v).replaceAll('"', '""') + '"').join(',')).join('\r\n');
     const name = `area-record_${new Date().toISOString().slice(0, 10)}_${String(Date.now()).slice(-4)}.csv`;   // 英數檔名：中文檔名在部分瀏覽器會變成沒有副檔名的 download
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })), a = document.createElement('a');
     a.href = url; a.download = name; document.body.append(a); a.click(); a.remove();
@@ -1257,13 +1273,24 @@
   }
 
   // ---------- 學習地圖（首頁） ----------
-  function mapView() {
+  function mapState() {
     const m = lessons.map || {}, avail = ACT ? ACT.available() : Object.keys(names).map(id => ({ id, title: names[id], unit: 'u3', no: '' }));
     const assigned = Array.isArray(m.assigned) ? m.assigned : avail.map(a => a.id);
     const done = id => records.filter(r => r.event === '整題完成' && (r.actId || r.shapeKey) === id).length;
     const order = avail.filter(a => assigned.includes(a.id));
     const lockedSet = new Set();
     if (m.sequential) order.forEach((a, i) => { if (i > 0 && !order.slice(0, i).every(b => done(b.id) > 0)) lockedSet.add(a.id); });
+    return { m, avail, assigned, done, lockedSet };
+  }
+  // 第 25 版：學生直接改網址也不能跳過還沒打開的活動，或老師沒指派的活動
+  function blockedByMap(id) {
+    if (isTeacher || !id) return false;
+    const { avail, assigned, lockedSet } = mapState();
+    if (!avail.some(a => a.id === id)) return false;   // 不在地圖上的舊活動不擋
+    return lockedSet.has(id) || !assigned.includes(id);
+  }
+  function mapView() {
+    const { m, avail, assigned, done, lockedSet } = mapState();
     const units = (ACT ? ACT.UNITS : [{ id: 'u3', title: '圖形', icon: '' }]).map(u => {
       const acts = avail.filter(a => a.unit === u.id && (assigned.includes(a.id) || isTeacher));
       if (!acts.length) return '';
@@ -1309,10 +1336,11 @@
       lessons.activities = lessons.activities || {};
       if (P() && !lessons.activities[type]) lessons.activities[type] = {};
       loadRecords(); doneBase = doneAll();
+      if (type && blockedByMap(type)) { location.replace(mapUrl()); return; }
       if (P()) { settings = F.settings(L()); if (!settings.ai) $('apiSettings').hidden = true; pProblem = P().makeProblem(level(), index, Math.random); }
       else if (type) { settings = F.settings(L()); orders.lines = F.shuffle(['A', 'B', 'C']); if (!settings.ai) $('apiSettings').hidden = true; if (settings.mode === 'probe') probeDims = F.randomProblem(type, settings.difficulty === 'custom' ? 'standard' : settings.difficulty); }
       attachBuddy(); applyReading();
-      window.areaResearch?.init(lessons.research, { records: () => records, settings: () => settings, activity: () => ({ id: type || '', name: type ? nameOf() : '' }), step, log, changed: () => render(), reset: resetStudent });
+      window.areaResearch?.init(lessons.research, { records: () => records, settings: () => settings, activity: () => ({ id: type || '', name: type ? nameOf() : '' }), step, log, changed: () => render(), reset: resetStudent, scope: (session.workspace || '') + '/' + (session.className || '') });
       render();
     } catch (error) { shell('教材暫時無法載入', `<p>${esc(error.message)}</p><a href="/">返回入口</a>`); }
   }
