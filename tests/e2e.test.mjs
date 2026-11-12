@@ -4,6 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 let chromium = null;
 try { ({ chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright')); } catch { /* 略過 */ }
@@ -471,7 +472,7 @@ test('老師上傳影片取代動畫：學生看到老師的影片；刪除後�
   await setup(); await publish({ video: 'always' });
   const t = await browser.newPage(); await t.goto(base + '/teacher.html'); await t.waitForSelector('[data-vupload="1"]');
   assert.match(await t.textContent('#vstatus1'), /動畫示範/);
-  await t.setInputFiles('[data-vupload="1"]', new URL('./fixtures/sample.webm', import.meta.url).pathname);
+  await t.setInputFiles('[data-vupload="1"]', fileURLToPath(new URL('./fixtures/sample.webm', import.meta.url)));
   await t.waitForFunction(() => /已上傳/.test(document.querySelector('#vstatus1').textContent));
   await t.click('#publish'); await t.waitForFunction(() => /已發布/.test(document.querySelector('#status').textContent));
   const vid = await t.evaluate(async () => (await (await fetch('/api/lessons')).json()).config.rectangle.videos[1]);
@@ -1222,7 +1223,7 @@ test('第 26 版第二階段：研究管理匯入情境並指派；教師逐節�
   // 研究人員（主持人帳號）
   const ctx = await browser.newContext({ acceptDownloads: true }), page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto(base + '/study.html'); await page.waitForSelector('#setFile');
-  await page.setInputFiles('#setFile', new URL('../scenarios/demo-set.json', import.meta.url).pathname);
+  await page.setInputFiles('#setFile', fileURLToPath(new URL('../scenarios/demo-set.json', import.meta.url)));
   await page.waitForFunction(() => document.querySelector('#asgSet option'));
   await page.selectOption('#asgTeacher', 'T03'); await page.fill('#asgProbe', 'P1'); await page.click('#asgSave');
   await page.waitForFunction(() => /已指派/.test(document.querySelector('#asgMsg')?.textContent || ''));
@@ -1259,7 +1260,7 @@ test('第 26 版第三階段：探試模式沒有提示與對錯回饋；按確�
   await setup();
   const ctx = await browser.newContext(), page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto(base + '/study.html'); await page.waitForSelector('#probeFile');
-  await page.setInputFiles('#probeFile', new URL('../scenarios/demo-probe.json', import.meta.url).pathname);
+  await page.setInputFiles('#probeFile', fileURLToPath(new URL('../scenarios/demo-probe.json', import.meta.url)));
   await page.waitForFunction(() => /已匯入 demoProbe@1/.test(document.querySelector('#probeMsg')?.textContent || ''));
   const sp = await ctx.newPage(); sp.on('pageerror', e => errors.push(e.message)); sp.on('dialog', d => d.accept());
   await sp.clock.install();
