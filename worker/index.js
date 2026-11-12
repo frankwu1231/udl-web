@@ -61,19 +61,25 @@ const context=act?`活動=${actTitles[data.shape]}，學生在這個活動做的
 if(data.kind==='hint')return {system:base+`對象是國小三到五年級、可能有學習困難的學生。用國小中年級的口語，一句話，不超過25個字，只說一個動作，例如「看綠色的線，數它有幾格」。不要用這些詞：${words}。不要重複學生已看過的提示，要換一個說法或指出圖上要看的地方。提示要和「這一步原本的提示」做同一件事，只能用這個活動裡有的東西和動作，不可以叫學生用尺量、數三角形，或做活動裡沒有的事。針對「錯在」的地方提示。操作已完成時，不可叫學生繼續點格子或重新拼合。${act?'':'三角形是拿兩片一樣大的拼起來，高不是切開的線。'}不可說出數字答案，也不可直接說哪個選項對。`,user:context};
 if(data.kind==='reflection')return {system:base+`對象是國小三到五年級、可能有學習困難的學生。問一個很簡單、具體的問題，不超過20個字，學生可以用「是／不是」、選一個或指一指圖來回答，例如「你是數格子找到答案的嗎？」「你看了圖上哪一條線？」。不要問抽象的感想，不要拐彎抹角。不要用這些詞：${words}。只問一件事，不替學生回答。`,user:context};
 return {system:base+'面向教師，請用不超過180字整理：觀察事實、待教師確認的可能困難、下一次可觀察什麼。事實與推測須分清；統計只代表點擊與檢核，不代表學生已具備SRL能力。',user:context+`各步檢核未通過次數=${data.steps.join(',')}；返回修正=${data.backtracks}次；整題完成=${data.completed}輪；主動求助=${data.helpRequests}次。`};}
-async function ai(request,env,who){const role=who.role,server=role==='test'||role==='student';const origin=request.headers.get('origin');if(origin&&origin!==new URL(request.url).origin)return json({error:'origin'},403);if(role==='none')return json({error:'signin_required'},401);
+// 第 26 版：學生端與試用老師的 AI 也走統一紀錄（輸入、輸出、模型、提示詞版本）；設定 LOCAL_LLM_URL 就改用本地模型
+const HINT_PROMPT_VERSION='hint-v25';
+async function ai(request,env,who){const log={},started=Date.now(),res=await aiCore(request,env,who,log);
+if(log.input&&env.DB){let text='',error='';try{const out=await res.clone().json();text=out.message||'';error=out.error||'';}catch{}await logAi(env,{task:'student-'+log.input.kind,workspace:who.ws,subject:'',provider:log.provider,model:log.model,promptVersion:HINT_PROMPT_VERSION,input:log.input,text,source:text?'ai':'fallback',error,ms:Date.now()-started});}
+return res;}
+async function aiCore(request,env,who,log){const role=who.role,server=role==='test'||role==='student';const origin=request.headers.get('origin');if(origin&&origin!==new URL(request.url).origin)return json({error:'origin'},403);if(role==='none')return json({error:'signin_required'},401);
 const size=Number(request.headers.get('content-length')||0);if(size>4096)return json({error:'too_large'},413);
 let body;try{body=await request.json();}catch{return json({error:'invalid_json'},400);}if(!validate(body))return json({error:'invalid_input'},400);if(body.kind==='teacher'&&role==='none')return json({error:'forbidden'},403);
-if(body.kind==='teacher'&&role==='student')return json({error:'forbidden'},403);const selected=server?'deepseek':body.provider||'openai',apiKey=server?env.TEST_DEEPSEEK_API_KEY:body.apiKey||(selected==='openai'?env.OPENAI_API_KEY:null);if(!apiKey)return json({error:selected==='deepseek'?'key_required':'ai_unavailable'},503);if(server&&!await useTestAiQuota(env,who.ws))return json({error:'test_ai_limit'},429);
-const prompt=instruction(body),deepseek=selected==='deepseek';
+if(body.kind==='teacher'&&role==='student')return json({error:'forbidden'},403);const selected=server?'deepseek':body.provider||'openai',apiKey=server?(env.LOCAL_LLM_URL?'local':env.TEST_DEEPSEEK_API_KEY):body.apiKey||(selected==='openai'?env.OPENAI_API_KEY:null);if(!apiKey)return json({error:selected==='deepseek'?'key_required':'ai_unavailable'},503);if(server&&!await useTestAiQuota(env,who.ws))return json({error:'test_ai_limit'},429);
+const prompt=instruction(body),local=server&&!!env.LOCAL_LLM_URL,deepseek=selected==='deepseek'||local,model=local?env.LOCAL_LLM_MODEL||'local-model':deepseek?env.DEEPSEEK_MODEL||'deepseek-flash':env.OPENAI_MODEL||'gpt-5-mini';
+if(server){const {apiKey:_k,...input}=body;Object.assign(log,{input,provider:local?'local':selected,model});}
 // DeepSeek 用 OpenAI 相容的 Chat Completions（https://api-docs.deepseek.com）；OpenAI 用 Responses API
-const requestBody=deepseek?{model:env.DEEPSEEK_MODEL||'deepseek-flash',messages:[{role:'system',content:prompt.system+'只輸出 JSON 物件，格式為 {"message":"你的訊息"}。'},{role:'user',content:prompt.user}],response_format:{type:'json_object'},thinking:{type:'disabled'},max_tokens:body.kind==='teacher'?400:200,stream:false}:{model:env.OPENAI_MODEL||'gpt-5-mini',max_output_tokens:body.kind==='teacher'?280:160,input:[{role:'system',content:prompt.system},{role:'user',content:prompt.user}],text:{format:{type:'json_schema',name:'teaching_support',strict:true,schema}},store:false};
-let provider;try{provider=await fetch(deepseek?'https://api.deepseek.com/chat/completions':'https://api.openai.com/v1/responses',{method:'POST',headers:{authorization:`Bearer ${apiKey}`,'content-type':'application/json'},body:JSON.stringify(requestBody),signal:AbortSignal.timeout(12000)});}catch{return json({error:'ai_timeout'},503);}
+const requestBody=deepseek?{model,messages:[{role:'system',content:prompt.system+'只輸出 JSON 物件，格式為 {"message":"你的訊息"}。'},{role:'user',content:prompt.user}],response_format:{type:'json_object'},...(local?{}:{thinking:{type:'disabled'}}),max_tokens:body.kind==='teacher'?400:200,stream:false}:{model,max_output_tokens:body.kind==='teacher'?280:160,input:[{role:'system',content:prompt.system},{role:'user',content:prompt.user}],text:{format:{type:'json_schema',name:'teaching_support',strict:true,schema}},store:false};
+let provider;try{provider=await fetch(local?env.LOCAL_LLM_URL:deepseek?'https://api.deepseek.com/chat/completions':'https://api.openai.com/v1/responses',{method:'POST',headers:{authorization:`Bearer ${local?env.LOCAL_LLM_KEY||'local':apiKey}`,'content-type':'application/json'},body:JSON.stringify(requestBody),signal:AbortSignal.timeout(12000)});}catch{return json({error:'ai_timeout'},503);}
 if(!provider.ok){let error;try{error=(await provider.json()).error;}catch{}return json({error:provider.status===401?'invalid_api_key':provider.status===402||error?.code==='credit_balance_exhausted'||error?.type==='insufficient_quota'?'credit_exhausted':'ai_provider_unavailable'},503);}
 let result;try{result=await provider.json();}catch{return json({error:'ai_invalid_response'},503);}
 const raw=deepseek?String(result.choices?.[0]?.message?.content||''):(result.output||[]).flatMap(item=>item.content||[]).filter(item=>item.type==='output_text').map(item=>item.text).join('');let parsed;try{parsed=JSON.parse(raw);}catch{return json({error:'ai_invalid_response'},503);}
 const message=parsed?.message?.trim();if(!safeText(message,body.kind==='teacher'?200:body.kind==='hint'?40:50)||body.kind==='hint'&&/\d/.test(message))return json({error:'ai_invalid_response'},503);
-return json({message,source:'ai'});}
+return json({message,source:'ai',model,promptVersion:HINT_PROMPT_VERSION});}
 function asset(path){const found=assets.get(path);if(!found)return new Response('Not found',{status:404});const [contentType,data]=found;const bin=atob(data),bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));return new Response(bytes,{headers:{'content-type':contentType,'x-content-type-options':'nosniff','cache-control':'private, no-cache'}});}
 const userId=request=>request.headers.get('oai-authenticated-user-id')||'';
 const isTeacher=(request,env)=>!!userId(request)&&!!env.TEACHER_EMAIL&&String(request.headers.get('oai-authenticated-user-email')||'').trim().toLowerCase()===String(env.TEACHER_EMAIL).trim().toLowerCase();
@@ -135,7 +141,7 @@ async function teacherSave(request,env,who){const role=who.role;if(role==='none'
 try{const existing=await lessonRow(env,kind),revision=(existing?.revision||0)+1;await env.DB.prepare('INSERT INTO lesson_documents (kind,config_json,revision,updated_at) VALUES (?,?,?,?) ON CONFLICT(kind) DO UPDATE SET config_json=excluded.config_json,revision=excluded.revision,updated_at=excluded.updated_at').bind(kind,config,revision,new Date().toISOString()).run();return json({ok:true,revision});}catch{return json({error:'lesson_storage_unavailable'},503);}}
 const publicAssets=new Set(['/portal.html','/portal.css','/portal.js','/shapes.css','/favicon.svg']);
 const studentAssets=new Set(['/seven.html','/seven.js','/seven.css','/seven-geometry.js','/learning-flow.js','/lesson-content.js','/zhuyin.js','/hands-on.html','/hands-on.pdf','/step-demo.js','/step-demo.css','/seven-guide.html','/act-core.js','/act-unit12.js','/act-unit3.js','/act-unit45.js','/act.css','/buddy.js','/buddy.css','/research.js','/research.css','/observations.js']);
-const teacherPages=new Set(['/teacher.html','/teacher.js','/teacher.css','/qrcode.js','/observations.js']);
+const teacherPages=new Set(['/teacher.html','/teacher.js','/teacher.css','/qrcode.js','/observations.js','/scenario.html','/scenario.js','/study.css','/study-common.js']);
 export default {async fetch(request,env){const url=new URL(request.url);if(url.pathname==='/api/test-login')return request.method==='POST'?testLogin(request,env):json({error:'method'},405);
 if(url.pathname==='/api/test-logout'){if(request.method!=='POST')return json({error:'method'},405);const origin=request.headers.get('origin');if(origin&&origin!==url.origin)return json({error:'origin'},403);return jsonCookie({ok:true},200,sessionCookie('',0));}
 if(url.pathname==='/api/class-login')return request.method==='POST'?classLogin(request,env):json({error:'method'},405);
@@ -151,6 +157,15 @@ if(url.pathname.startsWith('/api/videos/'))return request.method==='GET'||reques
 if(url.pathname==='/api/records')return request.method==='POST'?recordsSave(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/sessions/start')return request.method==='POST'?sessionStart(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/student-settings')return request.method==='GET'?studentSettingsGet(request,env,who):request.method==='POST'?studentSettingsSave(request,env,who):json({error:'method'},405);
+if(url.pathname==='/api/teacher/summary')return request.method==='POST'?teacherSummary(request,env,who):json({error:'method'},405);
+if(url.pathname==='/api/study/me')return request.method==='GET'?studyMe(request,env,who):json({error:'method'},405);
+if(url.pathname==='/api/study/config')return request.method==='GET'||request.method==='POST'?studyConfig(request,env,who):json({error:'method'},405);
+if(url.pathname==='/api/study/phases')return request.method==='GET'||request.method==='POST'?studyPhases(request,env,who):json({error:'method'},405);
+if(url.pathname==='/api/study/direction')return request.method==='GET'?studyDirection(request,env,who):json({error:'method'},405);
+if(url.pathname==='/api/study/export')return request.method==='GET'?studyExport(request,env,who):json({error:'method'},405);
+if(url.pathname==='/api/study/scenarios')return request.method==='GET'||request.method==='POST'?studyScenarios(request,env,who):json({error:'method'},405);
+if(url.pathname==='/api/study/assignments')return request.method==='POST'?studyAssign(request,env,who):json({error:'method'},405);
+if(url.pathname==='/api/scenario'||url.pathname.startsWith('/api/scenario/'))return scenarioRoutes(request,env,who,url.pathname.slice(14));
 if(url.pathname==='/api/teacher/research')return request.method==='GET'?researchOverview(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/teacher/lessons')return request.method==='GET'?teacherGet(request,env,who):request.method==='POST'?teacherSave(request,env,who):json({error:'method'},405);
 if(request.method!=='GET'&&request.method!=='HEAD')return new Response('Method not allowed',{status:405});let path=url.pathname;if(path==='/')path='/portal.html';else if(!path.includes('.'))path+='.html';if(!publicAssets.has(path)){if(role==='none')return path.endsWith('.html')?Response.redirect(url.origin+'/',302):new Response('Sign in required',{status:401});if(role==='student'&&!studentAssets.has(path))return path.endsWith('.html')?Response.redirect(url.origin+'/seven.html',302):new Response('Forbidden',{status:403});if(role==='test'&&!studentAssets.has(path)&&!teacherPages.has(path))return new Response('Forbidden',{status:403});}return asset(path);}};
@@ -218,7 +233,7 @@ const expires=Math.min(now+12*60*60*1000,row.expires_at),token=await signedToken
 // ---------- 第 26 版：研究紀錄存進網站資料庫（只存代號）、節次、學生個別設定與變更紀錄 ----------
 // 存取都集中在這一段：之後改存研究團隊自己的伺服器，只要換掉這裡。
 const STUDENT_CODE=/^T(0[1-9]|1[0-2])-S\d{2}$/,RID=/^[a-z0-9-]{6,40}$/;
-const RESEARCH_SHEETS=new Set(['場次','操作紀錄','每題摘要','教師設定','教師觀察','學生回饋','教師回饋','技術問題','設定變更']);
+const RESEARCH_SHEETS=new Set(['場次','操作紀錄','每題摘要','教師設定','教師觀察','學生回饋','教師回饋','技術問題','設定變更','教師操作']);
 const RECORDS_PER_DAY=20000;
 const researchRole=who=>who.role==='student'||who.role==='test'||who.role==='teacher';
 const noResearch=who=>json({error:who.role==='none'?'signin_required':'forbidden'},who.role==='none'?401:403);
@@ -243,6 +258,8 @@ return json({error:'research_storage_unavailable'},503);}catch{return json({erro
 const OVERRIDE_KEYS=['support','mode','methods','video','tryFirst','lessonGoal','flow'];
 const REASONS=new Set(['lowAccuracy','manyHints','accurateButHints','independent','engagement','taskLoad','other']);
 const DECISIONS=new Set(['change','keep','advance','back']);
+// 班級沒設定時的預設值（tryFirst、lessonGoal 在教材預設裡沒有，補上，方向歸類才算得出來）
+const settingBase=()=>({tryFirst:false,lessonGoal:0,...lessonDefaults.rectangle.settings});
 function validOverride(o){if(!o||typeof o!=='object'||Array.isArray(o)||Object.keys(o).some(k=>!OVERRIDE_KEYS.includes(k)))return false;return validSettings({...lessonDefaults.rectangle.settings,...o});}
 const supportLevel={support:v=>({faded:0,full:1})[v],mode:v=>({self:0,together:1,demo:2})[v],video:v=>({off:0,hint:1,always:2})[v],tryFirst:v=>v===true?0:v===false?1:undefined,methods:v=>Array.isArray(v)?(v.includes('mark')?1:0)+(v.includes('row')?1:0):undefined};
 // 回傳 [方向, 幾級]：increase 增加支持、decrease 減少支持、load 任務負荷、other 其他
@@ -255,7 +272,7 @@ async function studentSettingsSave(request,env,who){if(!researchRole(who))return
 const b=await readJson(request,4096);if(!b||typeof b.student!=='string'||!STUDENT_CODE.test(b.student)||!ACT_IDS.includes(b.act)||!DECISIONS.has(b.decision||'change')||!REASONS.has(b.reason))return json({error:'invalid_input'},400);
 const decision=b.decision||'change',note=typeof b.note==='string'?b.note.trim().slice(0,60):'',no=b.sessionNo===undefined||b.sessionNo===null?null:b.sessionNo;if(no!==null&&!whole(no,9999))return json({error:'invalid_input'},400);
 if(decision==='change'&&!validOverride(b.changes))return json({error:'invalid_input'},400);if((decision==='advance'||decision==='back')&&!ACT_IDS.includes(b.to))return json({error:'invalid_input'},400);
-try{const all=await overridesFor(env,who.ws,b.student),current={...(all[b.act]||{})},base=lessonDefaults.rectangle.settings,rows=[];
+try{const all=await overridesFor(env,who.ws,b.student),current={...(all[b.act]||{})},base=settingBase(),rows=[];
 const cls=b.classSettings&&typeof b.classSettings==='object'&&!Array.isArray(b.classSettings)?Object.fromEntries(Object.entries(b.classSettings).filter(([k])=>OVERRIDE_KEYS.includes(k))):{},classOk=validOverride(cls)?cls:{};const before=k=>Object.hasOwn(current,k)?current[k]:Object.hasOwn(classOk,k)?classOk[k]:base[k];
 if(decision==='change'){let down=0;for(const [k,v] of Object.entries(b.changes)){const was=before(k);if(JSON.stringify(was)===JSON.stringify(v))continue;const [direction,steps]=changeDirection(k,was,v);if(direction==='decrease')down+=steps;rows.push([k,JSON.stringify(was??null),JSON.stringify(v),direction]);current[k]=v;}
 if(down>1)return json({error:'one_step_only'},400);if(!rows.length)return json({error:'no_change'},400);}
@@ -272,3 +289,161 @@ const ss=(await env.DB.prepare('SELECT student, MAX(no) AS sessions FROM researc
 const changes=(await env.DB.prepare('SELECT student, act, session_no AS sessionNo, field, before_value AS before, after_value AS after, direction, reason, note, actor, at FROM setting_changes WHERE workspace = ? ORDER BY at DESC, id DESC LIMIT 500').bind(who.ws).all()).results;
 const map=new Map();for(const r of ev)map.set(r.student,{student:r.student,events:r.events,last:r.last,sessions:0});for(const r of ss){const x=map.get(r.student)||{student:r.student,events:0,last:'',sessions:0};x.sessions=r.sessions;map.set(r.student,x);}
 return json({students:[...map.values()].sort((a,b)=>a.student.localeCompare(b.student)),changes});}catch{return json({error:'research_storage_unavailable'},503);}}
+
+// ---------- 第 26 版第二階段：研究管理、應有方向、AI 統一出入口、跨節 AI 摘要、標準化紀錄情境 ----------
+// 研究人員＝主持人帳號（工作區 main）；參與教師＝教師代號登入（T01～T12）。
+const OBS_LABELS=__OBS_LABELS__;
+const isResearcher=who=>who.role==='teacher';
+const notResearcher=who=>json({error:who.role==='none'?'signin_required':'forbidden'},who.role==='none'?401:403);
+const PHASES={teacher:['baseline','intervention','followup'],student:['A','B','BC','maintain']};
+// 判準依計畫書；正式實驗前依前導資料校準，所以都可以在研究管理頁改
+const DEFAULT_RULES={lowAcc:60,highAcc:80,indep:80,minItems:5,upN:3,downN:2,maintainN:3,summaryChars:300};
+const RULE_LIMITS={lowAcc:[0,100],highAcc:[0,100],indep:[0,100],minItems:[1,20],upN:[1,10],downN:[1,10],maintainN:[1,10],summaryChars:[100,600]};
+async function studyRules(env){try{const row=await env.DB.prepare('SELECT value_json FROM study_config WHERE key = ?').bind('rules').first();const v=row?JSON.parse(row.value_json):{};return {...DEFAULT_RULES,...v};}catch{return {...DEFAULT_RULES};}}
+async function currentPhase(env,kind,participant){try{const row=await env.DB.prepare('SELECT phase, at FROM participant_phases WHERE kind = ? AND participant = ? ORDER BY at DESC, id DESC LIMIT 1').bind(kind,participant).first();return row?row.phase:'';}catch{return '';}}
+// AI 摘要的開關依教師個別的研究階段：基線期關、介入期與追蹤期開；還沒設定階段時開著（非研究使用）
+const summaryAllowed=phase=>phase!=='baseline';
+
+// ---------- 指標與應有方向（同一份程式給真實學生與標準化情境用） ----------
+function rowDetail(r){if(r&&typeof r.detail==='string'){try{const d=JSON.parse(r.detail);return d&&typeof d==='object'?d:{};}catch{return {};}}return r&&r.detail&&typeof r.detail==='object'?r.detail:{};}
+const opRows=(rows,act)=>rows.filter(r=>r&&r.sheet==='操作紀錄'&&(!act||r.actId===act)&&r.mode!=='demo'&&r.mode!=='probe');
+// 支持下答對率：沒用到第 3 層提示就完成的題數 ÷ 完成題數；無提示步驟比例：第一次嘗試、沒看提示就通過的步驟 ÷ 可評分步驟
+function sessionMetrics(rows,act){const ops=opRows(rows,act),done=ops.filter(r=>r.event==='整題完成');
+const supported=done.filter(r=>{const m=Number(rowDetail(r).maxHintLevel);return Number.isFinite(m)?m<3:true;}).length;
+const first=new Map();for(const r of ops)if(r.event==='步驟檢核'){const k=r.cycle+'|'+r.step;if(!first.has(k))first.set(k,r);}
+const steps=first.size,indep=[...first.values()].filter(r=>(r.correct==='是'||r.correct===true)&&rowDetail(r).firstTry===true).length;
+return {items:done.length,supported,acc:done.length?Math.round(supported/done.length*100):null,steps,indep,indepRate:steps?Math.round(indep/steps*100):null};}
+// sessions：[{no, items, acc, indepRate}]，依節次排好；windowStart：支持設定變更後的第一節
+function expectedDirection(sessions,rules,windowStart=1){const valid=sessions.filter(s=>s.no>=windowStart&&s.items>=rules.minItems),last=n=>valid.length>=n?valid.slice(-n):null;
+const up=last(rules.upN);if(up&&up.every(s=>s.acc<rules.lowAcc))return 'increase';
+const two=last(rules.downN);if(two&&two.every(s=>s.acc>=rules.highAcc)){if(two.every(s=>s.indepRate>=rules.indep))return 'advance';if(two.every(s=>s.indepRate<rules.indep))return 'decrease';}
+return valid.length>=rules.maintainN?'maintain':'insufficient';}
+// 老師的一次決策歸成一個方向（計分用）
+function decisionDirection(decision,changes,before){if(decision==='keep')return ['maintain',0];if(decision==='advance')return ['advance',0];if(decision==='back')return ['load',0];
+const dirs=new Set();let down=0;for(const [k,v] of Object.entries(changes||{})){if(JSON.stringify(before[k])===JSON.stringify(v))continue;const [d,n]=changeDirection(k,before[k],v);dirs.add(d);if(d==='decrease')down+=n;}
+const dir=dirs.has('increase')&&dirs.has('decrease')?'mixed':dirs.has('increase')?'increase':dirs.has('decrease')?'decrease':dirs.has('load')?'load':dirs.size?'other':'';return [dir,down];}
+
+// ---------- 跨節摘要的內容：由程式算好，AI 只負責把它寫成句子 ----------
+const HINT_EVENTS={'請求提示':r=>'第'+(r.hintLevel||'?')+'層提示','自動提示':r=>'第'+(r.hintLevel||'?')+'層提示','請求AI提示':()=>'AI提示','我卡住了':()=>'我卡住了','看示範影片':()=>'示範影片','看示範':()=>'看示範'};
+function summaryFacts(sessions,act){return sessions.map(({no,rows})=>{const m=sessionMetrics(rows,act),ops=opRows(rows,act),errors={},hints={},orders=new Map();
+for(const r of ops){if(r.event==='步驟檢核'&&(r.correct==='否'||r.correct===false)){const code=rowDetail(r).obs||'other',label=OBS_LABELS[code]||OBS_LABELS.other;errors[label]=(errors[label]||0)+1;}
+const h=HINT_EVENTS[r.event];if(h){const t=h(r);hints[t]=(hints[t]||0)+1;const q=orders.get(r.cycle)||[];if(q.at(-1)!==t)q.push(t);orders.set(r.cycle,q);}}
+const seq=new Map();for(const q of orders.values()){const k=q.join('→');seq.set(k,(seq.get(k)||0)+1);}const order=[...seq.entries()].sort((a,b)=>b[1]-a[1])[0];
+return {session:no,completed:m.items,supportedRate:m.acc,independentStepRate:m.indepRate,hints,hintOrder:order?order[0]:'',hintOrderQuestions:order?order[1]:0,errors};});}
+function summaryFallback(facts){return facts.map(f=>{const err=Object.entries(f.errors).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} ${v} 次`).join('、')||'沒有答錯的步驟';const hint=Object.entries(f.hints).map(([k,v])=>`${k} ${v} 次`).join('、')||'沒有用提示';
+return `第${f.session}節：完成 ${f.completed} 題，支持下答對率 ${f.supportedRate??'—'}%，無提示步驟比例 ${f.independentStepRate??'—'}%。提示：${hint}${f.hintOrder?`（常見順序：${f.hintOrder}）`:''}。答錯情形：${err}。`;}).join('\n');}
+const SUMMARY_PROMPT_VERSION='summary-v26.1';
+const SUMMARY_FORBIDDEN=/增加支持|減少支持|進階|建議|應該|可以考慮|下一步|調整|退回|迷思|障礙|診斷/;
+function summaryPrompt(facts,limit){return {system:`你為特教老師整理學生的面積學習紀錄。只根據給你的 JSON 寫摘要，不可加入 JSON 沒有的事，不可推測原因。用繁體中文，不用 Markdown。依節次寫，每節一行，開頭寫「第N節：」，說明完成題數、支持下答對率、無提示步驟比例、提示使用與常見順序、答錯情形（照 JSON 的文字，例如「答案剛好等於周長的數」）。最後一行以「依據：第…節」列出用到的節次。不提出任何調整方向或建議，不說要增加或減少支持、進階或退回，不用診斷用語。全部不超過${limit}字。只輸出 JSON 物件 {"message":"摘要"}。`,user:JSON.stringify(facts)};}
+// 摘要裡的每個數字都要在輸入裡找得到（防止 AI 自己編數字）
+function summaryCheck(text,facts,limit){if(!text||text.length>limit)return 'too_long';if(SUMMARY_FORBIDDEN.test(text))return 'advice';const allowed=new Set(JSON.stringify(facts).match(/\d+/g)||[]);for(const n of text.match(/\d+/g)||[])if(!allowed.has(n))return 'number_not_in_input';
+for(const f of facts)if(!text.includes('第'+f.session+'節'))return 'missing_session';return '';}
+
+// ---------- AI 統一出入口：模型可抽換（現在 DeepSeek；設定 LOCAL_LLM_URL 就改用本地模型），每次都留紀錄 ----------
+function modelConfig(env){if(env.LOCAL_LLM_URL)return {provider:'local',url:env.LOCAL_LLM_URL,key:env.LOCAL_LLM_KEY||'',model:env.LOCAL_LLM_MODEL||'local-model'};
+if(env.TEST_DEEPSEEK_API_KEY)return {provider:'deepseek',url:'https://api.deepseek.com/chat/completions',key:env.TEST_DEEPSEEK_API_KEY,model:env.DEEPSEEK_MODEL||'deepseek-flash'};return null;}
+// 兩種都用 OpenAI 相容的 Chat Completions 格式（DeepSeek 文件：https://api-docs.deepseek.com；本地常見的 vLLM、Ollama 也支援）
+async function chatMessage(m,system,user,maxTokens){const body={model:m.model,messages:[{role:'system',content:system},{role:'user',content:user}],response_format:{type:'json_object'},max_tokens:maxTokens,stream:false};if(m.provider==='deepseek')body.thinking={type:'disabled'};
+let res;try{res=await fetch(m.url,{method:'POST',headers:{...(m.key?{authorization:`Bearer ${m.key}`}:{}),'content-type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(20000)});}catch{throw new Error('ai_timeout');}
+if(!res.ok)throw new Error('ai_provider_unavailable');let out;try{out=await res.json();}catch{throw new Error('ai_invalid_response');}
+let parsed;try{parsed=JSON.parse(String(out.choices?.[0]?.message?.content||''));}catch{throw new Error('ai_invalid_response');}const msg=parsed?.message;if(typeof msg!=='string')throw new Error('ai_invalid_response');return msg.trim();}
+async function logAi(env,row){try{const r=await env.DB.prepare('INSERT INTO ai_outputs (task,workspace,subject,provider,model,prompt_version,input_json,output_text,source,error,ms,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?) RETURNING id').bind(row.task,row.workspace,row.subject||'',row.provider||'',row.model||'',row.promptVersion,JSON.stringify(row.input).slice(0,20000),row.text,row.source,row.error||'',row.ms||0,Date.now()).first();return r?.id??null;}catch{return null;}}
+// check(text) 回傳空字串表示合格；不合格、逾時、沒有額度時改用 fallback（固定內容），並記下原因
+async function aiGateway(env,{task,ws,subject,input,promptVersion,system,user,maxTokens,check,fallback}){const m=modelConfig(env),started=Date.now();let text='',source='fallback',error='';
+if(!m)error='ai_unavailable';else if(!await useTestAiQuota(env,'gw:'+ws))error='ai_limit';else{try{const t=await chatMessage(m,system,user,maxTokens);const bad=check(t);if(bad)error='rejected:'+bad;else{text=t;source='ai';}}catch(e){error=e.message||'ai_error';}}
+if(source!=='ai')text=fallback;const ms=Date.now()-started,id=await logAi(env,{task,workspace:ws,subject,provider:m?.provider,model:m?.model,promptVersion,input,text,source,error,ms});
+return {id,text,source,error,model:m?.model||'',provider:m?.provider||'',promptVersion,ms};}
+async function summarize(env,ws,subject,sessions,act){const rules=await studyRules(env),facts=summaryFacts(sessions,act),limit=rules.summaryChars,p=summaryPrompt(facts,limit);
+return {facts,...await aiGateway(env,{task:'summary',ws,subject,input:facts,promptVersion:SUMMARY_PROMPT_VERSION,system:p.system,user:p.user,maxTokens:900,check:t=>summaryCheck(t,facts,limit),fallback:summaryFallback(facts)})};}
+async function eventsBySession(env,ws,student,upTo){const {results}=await env.DB.prepare('SELECT session_no AS no, data_json FROM research_events WHERE workspace = ? AND student = ? AND session_no IS NOT NULL AND session_no <= ? ORDER BY session_no, time, rid').bind(ws,student,upTo).all();
+const map=new Map();for(const r of results){let d;try{d=JSON.parse(r.data_json);}catch{continue;}if(!map.has(r.no))map.set(r.no,[]);map.get(r.no).push(d);}return [...map.entries()].map(([no,rows])=>({no,rows}));}
+
+// 教師端：真實學生的跨節摘要（只讀到老師指定、已經看到的節次）
+async function teacherSummary(request,env,who){if(!canManage(who))return notManager(who);if(!sameOrigin(request))return json({error:'origin'},403);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+const b=await readJson(request,1024);if(!b||typeof b.student!=='string'||!STUDENT_CODE.test(b.student)||!ACT_IDS.includes(b.act)||!whole(b.upTo,9999)||b.upTo<1)return json({error:'invalid_input'},400);
+const phase=who.role==='test'&&TEACHER_CODE.test(who.ws)?await currentPhase(env,'teacher',who.ws):'';if(!summaryAllowed(phase))return json({error:'summary_off',phase},403);
+try{const sessions=(await eventsBySession(env,who.ws,b.student,b.upTo)).slice(-7);if(!sessions.length)return json({error:'no_records'},404);const out=await summarize(env,who.ws,b.student+'|'+b.act,sessions,b.act);
+return json({text:out.text,source:out.source,model:out.model,promptVersion:out.promptVersion,sessions:sessions.map(s=>s.no),facts:out.facts,id:out.id});}catch{return json({error:'research_storage_unavailable'},503);}}
+// 教師自己的研究階段（決定 AI 摘要有沒有開）
+async function studyMe(request,env,who){if(!canManage(who))return notManager(who);const phase=who.role==='test'&&TEACHER_CODE.test(who.ws)&&env.DB?await currentPhase(env,'teacher',who.ws):'';return json({teacher:who.role==='test'?who.ws:'',phase,summary:summaryAllowed(phase)});}
+
+// ---------- 研究人員：判準設定、研究階段、應有方向 ----------
+async function studyConfig(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+if(request.method==='GET')return json({rules:await studyRules(env),defaults:DEFAULT_RULES});if(!sameOrigin(request))return json({error:'origin'},403);
+const b=await readJson(request,1024),r=b?.rules;if(!r||typeof r!=='object'||Array.isArray(r)||Object.keys(r).some(k=>!RULE_LIMITS[k])||Object.entries(r).some(([k,v])=>!Number.isInteger(v)||v<RULE_LIMITS[k][0]||v>RULE_LIMITS[k][1]))return json({error:'invalid_input'},400);
+const rules={...DEFAULT_RULES,...r};if(rules.lowAcc>=rules.highAcc)return json({error:'invalid_input'},400);
+await env.DB.prepare('INSERT INTO study_config (key,value_json,updated_at) VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json,updated_at=excluded.updated_at').bind('rules',JSON.stringify(rules),Date.now()).run();return json({ok:true,rules});}
+async function studyPhases(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+if(request.method==='GET'){const {results}=await env.DB.prepare('SELECT kind, participant, phase, actor, at FROM participant_phases ORDER BY at, id').all();const current={};for(const r of results)current[r.kind+'|'+r.participant]=r.phase;
+return json({phases:PHASES,current:Object.entries(current).map(([k,phase])=>{const [kind,participant]=k.split('|');return {kind,participant,phase};}),history:results});}
+if(!sameOrigin(request))return json({error:'origin'},403);const b=await readJson(request,512);if(!b||!PHASES[b.kind]||!PHASES[b.kind].includes(b.phase)||typeof b.participant!=='string'||!(b.kind==='teacher'?TEACHER_CODE:STUDENT_CODE).test(b.participant))return json({error:'invalid_input'},400);
+await env.DB.prepare('INSERT INTO participant_phases (kind,participant,phase,actor,at) VALUES (?,?,?,?,?)').bind(b.kind,b.participant,b.phase,who.ws,Date.now()).run();return json({ok:true});}
+// 真實學生每一節的指標、應有方向（研究計分用，教師端看不到），以及老師在那一節的實際決策
+async function studyDirection(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+const q=new URL(request.url).searchParams,student=q.get('student')||'',act=q.get('act')||'',ws=student.slice(0,3);if(!STUDENT_CODE.test(student)||!ACT_IDS.includes(act))return json({error:'invalid_input'},400);
+try{const rules=await studyRules(env),sessions=(await eventsBySession(env,ws,student,9999)).map(s=>({no:s.no,...sessionMetrics(s.rows,act)})).filter(s=>s.items||s.steps);
+const {results:changes}=await env.DB.prepare('SELECT session_no AS sessionNo, field, before_value AS before, after_value AS after, direction, reason, at FROM setting_changes WHERE workspace = ? AND student = ? AND act = ? ORDER BY at, id').bind(ws,student,act).all();
+const resets=changes.filter(c=>['increase','decrease','load','advance'].includes(c.direction)&&c.sessionNo!==null);
+const timeline=sessions.map((s,i)=>{const start=Math.max(1,...resets.filter(c=>c.sessionNo<s.no).map(c=>c.sessionNo+1));const expected=expectedDirection(sessions.slice(0,i+1),rules,start);
+const made=[...new Set(changes.filter(c=>c.sessionNo===s.no).map(c=>c.direction))];return {...s,windowStart:start,expected,decisions:made};});
+return json({student,act,rules,timeline});}catch{return json({error:'research_storage_unavailable'},503);}}
+// 研究匯出：AI 輸出（核對一致率用）、設定變更（所有工作區）
+async function studyExport(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);const type=new URL(request.url).searchParams.get('type');
+try{if(type==='ai'){const {results}=await env.DB.prepare('SELECT id, task, workspace, subject, provider, model, prompt_version AS promptVersion, input_json AS input, output_text AS text, source, error, ms, at FROM ai_outputs ORDER BY id DESC LIMIT 5000').all();return json({rows:results});}
+if(type==='changes'){const {results}=await env.DB.prepare('SELECT workspace, student, act, session_no AS sessionNo, field, before_value AS before, after_value AS after, direction, reason, note, actor, at FROM setting_changes ORDER BY at, id LIMIT 20000').all();return json({rows:results});}
+if(type==='decisions'){const {results}=await env.DB.prepare('SELECT d.assignment_id AS assignment, a.teacher, a.probe, a.phase, a.set_id AS setId, d.scenario_id AS scenario, d.session_no AS sessionNo, d.decision, d.changes_json AS changes, d.direction, d.expected, d.reason, d.note, d.ai_on AS aiOn, d.ai_used AS aiUsed, d.raw_viewed AS rawViewed, d.shown_at AS shownAt, d.saved_at AS savedAt, d.active_ms AS activeMs, d.total_ms AS totalMs, d.ai_wait_ms AS aiWaitMs FROM scenario_decisions d JOIN scenario_assignments a ON a.id = d.assignment_id ORDER BY a.teacher, d.assignment_id, d.scenario_id, d.session_no').all();return json({rows:results});}
+return json({error:'invalid_input'},400);}catch{return json({error:'research_storage_unavailable'},503);}}
+
+// ---------- 標準化紀錄情境（教師探試） ----------
+// 格式：{id, version, title, scenarios:[{id, title, act, settings, expected?, sessions:[{no, events:[網站的紀錄列]}]}]}
+const SET_ID=/^[A-Za-z0-9_-]{1,30}$/,EXPECTED=new Set(['increase','decrease','advance','maintain','insufficient']);
+function validEventRow(e){if(!e||typeof e!=='object'||Array.isArray(e)||Object.keys(e).length>40)return false;return Object.entries(e).every(([k,v])=>k.length<=30&&(v===null||typeof v==='boolean'||typeof v==='number'&&Number.isFinite(v)||typeof v==='string'&&v.length<=1500));}
+function validScenarioSet(s){if(!s||typeof s!=='object'||Array.isArray(s)||!SET_ID.test(s.id)||typeof s.version!=='string'||!/^[A-Za-z0-9._-]{1,20}$/.test(s.version)||!safeText(s.title,60)||!Array.isArray(s.scenarios)||s.scenarios.length<1||s.scenarios.length>10)return false;
+const ids=new Set();for(const c of s.scenarios){if(!c||typeof c!=='object'||!SET_ID.test(c.id)||ids.has(c.id)||!safeText(c.title,40)||!ACT_IDS.includes(c.act)||!Array.isArray(c.sessions)||c.sessions.length<1||c.sessions.length>12)return false;ids.add(c.id);
+if(c.settings!==undefined&&!validOverride(c.settings))return false;if(c.expected!==undefined&&!(Array.isArray(c.expected)&&c.expected.length===c.sessions.length&&c.expected.every(x=>EXPECTED.has(x))))return false;
+for(const [i,x] of c.sessions.entries())if(!x||x.no!==i+1||!Array.isArray(x.events)||x.events.length>400||!x.events.every(validEventRow))return false;}return true;}
+const setKey=s=>s.id+'@'+s.version;
+async function setRow(env,id){const row=await env.DB.prepare('SELECT id, version, title, set_json FROM scenario_sets WHERE id = ?').bind(id).first();if(!row)return null;try{return {...row,set:JSON.parse(row.set_json)};}catch{return null;}}
+async function studyScenarios(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+if(request.method==='GET'){const sets=(await env.DB.prepare('SELECT id, version, title, created_at AS createdAt FROM scenario_sets ORDER BY created_at').all()).results;
+const asg=(await env.DB.prepare('SELECT a.id, a.set_id AS setId, a.teacher, a.probe, a.phase, a.created_at AS createdAt, (SELECT COUNT(*) FROM scenario_decisions d WHERE d.assignment_id = a.id) AS decided FROM scenario_assignments a ORDER BY a.created_at').all()).results;return json({sets,assignments:asg});}
+if(!sameOrigin(request))return json({error:'origin'},403);const s=await readJson(request,950000);if(!validScenarioSet(s))return json({error:'invalid_scenario_set'},400);
+// 版本鎖定：同一個 id@version 匯入後不能覆蓋，要改內容就換版本號
+try{await env.DB.prepare('INSERT INTO scenario_sets (id,version,title,set_json,created_at) VALUES (?,?,?,?,?)').bind(setKey(s),s.version,s.title,JSON.stringify(s),Date.now()).run();}catch{return json({error:'version_locked'},409);}
+return json({ok:true,id:setKey(s)});}
+async function studyAssign(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!sameOrigin(request))return json({error:'origin'},403);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+const b=await readJson(request,512);if(!b||typeof b.setId!=='string'||!TEACHER_CODE.test(b.teacher)||!safeText(b.probe,20))return json({error:'invalid_input'},400);if(!await setRow(env,b.setId))return json({error:'unknown_set'},404);
+// 平衡輪替：同一位老師不重複使用同一組情境
+if(await env.DB.prepare('SELECT id FROM scenario_assignments WHERE teacher = ? AND set_id = ?').bind(b.teacher,b.setId).first())return json({error:'set_already_used'},409);
+const id='a_'+crypto.randomUUID().replaceAll('-','').slice(0,16),phase=await currentPhase(env,'teacher',b.teacher)||'';
+await env.DB.prepare('INSERT INTO scenario_assignments (id,set_id,teacher,probe,phase,created_at) VALUES (?,?,?,?,?,?)').bind(id,b.setId,b.teacher,b.probe,phase,Date.now()).run();return json({ok:true,id,phase});}
+
+// 教師端：只看到已經輪到的節次；看不到應有方向
+async function myAssignment(env,who,id){if(!/^a_[a-f0-9]{16}$/.test(id))return null;const a=await env.DB.prepare('SELECT id, set_id AS setId, teacher, probe, phase FROM scenario_assignments WHERE id = ?').bind(id).first();if(!a||a.teacher!==who.ws)return null;const row=await setRow(env,a.setId);return row?{...a,set:row.set,title:row.title}:null;}
+async function decisionsOf(env,id){return (await env.DB.prepare('SELECT scenario_id AS scenario, session_no AS sessionNo, decision, changes_json AS changes, reason, note, saved_at AS savedAt FROM scenario_decisions WHERE assignment_id = ? ORDER BY session_no').bind(id).all()).results.map(d=>({...d,changes:JSON.parse(d.changes||'{}')}));}
+// 情境裡老師「目前的設定」：原設定加上老師自己做過的調整（後續節次的紀錄不會因此改變）
+function teacherSettings(c,decisions){const s={...settingBase(),...(c.settings||{})};for(const d of decisions)if(d.scenario===c.id&&d.decision==='change')Object.assign(s,d.changes);return s;}
+function scenarioView(a,decisions){return a.set.scenarios.map(c=>{const mine=decisions.filter(d=>d.scenario===c.id),next=mine.length+1,shown=Math.min(next,c.sessions.length);
+return {id:c.id,title:c.title,act:c.act,original:{...settingBase(),...(c.settings||{})},current:teacherSettings(c,decisions),total:c.sessions.length,done:mine.length>=c.sessions.length,next:mine.length>=c.sessions.length?null:next,sessions:c.sessions.slice(0,shown),decisions:mine};});}
+async function scenarioRoutes(request,env,who,rest){if(!canManage(who))return notManager(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+if(who.role!=='test')return json({error:'teacher_code_required'},403);
+try{if(!rest){if(request.method!=='GET')return json({error:'method'},405);const {results}=await env.DB.prepare('SELECT a.id, a.probe, s.title, (SELECT COUNT(*) FROM scenario_decisions d WHERE d.assignment_id = a.id) AS decided, s.set_json FROM scenario_assignments a JOIN scenario_sets s ON s.id = a.set_id WHERE a.teacher = ? ORDER BY a.created_at').bind(who.ws).all();
+return json({assignments:results.map(r=>{let total=0;try{total=JSON.parse(r.set_json).scenarios.reduce((n,c)=>n+c.sessions.length,0);}catch{}return {id:r.id,probe:r.probe,title:r.title,decided:r.decided,total};})});}
+const [id,action]=rest.split('/'),a=await myAssignment(env,who,id);if(!a)return json({error:'not_found'},404);const phase=await currentPhase(env,'teacher',who.ws),aiOn=summaryAllowed(phase);
+if(!action){if(request.method!=='GET')return json({error:'method'},405);return json({id:a.id,probe:a.probe,title:a.title,aiOn,scenarios:scenarioView(a,await decisionsOf(env,a.id))});}
+if(request.method!=='POST')return json({error:'method'},405);if(!sameOrigin(request))return json({error:'origin'},403);
+const decisions=await decisionsOf(env,a.id);
+if(action==='summary'){const b=await readJson(request,256),c=a.set.scenarios.find(x=>x.id===b?.scenario);if(!c)return json({error:'invalid_input'},400);if(!aiOn)return json({error:'summary_off'},403);
+const done=decisions.filter(d=>d.scenario===c.id).length,upTo=Math.min(done+1,c.sessions.length);const out=await summarize(env,who.ws,a.id+'|'+c.id+'|'+upTo,c.sessions.slice(Math.max(0,upTo-7),upTo).map(x=>({no:x.no,rows:x.events})),c.act);
+return json({text:out.text,source:out.source,model:out.model,promptVersion:out.promptVersion,sessions:Array.from({length:upTo},(_,i)=>i+1).slice(-7),id:out.id});}
+if(action==='decide'){const b=await readJson(request,4096),c=a.set.scenarios.find(x=>x.id===b?.scenario);if(!c||!DECISIONS.has(b.decision)||!REASONS.has(b.reason))return json({error:'invalid_input'},400);
+const mine=decisions.filter(d=>d.scenario===c.id);if(b.sessionNo!==mine.length+1||b.sessionNo>c.sessions.length)return json({error:'wrong_session'},409);
+const ms=v=>whole(v,3*60*60*1000);if(!ms(b.activeMs)||!ms(b.totalMs)||!ms(b.aiWaitMs)||!Number.isInteger(b.shownAt))return json({error:'invalid_input'},400);
+if(b.decision==='change'&&!validOverride(b.changes))return json({error:'invalid_input'},400);if((b.decision==='advance'||b.decision==='back')&&!ACT_IDS.includes(b.to))return json({error:'invalid_input'},400);
+const before=teacherSettings(c,decisions),changes=b.decision==='change'?b.changes:b.decision==='keep'?{}:{to:b.to};const [direction,down]=decisionDirection(b.decision,changes,before);
+if(b.decision==='change'&&!direction)return json({error:'no_change'},400);if(down>1)return json({error:'one_step_only'},400);
+const rules=await studyRules(env),k=b.sessionNo,expected=c.expected?c.expected[k-1]:expectedDirection(c.sessions.slice(0,k).map(x=>({no:x.no,...sessionMetrics(x.events,c.act)})),rules,1);
+const note=typeof b.note==='string'?b.note.trim().slice(0,60):'';
+try{await env.DB.prepare('INSERT INTO scenario_decisions (assignment_id,scenario_id,session_no,decision,changes_json,direction,expected,reason,note,ai_on,ai_used,raw_viewed,shown_at,saved_at,active_ms,total_ms,ai_wait_ms) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').bind(a.id,c.id,k,b.decision,JSON.stringify(changes),direction,expected,b.reason,note,aiOn?1:0,b.aiUsed===true?1:0,b.rawViewed===true?1:0,b.shownAt,Date.now(),b.activeMs,b.totalMs,b.aiWaitMs).run();}catch{return json({error:'wrong_session'},409);}
+return json({ok:true,direction});}
+return json({error:'not_found'},404);}catch{return json({error:'research_storage_unavailable'},503);}}

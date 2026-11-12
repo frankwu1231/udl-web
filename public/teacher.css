@@ -45,3 +45,4 @@ dialog.class-big{text-align:center;padding:24px 32px;border-radius:16px;max-widt
 .study-table th{background:#f2f5f9}
 .csv-copy{width:100%;min-height:140px;font-size:13px}
 label.check{display:flex;gap:.5rem;align-items:flex-start}
+.ai-summary{border:2px dashed #6b3fc0;border-radius:10px;padding:8px 12px;background:#fbf8ff;margin:8px 0}

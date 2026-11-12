@@ -93,15 +93,29 @@
     try { const res = await fetch('/api/teacher/research', { cache: 'no-store' }); data = await res.json(); if (!res.ok) throw new Error(data.error); }
     catch { $('studyData').textContent = '目前讀不到研究紀錄。'; return; }
     const obs = window.areaObs;
+    let me = { summary: false }; try { me = await (await fetch('/api/study/me', { cache: 'no-store' })).json(); } catch { /* 沒有 AI 摘要 */ }
     $('studyData').innerHTML = !data.students.length && !data.changes.length ? '<p>還沒有紀錄。</p>' : `
       <table class="study-table"><thead><tr><th>學生代號</th><th>節次</th><th>紀錄筆數</th><th>最後紀錄</th><th></th></tr></thead><tbody>
-      ${data.students.map(s => `<tr><td>${esc(s.student)}</td><td>${s.sessions}</td><td>${s.events}</td><td>${esc(s.last || '')}</td><td><button type="button" data-events="${esc(s.student)}">下載這位學生的紀錄 CSV</button></td></tr>`).join('')}</tbody></table>
+      ${data.students.map(s => `<tr><td>${esc(s.student)}</td><td>${s.sessions}</td><td>${s.events}</td><td>${esc(s.last || '')}</td><td><button type="button" data-events="${esc(s.student)}">下載這位學生的紀錄 CSV</button>${me.summary && s.sessions ? ` <button type="button" data-summary="${esc(s.student)}" data-upto="${s.sessions}">🤖 AI 跨節摘要</button>` : ''}</td></tr>`).join('')}</tbody></table>
       <h3>設定變更與決定（最近 500 筆）</h3>
       <table class="study-table"><thead><tr><th>時間</th><th>學生</th><th>活動</th><th>節次</th><th>項目</th><th>改前 → 改後</th><th>方向</th><th>主要理由</th><th>補充</th></tr></thead><tbody>
       ${data.changes.map(c => `<tr><td>${esc(new Date(c.at).toLocaleString('zh-TW'))}</td><td>${esc(c.student)}</td><td>${esc(actName(c.act))}</td><td>${c.sessionNo ?? ''}</td><td>${esc(FIELD[c.field] || c.field)}</td><td>${c.field === '_decision' ? (c.after ? esc(actName(showValue(c.after))) : '') : `${esc(showValue(c.before))} → ${esc(showValue(c.after))}`}</td><td>${esc(DIRECTION[c.direction] || c.direction)}</td><td>${esc(REASON[c.reason] || c.reason)}</td><td>${esc(c.note)}</td></tr>`).join('')}</tbody></table>
       <button type="button" id="changesCsv">下載設定變更 CSV</button><div id="studyCsv"></div>`;
+    // 第 26 版：AI 跨節摘要（只整理到目前最新一節，不提調整建議；基線期的老師看不到這個按鈕）
+    const summaryBox = document.createElement('div'); summaryBox.id = 'studySummary'; $('studyData').prepend(summaryBox);
+    document.querySelectorAll('[data-summary]').forEach(b => b.onclick = async () => {
+      const student = b.dataset.summary, act = $('shape').value || 'rectangle';
+      summaryBox.innerHTML = `<p class="ai-summary">AI 整理中（${esc(student)}・${esc(actName(act))}）……</p>`;
+      try {
+        const res = await fetch('/api/teacher/summary', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ student, act, upTo: Number(b.dataset.upto) }), cache: 'no-store' }), out = await res.json();
+        if (!res.ok) throw new Error(out.error);
+        summaryBox.innerHTML = `<div class="ai-summary"><b>${esc(student)}・${esc(actName(act))}（依據第 ${out.sessions.join('、')} 節）</b><p style="white-space:pre-line">${esc(out.text)}</p><p class="subtle">${out.source === 'ai' ? 'AI 只整理紀錄，不提調整建議；要不要調整由您判斷。' : 'AI 暫時無法使用，以上是網站整理的固定格式。'}</p></div>`;
+      } catch (e) { summaryBox.innerHTML = `<p class="ai-summary">${e.message === 'no_records' ? '這位學生在「' + esc(actName(act)) + '」還沒有分節的紀錄（上方「要設定的活動」可以換活動）。' : 'AI 摘要暫時無法使用。'}</p>`; }
+    });
+    // 第 26 版：老師回查原始紀錄也記一筆（程序忠實度）
+    const markViewed = student => fetch('/api/records', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ rows: [{ rid: 'v' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8), sheet: '教師操作', time: new Date().toISOString().slice(0, 19).replace('T', ' '), student, event: '回查原始紀錄' }] }) }).catch(() => {});
     document.querySelectorAll('[data-events]').forEach(b => b.onclick = async () => {
-      const student = b.dataset.events;
+      const student = b.dataset.events; markViewed(student);
       try {
         const res = await fetch('/api/teacher/research?student=' + encodeURIComponent(student), { cache: 'no-store' }), out = await res.json();
         if (!res.ok) throw new Error(out.error);
@@ -438,6 +452,9 @@
       $('editor').hidden = false;
       $('status').textContent = testWorkspace ? `測試工作區${/^T\d\d$/.test(data.workspace) ? `（教師代號 ${data.workspace}，只有您的學生看得到）` : ''}：可編修與發布，正式教材不受影響。` : data.draft ? '已載入草稿，可繼續編修。' : '已載入目前發布版本。';
       buildSelect(); $('shape').value = 'rectangle';
+      // 第 26 版：研究人員到「研究管理」，參與教師到「情境探試」
+      const nav = document.querySelector('header > div');
+      if (nav) nav.insertAdjacentHTML('afterbegin', session.test ? '<a href="scenario.html">🧪 情境探試</a>　' : '<a href="study.html">🔬 研究管理</a>　');
       drawMap(); drawClasses(); drawResearch(); drawStudyData(); draw();
       $('shape').onchange = () => { collect(); draw(); };
       $('saveDraft').onclick = () => save('draft'); $('publish').onclick = () => save('published');

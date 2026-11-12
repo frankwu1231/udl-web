@@ -869,7 +869,7 @@
       if (!res.ok) throw new Error(data.error || 'unavailable');
       if (!data.message?.trim()) throw new Error('invalid');
       put('🤖 ' + data.message);
-      log('AI回應', { activity: s + 1, kind, message: data.message, provider: sessionProvider });
+      log('AI回應', { activity: s + 1, kind, message: data.message, provider: sessionProvider, model: data.model || '', promptVersion: data.promptVersion || '' });
     } catch (error) {
       put((kind === 'hint' ? 'AI 現在不能用，先看這個提示：' : 'AI 現在不能用，想一想：') + fallback);
       log('AI未啟用或暫時無法使用', { activity: s + 1, kind, provider: sessionProvider, error: error.message, fallback });

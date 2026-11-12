@@ -16,7 +16,7 @@ async function setup() {
   if (server) return;
   const worker = (await import('../dist/server/index.js')).default;
   const { makeD1 } = await import('../scripts/d1-sqlite.mjs');
-  const env = { TEACHER_EMAIL: 'preview@example.test', DB: makeD1(), TEST_SESSION_SECRET: 'e2e-session-secret-for-class-codes' };
+  const env = { TEACHER_EMAIL: 'preview@example.test', DB: makeD1(), TEST_SESSION_SECRET: 'e2e-session-secret-for-class-codes', TEST_PASSWORD: 'e2e-pass' };
   server = http.createServer(async (req, res) => {
     const chunks = []; for await (const c of req) chunks.push(c);
     const headers = new Headers(req.headers); headers.set('oai-authenticated-user-id', 'local'); headers.set('oai-authenticated-user-email', 'preview@example.test');
@@ -1215,4 +1215,42 @@ test('第 26 版：研究紀錄存網站資料庫：開始本節編節次、錯�
   await p.page.selectOption('#reason', 'lowAccuracy'); await p.page.click('#decKeep');
   await p.page.waitForFunction(() => /維持/.test(document.querySelector('#decisionMsg')?.innerText || ''));
   assert.deepEqual(p.errors, []);
+});
+
+test('第 26 版第二階段：研究管理匯入情境並指派；教師逐節看紀錄、存決策；AI 不能用時改用固定格式摘要', { skip: skip || !distReady }, async () => {
+  await setup();
+  // 研究人員（主持人帳號）
+  const ctx = await browser.newContext({ acceptDownloads: true }), page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto(base + '/study.html'); await page.waitForSelector('#setFile');
+  await page.setInputFiles('#setFile', new URL('../scenarios/demo-set.json', import.meta.url).pathname);
+  await page.waitForFunction(() => document.querySelector('#asgSet option'));
+  await page.selectOption('#asgTeacher', 'T03'); await page.fill('#asgProbe', 'P1'); await page.click('#asgSave');
+  await page.waitForFunction(() => /已指派/.test(document.querySelector('#asgMsg')?.textContent || ''));
+  await page.selectOption('[data-phase-teacher="T03"]', 'intervention');
+  await page.waitForFunction(() => /T03 切換到 介入期/.test(document.querySelector('#phaseMsg')?.textContent || ''));
+  // 參與教師 T03
+  const tctx = await browser.newContext(), tp = await tctx.newPage(); tp.on('pageerror', e => errors.push(e.message));
+  await tp.goto(base + '/portal.html');
+  assert.equal(await tp.evaluate(async () => (await fetch('/api/test-login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: 'test', password: 'e2e-pass', teacher: 'T03' }) })).status), 200);
+  await tp.goto(base + '/scenario.html'); await tp.waitForSelector('[data-scn]');
+  assert.equal(await tp.locator('[data-scn]').count(), 5);
+  assert.match(await tp.innerText('.scn-panel h2'), /情境 1・3-1 長方形的面積・第 1 節（共 7 節）/);
+  assert.equal(await tp.locator('.scn-session .mark').count() > 0, true);
+  assert.doesNotMatch(await tp.content(), /應有方向|insufficient/);
+  await tp.click('#raw'); await tp.waitForSelector('#rawBox table');
+  await tp.click('#aiSummary'); await tp.waitForFunction(() => /第1節：完成 6 題/.test(document.querySelector('#aiText')?.textContent || ''));
+  await tp.check('[name=decision][value=keep]'); await tp.click('#save');
+  assert.match(await tp.innerText('#msg'), /主要理由/);
+  await tp.selectOption('#reason', 'lowAccuracy'); await tp.click('#save');
+  await tp.waitForFunction(() => /第 2 節（共 7 節）/.test(document.querySelector('.scn-panel h2')?.textContent || ''));
+  await tp.check('[name=decision][value=change]'); await tp.selectOption('[data-set=mode]', 'demo'); await tp.selectOption('#reason', 'lowAccuracy'); await tp.click('#save');
+  await tp.waitForFunction(() => /第 3 節/.test(document.querySelector('.scn-panel h2')?.textContent || ''));
+  assert.match(await tp.innerText('.scn-settings'), /您目前的設定：教學階段：老師示範/);
+  // 研究人員匯出：方向、應有方向、AI 與回查原始紀錄
+  const rows = await page.evaluate(async () => (await (await fetch('/api/study/export?type=decisions')).json()).rows);
+  assert.deepEqual(rows.map(r => [r.sessionNo, r.direction, r.expected, r.aiOn, r.aiUsed, r.rawViewed]), [[1, 'maintain', 'insufficient', 1, 1, 1], [2, 'increase', 'insufficient', 1, 0, 0]]);
+  assert.ok(rows[0].totalMs >= rows[0].activeMs);
+  const dl = page.waitForEvent('download'); await page.click('#expScenario'); assert.match((await dl).suggestedFilename(), /^scenario_summary_/);
+  assert.deepEqual(errors, []);
+  await ctx.close(); await tctx.close();
 });

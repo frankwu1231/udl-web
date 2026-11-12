@@ -343,3 +343,70 @@ test('第 26 版：研究紀錄存進網站資料庫、開始本節、學生個�
   assert.ok(changes.every(c=>c.student==='T05-S01'&&c.act==='rectangle'&&c.sessionNo===2&&c.actor==='student-device'));
   assert.equal(changes.find(c=>c.direction==='decrease').note,'連續兩節都自己完成');
 });
+
+test('第 26 版第二階段：研究階段、標準化情境探試、應有方向（教師看不到）、跨節 AI 摘要',async()=>{
+  const login=async teacher=>(await call('/api/test-login',{method:'POST',body:{username:'test',password:'test-pass',teacher}})).headers.get('set-cookie').split(';')[0];
+  const t7=await login('T07');
+  // 判準：研究人員可以改，參與教師不行
+  assert.equal((await call('/api/study/config',{cookie:t7})).status,403);
+  assert.equal((await call('/api/study/config',{user:owner})).data.rules.lowAcc,60);
+  assert.equal((await call('/api/study/config',{method:'POST',user:owner,body:{rules:{lowAcc:90}}})).status,400,'低標不能高於高標');
+  assert.equal((await call('/api/study/config',{method:'POST',user:owner,body:{rules:{summaryChars:350}}})).data.rules.summaryChars,350);
+  // 研究階段：每位老師各自切換，保留歷程
+  assert.equal((await call('/api/study/phases',{method:'POST',user:owner,body:{kind:'teacher',participant:'T07',phase:'baseline'}})).status,200);
+  assert.equal((await call('/api/study/phases',{method:'POST',user:owner,body:{kind:'teacher',participant:'T07',phase:'B'}})).status,400);
+  assert.deepEqual((await call('/api/study/me',{cookie:t7})).data,{teacher:'T07',phase:'baseline',summary:false});
+  // 匯入情境組；同一版本不能覆蓋
+  const set=JSON.parse(fs.readFileSync(new URL('../scenarios/demo-set.json',import.meta.url),'utf8'));
+  assert.equal((await call('/api/study/scenarios',{method:'POST',user:owner,body:set})).data.id,'demo@1');
+  assert.equal((await call('/api/study/scenarios',{method:'POST',user:owner,body:set})).status,409,'版本鎖定');
+  assert.equal((await call('/api/study/scenarios',{method:'POST',user:owner,body:{...set,id:'bad id'}})).status,400);
+  const asg=await call('/api/study/assignments',{method:'POST',user:owner,body:{setId:'demo@1',teacher:'T07',probe:'P1'}});
+  assert.equal(asg.data.phase,'baseline');
+  assert.equal((await call('/api/study/assignments',{method:'POST',user:owner,body:{setId:'demo@1',teacher:'T07',probe:'P2'}})).status,409,'同一位老師不重複用同一組');
+  // 教師逐節看；看不到應有方向；基線期沒有 AI 摘要
+  const id=asg.data.id;
+  assert.deepEqual((await call('/api/scenario',{cookie:t7})).data.assignments.map(a=>[a.id,a.decided,a.total]),[[id,0,35]]);
+  const view=await call('/api/scenario/'+id,{cookie:t7});
+  assert.equal(view.data.aiOn,false);assert.equal(view.data.scenarios.length,5);assert.ok(view.data.scenarios.every(s=>s.sessions.length===1&&s.next===1));
+  assert.doesNotMatch(JSON.stringify(view.data),/expected|insufficient/);
+  assert.equal((await call('/api/scenario/'+id,{user:owner})).status,403,'研究人員不從教師端作答');
+  assert.equal((await call('/api/scenario/'+id+'/summary',{method:'POST',cookie:t7,body:{scenario:'S1'}})).data.error,'summary_off');
+  const decide=(scenario,sessionNo,extra)=>call('/api/scenario/'+id+'/decide',{method:'POST',cookie:t7,body:{scenario,sessionNo,reason:'lowAccuracy',shownAt:Date.now()-5000,activeMs:4000,totalMs:5000,aiWaitMs:0,...extra}});
+  assert.equal((await decide('S1',1,{decision:'keep'})).status,200);
+  assert.equal((await decide('S1',1,{decision:'keep'})).status,409,'同一節不能再存一次');
+  assert.equal((await decide('S1',3,{decision:'keep'})).status,409,'不能跳節');
+  assert.equal((await decide('S1',2,{decision:'keep'})).status,200);
+  assert.equal((await decide('S1',3,{decision:'change',changes:{mode:'demo'}})).data.direction,'increase');
+  assert.equal((await decide('S2',1,{decision:'change',changes:{support:'faded',mode:'self'},reason:'independent'})).data.error,'one_step_only');
+  assert.equal((await call('/api/scenario/'+id,{cookie:t7})).data.scenarios[0].sessions.length,4,'存完第 3 節才看到第 4 節');
+  // 介入期：AI 摘要打開；AI 寫了輸入裡沒有的數字就改用固定內容
+  await call('/api/study/phases',{method:'POST',user:owner,body:{kind:'teacher',participant:'T07',phase:'intervention'}});
+  const originalFetch=globalThis.fetch;let reply='第1節：完成 6 題。\n第2節：完成 6 題。\n第3節：完成 6 題。\n第4節：完成 6 題。\n依據：第1～4節',sent;
+  globalThis.fetch=async(_u,o)=>{sent=JSON.parse(o.body);return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({message:reply})}}]}));};
+  try{
+    const ok=await call('/api/scenario/'+id+'/summary',{method:'POST',cookie:t7,body:{scenario:'S1'}});
+    assert.equal(ok.data.source,'ai');assert.deepEqual(ok.data.sessions,[1,2,3,4]);assert.equal(ok.data.promptVersion,'summary-v26.1');
+    assert.match(sent.messages[0].content,/不提出任何調整方向/);assert.doesNotMatch(sent.messages[1].content,/T07|expected/);
+    reply='第1節：完成 99 題。第2節。第3節。第4節。';
+    const bad=await call('/api/scenario/'+id+'/summary',{method:'POST',cookie:t7,body:{scenario:'S1'}});
+    assert.equal(bad.data.source,'fallback');assert.match(bad.data.text,/第1節：完成 6 題，支持下答對率 50%/);
+    reply='第1節到第4節答對率偏低，建議增加支持。';
+    assert.equal((await call('/api/scenario/'+id+'/summary',{method:'POST',cookie:t7,body:{scenario:'S1'}})).data.source,'fallback','不能提建議');
+  }finally{globalThis.fetch=originalFetch;}
+  // 研究匯出：教師決策附上應有方向；AI 輸出全文與版本
+  const rows=(await call('/api/study/export?type=decisions',{user:owner})).data.rows;
+  assert.deepEqual(rows.map(r=>[r.scenario,r.sessionNo,r.direction,r.expected]),[['S1',1,'maintain','insufficient'],['S1',2,'maintain','insufficient'],['S1',3,'increase','increase']]);
+  assert.equal(rows[0].teacher,'T07');assert.equal(rows[0].totalMs,5000);
+  assert.equal((await call('/api/study/export?type=decisions',{cookie:t7})).status,403);
+  const ai=(await call('/api/study/export?type=ai',{user:owner})).data.rows;
+  assert.deepEqual(ai.filter(r=>r.task==='summary').map(r=>[r.source,r.error]),[['fallback','rejected:advice'],['fallback','rejected:number_not_in_input'],['ai','']]);
+  // 真實學生：同一套規則算每一節的應有方向，研究人員才看得到
+  const s3=set.scenarios.find(s=>s.id==='S3');
+  for(const x of s3.sessions.slice(0,4))for(let i=0;i<x.events.length;i+=40)assert.equal((await call('/api/records',{method:'POST',cookie:t7,body:{rows:x.events.slice(i,i+40).map((e,j)=>({...e,rid:`s3-${x.no}-${i+j}`,student:'T07-S01',sessionNo:x.no}))}})).status,200);
+  const dir=await call('/api/study/direction?student=T07-S01&act=rectangle',{user:owner});
+  assert.deepEqual(dir.data.timeline.map(t=>[t.no,t.acc,t.expected]),[[1,67,'insufficient'],[2,67,'insufficient'],[3,100,'maintain'],[4,100,'advance']]);
+  assert.equal((await call('/api/study/direction?student=T07-S01&act=rectangle',{cookie:t7})).status,403);
+  globalThis.fetch=async()=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({message:'第1節：完成 6 題。\n第2節：完成 6 題。\n依據：第1、2節'})}}]}));
+  try{const sum=await call('/api/teacher/summary',{method:'POST',cookie:t7,body:{student:'T07-S01',act:'rectangle',upTo:2}});assert.equal(sum.data.source,'ai');assert.deepEqual(sum.data.sessions,[1,2]);}finally{globalThis.fetch=originalFetch;}
+});
