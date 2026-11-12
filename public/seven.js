@@ -1001,6 +1001,7 @@
       if ($('aiReflect')) $('aiReflect').onclick = () => askAI('reflection', 6, $('aiReflectText'));
       if ($('recordVoice')) $('recordVoice').onclick = toggleRecord;
       // 第 25 版修正：按「回學習地圖」（或上面的地圖連結）也要先把這一題記成完成，地圖才會有星星、解鎖下一個
+      let tutorWait = false, tutorThen = null;
       const finish = (next, toMap = false) => {
         const need = [!probe && r.goal !== 'any' && !judged && '有沒有達到目標', !probe && judged && !r.met && !answers.cause && '可能的原因', !answers.reason && '什麼幫助你', !answers.nextMethod && '下一題怎麼做'].filter(Boolean);
         if (need.length) { showStatus($('reflectFeedback'), '請選：' + need.join('、') + '。'); return false; }
@@ -1008,13 +1009,14 @@
         const badges = earned(r), secs = startedAt ? Math.round((Date.now() - startedAt) / 1000) : null;
         log('整題完成', { activity: 7, maxHintLevel: Math.max(...hintLevel), hints: r.hints, errors, goal: r.goal, goalKind: settings.goalKind, goalMet: r.watched ? false : r.met, watched: !!r.watched, selfMet: answers.selfMet || '', confidence: answers.confidence || '', firstTry: r.firstTry, steps: r.steps, secs, badges, dimensions: dims() });
         // 第 26 版第四階段：題末對照用的快照（小方的正確作品＝這一題每一步最後的答案；學生第一次的作答從紀錄找）
-        if (window.areaTutor?.stage?.()) { const snap = titles().map((t, s) => { const first = records.find(x => x.cycle === cycle && x.actId === type && x.event === '步驟檢核' && x.activity === s + 1); return { step: s + 1, title: t, answer: first ? answerText(s) : '', first: first && !first.correct ? first.choice || '' : '' }; }); snap.cycle = cycle; window.areaTutor.done(snap); }
+        if (window.areaTutor?.stage?.()) { const snap = titles().map((t, s) => { const first = records.find(x => x.cycle === cycle && x.actId === type && x.event === '步驟檢核' && x.activity === s + 1); return { step: s + 1, title: t, answer: first ? answerText(s) : '', first: first && !first.correct ? first.choice || '' : '' }; }); snap.cycle = cycle; tutorWait = true; window.areaTutor.done(snap, () => { tutorWait = false; if (tutorThen) { const t = tutorThen; tutorThen = null; t(); } }); }
         carry = { cycle, reason: chosenText('reason'), method: answers.nextMethod, cause: !r.met ? answers.cause : '', badges, fadeMsg: adjustFade(!retryQ) };
         retryQ = !next;
         log('反思與下一輪調整', { activity: 7, choice: `目標：${probe ? '小測驗' : goalItem ? goalItem[1] : '做完就好'}；結果：${resultLine(r).replace('我的結果：', '')}；自己判斷：${answers.selfMet ? chosenText('selfMet') : '—'}；原因：${answers.cause ? chosenText('cause') : '—'}；幫助我的：${chosenText('reason')}；下一題：${chosenText('nextMethod')}${answers.myReflection ? '；有寫給老師的話' : ''}${voices[cycle] ? '；有錄音' : ''}`, judgment: answers.selfMet || '', reason: carry.reason, cause: answers.cause || '', studentWords: answers.myReflection || '', wroteWords: !!answers.myReflection, nextMethod: carry.method, nextAction: next ? '新題' : '重試' });
         if (next) index = (index + 1) % 3; else keepProblem = true;
         cycle++;
-        if (toMap) { location.href = mapUrl(); return; }
+        // 回學習地圖：小老師小方的題末對照做完才離開
+        if (toMap) { const go = () => { location.href = mapUrl(); }; if (tutorWait) tutorThen = go; else go(); return; }
         const doneCount = records.filter(x => x.event === '整題完成').length;
         if (settings.lessonGoal && doneHere() === settings.lessonGoal) openRest('goal');
         else if (settings.rest && doneCount % settings.rest === 0) { openRest('time'); }

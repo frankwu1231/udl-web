@@ -1315,11 +1315,13 @@ test('第 26 版第四階段：BC 階段有小老師小方（示範階段先點�
   await p.page.click(`#tutorBubble [data-tutor]:text-is("${right}")`);
   assert.equal(await p.page.$eval('[data-demo]', b => b.disabled), false);
   // 示範階段的題末對照：學生猜的下一步和小方做的並列
-  await p.page.evaluate(() => window.areaTutor.done([]));
+  await p.page.evaluate(() => { window.__after = 0; window.areaTutor.done([], () => { window.__after++; }); });
   await p.page.waitForSelector('#tutorCompare[open]');
+  assert.equal(await p.page.evaluate(() => window.__after), 0, '對照做完以前不離開（例如回學習地圖）');
   assert.match(await p.text('#tutorCompare'), /小方做的[\s\S]*你猜的/);
   assert.match(await p.text('#tutorCompare'), new RegExp(right));
   await p.page.click('#tutorCompareDone');
+  assert.equal(await p.page.evaluate(() => window.__after), 1);
   assert.equal(await p.page.$('#buddy'), null, 'BC 階段小方（小幫手）由小老師小方取代');
   assert.equal(await p.page.$('[id^="aiHint"]'), null, '關閉問 AI');
   await p.page.click('[data-tp="gesture"]');
@@ -1422,4 +1424,31 @@ test('第 26 版：用教師代號或他的班級代碼登入時，只能選這�
   assert.equal(await p.page.$eval('#researchWho', d => d.open), true, '沒有開始');
   assert.deepEqual(p.errors, []);
   await p.page.context().close();
+});
+
+test('第 26 版：上一位學生沒送出去的答案不影響下一位；這台電腦存不了暫存資料時也送得出去', { skip: skip || !distReady }, async () => {
+  await setup();
+  const ctx = await browser.newContext(), page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('dialog', d => d.accept());
+  await page.goto(base + '/study.html'); await page.waitForSelector('#probeFile');
+  await page.setInputFiles('#probeFile', fileURLToPath(new URL('../scenarios/demo-probe.json', import.meta.url)));
+  await page.waitForFunction(() => /已匯入 demoProbe@1|匯入過/.test(document.querySelector('#probeMsg')?.textContent || ''));
+  const as = async student => { await page.evaluate(s => sessionStorage.setItem('area-research-who-v22', JSON.stringify({ teacher: 'T01', student: s, sessionNo: 1, sessionId: 'z' + s })), student); await page.goto(base + '/probe.html'); };
+  await as('T01-S11'); await page.waitForSelector('#probeStart'); await page.click('#probeStart'); await page.waitForSelector('[data-step]');
+  const down = r => r.abort(); await page.route('**/api/probe/*/item', down);
+  await page.click('#submit'); await page.waitForSelector('#probeRetry', { timeout: 10000 });
+  await page.unroute('**/api/probe/*/item', down);
+  // 換下一位：先補送上一位的，再開始這一位的第 1 題
+  await as('T01-S12'); await page.waitForSelector('#probeStart'); await page.waitForTimeout(500); await page.click('#probeStart'); await page.waitForSelector('[data-step]');
+  await page.reload(); await page.waitForSelector('[data-step]');
+  assert.match(await page.innerText('.probe'), /第 1 題/, '下一位從第 1 題開始');
+  const rows = async s => page.evaluate(async st => (await (await fetch('/api/study/export?type=probeItems')).json()).rows.filter(x => x.student === st), s);
+  assert.equal((await rows('T01-S11')).length, 1, '上一位的答案補送了');
+  assert.equal((await rows('T01-S12')).length, 0);
+  // 存不了暫存資料：記在記憶體裡照樣送出，技術缺測不會不見
+  await page.addInitScript(() => { const set = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (String(k).endsWith(':pending')) throw new DOMException('full', 'QuotaExceededError'); return set.call(this, k, v); }; });
+  await page.reload(); await page.waitForSelector('[data-step]');
+  await page.click('#techBtn'); await page.waitForFunction(() => /第 2 題/.test(document.querySelector('.probe')?.innerText || ''), null, { timeout: 10000 });
+  assert.equal((await rows('T01-S12'))[0].result.tech, true);
+  assert.deepEqual(errors, []);
+  await ctx.close();
 });

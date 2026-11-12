@@ -10,7 +10,7 @@
   const WHO_KEY = 'area-research-who-v22', RUN_KEY = 'area-probe-run-v26', PEND_KEY = RUN_KEY + ':pending';
   const CHEERS = ['謝謝你，很認真！', '好，下一題。', '你很專心，繼續！'];
   const load = (k, f) => { try { return JSON.parse(sessionStorage.getItem(k) || 'null') ?? f; } catch { return f; } };
-  const keep = (k, v) => { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch { /* 略過 */ } };
+  const keep = (k, v) => { try { sessionStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } };
   let state = null, item = null, answers = {}, itemStart = 0, timer = null, tech = false, busy = false;
 
   async function api(path, body) {
@@ -28,7 +28,8 @@
   async function start() {
     const who = load(WHO_KEY, null);
     state = load(RUN_KEY, null);
-    if (state && who && state.student === who.student) { $('probeWho').textContent = state.student; return load(PEND_KEY, null) ? deliver() : show(); }   // 重新整理：先送完還沒送出去的，再接著做
+    if (state && who && state.student === who.student) { $('probeWho').textContent = state.student; return pending() ? deliver() : show(); }   // 重新整理：先送完還沒送出去的，再接著做
+    if (pending()) deliver();   // 上一位學生還沒送出去的資料：先補送（不影響這一位）
     if (!who || who.off || !who.student) { $('probe').innerHTML = '<p>請老師先在學生頁選學生代號、按「開始本節」，再進入小測驗。</p><p><a href="seven.html">回學生頁</a></p>'; return; }
     $('probeWho').textContent = who.student + (who.sessionNo ? `・第 ${who.sessionNo} 節` : '');
     let sets; try { sets = (await api('/api/probe/sets')).sets; } catch { $('probe').innerHTML = '<p>讀不到題組。請確認「現場試用紀錄」有勾選存進網站資料庫。</p>'; return; }
@@ -119,17 +120,32 @@
     if (!box.isConnected) $('probe').append(box);
     box.querySelector('button').onclick = () => { box.remove(); deliver(); };
   }
-  const trim = c => c.length > 30 ? [...c.slice(0, 10), ...c.slice(-20)] : c;
+  // 連續按好幾次確定、值都一樣：只留第一次（對計分沒有影響），其他每一次都完整送出
+  const compact = c => c.filter((x, i) => i === 0 || x.v !== c[i - 1].v);
+  let memPending = null;   // 這台電腦存不了的時候，先留在記憶體
+  const pending = () => load(PEND_KEY, null) || memPending;
+  function setPending(p) { memPending = p; if (!keep(PEND_KEY, p)) toastSave(); }
+  function clearPending() { memPending = null; try { sessionStorage.removeItem(PEND_KEY); } catch { /* 略過 */ } }
+  function toastSave() { if (document.getElementById('probeSaveWarn')) return; const w = Object.assign(document.createElement('p'), { id: 'probeSaveWarn', className: 'count', textContent: '這台電腦存不了暫存資料：送出前請不要重新整理這一頁。' }); w.setAttribute('role', 'alert'); document.querySelector('main')?.prepend(w); }
   function submit(timedOut, end) {
     if (busy) return; busy = true; clearInterval(timer);
-    const steps = Object.fromEntries(Object.entries(answers).map(([k, a]) => [k, { confirms: trim(a.confirms) }]));
-    keep(PEND_KEY, { kind: 'item', run: state.run, index: state.index, body: { itemId: item.id, steps, timedOut, tech, secs: Math.round((Date.now() - itemStart) / 1000) }, end: end || '' });
+    const steps = Object.fromEntries(Object.entries(answers).map(([k, a]) => [k, { confirms: compact(a.confirms) }]));
+    setPending({ kind: 'item', run: state.run, index: state.index, body: { itemId: item.id, steps, timedOut, tech, secs: Math.round((Date.now() - itemStart) / 1000) }, end: end || '' });
     deliver();
   }
-  function finish(reason) { clearInterval(timer); keep(PEND_KEY, { kind: 'finish', run: state.run, reason }); deliver(); }
+  function finish(reason) { clearInterval(timer); setPending({ kind: 'finish', run: state.run, reason }); deliver(); }
   let delivering = false;
   async function deliver() {
-    const p = load(PEND_KEY, null); if (!p || delivering) return; delivering = true; clearInterval(timer);
+    const p = pending(); if (!p || delivering) return; delivering = true;
+    // 別次施測（例如上一位學生）的待送資料：只補送，不動這一次的進度
+    if (!state || p.run !== state.run) {
+      try {
+        const ok = p.kind === 'item' ? await send(`/api/probe/${p.run}/item`, p.body) && (!p.end || await send(`/api/probe/${p.run}/finish`, { reason: p.end })) : await send(`/api/probe/${p.run}/finish`, { reason: p.reason });
+        if (ok) clearPending();
+      } finally { delivering = false; }
+      return;
+    }
+    clearInterval(timer);
     // 答案已經交出去了：畫面上的輸入都鎖住，不能再改
     document.querySelectorAll('#probe input, #probe [data-opt], #probe [data-ok], #submit, #techBtn, #stopBtn').forEach(x => { x.disabled = true; });
     try {
@@ -137,13 +153,13 @@
         if (!await send(`/api/probe/${p.run}/item`, p.body)) { failed('這一題還沒送出去（網路可能斷了），答案都還在。網路好了再按「再送一次」。'); return; }
         if (state.index === p.index) { state.index++; keep(RUN_KEY, state); }
         try { sessionStorage.removeItem(RUN_KEY + ':item'); } catch { /* 略過 */ }
-        if (p.end) { keep(PEND_KEY, { kind: 'finish', run: p.run, reason: p.end }); delivering = false; return deliver(); }
-        try { sessionStorage.removeItem(PEND_KEY); } catch { /* 略過 */ }
+        if (p.end) { setPending({ kind: 'finish', run: p.run, reason: p.end }); delivering = false; return deliver(); }
+        clearPending();
         $('probe').innerHTML = `<p class="cheer" data-say>${CHEERS[state.index % CHEERS.length]}</p>`;
         setTimeout(show, 1200);
       } else {
         if (!await send(`/api/probe/${p.run}/finish`, { reason: p.reason })) { $('probe').innerHTML = '<p class="cheer">小測驗做完了，謝謝你！</p>'; failed('結束的紀錄還沒送出去（網路可能斷了）。網路好了再按「再送一次」。'); return; }
-        try { [RUN_KEY, RUN_KEY + ':item', PEND_KEY].forEach(k => sessionStorage.removeItem(k)); } catch { /* 略過 */ }
+        clearPending(); try { [RUN_KEY, RUN_KEY + ':item'].forEach(k => sessionStorage.removeItem(k)); } catch { /* 略過 */ }
         $('probe').innerHTML = '<p class="cheer" data-say>小測驗做完了，謝謝你！</p><p style="text-align:center"><a class="primary submit" href="seven.html">回到學習</a></p>';
       }
     } finally { delivering = false; }

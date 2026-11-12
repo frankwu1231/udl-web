@@ -90,9 +90,9 @@
   }
 
   // ---------- 示範階段的題末對照：學生猜的下一步和小方實際做的 ----------
-  function compareDemo(cycle) {
+  function compareDemo(cycle, after) {
     const rows = guesses.get(api.act() + '|' + cycle) || [];
-    if (!rows.length) return;
+    if (!rows.length) return after();
     let d = document.getElementById('tutorCompare');
     if (!d) { d = document.createElement('dialog'); d.id = 'tutorCompare'; d.className = 'research-dialog tutor-compare'; document.body.append(d); }
     const right = rows.filter(r => r.ok).length;
@@ -102,15 +102,15 @@
     d.oncancel = e => e.preventDefault();
     d.querySelector('#tutorCompareDone').onclick = () => {
       api.log('題末對照', { activity: 7, cycle, kind: 'demo', steps: rows.length, correct: right === rows.length, score: right });
-      guesses.delete(api.act() + '|' + cycle); d.close();
+      guesses.delete(api.act() + '|' + cycle); d.close(); after();
       say(right === rows.length ? '你每一步都猜對了！' : '下一題換你試試看，我在旁邊看。', { ttl: 6000 });
     };
     d.showModal();
   }
   // ---------- 題末對照：小方的正確作品和學生第一次的作答 ----------
-  function compare(snapshot) {
+  function compare(snapshot, after) {
     const rows = snapshot.filter(r => r.answer);
-    if (!rows.length) return;
+    if (!rows.length) return after();
     let d = document.getElementById('tutorCompare');
     if (!d) { d = document.createElement('dialog'); d.id = 'tutorCompare'; d.className = 'research-dialog tutor-compare'; document.body.append(d); }
     const marked = new Set();
@@ -123,7 +123,7 @@
       const truth = rows.map((r, i) => r.first && r.first !== r.answer ? i : -1).filter(i => i >= 0);
       const match = truth.length === marked.size && truth.every(i => marked.has(i));
       api.log('題末對照', { activity: 7, cycle: snapshot.cycle, different: truth.map(i => rows[i].step), studentMarked: [...marked].map(i => rows[i].step), correct: match, corrected: truth.length > 0 });
-      d.close();
+      d.close(); after();
       say(match ? (truth.length ? '你找到了！那幾步你已經改對了。' : '你找得很仔細，都一樣！') : '我們再看一次：有幾步你第一次寫的和我不一樣，後來你改對了。', { ttl: 6000 });
     };
     d.showModal(); line('compare').then(t => { const p = d.querySelector('p'); if (p && d.open) p.textContent = t + ' 點一下不一樣的那一步。'; });
@@ -155,6 +155,7 @@
     },
     right(s) { if (!on() || stage() === 'faded' || stage() === 'demo') return; line('right', s).then(t => say(t, { ttl: 3500 })); },
     wrong(s, obs) { if (!on() || stage() === 'demo') return; line('wrong', s, { obs }).then(t => say(t, { ttl: 5000 })); },
-    done(snapshot) { if (!on()) return; const c = snapshot.cycle ?? api.cycle(); setTimeout(() => (stage() === 'demo' ? compareDemo(c) : compare(snapshot)), 300); }
+    // after：題末對照做完（或這一題沒有可對照的）之後要做的事，例如回學習地圖
+    done(snapshot, after = () => {}) { if (!on()) return after(); const c = snapshot.cycle ?? api.cycle(); setTimeout(() => (stage() === 'demo' ? compareDemo(c, after) : compare(snapshot, after)), 300); }
   };
 })();

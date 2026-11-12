@@ -479,6 +479,12 @@ test('第 26 版第三階段：探試題組匯入鎖版、學生拿不到答案�
   assert.equal((await call(`/api/probe/${run2.run}/item`,{method:'POST',cookie:t8,body:{itemId:it31.id,steps:st31,secs:45}})).status,200);
   const a90=it90.steps.find(x=>x.role==='answer'),st90={};for(const x of it90.steps)st90[x.key]=x===a90?{confirms:[{v:999,t:10,n:1},{v:a90.answer,t:110,n:2}]}:at([x.answer,1]);
   assert.equal((await call(`/api/probe/${run2.run}/item`,{method:'POST',cookie:t8,body:{itemId:it90.id,steps:st90,secs:114}})).status,200);
+  // 第 91 秒才確定（畫面計時還沒停）：一樣不算
+  const it91=others[2],a91=it91.steps.find(x=>x.role==='answer'),st91={};for(const x of it91.steps)st91[x.key]=x===a91?{confirms:[{v:a91.answer,t:91,n:1}]}:at([x.answer,1]);
+  assert.equal((await call(`/api/probe/${run2.run}/item`,{method:'POST',cookie:t8,body:{itemId:it91.id,steps:st91,secs:91}})).status,200);
+  // 中間夾一次錯的：前 10 次對、第 11 次錯、後 20 次對，仍記曾錯、自行修正
+  const it3=others[3],a3=it3.steps.find(x=>x.role==='answer'),st3={};for(const x of it3.steps)st3[x.key]=x===a3?{confirms:[...Array.from({length:10},(_,i)=>({v:a3.answer,t:i+1,n:i+1})),{v:999,t:11,n:11},...Array.from({length:20},(_,i)=>({v:a3.answer,t:12+i,n:12+i}))]}:at([x.answer,1]);
+  assert.equal((await call(`/api/probe/${run2.run}/item`,{method:'POST',cookie:t8,body:{itemId:it3.id,steps:st3,secs:40}})).status,200);
   await call(`/api/probe/${run2.run}/finish`,{method:'POST',cookie:t8,body:{reason:'stopped'}});
   const it2=(await call('/api/study/export?type=probeItems',{user:owner})).data.rows.find(r=>r.itemId===rect.id&&r.student==='T08-S02');
   const area2=it2.result.steps.find(x=>x.key===ansStep.key);
@@ -488,6 +494,8 @@ test('第 26 版第三階段：探試題組匯入鎖版、學生拿不到答案�
   const r31=exp2.find(r=>r.itemId===it31.id).result,s31=r31.steps.find(x=>x.key===a31.key);
   assert.equal(s31.final,a31.answer);assert.equal(r31.correct,true);assert.equal(s31.firstCorrect,false);assert.equal(s31.selfCorrected,true);
   const r90=exp2.find(r=>r.itemId===it90.id).result;assert.equal(r90.timedOut,true);assert.equal(r90.correct,false,'時間到了以後改對的不算');
+  const r91=exp2.find(r=>r.itemId===it91.id).result;assert.equal(r91.timedOut,true);assert.equal(r91.correct,false,'第 91 秒確定的不算');
+  const s3=exp2.find(r=>r.itemId===it3.id).result.steps.find(x=>x.key===a3.key);assert.equal(s3.hadError,true);assert.equal(s3.selfCorrected,true);assert.equal(s3.firstCorrect,true);
   // 同一位學生第二次：換下一份複本
   assert.equal((await call('/api/probe/start',{method:'POST',cookie:t8,body:{student:'T08-S01',set:'demoProbe@1'}})).data.formId,'A');
 });
