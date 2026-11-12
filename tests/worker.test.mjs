@@ -313,18 +313,26 @@ test('第 26 版：研究紀錄存進網站資料庫、開始本節、學生個�
   const saved=await call('/api/records',{method:'POST',cookie:sc,body:{rows:[row,{...row,rid:'abc123-x2',event:'整題完成'}]}});
   assert.equal(saved.status,200);assert.deepEqual(saved.data.saved,['abc123-x1','abc123-x2']);
   assert.equal((await call('/api/records',{method:'POST',cookie:sc,body:{rows:[row]}})).status,200,'重送沒關係');
+  // 白名單：學生自己打的文字、不認得的欄位都不存
+  assert.equal((await call('/api/records',{method:'POST',cookie:sc,body:{rows:[{...row,rid:'abc123-x3',studentInput:'虛構姓名甲：我不會',detail:JSON.stringify({obs:'blank',studentInput:'虛構姓名甲：我不會',dimensions:{w:3,h:4}})}]}})).status,200);
+  assert.equal((await call('/api/records',{method:'POST',cookie:sc,body:{rows:[{...row,rid:'abc123-x4',student:'T06-S01'}]}})).status,403,'不能寫別班的學生');
   // 開始本節：同一位學生接著往上加；另一位從 1 開始
   const start=async(cookie,student)=>(await call('/api/sessions/start',{method:'POST',cookie,body:{student,device:'平板'}})).data.no;
   assert.equal(await start(sc,'T05-S01'),1);assert.equal(await start(sc,'T05-S01'),2);assert.equal(await start(sc,'T05-S02'),1);
   assert.equal((await call('/api/sessions/start',{method:'POST',cookie:sc,body:{student:'S01'}})).status,400);
   // 教師端：只看得到自己工作區
   const ov=(await call('/api/teacher/research',{cookie:t5})).data;
-  assert.deepEqual(ov.students.map(s=>[s.student,s.events,s.sessions]),[['T05-S01',2,2],['T05-S02',0,1]]);
+  assert.deepEqual(ov.students.map(s=>[s.student,s.events,s.sessions]),[['T05-S01',3,2],['T05-S02',0,1]]);
+  const x3=(await call('/api/teacher/research?student=T05-S01',{cookie:t5})).data.events.find(e=>e.rid==='abc123-x3');
+  assert.equal(JSON.stringify(x3).includes('虛構姓名甲'),false,'自由文字沒有存下來');assert.deepEqual(JSON.parse(x3.detail),{obs:'blank',dimensions:{w:3,h:4}});
   assert.deepEqual((await call('/api/teacher/research',{cookie:t6})).data.students,[],'別的老師看不到');
   assert.equal((await call('/api/teacher/research',{cookie:sc})).status,403,'學生不能看');
   assert.equal((await call('/api/teacher/research?student=T05-S01',{cookie:t5})).data.events[0].detail,'{"obs":"eqPerimeter"}');
   // 學生個別設定：一定要主要理由；方向由網站歸類；減少支持一次一級
-  const set=body=>call('/api/student-settings',{method:'POST',cookie:sc,body:{student:'T05-S01',act:'rectangle',sessionNo:2,...body}});
+  // 學生登入（班級代碼）不能改支持設定；參與教師不能改別班的學生
+  assert.equal((await call('/api/student-settings',{method:'POST',cookie:sc,body:{student:'T05-S01',act:'rectangle',changes:{mode:'demo'},reason:'other'}})).data.error,'teacher_required');
+  assert.equal((await call('/api/student-settings',{method:'POST',cookie:t6,body:{student:'T05-S01',act:'rectangle',changes:{mode:'demo'},reason:'other'}})).data.error,'not_your_student');
+  const set=body=>call('/api/student-settings',{method:'POST',cookie:t5,body:{student:'T05-S01',act:'rectangle',sessionNo:2,...body}});
   assert.equal((await set({changes:{support:'faded'}})).status,400,'沒有理由');
   assert.equal((await set({changes:{support:'faded',video:'off'},reason:'independent',classSettings:{support:'full',video:'hint'}})).data.error,'one_step_only','一次減兩級不行');
   assert.equal((await set({changes:{methods:['self']},reason:'independent',classSettings:{methods:['mark','row','self']}})).data.error,'one_step_only','一次關掉兩種具體方法不行');
@@ -337,10 +345,10 @@ test('第 26 版：研究紀錄存進網站資料庫、開始本節、學生個�
   assert.equal((await set({decision:'keep',reason:'lowAccuracy'})).status,200);
   assert.equal((await set({decision:'advance',to:'square',reason:'independent'})).data.changes[0].direction,'advance');
   assert.deepEqual((await call('/api/student-settings?student=T05-S01',{cookie:sc})).data.overrides,{rectangle:{support:'faded',mode:'demo',lessonGoal:3}});
-  assert.deepEqual((await call('/api/student-settings?student=T05-S01',{cookie:t6})).data.overrides,{},'別的工作區沒有這位學生的設定');
+  assert.equal((await call('/api/student-settings?student=T05-S01',{cookie:t6})).status,403,'別班老師讀不到這位學生的設定');
   const changes=(await call('/api/teacher/research',{cookie:t5})).data.changes;
   assert.deepEqual(changes.map(c=>c.direction).sort(),['advance','decrease','increase','load','maintain']);
-  assert.ok(changes.every(c=>c.student==='T05-S01'&&c.act==='rectangle'&&c.sessionNo===2&&c.actor==='student-device'));
+  assert.ok(changes.every(c=>c.student==='T05-S01'&&c.act==='rectangle'&&c.sessionNo===2&&c.actor==='T05'));
   assert.equal(changes.find(c=>c.direction==='decrease').note,'連續兩節都自己完成');
 });
 
@@ -407,6 +415,10 @@ test('第 26 版第二階段：研究階段、標準化情境探試、應有方�
   const dir=await call('/api/study/direction?student=T07-S01&act=rectangle',{user:owner});
   assert.deepEqual(dir.data.timeline.map(t=>[t.no,t.acc,t.expected]),[[1,67,'insufficient'],[2,67,'insufficient'],[3,100,'maintain'],[4,100,'advance']]);
   assert.equal((await call('/api/study/direction?student=T07-S01&act=rectangle',{cookie:t7})).status,403);
+  // 主持人工作區（main）存的紀錄也查得到
+  for(const x of s3.sessions.slice(0,3))for(let i=0;i<x.events.length;i+=40)assert.equal((await call('/api/records',{method:'POST',user:owner,body:{rows:x.events.slice(i,i+40).map((e,j)=>({...e,rid:`m3-${x.no}-${i+j}`,student:'T09-S01',sessionNo:x.no}))}})).status,200);
+  const dm=(await call('/api/study/direction?student=T09-S01&act=rectangle',{user:owner})).data;
+  assert.equal(dm.workspace,'main');assert.deepEqual(dm.timeline.map(t=>[t.no,t.expected]),[[1,'insufficient'],[2,'insufficient'],[3,'maintain']]);
   globalThis.fetch=async()=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({message:'第1節：完成 6 題。\n第2節：完成 6 題。\n依據：第1、2節'})}}]}));
   try{const sum=await call('/api/teacher/summary',{method:'POST',cookie:t7,body:{student:'T07-S01',act:'rectangle',upTo:2}});assert.equal(sum.data.source,'ai');assert.deepEqual(sum.data.sessions,[1,2]);}finally{globalThis.fetch=originalFetch;}
 });
@@ -441,13 +453,25 @@ test('第 26 版第三階段：探試題組匯入鎖版、學生拿不到答案�
   assert.equal((await call(`/api/probe/${run}/item`,{method:'POST',cookie:t8,body:{itemId:'B05',steps:{}}})).status,409,'結束後不能再送');
   const runs=(await call('/api/study/export?type=probes',{user:owner})).data.rows,sum=runs[0].summary;
   assert.equal(runs[0].phase,'B');assert.equal(runs[0].sessionNo,3);
-  assert.equal(sum.items,10);assert.equal(sum.valid,9);assert.equal(sum.correct,2);assert.equal(sum.firstSubmitAccuracy,22.2);assert.equal(sum.dataPoint,true);
+  assert.equal(sum.items,10);assert.equal(sum.valid,9);assert.equal(sum.correct,2);assert.equal(sum.firstSubmitAccuracy,11.1,'B04 第一次確定的面積是錯的，不算首次正確');assert.equal(sum.finalAccuracy,22.2);assert.equal(sum.dataPoint,true);
   assert.equal(sum.unanswered,5,'沒送的 4 題加上逾時的 1 題');
   const items=(await call('/api/study/export?type=probeItems',{user:owner})).data.rows,r=id=>items.find(x=>x.itemId===id).result;
   assert.equal(r('B03').correct,false);assert.equal(r('B03').measureCorrect,false);assert.deepEqual(r('B03').steps.map(s=>[s.key,s.firstCorrect]),[['len',false],['wid',true],['formula',true],['area',true],['unit',true]]);
   assert.equal(r('B04').correct,true);assert.deepEqual(r('B04').steps.filter(s=>s.selfCorrected).map(s=>s.key),['formula','area']);
   assert.equal(r('B02').unitCorrect,false);assert.equal(r('B07').tech,true);
   assert.equal(sum.errorSteps,4);assert.equal(sum.selfCorrected,2);assert.equal(sum.selfCorrectionRate,50);
+  // 連帶錯誤依「當時」已確定的取量判定：長 5、寬 6、面積 30 之後，把長改成 4、面積改成 24，第一次的 30 仍然算對
+  const run2=(await call('/api/probe/start',{method:'POST',cookie:t8,body:{student:'T08-S02',set:'demoProbe@1',sessionNo:1}})).data;
+  const form2=set.forms.find(f=>f.id===run2.formId),rect=form2.items.find(i=>i.type==='rectangle'&&i.steps.filter(x=>x.role==='measure').length===2);
+  const [mL,mW]=rect.steps.filter(x=>x.role==='measure'),ansStep=rect.steps.find(x=>x.role==='answer'),wrongL=mL.answer+1;
+  const at=(...p)=>({confirms:p.map(([v,t])=>({v,t}))}),st2={[mL.key]:at([wrongL,1],[mL.answer,4]),[mW.key]:at([mW.answer,2]),[ansStep.key]:at([wrongL*mW.answer,3],[mL.answer*mW.answer,5])};
+  for(const x of rect.steps)if(!st2[x.key])st2[x.key]=at([x.answer,2]);
+  assert.equal((await call(`/api/probe/${run2.run}/item`,{method:'POST',cookie:t8,body:{itemId:rect.id,steps:st2,secs:20}})).status,200);
+  await call(`/api/probe/${run2.run}/finish`,{method:'POST',cookie:t8,body:{reason:'stopped'}});
+  const it2=(await call('/api/study/export?type=probeItems',{user:owner})).data.rows.find(r=>r.runId===run2.run||r.run===run2.run)||(await call('/api/study/export?type=probeItems',{user:owner})).data.rows.find(r=>r.itemId===rect.id&&r.student==='T08-S02');
+  const area2=it2.result.steps.find(x=>x.key===ansStep.key);
+  assert.equal(area2.firstCorrect,true,'第一次的面積符合當時的長寬');assert.equal(area2.hadError,false);assert.equal(area2.selfCorrected,false);
+  assert.equal(it2.result.firstCorrect,false,'最終答案第一次確定時不是正確答案');assert.equal(it2.result.correct,true);
   // 同一位學生第二次：換下一份複本
   assert.equal((await call('/api/probe/start',{method:'POST',cookie:t8,body:{student:'T08-S01',set:'demoProbe@1'}})).data.formId,'A');
 });
@@ -457,7 +481,8 @@ test('第 26 版第四階段：學生研究階段、小老師小方支持階段�
   const t10=await login('T10');
   await call('/api/study/phases',{method:'POST',user:owner,body:{kind:'student',participant:'T10-S01',phase:'BC'}});
   assert.deepEqual((await call('/api/study/phase?student=T10-S01',{cookie:t10})).data,{student:'T10-S01',phase:'BC',teacherWait:10,tutorChars:25,showAdvice:1});
-  let n=0;const rows=(no,act,stage,list)=>list.map(([event,extra])=>({rid:`tu-${++n}-x`,sheet:'操作紀錄',time:`2026-11-0${no} 10:00:${String(n%60).padStart(2,'0')}`,student:'T10-S01',sessionNo:no,actId:act,mode:'self',detail:JSON.stringify({tutorStage:stage,...extra.detail}),event,...extra.top}));
+  assert.equal((await call('/api/study/phase?student=T10-S01',{cookie:await login('T11')})).status,403,'別班老師讀不到');
+  let n=0;const rows=(no,act,stage,list)=>list.map(([event,extra])=>({rid:`tu-${++n}-x`,sheet:'操作紀錄',time:`2026-11-0${no} 10:00:${String(n%60).padStart(2,'0')}`,student:'T10-S01',sessionNo:no,actId:act,mode:stage==='demo'?'demo':'self',detail:JSON.stringify({tutorStage:stage,...extra.detail}),event,...extra.top}));
   const save=async r=>assert.equal((await call('/api/records',{method:'POST',cookie:t10,body:{rows:r}})).status,200);
   const stage=async(act,no)=>(await call(`/api/tutor/stage?student=T10-S01&act=${act}&sessionNo=${no}`,{cookie:t10})).data;
   assert.equal((await stage('rectangle',1)).stage,'demo','每個核心活動從示範開始');

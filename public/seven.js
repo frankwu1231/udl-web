@@ -1225,7 +1225,7 @@
   let toolInit = {};   // 打開教師觀察時的設定，用來找出這次改了哪些
   const REASONS = [['lowAccuracy', '答對率偏低'], ['manyHints', '提示用得多'], ['accurateButHints', '答對率高，但還靠提示'], ['independent', '已能獨立完成'], ['engagement', '情緒或專注'], ['taskLoad', '題量或流程負荷'], ['other', '其他']];
   const DIR = { increase: '增加支持', decrease: '減少支持', advance: '進階', maintain: '維持', load: '任務負荷', other: '其他' };
-  const SAVE_ERR = { one_step_only: '減少支持一次只能調一級（例如只關掉一種方法，或示範只晚一步）。', no_change: '設定沒有改變。若要維持，請按「維持原設定」。', offline: '連不上網站，設定沒有存。', research_off: '還沒選學生代號。' };
+  const SAVE_ERR = { one_step_only: '減少支持一次只能調一級（例如只關掉一種方法，或示範只晚一步）。', no_change: '設定沒有改變。若要維持，請按「維持原設定」。', offline: '連不上網站，設定沒有存。', research_off: '還沒選學生代號。', teacher_required: '用班級代碼登入的平板不能調整支持設定。請老師用教師代號登入這台平板，或到教師備課頁調整。', not_your_student: '這位學生不是您班上的學生。' };
   const classSettings = () => { const c = F.settings(L()); return Object.fromEntries(['support', 'mode', 'methods', 'video', 'tryFirst', 'lessonGoal', 'flow'].filter(k => c[k] !== undefined).map(k => [k, c[k]])); };
   function researchSupport() {
     if (!researchOn() || !type) return '';

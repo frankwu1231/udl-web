@@ -241,21 +241,34 @@ const expires=Math.min(now+12*60*60*1000,row.expires_at),token=await signedToken
 const STUDENT_CODE=/^T(0[1-9]|1[0-2])-S\d{2}$/,RID=/^[a-z0-9-]{6,40}$/;
 const RESEARCH_SHEETS=new Set(['場次','操作紀錄','每題摘要','教師設定','教師觀察','學生回饋','教師回饋','技術問題','設定變更','教師操作']);
 const RECORDS_PER_DAY=20000;
+// 研究紀錄只收已知欄位（白名單）：學生自己打的文字、不認得的欄位都不存。teacher 寫的備註（note、evidence、fix）照收，姓名在前端已先遮蔽。
+const RECORD_KEYS=new Set(('rid sheet time version sessionId teacher student sessionNo classCode phase activity actId cycle step stepTitle event mode studyPhase correct hintLevel action detail '+
+'siteVersion shape shapeKey support response method flow difficulty tutorStage teacherId studentId '+
+'aid answer attempt attentionReminds badges browser buddyAccepted buddyHelp buddyHelpText buddyOffers buddyReact buddyStuck buddyWrong by camFeel camFeelText cameraConsent carriedFrom cause changes checkGoal checked choice completed confidence corrected decision device different dimensions error errors evidence example fadeLevel fallback finding firstTry frame from fullExample fun funText goal goalKind goalMet group hasCamera helped hints idle index issue judgment kind learnerJudgment level levelText maxHintLevel message minutes model monitors mood moodText nextAction nextMethod nextStep note obs on online operation outcome page part presentation promptVersion provider reason result score screen seconds secs selfMet selfReportedCheck skipped source stage start steps streak stuckPressed studentMarked tag tagText teacherHelp text times to value watched where why wrong cue '+
+'engage timing buddyUseful camAccurate assists fix buddy buddyWait buddyVoice attention attentionSec zhuyin textSize contrast video ai fading selfAsk rest').split(' '));
+const NESTED_KEY=/^[A-Za-z][A-Za-z0-9_]{0,23}$/;
+function cleanRecordValue(v,depth){if(v===null||typeof v==='boolean')return v;if(typeof v==='number')return Number.isFinite(v)?v:null;if(typeof v==='string')return v.slice(0,500);if(depth>2)return null;
+if(Array.isArray(v))return v.slice(0,40).map(x=>cleanRecordValue(x,depth+1));if(typeof v==='object'){const o={};for(const [k,x] of Object.entries(v).slice(0,40))if(NESTED_KEY.test(k))o[k]=cleanRecordValue(x,depth+1);return o;}return null;}
+function cleanRecordObject(obj,depth){const o={};for(const [k,v] of Object.entries(obj))if(RECORD_KEYS.has(k))o[k]=cleanRecordValue(v,depth);return o;}
+function cleanRecordRow(r){const o=cleanRecordObject(r,1);if(typeof r.detail==='string'){let d=null;try{d=JSON.parse(r.detail);}catch{}o.detail=d&&typeof d==='object'&&!Array.isArray(d)?JSON.stringify(cleanRecordObject(d,1)):'';}else if(r.detail!==undefined)o.detail='';return o;}
 const researchRole=who=>who.role==='student'||who.role==='test'||who.role==='teacher';
+// 參與教師（T01～T12）與他班級的學生裝置，只能碰自己的學生（代號開頭是自己的教師代號）；主持人與測試工作區不限
+const ownsStudent=(who,student)=>!TEACHER_CODE.test(who.ws)||String(student).startsWith(who.ws+'-');
+const notYours=()=>json({error:'not_your_student'},403);
 const noResearch=who=>json({error:who.role==='none'?'signin_required':'forbidden'},who.role==='none'?401:403);
 async function recordQuota(env,ws,n){const day=new Date().toISOString().slice(0,10),scope='rec:'+ws;const row=await env.DB.prepare('INSERT INTO ai_usage (day,scope,calls) VALUES (?,?,?) ON CONFLICT(day,scope) DO UPDATE SET calls=calls+excluded.calls WHERE calls+excluded.calls<=? RETURNING calls').bind(day,scope,n,RECORDS_PER_DAY).first();return !!row;}
 async function recordsSave(request,env,who){if(!researchRole(who))return noResearch(who);if(!sameOrigin(request))return json({error:'origin'},403);if(!env.DB)return json({error:'research_storage_unavailable'},503);
 const body=await readJson(request,64000);if(!body||!Array.isArray(body.rows)||!body.rows.length||body.rows.length>40)return json({error:'invalid_input'},400);
 const rows=[];for(const r of body.rows){if(!r||typeof r!=='object'||Array.isArray(r)||typeof r.rid!=='string'||!RID.test(r.rid)||!RESEARCH_SHEETS.has(r.sheet)||typeof r.time!=='string'||r.time.length>30)return json({error:'invalid_input'},400);
-const student=r.student===''||r.student===undefined?'':r.student;if(student!==''&&!(typeof student==='string'&&STUDENT_CODE.test(student)))return json({error:'invalid_input'},400);
+const student=r.student===''||r.student===undefined?'':r.student;if(student!==''&&!(typeof student==='string'&&STUDENT_CODE.test(student)))return json({error:'invalid_input'},400);if(student!==''&&!ownsStudent(who,student))return notYours();
 const no=r.sessionNo===undefined||r.sessionNo===null||r.sessionNo===''?null:r.sessionNo;if(no!==null&&!whole(no,9999))return json({error:'invalid_input'},400);
-const data=JSON.stringify(r);if(data.length>6000)return json({error:'too_large'},413);rows.push([r.rid,student,no,r.sheet,r.time,data]);}
+const data=JSON.stringify(cleanRecordRow(r));if(data.length>6000)return json({error:'too_large'},413);rows.push([r.rid,student,no,r.sheet,r.time,data]);}
 try{if(!await recordQuota(env,who.ws,rows.length))return json({error:'record_limit'},429);const now=Date.now();
 await env.DB.batch(rows.map(([rid,student,no,sheet,time,data])=>env.DB.prepare('INSERT OR IGNORE INTO research_events (rid,workspace,student,session_no,sheet,time,data_json,received_at) VALUES (?,?,?,?,?,?,?,?)').bind(rid,who.ws,student,no,sheet,time,data,now)));
 return json({ok:true,saved:rows.map(r=>r[0])});}catch{return json({error:'research_storage_unavailable'},503);}}
 // 「開始本節」：同一位學生的節次往上加 1（換裝置也接著算）
 async function sessionStart(request,env,who){if(!researchRole(who))return noResearch(who);if(!sameOrigin(request))return json({error:'origin'},403);if(!env.DB)return json({error:'research_storage_unavailable'},503);
-const body=await readJson(request,512),student=body?.student,device=typeof body?.device==='string'?body.device.slice(0,10):'';if(typeof student!=='string'||!STUDENT_CODE.test(student))return json({error:'invalid_input'},400);
+const body=await readJson(request,512),student=body?.student,device=typeof body?.device==='string'?body.device.slice(0,10):'';if(typeof student!=='string'||!STUDENT_CODE.test(student))return json({error:'invalid_input'},400);if(!ownsStudent(who,student))return notYours();
 try{for(let i=0;i<5;i++){const last=await env.DB.prepare('SELECT MAX(no) AS n FROM research_sessions WHERE workspace = ? AND student = ?').bind(who.ws,student).first(),no=(last?.n||0)+1;
 try{await env.DB.prepare('INSERT INTO research_sessions (workspace,student,no,started_at,class_code,device) VALUES (?,?,?,?,?,?)').bind(who.ws,student,no,Date.now(),who.code||'',device).run();return json({no});}catch{/* 兩台同時開始：再試下一號 */}}
 return json({error:'research_storage_unavailable'},503);}catch{return json({error:'research_storage_unavailable'},503);}}
@@ -271,11 +284,11 @@ const supportLevel={support:v=>({faded:0,full:1})[v],mode:v=>({self:0,together:1
 // 回傳 [方向, 幾級]：increase 增加支持、decrease 減少支持、load 任務負荷、other 其他
 function changeDirection(field,before,after){if(field==='lessonGoal'||field==='flow')return ['load',0];const f=supportLevel[field];if(!f)return ['other',0];const a=f(before),b=f(after);if(a===undefined||b===undefined)return ['other',0];return b>a?['increase',b-a]:b<a?['decrease',a-b]:['other',0];}
 async function overridesFor(env,ws,student){const {results}=await env.DB.prepare('SELECT act, settings_json FROM student_settings WHERE workspace = ? AND student = ?').bind(ws,student).all();const out={};for(const r of results){try{out[r.act]=JSON.parse(r.settings_json);}catch{}}return out;}
-async function studentSettingsGet(request,env,who){if(!researchRole(who))return noResearch(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);const student=new URL(request.url).searchParams.get('student')||'';if(!STUDENT_CODE.test(student))return json({error:'invalid_input'},400);
+async function studentSettingsGet(request,env,who){if(!researchRole(who))return noResearch(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);const student=new URL(request.url).searchParams.get('student')||'';if(!STUDENT_CODE.test(student))return json({error:'invalid_input'},400);if(!ownsStudent(who,student))return notYours();
 try{return json({student,overrides:await overridesFor(env,who.ws,student)});}catch{return json({error:'research_storage_unavailable'},503);}}
 // 老師在學生的平板上調整（學生頁的「教師觀察」），或在教師備課頁調整；每次都要選主要理由
-async function studentSettingsSave(request,env,who){if(!researchRole(who))return noResearch(who);if(!sameOrigin(request))return json({error:'origin'},403);if(!env.DB)return json({error:'research_storage_unavailable'},503);
-const b=await readJson(request,4096);if(!b||typeof b.student!=='string'||!STUDENT_CODE.test(b.student)||!ACT_IDS.includes(b.act)||!DECISIONS.has(b.decision||'change')||!REASONS.has(b.reason))return json({error:'invalid_input'},400);
+async function studentSettingsSave(request,env,who){if(!researchRole(who))return noResearch(who);if(who.role==='student')return json({error:'teacher_required'},403);if(!sameOrigin(request))return json({error:'origin'},403);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+const b=await readJson(request,4096);if(!b||typeof b.student!=='string'||!STUDENT_CODE.test(b.student)||!ACT_IDS.includes(b.act)||!DECISIONS.has(b.decision||'change')||!REASONS.has(b.reason))return json({error:'invalid_input'},400);if(!ownsStudent(who,b.student))return notYours();
 const decision=b.decision||'change',note=typeof b.note==='string'?b.note.trim().slice(0,60):'',no=b.sessionNo===undefined||b.sessionNo===null?null:b.sessionNo;if(no!==null&&!whole(no,9999))return json({error:'invalid_input'},400);
 if(decision==='change'&&!validOverride(b.changes))return json({error:'invalid_input'},400);if((decision==='advance'||decision==='back')&&!ACT_IDS.includes(b.to))return json({error:'invalid_input'},400);
 try{const all=await overridesFor(env,who.ws,b.student),current={...(all[b.act]||{})},base=settingBase(),rows=[];
@@ -387,13 +400,16 @@ if(!sameOrigin(request))return json({error:'origin'},403);const b=await readJson
 await env.DB.prepare('INSERT INTO participant_phases (kind,participant,phase,actor,at) VALUES (?,?,?,?,?)').bind(b.kind,b.participant,b.phase,who.ws,Date.now()).run();return json({ok:true});}
 // 真實學生每一節的指標、應有方向（研究計分用，教師端看不到），以及老師在那一節的實際決策
 async function studyDirection(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);
-const q=new URL(request.url).searchParams,student=q.get('student')||'',act=q.get('act')||'',ws=student.slice(0,3);if(!STUDENT_CODE.test(student)||!ACT_IDS.includes(act))return json({error:'invalid_input'},400);
-try{const rules=await studyRules(env),sessions=(await eventsBySession(env,ws,student,9999)).map(s=>({no:s.no,...sessionMetrics(s.rows,act)})).filter(s=>s.items||s.steps);
+const q=new URL(request.url).searchParams,student=q.get('student')||'',act=q.get('act')||'';if(!STUDENT_CODE.test(student)||!ACT_IDS.includes(act))return json({error:'invalid_input'},400);
+try{// 這位學生的紀錄存在哪個工作區：可以指定；沒指定時先找教師代號那一區，再找有紀錄的其他區（例如主持人 main）
+const {results:wsRows}=await env.DB.prepare('SELECT workspace, COUNT(*) AS n FROM research_events WHERE student = ? GROUP BY workspace ORDER BY n DESC').bind(student).all(),workspaces=wsRows.map(r=>r.workspace),asked=q.get('ws')||'',prefix=student.slice(0,3);
+const ws=workspaces.includes(asked)?asked:workspaces.includes(prefix)?prefix:workspaces[0]||prefix;
+const rules=await studyRules(env),sessions=(await eventsBySession(env,ws,student,9999)).map(s=>({no:s.no,...sessionMetrics(s.rows,act)})).filter(s=>s.items||s.steps);
 const {results:changes}=await env.DB.prepare('SELECT session_no AS sessionNo, field, before_value AS before, after_value AS after, direction, reason, at FROM setting_changes WHERE workspace = ? AND student = ? AND act = ? ORDER BY at, id').bind(ws,student,act).all();
 const resets=changes.filter(c=>['increase','decrease','load','advance'].includes(c.direction)&&c.sessionNo!==null);
 const timeline=sessions.map((s,i)=>{const start=Math.max(1,...resets.filter(c=>c.sessionNo<s.no).map(c=>c.sessionNo+1));const expected=expectedDirection(sessions.slice(0,i+1),rules,start);
 const made=[...new Set(changes.filter(c=>c.sessionNo===s.no).map(c=>c.direction))];return {...s,windowStart:start,expected,decisions:made};});
-return json({student,act,rules,timeline});}catch{return json({error:'research_storage_unavailable'},503);}}
+return json({student,act,workspace:ws,workspaces,rules,timeline});}catch{return json({error:'research_storage_unavailable'},503);}}
 // 研究匯出：AI 輸出（核對一致率用）、設定變更（所有工作區）
 async function studyExport(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);const type=new URL(request.url).searchParams.get('type');
 try{if(type==='ai'){const {results}=await env.DB.prepare('SELECT id, task, workspace, subject, provider, model, prompt_version AS promptVersion, input_json AS input, output_text AS text, source, error, ms, at FROM ai_outputs ORDER BY id DESC LIMIT 5000').all();return json({rows:results});}
@@ -487,21 +503,27 @@ const publicItem=it=>({id:it.id,type:it.type,prompt:it.prompt,figure:it.figure||
 const sameAnswer=(v,a)=>v!==null&&v!==undefined&&v!==''&&(typeof a==='number'?Number(v)===a:String(v)===String(a));
 function scoreProbeItem(item,resp){const st=resp&&resp.steps&&typeof resp.steps==='object'?resp.steps:{},tech=resp?.tech===true;
 const confirmsOf=k=>Array.isArray(st[k]?.confirms)?st[k].confirms.filter(c=>c&&(typeof c.v==='number'||typeof c.v==='string')).slice(0,30):[];
-const finalOf=k=>{const c=confirmsOf(k);return c.length?c.at(-1).v:null;},num=k=>{const v=finalOf(k);return v===null||v===''?NaN:Number(v);};
+const finalOf=k=>{const c=confirmsOf(k);return c.length?c.at(-1).v:null;},firstOf=k=>{const c=confirmsOf(k);return c.length?c[0].v:null;};
+// 某一步在時間 t（含）以前最後確定的值：連帶錯誤要依「當時」已確定的取量判定，後來改了取量不會回頭改變先前的評分
+const tOf=c=>typeof c?.t==='number'&&Number.isFinite(c.t)?c.t:Infinity;
+const numAt=(k,t)=>{const c=confirmsOf(k).filter(x=>tOf(x)<=t);const v=c.length?c.at(-1).v:null;return v===null||v===''?NaN:Number(v);};
 // 前一步錯了：後面的答案依學生自己前一步的結果判定（只用在步驟計分，不用在最終答案的正確率）
-function carried(step,v){if(step.role!=='answer'||v===null||v==='')return false;const x=Number(v);
-if(item.type==='rectangle'){const m=item.steps.filter(s=>s.role==='measure');return m.length===2&&x===num(m[0].key)*num(m[1].key);}
-if(item.type==='square'){const m=item.steps.find(s=>s.role==='measure');return !!m&&x===num(m.key)**2;}
-if(item.type==='composite'){const p=item.steps.filter(s=>s.role==='part');return p.length>=2&&x===p.reduce((n,s)=>n+num(s.key),0);}return false;}
-const ok=(s,v)=>sameAnswer(v,s.answer)||carried(s,v);
-const steps=item.steps.map(s=>{const c=confirmsOf(s.key),first=c[0]?.v??null,fin=c.length?c.at(-1).v:null,hadError=c.some(x=>!ok(s,x.v));
-return {key:s.key,role:s.role,answered:c.length>0,firstCorrect:ok(s,first),finalCorrect:ok(s,fin),hadError,selfCorrected:hadError&&ok(s,fin),final:fin};});
-const ans=item.steps.find(s=>s.role==='answer'),unit=item.steps.find(s=>s.role==='unit'),answerCorrect=sameAnswer(finalOf(ans.key),ans.answer),unitCorrect=unit?sameAnswer(finalOf(unit.key),unit.answer):true;
+function carried(step,v,t){if(step.role!=='answer'||v===null||v==='')return false;const x=Number(v);
+if(item.type==='rectangle'){const m=item.steps.filter(s=>s.role==='measure');return m.length===2&&x===numAt(m[0].key,t)*numAt(m[1].key,t);}
+if(item.type==='square'){const m=item.steps.find(s=>s.role==='measure');return !!m&&x===numAt(m.key,t)**2;}
+if(item.type==='composite'){const p=item.steps.filter(s=>s.role==='part');return p.length>=2&&x===p.reduce((n,s)=>n+numAt(s.key,t),0);}return false;}
+const ok=(s,c)=>!!c&&(sameAnswer(c.v,s.answer)||carried(s,c.v,tOf(c)));
+const steps=item.steps.map(s=>{const c=confirmsOf(s.key),fin=c.length?c.at(-1).v:null,hadError=c.some(x=>!ok(s,x));
+return {key:s.key,role:s.role,answered:c.length>0,firstCorrect:ok(s,c[0]),finalCorrect:ok(s,c.at(-1)),hadError,selfCorrected:hadError&&ok(s,c.at(-1)),final:fin};});
+const ans=item.steps.find(s=>s.role==='answer'),unit=item.steps.find(s=>s.role==='unit'),answerCorrect=sameAnswer(finalOf(ans.key),ans.answer),unitCorrect=unit?sameAnswer(finalOf(unit.key),unit.answer):true,
+firstCorrect=!tech&&sameAnswer(firstOf(ans.key),ans.answer)&&(unit?sameAnswer(firstOf(unit.key),unit.answer):true);
 const group=role=>{const l=steps.filter(s=>s.role===role);return l.length?l.every(s=>s.finalCorrect):null;};
-return {itemId:item.id,type:item.type,tech,timedOut:resp?.timedOut===true,answered:steps.some(s=>s.answered),correct:!tech&&answerCorrect&&unitCorrect,answerCorrect,unitCorrect,measureCorrect:group('measure'),formulaCorrect:group('formula'),steps,secs:intIn(resp?.secs,0,3600)?resp.secs:null};}
+return {itemId:item.id,type:item.type,tech,timedOut:resp?.timedOut===true,answered:steps.some(s=>s.answered),correct:!tech&&answerCorrect&&unitCorrect,firstCorrect,answerCorrect,unitCorrect,measureCorrect:group('measure'),formulaCorrect:group('formula'),steps,secs:intIn(resp?.secs,0,3600)?resp.secs:null};}
 function probeSummary(items,results,minValid=8){const byId=new Map(results.map(r=>[r.itemId,r]));const all=items.map(it=>byId.get(it.id)||{...scoreProbeItem(it,{timedOut:true}),missing:true});
 const valid=all.filter(r=>!r.tech),steps=valid.flatMap(r=>r.steps),withErr=steps.filter(s=>s.hadError);
-return {items:all.length,valid:valid.length,correct:valid.filter(r=>r.correct).length,firstSubmitAccuracy:valid.length?Math.round(valid.filter(r=>r.correct).length/valid.length*1000)/10:null,
+return {items:all.length,valid:valid.length,correct:valid.filter(r=>r.correct).length,firstCorrect:valid.filter(r=>r.firstCorrect).length,
+// 首次提交正確率：最終答案與單位「第一次確定」就對的題數 ÷ 有效題數；最後答對的題數另列 finalAccuracy
+firstSubmitAccuracy:valid.length?Math.round(valid.filter(r=>r.firstCorrect).length/valid.length*1000)/10:null,finalAccuracy:valid.length?Math.round(valid.filter(r=>r.correct).length/valid.length*1000)/10:null,
 scorableSteps:steps.length,independentSteps:steps.filter(s=>s.firstCorrect).length,independentStepRate:steps.length?Math.round(steps.filter(s=>s.firstCorrect).length/steps.length*1000)/10:null,
 errorSteps:withErr.length,selfCorrected:withErr.filter(s=>s.selfCorrected).length,selfCorrectionRate:withErr.length?Math.round(withErr.filter(s=>s.selfCorrected).length/withErr.length*1000)/10:null,
 timedOut:all.filter(r=>r.timedOut).length,unanswered:all.filter(r=>!r.answered).length,tech:all.length-valid.length,dataPoint:valid.length>=minValid};}
@@ -509,7 +531,7 @@ timedOut:all.filter(r=>r.timedOut).length,unanswered:all.filter(r=>!r.answered).
 // ---------- 路由 ----------
 async function probeSets(request,env,who){if(!researchRole(who))return noResearch(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);
 const {results}=await env.DB.prepare('SELECT id, kind, title, set_json FROM probe_sets ORDER BY created_at').all();
-return json({sets:results.map(r=>{let s={};try{s=JSON.parse(r.set_json);}catch{}return {id:r.id,kind:r.kind,title:r.title,forms:(s.forms||[]).length,items:(s.forms?.[0]?.items||[]).length};})});}
+return json({sets:results.map(r=>{let s={};try{s=JSON.parse(r.set_json);}catch{}return {id:r.id,kind:r.kind,title:r.title,forms:(s.forms||[]).length,items:(s.forms?.[0]?.items||[]).length,itemSecs:s.itemSecs||90,totalSecs:s.totalSecs||900};})});}
 async function studyProbeSets(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!sameOrigin(request))return json({error:'origin'},403);if(!env.DB)return json({error:'research_storage_unavailable'},503);
 const s=await readJson(request,950000);if(!validProbeSet(s))return json({error:'invalid_probe_set'},400);
 try{await env.DB.prepare('INSERT INTO probe_sets (id,kind,title,set_json,created_at) VALUES (?,?,?,?,?)').bind(setKey(s),s.kind,s.title,JSON.stringify(s),Date.now()).run();}catch{return json({error:'version_locked'},409);}return json({ok:true,id:setKey(s)});}
@@ -537,11 +559,11 @@ const {results}=await env.DB.prepare('SELECT r.id AS run, r.workspace, r.student
 
 // ---------- 第 26 版第四階段：第三年學生端（研究階段、小老師小方的支持階段、小方語句） ----------
 // 學生頁開始本節時讀這位學生的研究階段：A／維持期只做探試；B 完整網站但關閉 AI；BC 再加上小老師小方
-async function studyPhaseOf(request,env,who){if(!researchRole(who))return noResearch(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);const student=new URL(request.url).searchParams.get('student')||'';if(!STUDENT_CODE.test(student))return json({error:'invalid_input'},400);
+async function studyPhaseOf(request,env,who){if(!researchRole(who))return noResearch(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);const student=new URL(request.url).searchParams.get('student')||'';if(!STUDENT_CODE.test(student))return json({error:'invalid_input'},400);if(!ownsStudent(who,student))return notYours();
 const rules=await studyRules(env);return json({student,phase:await currentPhase(env,'student',student),teacherWait:rules.teacherWait,tutorChars:rules.tutorChars,showAdvice:rules.showAdvice});}
 const TUTOR_STAGES=['demo','guided','faded'];
 // 每一節在「目前支持階段」的正確率：示範＝點選小方下一步的正確率；陪做、撤除＝沒用到第 3 層提示、最後一步第一次就答對的題數 ÷ 完成題數
-function tutorAccuracy(rows,act,stage){const ops=opRows(rows,act).filter(r=>rowDetail(r).tutorStage===stage);
+function tutorAccuracy(rows,act,stage){const ops=rows.filter(r=>r&&r.sheet==='操作紀錄'&&(!act||r.actId===act)&&r.mode!=='probe').filter(r=>rowDetail(r).tutorStage===stage);
 if(stage==='demo'){const picks=ops.filter(r=>r.event==='小方示範選擇');return picks.length?{n:picks.length,acc:Math.round(picks.filter(r=>r.correct==='是'||r.correct===true).length/picks.length*100)}:null;}
 const done=ops.filter(r=>r.event==='整題完成');if(!done.length)return null;
 const ok=done.filter(d=>{const m=Number(rowDetail(d).maxHintLevel);if(Number.isFinite(m)&&m>=3)return false;const checks=ops.filter(r=>r.event==='步驟檢核'&&r.cycle===d.cycle);if(!checks.length)return false;const last=Math.max(...checks.map(r=>Number(r.step)||0)),first=checks.find(r=>Number(r.step)===last);return first.correct==='是'||first.correct===true;}).length;
@@ -552,7 +574,7 @@ if(up&&up.every(a=>a>=rules.stageUp))return stage==='faded'?{stage,reason:'nextA
 if(down&&down.every(a=>a<rules.stageDown)){if(stage==='demo'){const h=last(rules.handsOnN);return h&&h.every(a=>a<rules.stageDown)?{stage,reason:'handsOn'}:{stage,reason:'stay'};}return {stage:TUTOR_STAGES[TUTOR_STAGES.indexOf(stage)-1],reason:'down'};}
 return {stage,reason:'stay'};}
 async function tutorStage(request,env,who){if(!researchRole(who))return noResearch(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);
-const q=new URL(request.url).searchParams,student=q.get('student')||'',act=q.get('act')||'',no=Number(q.get('sessionNo'));if(!STUDENT_CODE.test(student)||!ACT_IDS.includes(act)||!whole(no,9999))return json({error:'invalid_input'},400);
+const q=new URL(request.url).searchParams,student=q.get('student')||'',act=q.get('act')||'',no=Number(q.get('sessionNo'));if(!STUDENT_CODE.test(student)||!ACT_IDS.includes(act)||!whole(no,9999))return json({error:'invalid_input'},400);if(!ownsStudent(who,student))return notYours();
 try{const rules=await studyRules(env),now=Date.now();let row=await env.DB.prepare('SELECT stage, since_session AS since, evaluated_through AS done FROM tutor_stages WHERE workspace = ? AND student = ? AND act = ?').bind(who.ws,student,act).first();
 // 每個核心活動都從示範階段開始
 if(!row){row={stage:'demo',since:Math.max(0,no-1),done:Math.max(0,no-1)};await env.DB.prepare('INSERT OR IGNORE INTO tutor_stages (workspace,student,act,stage,since_session,evaluated_through,updated_at) VALUES (?,?,?,?,?,?,?)').bind(who.ws,student,act,row.stage,row.since,row.done,now).run();}

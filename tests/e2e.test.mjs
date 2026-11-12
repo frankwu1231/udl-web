@@ -1273,7 +1273,13 @@ test('第 26 版第三階段：探試模式沒有提示與對錯回饋；按確�
   await sp.fill('#in_area', '99'); await sp.fill('#in_area', '12'); await sp.click('[data-ok="area"]');
   assert.equal(await sp.innerText('#done_area'), '已確定');
   await sp.click('[data-step="unit"] [data-opt="平方公分"]'); await sp.click('[data-ok="unit"]');
-  await sp.click('#submit'); await sp.waitForSelector('.cheer');
+  // 斷線：送不出去就留在這一題，答案還在，按「再送一次」才送
+  const down = r => r.abort(); await sp.route('**/api/probe/*/item', down);
+  await sp.click('#submit'); await sp.clock.fastForward(1100); await sp.clock.fastForward(2100); await sp.waitForSelector('#probeRetry');
+  assert.match(await sp.innerText('.probe'), /第 1 題/); assert.equal(await sp.inputValue('#in_area'), '12');
+  assert.match(await sp.evaluate(() => sessionStorage.getItem('area-probe-run-v26:item')), /"v":12/);
+  await sp.unroute('**/api/probe/*/item', down);
+  await sp.click('#probeRetry button'); await sp.waitForSelector('.cheer');
   assert.doesNotMatch(await sp.innerText('.cheer'), /對|錯/);
   await sp.clock.fastForward(1500); await sp.waitForFunction(() => /第 2 題/.test(document.querySelector('.probe')?.innerText || ''));
   // 第 2 題：只填不確定，90 秒到了自動送出
@@ -1322,4 +1328,49 @@ test('第 26 版第四階段：BC 階段有小老師小方（示範階段先點�
   await p.page.waitForSelector('#researchPhaseOnly[open]');
   assert.match(await p.text('#researchPhaseOnly'), /只做小測驗/);
   assert.deepEqual(p.errors, []);
+});
+
+test('第 26 版：平板與手機寬度下，小老師小方不擋按鈕、按鈕夠大、沒有橫向捲動', { skip: skip || !distReady }, async () => {
+  const shots = process.env.LAYOUT_SHOTS || '';
+  const overlap = (a, b) => a && b && a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  for (const [name, viewport, num] of [['tablet', { width: 820, height: 1180 }, '07'], ['phone', { width: 390, height: 844 }, '08']]) {
+    const p = await student('rectangle', { buddyVoice: false, ai: true, buddy: true, __research: { url: '', key: '', teachers: 4, students: 10, server: true } }, viewport);
+    await p.page.evaluate(async n => { await fetch('/api/study/phases', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'student', participant: 'T04-S' + n, phase: 'BC' }) }); }, num);
+    await pickWho(p.page, { teacher: 'T04', num });
+    await p.page.waitForFunction(() => /小老師小方/.test(document.querySelector('#tutor')?.innerText || ''));
+    await p.start(); await p.page.waitForSelector('#tutorBubble [data-tutor]');
+    const m = await p.page.evaluate(() => {
+      const box = el => { if (!el || !el.offsetParent) return null; const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
+      const tutor = box(document.querySelector('#tutor .tutor-face')), bubble = box(document.querySelector('#tutorBubble'));
+      const targets = [...document.querySelectorAll('#check, #next, [data-demo], .teacher-prompts button, #researchBar button')].filter(b => b.offsetParent).map(b => ({ id: b.id || b.dataset.demo || b.dataset.tp || b.innerText.slice(0, 8), ...box(b) }));
+      const small = [...document.querySelectorAll('#tutorBubble button, .teacher-prompts button, [data-demo], #check')].filter(b => b.offsetParent && b.getBoundingClientRect().height < 40).map(b => b.innerText.slice(0, 10));
+      return { tutor, bubble, targets, small, scroll: document.documentElement.scrollWidth - innerWidth };
+    });
+    if (shots) await p.page.screenshot({ path: `${shots}/v26-${name}-bc.png`, fullPage: false });
+    assert.ok(m.scroll <= 1, `${name}：沒有橫向捲動（多了 ${m.scroll}px）`);
+    assert.deepEqual(m.small, [], `${name}：按鈕高度至少 40px`);
+    for (const t of m.targets) { assert.ok(!overlap(m.tutor, t), `${name}：小方的頭像擋到 ${t.id}`); }
+    // 捲到「看老師做」按鈕時，小方的對話框不能蓋住它
+    await p.page.$eval('[data-demo]', b => b.scrollIntoView({ block: 'center' }));
+    const demo = await p.page.$eval('[data-demo]', b => { const r = b.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
+    const bub = await p.page.$eval('#tutorBubble', b => { const r = b.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
+    assert.ok(!overlap(bub, demo), `${name}：小方的對話框蓋住「看老師做」`);
+    // 點小方的頭像可以收起對話框，再點一次打開
+    await p.page.click('#tutorFace'); assert.equal(await p.page.$eval('#tutorBubble', b => b.hidden), true);
+    await p.page.click('#tutorFace'); assert.equal(await p.page.$eval('#tutorBubble', b => b.hidden), false);
+    assert.deepEqual(p.errors, []);
+    // 小測驗
+    const sp = await p.page.context().newPage();
+    await sp.goto(base + '/study.html'); await sp.waitForSelector('#probeFile');
+    await sp.setInputFiles('#probeFile', fileURLToPath(new URL('../scenarios/demo-probe.json', import.meta.url)));
+    await sp.waitForFunction(() => /已匯入 demoProbe@1|匯入過/.test(document.querySelector('#probeMsg')?.textContent || ''));
+    await sp.addInitScript(n => sessionStorage.setItem('area-research-who-v22', JSON.stringify({ teacher: 'T04', student: 'T04-S' + n, sessionNo: 1, sessionId: 'x' })), num);
+    await sp.goto(base + '/probe.html'); await sp.waitForSelector('#probeStart'); await sp.click('#probeStart'); await sp.waitForSelector('[data-step]');
+    const pm = await sp.evaluate(() => ({ scroll: document.documentElement.scrollWidth - innerWidth, small: [...document.querySelectorAll('.probe button')].filter(b => b.offsetParent && b.getBoundingClientRect().height < 40).map(b => b.innerText.slice(0, 10)) }));
+    if (shots) await sp.screenshot({ path: `${shots}/v26-${name}-probe.png`, fullPage: true });
+    assert.ok(pm.scroll <= 1, `${name}：小測驗沒有橫向捲動（多了 ${pm.scroll}px）`);
+    assert.deepEqual(pm.small, [], `${name}：小測驗按鈕高度至少 40px`);
+    await sp.click('#stopBtn').catch(() => {});
+    await p.page.context().close();
+  }
 });

@@ -21,8 +21,10 @@
   function mount() {
     if (root) return;
     root = document.createElement('aside'); root.id = 'tutor'; root.className = 'tutor'; root.setAttribute('aria-label', '小老師小方');
-    root.innerHTML = `<div class="tutor-bubble" id="tutorBubble" role="status" aria-live="polite" hidden></div><div class="tutor-face" aria-hidden="true">🧑‍🏫</div><p class="tutor-stage" id="tutorStage"></p>`;
+    root.innerHTML = `<div class="tutor-bubble" id="tutorBubble" role="status" aria-live="polite" hidden></div><button type="button" class="tutor-face" id="tutorFace" aria-label="收起或打開小方的話" aria-expanded="false">🧑‍🏫</button><p class="tutor-stage" id="tutorStage"></p>`;
     document.body.append(root);
+    // 點小方的頭像：收起或打開對話框（手機上對話框會蓋住上面的按鈕時，老師可以先收起來）
+    root.querySelector('#tutorFace').onclick = () => { const box = root.querySelector('#tutorBubble'); if (!box.innerHTML) return; box.hidden = !box.hidden; root.querySelector('#tutorFace').setAttribute('aria-expanded', String(!box.hidden)); };
   }
   function unmount() { root?.remove(); root = null; }
   function talk(text) {
@@ -33,7 +35,7 @@
   function say(text, { buttons = [], pick = null, ttl = 6000 } = {}) {
     mount(); const box = root.querySelector('#tutorBubble');
     box.innerHTML = `<p>${esc(text)}</p>${buttons.length ? `<div class="tutor-actions">${buttons.map(([t], i) => `<button type="button" data-tutor="${i}">${esc(t)}</button>`).join('')}</div>` : ''}`;
-    box.hidden = false; clearTimeout(say.timer);
+    box.hidden = false; root.querySelector('#tutorFace').setAttribute('aria-expanded', 'true'); clearTimeout(say.timer);
     box.querySelectorAll('[data-tutor]').forEach(b => b.onclick = () => { const v = buttons[Number(b.dataset.tutor)][1]; box.hidden = true; pick && pick(v); });
     if (!buttons.length && ttl) say.timer = setTimeout(() => { box.hidden = true; }, ttl);
     talk(text);

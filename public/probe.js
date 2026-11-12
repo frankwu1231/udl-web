@@ -34,9 +34,11 @@
     let sets; try { sets = (await api('/api/probe/sets')).sets; } catch { $('probe').innerHTML = '<p>讀不到題組。請確認「現場試用紀錄」有勾選存進網站資料庫。</p>'; return; }
     if (!sets.length) { $('probe').innerHTML = '<p>研究管理還沒有匯入題組。</p><p><a href="seven.html">回學生頁</a></p>'; return; }
     const kind = { probe: '探試', generalization: '類化', practice: '操作練習' };
-    $('probe').innerHTML = `<h1>小測驗（老師操作）</h1><p class="count">學生：${esc(who.student)}。開始後，提示、示範和小方都不會出現；每題 90 秒、整份 15 分鐘。</p>
+    const timeText = x => `每題 ${x.itemSecs || 90} 秒、整份 ${Math.round((x.totalSecs || 900) / 60)} 分鐘`;
+    $('probe').innerHTML = `<h1>小測驗（老師操作）</h1><p class="count">學生：${esc(who.student)}。開始後，提示、示範和小方都不會出現；${esc(timeText(sets[0]))}。</p>
       <label>題組<select id="probeSet">${sets.map(s => `<option value="${esc(s.id)}">${esc(kind[s.kind] || s.kind)}：${esc(s.title)}（${s.items} 題）</option>`).join('')}</select></label>
       <p><button type="button" id="probeStart" class="primary submit">開始小測驗</button></p><p id="probeMsg" class="count" role="alert"></p>`;
+    const note = $('probe').querySelector('.count'); $('probeSet').onchange = () => { const x = sets.find(t => t.id === $('probeSet').value); if (x) note.textContent = `學生：${who.student}。開始後，提示、示範和小方都不會出現；${timeText(x)}。`; };
     $('probeStart').onclick = async () => {
       $('probeStart').disabled = true;
       try {
@@ -99,10 +101,25 @@
     if (allLeft <= 0) submit(true, 'timeout');
     else if (itemLeft <= 0) submit(true);
   }
+  // 送出：伺服器確定收到（或回答已經收過）才換題、清掉這一題的答案；送不出去就留在這一題，讓老師按「再送一次」
+  async function send(path, body) {
+    for (let i = 0; i < 3; i++) {
+      try { await api(path, body); return true; }
+      catch (e) { if (['already_submitted', 'already_finished'].includes(e.message)) return true; if (e.status && e.status < 500 && e.status !== 429) return false; await new Promise(r => setTimeout(r, 1000 * (i + 1))); }
+    }
+    return false;
+  }
+  function failed(text, retry) {
+    const box = document.getElementById('probeRetry') || Object.assign(document.createElement('div'), { id: 'probeRetry', className: 'retry' });
+    box.setAttribute('role', 'alert');
+    box.innerHTML = `<p>${esc(text)}</p><button type="button" class="primary submit">再送一次</button>`;
+    if (!box.isConnected) $('probe').append(box);
+    box.querySelector('button').onclick = () => { box.remove(); retry(); };
+  }
   async function submit(timedOut, end) {
     if (busy) return; busy = true; clearInterval(timer);
     const body = { itemId: item.id, steps: answers, timedOut, tech, secs: Math.round((Date.now() - itemStart) / 1000) };
-    for (let i = 0; i < 3; i++) { try { await api(`/api/probe/${state.run}/item`, body); break; } catch (e) { if (e.message === 'already_submitted' || e.message === 'already_finished') break; await new Promise(r => setTimeout(r, 1000)); } }
+    if (!await send(`/api/probe/${state.run}/item`, body)) { busy = false; failed('這一題還沒送出去（網路可能斷了），答案都還在。網路好了再按「再送一次」。', () => submit(timedOut, end)); return; }
     state.index++; keep(RUN_KEY, state); try { sessionStorage.removeItem(RUN_KEY + ':item'); } catch { /* 略過 */ }
     if (end) return finish(end);
     $('probe').innerHTML = `<p class="cheer" data-say>${CHEERS[state.index % CHEERS.length]}</p>`;
@@ -110,7 +127,11 @@
   }
   async function finish(reason) {
     clearInterval(timer);
-    try { await api(`/api/probe/${state.run}/finish`, { reason }); } catch { /* 已經結束過也沒關係 */ }
+    if (!await send(`/api/probe/${state.run}/finish`, { reason })) {
+      $('probe').innerHTML = '<p class="cheer">小測驗做完了，謝謝你！</p>';
+      failed('結束的紀錄還沒送出去（網路可能斷了）。網路好了再按「再送一次」。', () => finish(reason));
+      return;
+    }
     try { sessionStorage.removeItem(RUN_KEY); sessionStorage.removeItem(RUN_KEY + ':item'); } catch { /* 略過 */ }
     $('probe').innerHTML = '<p class="cheer" data-say>小測驗做完了，謝謝你！</p><p style="text-align:center"><a class="primary submit" href="seven.html">回到學習</a></p>';
   }

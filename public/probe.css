@@ -14,3 +14,6 @@
 .probe .cheer{font-size:30px;text-align:center;padding:40px 0}
 .probe .teacher{margin-top:24px;border-top:1px dashed #ccd9ec;padding-top:8px;font-size:16px}.probe .teacher button{font-size:15px;min-height:40px}
 .probe select{font-size:18px}
+/* 送不出去時的提示：答案還在，請老師再送一次 */
+.retry { margin: 16px 0; padding: 12px 16px; border: 2px solid #c0392b; border-radius: 12px; background: #fff3f1; }
+.retry p { margin: 0 0 8px; }

@@ -1,6 +1,6 @@
 /* 第 26 版第四階段：小老師小方（BC 階段）：固定在右下角，只有對話框的按鈕可以按 */
 .tutor{position:fixed;right:16px;bottom:16px;z-index:41;display:flex;flex-direction:column;align-items:flex-end;gap:6px;max-width:min(340px,calc(100vw - 32px));pointer-events:none}
-.tutor-face{width:72px;height:72px;border-radius:50%;border:2px solid #6b3fc0;background:#fbf8ff;display:grid;place-items:center;font-size:40px;box-shadow:0 6px 18px #2a175a26}
+.tutor-face{pointer-events:auto;cursor:pointer;padding:0;width:72px;height:72px;border-radius:50%;border:2px solid #6b3fc0;background:#fbf8ff;display:grid;place-items:center;font-size:40px;box-shadow:0 6px 18px #2a175a26}
 .tutor-stage{margin:0;font-size:14px;background:#fff;border:1px solid #c9b8ef;border-radius:12px;padding:2px 10px;color:#4a2a8a}
 .tutor-bubble{pointer-events:auto;background:#fff;border:2px solid #6b3fc0;border-radius:16px;padding:12px 14px;box-shadow:0 8px 24px #2a175a2e;font-size:19px;line-height:1.6}
 .tutor-bubble p{margin:0;font-weight:600}
@@ -11,4 +11,4 @@
 body:has(.tutor) main{padding-bottom:140px}
 body:has(.tutor) .lesson-controls{padding-right:108px}
 html.contrast .tutor-bubble,html.contrast .tutor-face{border-color:#000}
-@media(max-width:640px){.tutor{right:10px;bottom:10px}.tutor-face{width:58px;height:58px;font-size:32px}.tutor-bubble{font-size:17px}}
+@media(max-width:640px){.tutor{right:10px;bottom:10px}.tutor-bubble{max-height:55vh;overflow:auto}.tutor-face{width:58px;height:58px;font-size:32px}.tutor-bubble{font-size:17px}}
