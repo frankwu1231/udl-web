@@ -50,6 +50,13 @@
       "when": 1794500002000,
       "tag": "0006_probe",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1794500003000,
+      "tag": "0007_tutor",
+      "breakpoints": true
     }
   ]
 }

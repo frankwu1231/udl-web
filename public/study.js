@@ -7,7 +7,7 @@
   const TEACHERS = Array.from({ length: 12 }, (_, i) => 'T' + String(i + 1).padStart(2, '0'));
   const today = () => new Date().toISOString().slice(0, 10);
   const time = ms => ms ? new Date(ms).toLocaleString('zh-TW') : '';
-  const RULE_TEXT = { lowAcc: '增加支持：支持下答對率低於（%）', highAcc: '減少支持／進階：支持下答對率達（%）', indep: '進階：無提示步驟比例達（%）', minItems: '有效節次：至少完成幾題', upN: '增加支持：最近連續幾節', downN: '減少支持／進階：最近連續幾節', maintainN: '維持：至少幾節有效資料', summaryChars: 'AI 摘要字數上限' };
+  const RULE_TEXT = { lowAcc: '增加支持：支持下答對率低於（%）', highAcc: '減少支持／進階：支持下答對率達（%）', indep: '進階：無提示步驟比例達（%）', minItems: '有效節次：至少完成幾題', upN: '增加支持：最近連續幾節', downN: '減少支持／進階：最近連續幾節', maintainN: '維持：至少幾節有效資料', summaryChars: 'AI 摘要字數上限', stageUp: '小老師小方：前進的正確率（%）', stageDown: '小老師小方：退回的正確率低於（%）', stageN: '小老師小方：連續幾節', handsOnN: '示範階段連續幾節偏低就提示實物操作', teacherWait: '學生停頓幾秒小方提醒（再一倍提示老師）', tutorChars: '小方語句字數上限', showAdvice: '學生頁教師工具顯示「支持增減建議」（1 顯示，0 關閉）' };
 
   async function start() {
     try { const me = await S.api('/api/session'); if (!me.authenticated) { location.href = '/'; return; } if (!me.teacher || me.test) { $('status').textContent = '這一頁只給研究人員（主持人帳號）使用。'; return; } }
@@ -122,7 +122,8 @@
   function drawExport() {
     const box = $('exportSection');
     box.innerHTML = `<h2>⬇ 研究匯出（CSV）</h2><p class="subtle">文字欄位開頭是 = + - @ 時會加上 '，避免 Excel 當成公式。只有代號，沒有姓名。</p>
-      <div class="actions"><button type="button" id="expDecisions">情境探試：每節決策</button><button type="button" id="expScenario">情境探試：每個情境的反應延遲與決策時間</button><button type="button" id="expProbes">探試：每次施測</button><button type="button" id="expProbeItems">探試：每題每步</button><button type="button" id="expAi">AI 輸出全文</button><button type="button" id="expChanges">真實學生的設定變更（所有教師）</button></div><p id="expMsg" class="msg" role="status"></p>`;
+      <div class="actions"><button type="button" id="expDecisions">情境探試：每節決策</button><button type="button" id="expScenario">情境探試：每個情境的反應延遲與決策時間</button><button type="button" id="expProbes">探試：每次施測</button><button type="button" id="expProbeItems">探試：每題每步</button><button type="button" id="expTutor">小老師小方：支持階段變更</button><button type="button" id="expAi">AI 輸出全文</button><button type="button" id="expChanges">真實學生的設定變更（所有教師）</button></div><h3>研究紀錄篩選匯出</h3><div class="study-grid"><label>學生代號（空白＝全部）<input id="evStudent" placeholder="T01-S01" maxlength="7"></label><label>研究階段<select id="evPhase"><option value="">全部</option>${['A', 'B', 'BC', 'maintain', 'baseline', 'intervention', 'followup'].map(p => `<option value="${p}">${S.PHASE[p]}</option>`).join('')}</select></label><label>從第幾節<input id="evFrom" type="number" min="1" value="1"></label><label>到第幾節<input id="evTo" type="number" min="1" placeholder="最後"></label></div>
+      <button type="button" id="expEvents">匯出篩選後的研究紀錄</button><p id="expMsg" class="msg" role="status"></p>`;
     const get = async type => { try { return (await S.api('/api/study/export?type=' + type)).rows; } catch { $('expMsg').textContent = '匯出失敗。'; return null; } };
     const consistent = r => ['increase', 'decrease', 'advance', 'maintain'].includes(r.expected) ? (r.direction === r.expected ? '是' : '否') : '不計';
     $('expDecisions').onclick = async () => {
@@ -155,6 +156,18 @@
       const yn = v => v === null || v === undefined ? '' : v ? '是' : '否';
       S.download(`probe_items_${today()}.csv`, S.toCsv([['學生', '節次', '階段', '題組', '複本', '第幾題', '題目', '題型', '答對（答案與單位）', '答案對', '單位對', '取量對', '列式對', '逾時', '技術缺測', '秒數', '步驟', '步驟角色', '有作答', '第一次就對', '最後對', '曾出現錯誤', '自行修正', '最後的答案'],
         ...rows.flatMap(r => r.result.steps.map(s => [r.student, r.sessionNo ?? '', S.PHASE[r.phase] || r.phase, r.setId, r.formId, r.idx + 1, r.itemId, r.result.type, yn(r.result.correct), yn(r.result.answerCorrect), yn(r.result.unitCorrect), yn(r.result.measureCorrect), yn(r.result.formulaCorrect), yn(r.result.timedOut), yn(r.result.tech), r.result.secs ?? '', s.key, s.role, yn(s.answered), yn(s.firstCorrect), yn(s.finalCorrect), yn(s.hadError), yn(s.selfCorrected), s.final ?? '']))]));
+    };
+    const STAGE = { demo: '示範', guided: '陪做', faded: '撤除' }, WHY = { up: '連續達標，前進', down: '連續偏低，退回', nextActivity: '撤除階段達標，可進入下一個活動', handsOn: '示範階段持續偏低，加入實物操作' };
+    $('expTutor').onclick = async () => {
+      const rows = await get('tutor'); if (!rows) return;
+      S.download(`tutor_stages_${today()}.csv`, S.toCsv([['工作區', '學生', '活動', '節次', '原階段', '新階段', '原因', '各節正確率', '時間'], ...rows.map(r => { let h = []; try { h = JSON.parse(r.detail).history || []; } catch { /* 略過 */ } return [r.workspace, r.student, r.act, r.sessionNo, STAGE[r.fromStage] || r.fromStage, STAGE[r.toStage] || r.toStage, WHY[r.reason] || r.reason, h.map(x => `第${x.no}節 ${x.acc}%`).join('、'), new Date(r.at).toISOString()]; })]));
+    };
+    $('expEvents').onclick = async () => {
+      const student = $('evStudent').value, phase = $('evPhase').value, from = Number($('evFrom').value || 1), to = Number($('evTo').value || 9999);
+      let rows; try { rows = (await S.api(`/api/study/export?type=events&student=${encodeURIComponent(student.trim().toUpperCase())}&phase=${encodeURIComponent(phase.trim())}&from=${from}&to=${to}`)).rows; } catch { $('expMsg').textContent = '匯出失敗，請檢查代號。'; return; }
+      const keys = [...new Set(rows.flatMap(e => Object.keys(e)))], obs = window.areaObs;
+      S.download(`research_events_${today()}.csv`, S.toCsv([[...keys, 'obsLabel', 'obsCandidate'], ...rows.map(e => { let o = ''; try { o = JSON.parse(e.detail || '{}').obs || ''; } catch { /* 略過 */ } return [...keys.map(k => typeof e[k] === 'object' ? JSON.stringify(e[k]) : e[k]), o && obs ? obs.label(o) : '', o && obs ? obs.candidate(o) : '']; })]));
+      $('expMsg').textContent = `已匯出 ${rows.length} 筆。`;
     };
     $('expAi').onclick = async () => {
       const rows = await get('ai'); if (!rows) return;

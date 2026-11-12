@@ -61,11 +61,11 @@
   }
 
   // 第 26 版：班級設定，再套上這位學生的個別設定（老師在「教師觀察」調整、存在網站資料庫）
-  function ownSettings() { return { ...F.settings(L()), ...(window.areaResearch?.overrides?.(type) || {}) }; }
+  function ownSettings() { return { ...F.settings(L()), ...(window.areaResearch?.overrides?.(type) || {}), ...(window.areaResearch?.phasePatch?.(type) || {}) }; }   // 第 26 版第四階段：研究階段（B、BC 關閉 AI；BC 由小老師小方取代小幫手；示範階段用老師示範模式）
   const SITE_VERSION = 'v26';
   function log(event, extra = {}) {
     const st = extra.activity && phase !== 'plan' ? (titles()[extra.activity - 1] || '') : '';
-    const r = { time: new Date().toISOString(), siteVersion: SITE_VERSION, shape: nameOf(), shapeKey: type, actId: type, stepTitle: st, cycle, activity: extra.activity ?? null, event, support: settings.support, response, method, flow: settings.flow, difficulty: settings.difficulty, mode: mode(), studyPhase, ...extra };
+    const r = { time: new Date().toISOString(), siteVersion: SITE_VERSION, shape: nameOf(), shapeKey: type, actId: type, stepTitle: st, cycle, activity: extra.activity ?? null, event, support: settings.support, response, method, flow: settings.flow, difficulty: settings.difficulty, mode: mode(), studyPhase, ...(window.areaTutor?.stage?.() ? { tutorStage: window.areaTutor.stage() } : {}), ...extra };
     window.areaResearch?.record(r);   // 第 22 版：現場試用時加上代號並上傳到試算表
     records.push(r);
     saveRecords();
@@ -107,14 +107,14 @@
     if (carry && carry.method && !methodOptions().some(o => o[0] === carry.method)) delete answers.method;
     orders.lines = F.shuffle(['A', 'B', 'C']);
     fixWorked();
-    window.areaBuddy?.newQuestion();
+    window.areaBuddy?.newQuestion(); window.areaTutor?.newQuestion();
     phase = 'plan'; render();
   }
 
   function render() {
     if (!type) mapView();
     else if (phase === 'reflect') reflect(); else if (phase === 'plan') plan(); else solve();
-    window.areaBuddy?.update();
+    window.areaBuddy?.update(); window.areaTutor?.update();
     window.areaResearch?.page();
   }
 
@@ -791,7 +791,7 @@
       else if (r.partial || (s === 3 && lineOk && r.code === 'second' && partial)) showStatus($('feedback' + s), '找到了！', true);
       else showStatus($('feedback' + s), r.msg);
     }
-    for (const s of list) if (msgs[s] && !msgs[s].partial && !msgs[s].soft && !blankStep(s, msgs[s])) window.areaBuddy?.wrong(s, tried[s]);
+    for (const s of list) if (msgs[s] && !msgs[s].partial && !msgs[s].soft && !blankStep(s, msgs[s])) { window.areaBuddy?.wrong(s, tried[s]); window.areaTutor?.wrong(s, msgs[s].obs); }
     // 第 25 版：選擇題答錯後，圖亮框，並用這一步的提示說要看哪裡，請學生先看圖再選（不鎖按鈕）
     if (mode() !== 'demo') for (const s of list) {
       if (!msgs[s] || msgs[s].partial || msgs[s].soft || blankStep(s, msgs[s])) continue;
@@ -800,7 +800,7 @@
       if (fig) { fig.classList.add('look-here'); setTimeout(() => fig.classList.remove('look-here'), 3000); }
       if (box) box.insertAdjacentHTML('beforeend', `<span class="look-note" data-read data-say>　先看圖再選：${esc(hintFor(s, 1))}</span>`);
     }
-    if (ok) { showStatus(groupBox(), phase === 'reflect' ? '單位答對了！' : '全部答對了，可以按「下一步」。', true); if (phase !== 'reflect') celebrate(); window.areaBuddy?.right(list[list.length - 1]); }
+    if (ok) { showStatus(groupBox(), phase === 'reflect' ? '單位答對了！' : '全部答對了，可以按「下一步」。', true); if (phase !== 'reflect') celebrate(); window.areaBuddy?.right(list[list.length - 1]); window.areaTutor?.right(list[list.length - 1]); }
     else if (partial) showStatus(groupBox(), '找到高了！再填它的長度。', true);
     else if (list.every(s => checked.has(s) || msgs[s]?.soft)) showStatus(groupBox(), '快好了！照上面的說明再做一步。');
     else showStatus(groupBox(), mode() === 'probe' ? '有地方要再看一下，再試一次。' : '有地方要再看一下。看上面的提示。');
@@ -1007,6 +1007,8 @@
         if (recorder) toggleRecord();
         const badges = earned(r), secs = startedAt ? Math.round((Date.now() - startedAt) / 1000) : null;
         log('整題完成', { activity: 7, maxHintLevel: Math.max(...hintLevel), hints: r.hints, errors, goal: r.goal, goalKind: settings.goalKind, goalMet: r.watched ? false : r.met, watched: !!r.watched, selfMet: answers.selfMet || '', confidence: answers.confidence || '', firstTry: r.firstTry, steps: r.steps, secs, badges, dimensions: dims() });
+        // 第 26 版第四階段：題末對照用的快照（小方的正確作品＝這一題每一步最後的答案；學生第一次的作答從紀錄找）
+        if (window.areaTutor?.stage?.()) { const snap = titles().map((t, s) => { const first = records.find(x => x.cycle === cycle && x.actId === type && x.event === '步驟檢核' && x.activity === s + 1); return { step: s + 1, title: t, answer: first ? answerText(s) : '', first: first && !first.correct ? first.choice || '' : '' }; }); snap.cycle = cycle; window.areaTutor.done(snap); }
         carry = { cycle, reason: chosenText('reason'), method: answers.nextMethod, cause: !r.met ? answers.cause : '', badges, fadeMsg: adjustFade(!retryQ) };
         retryQ = !next;
         log('反思與下一輪調整', { activity: 7, choice: `目標：${probe ? '小測驗' : goalItem ? goalItem[1] : '做完就好'}；結果：${resultLine(r).replace('我的結果：', '')}；自己判斷：${answers.selfMet ? chosenText('selfMet') : '—'}；原因：${answers.cause ? chosenText('cause') : '—'}；幫助我的：${chosenText('reason')}；下一題：${chosenText('nextMethod')}${answers.myReflection ? '；學生說：' + answers.myReflection : ''}${voices[cycle] ? '；有錄音' : ''}`, judgment: answers.selfMet || '', reason: carry.reason, cause: answers.cause || '', studentWords: answers.myReflection || '', nextMethod: carry.method, nextAction: next ? '新題' : '重試' });
@@ -1157,6 +1159,7 @@
 
   // 依最近的表現，建議老師調整支持（只建議，不自動改）
   function fadingAdvice() {
+    if (window.areaResearch?.adviceOff?.()) return '';   // 第 26 版：研究期間由研究管理關閉「支持增減建議」，避免影響老師的判斷
     const done = records.filter(r => r.event === '整題完成' && r.shapeKey === type && r.mode !== 'demo' && r.mode !== 'probe');
     if (done.length < 2) return '<p class="advice">📌 再完成幾題後，這裡會依表現建議要增加或減少支持。</p>';
     const rate = d => d.steps ? d.firstTry / d.steps : 0;
@@ -1377,6 +1380,8 @@
 
   // ---------- 第 22 版：學習小幫手（buddy.js）只透過這些函式讀狀態、做動作 ----------
   function attachBuddy() {
+    // 第 26 版第四階段：小老師小方
+    window.areaTutor?.attach({ mode, phase: () => type ? phase : 'map', steps: () => current().filter(s => !isWorked(s)), passed: s => checked.has(s), title: s => titles()[s] || '', titles: () => titles().slice(0, P() ? P().steps.length : 7), act: () => type || '', cycle: () => cycle, log, voice: pickVoice });
     window.areaBuddy?.attach({
       settings: () => window.areaResearch && !window.areaResearch.cameraAllowed() ? { ...settings, attention: false } : settings, mode, step,
       phase: () => type ? phase : 'map',

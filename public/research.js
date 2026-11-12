@@ -13,7 +13,8 @@
   const MAX_BYTES = 30000;        // 一次最多傳多少位元組（離頁時的 keepalive 上限是 64 KB）
   const FLUSH_EVERY = 30000;
   const QUICK = [['help', '🙋 老師幫忙了'], ['wrongBuddy', '❌ 小方這次不準'], ['distracted', '😶 分心'], ['engaged', '🙂 很投入'], ['tech', '⚠️ 技術問題'], ['undetermined', '❓ 這題無法判定']];
-  const SESSIONS_KEY = 'area-research-sessions-v26';   // 沒有網站資料庫時，在這台電腦數節次
+  const SESSIONS_KEY = 'area-research-sessions-v26';
+  const TEACHER_PROMPTS = [['verbal', '🗣 口語'], ['gesture', '👉 手勢'], ['model', '🧑‍🏫 示範'], ['handsOn', '🧱 實物操作'], ['takeover', '🙋 教師接手']];   // 沒有網站資料庫時，在這台電腦數節次
   const MOODS = [['great', '😀', '很好'], ['ok', '🙂', '還好'], ['meh', '😐', '普通'], ['sad', '🙁', '不好']];
   const END_QS = [
     ['fun', '今天的數學好玩嗎？', [['yes', '😀 好玩'], ['soso', '😐 還好'], ['no', '🙁 不好玩']]],
@@ -62,7 +63,7 @@
   // ---------- 上傳佇列 ----------
   function enqueue(sheet, data) {
     if (!on()) return;
-    const hits = [], row = scrub({ rid: rid(), sheet, time: local(Date.now()), version: VERSION, sessionId: who.sessionId, teacher: who.teacher, student: who.student, sessionNo: who.sessionNo ?? '', classCode: classCode || '', ...data }, hits);
+    const hits = [], row = scrub({ rid: rid(), sheet, time: local(Date.now()), version: VERSION, sessionId: who.sessionId, teacher: who.teacher, student: who.student, sessionNo: who.sessionNo ?? '', classCode: classCode || '', phase: who.phase || '', ...data }, hits);
     if (hits.length) toast('紀錄裡有學生姓名，已改成「○○」再上傳。請只寫代號。');
     push(row);
   }
@@ -137,6 +138,7 @@
   function record(r) {
     if (!on()) return;
     r.teacherId = who.teacher; r.studentId = who.student; r.sessionId = who.sessionId;
+    if (who.phase) r.studyPhase = who.phase;   // 第 26 版第四階段：研究階段以研究管理設定的為準
     const base = { activity: r.shape || '', actId: r.actId || '', cycle: r.cycle ?? '', step: r.activity ?? '', stepTitle: r.stepTitle || '', event: r.event, mode: r.mode || '', studyPhase: r.studyPhase || '' };
     if (r.event === '教師觀察' || r.event === '教師即時紀錄') enqueue('教師觀察', { ...base, kind: r.event, tag: r.tagText || '', phase: r.phase || '', level: r.level || '', buddyReact: r.buddyReact || '', note: r.evidence || r.note || '' });
     if (r.event === '學生心情' || r.event === '學生回饋') enqueue('學生回饋', { ...base, kind: r.event, mood: r.moodText || '', fun: r.funText || '', buddyHelp: r.buddyHelpText || '', camFeel: r.camFeelText || '' });
@@ -182,6 +184,7 @@
     if (!el) { el = document.createElement('section'); el.id = 'researchBar'; el.className = 'research-bar'; el.setAttribute('aria-label', '現場試用紀錄（老師用）'); (document.querySelector('nav.aids') || document.body.firstChild).after(el); }
     el.innerHTML = `<p class="who"><b>📋 ${esc(who.student)}</b>${who.sessionNo ? `<span class="session-no">第 ${who.sessionNo} 節</span>` : ''}<span>${esc(who.device)}・${esc(who.group)}${who.camera ? '・📷 可用鏡頭' : ''}</span></p>
       <div class="quick">${QUICK.map(([k, t]) => `<button type="button" data-quick="${k}">${t}</button>`).join('')}</div>
+      ${['B', 'BC'].includes(who.phase) ? `<div class="teacher-prompts"><span id="researchCue" class="cue" hidden>⏱ 學生停了一陣子</span><span>教師提示：</span>${TEACHER_PROMPTS.map(([k, t]) => `<button type="button" data-tp="${k}">${t}</button>`).join('')}</div>` : ''}
       <div class="ops"><span id="researchCount" class="count"></span>${serverOn() ? '<button type="button" id="researchProbe">🧪 小測驗</button>' : ''}<button type="button" id="researchFlush">立即上傳</button><button type="button" id="researchNext">換學生</button><button type="button" id="researchClass">📝 這節課結束</button></div>`;
     el.querySelectorAll('[data-quick]').forEach(b => b.onclick = () => {
       const k = b.dataset.quick, t = QUICK.find(x => x[0] === k)[1];
@@ -190,6 +193,14 @@
       toast('已記下：' + t);
     });
     $('researchFlush').onclick = () => { paintCount('上傳中……'); flush(); };
+    // 第 26 版第四階段：教師提示（層級）、實物操作、教師接手的快速紀錄
+    el.querySelectorAll('[data-tp]').forEach(b => b.onclick = () => {
+      const k = b.dataset.tp, t = TEACHER_PROMPTS.find(x => x[0] === k)[1];
+      if (k === 'handsOn') api.log('實物操作', { activity: api.step(), by: '老師' });
+      else if (k === 'takeover') api.log('教師接手', { activity: api.step() });
+      else api.log('教師提示', { activity: api.step(), level: k, levelText: t.replace(/^\S+\s/, '') });
+      cueTeacher(false); toast('已記下：' + t);
+    });
     // 第 26 版：每節開始時的探試（另一頁，沒有提示與小方；做完回到這裡）
     if ($('researchProbe')) $('researchProbe').onclick = async () => { await flush(); location.href = 'probe.html'; };
     $('researchNext').onclick = () => endStudent();
@@ -232,6 +243,43 @@
     } catch { return { error: 'offline' }; }
   }
 
+  // ---------- 第 26 版第四階段：研究階段與小老師小方的支持階段 ----------
+  async function loadPhase(student) {
+    if (!serverOn()) return { phase: '' };
+    try { const res = await fetch('/api/study/phase?student=' + encodeURIComponent(student), { cache: 'no-store' }); const out = await res.json(); return res.ok ? out : { phase: '' }; } catch { return { phase: '' }; }
+  }
+  const tutorLoading = new Set();
+  async function ensureTutor(act) {
+    if (!on() || who.phase !== 'BC' || !act || (who.tutor && who.tutor[act]) || tutorLoading.has(act) || !who.sessionNo) return;
+    tutorLoading.add(act);
+    try {
+      const res = await fetch(`/api/tutor/stage?student=${encodeURIComponent(who.student)}&act=${encodeURIComponent(act)}&sessionNo=${who.sessionNo}`, { cache: 'no-store' }), out = await res.json();
+      if (!res.ok || !on()) return;
+      who.tutor = { ...(who.tutor || {}), [act]: out.stage }; keep(sessionStorage, WHO_KEY, who);
+      if (out.nextActivity) { api.log('支持階段提示', { activity: api.step(), kind: '進入下一個活動' }); toast('撤除階段已連續達標：可以進入下一個核心活動（老師決定）。'); }
+      if (out.handsOn) { api.log('支持階段提示', { activity: api.step(), kind: '加入實物操作' }); toast('示範階段連續多節低於標準：請依固定程序加入實物操作，並按「🧱 實物操作」記錄。'); }
+      api.refresh?.(); api.changed();
+    } catch { /* 下次再試 */ } finally { tutorLoading.delete(act); }
+  }
+  // B、BC：關閉「問 AI」與 AI 反思；BC：小老師小方取代小幫手，示範階段用老師示範模式
+  function phasePatch(act) {
+    if (!on() || !['B', 'BC'].includes(who.phase)) return null;
+    const patch = { ai: false };
+    if (who.phase === 'BC') { patch.buddy = false; if (who.tutor && who.tutor[act] === 'demo') patch.mode = 'demo'; }
+    return patch;
+  }
+  function cueTeacher(show) { const c = $('researchCue'); if (c) c.hidden = !show; }
+  // A 基線期、維持期：網站只做探試
+  function phaseGate() {
+    if (!on() || !['A', 'maintain'].includes(who.phase)) return;
+    const d = dialog('researchPhaseOnly', `<h2>這個階段只做小測驗</h2><p>${esc(who.student)} 目前在「${who.phase === 'A' ? 'A 基線期' : '維持期'}」，網站只做探試，不進行教學。</p>
+      <div class="actions"><button type="button" id="researchGoProbe" class="primary">開始小測驗</button><button type="button" id="researchGateNext">換學生</button><button type="button" id="researchGateEnd">這節課結束</button></div>`);
+    d.oncancel = e => e.preventDefault();
+    $('researchGoProbe').onclick = async () => { await flush(); location.href = 'probe.html'; };
+    $('researchGateNext').onclick = () => { d.close(); endStudent(); };
+    $('researchGateEnd').onclick = () => { d.close(); classEnd(); };
+  }
+
   // 上課前：老師點號碼選代號（不用打字），也可以選「老師自己試用」不記錄
   function chooseWho() {
     const t = Math.max(1, Math.min(12, cfg.teachers || 4)), n = Math.max(1, Math.min(20, cfg.students || 6));
@@ -259,9 +307,11 @@
       $('researchStart').disabled = true;
       who.sessionNo = await startSession(student, st.device);   // 第 26 版：「開始本節」，這位學生的第幾節
       who.overrides = await loadOverrides(student);
+      const ph = await loadPhase(student); who.phase = ph.phase || ''; who.teacherWait = ph.teacherWait || 10; who.adviceOff = ph.showAdvice === 0; who.tutor = {};
       keep(sessionStorage, WHO_KEY, who); keep(sessionStorage, LAST_KEY, { teacher: who.teacher, device: who.device, group: who.group });
       enqueue('場次', { kind: '開始', device: who.device, group: who.group, cameraConsent: who.camera ? '是' : '否', hasCamera: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia), browser: navigator.userAgent.slice(0, 200), screen: `${screen.width}x${screen.height}` });
       d.close(); lastActivity = ''; window.areaBuddy?.newStudent(); bar(); api.reset?.(); api.refresh?.(); settingsRow(); api.changed(); flush();
+      phaseGate(); ensureTutor(api.activity().id);
     };
     $('researchSkip').onclick = () => { saveNames(); who = { off: true, scope: scopeKey }; keep(sessionStorage, WHO_KEY, who); d.close(); window.areaBuddy?.newStudent(); bar(); api.changed(); };
   }
@@ -340,11 +390,11 @@
       const scope = (cfg.url || 'server') + '|' + (a.scope || '');
       if (who && who.scope !== scope) { who = null; try { sessionStorage.removeItem(WHO_KEY); } catch { /* 略過 */ } }
       scopeKey = scope;
-      if (!who) chooseWho(); else { bar(); settingsRow(); if (serverOn()) loadOverrides(who.student).then(o => { if (who && !who.off) { who.overrides = o; keep(sessionStorage, WHO_KEY, who); api.refresh?.(); api.changed(); } }); }
+      if (!who) chooseWho(); else { bar(); settingsRow(); phaseGate(); ensureTutor(a.activity().id); if (serverOn()) loadOverrides(who.student).then(o => { if (who && !who.off) { who.overrides = o; keep(sessionStorage, WHO_KEY, who); api.refresh?.(); api.changed(); } }); }
       flush();
     },
     record,
-    page() { if (on()) settingsRow(); },
+    page() { if (on()) { settingsRow(); ensureTutor(api.activity().id); } },
     cameraAllowed: () => !cfg || !!(who && (who.off || who.camera)),   // 試用時：選好代號、家長同意才開鏡頭
     active: on,
     // 第 26 版：學生個別設定、節次、存到網站資料庫
@@ -353,6 +403,9 @@
     sessionNo: () => (on() ? who.sessionNo ?? null : null),
     student: () => (on() ? who.student : ''),
     saveSettings,
+    // 第 26 版第四階段
+    phase: () => (on() ? who.phase || '' : ''), teacherWait: () => (on() ? who.teacherWait || 10 : 10),
+    tutorStage: act => (on() && who.tutor ? who.tutor[act] || '' : ''), phasePatch, cueTeacher, adviceOff: () => on() && !!who.adviceOff,
     // 測試與教師說明用
     flush, pending: () => queue().length, VERSION
   };

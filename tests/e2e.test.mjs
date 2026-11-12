@@ -1288,3 +1288,37 @@ test('第 26 版第三階段：探試模式沒有提示與對錯回饋；按確�
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('第 26 版第四階段：BC 階段有小老師小方（示範階段先點選小方下一步）、關閉問 AI 與小幫手、教師提示按鈕；A 階段只做小測驗', { skip: skip || !distReady }, async () => {
+  const p = await student('rectangle', { buddyVoice: false, ai: true, buddy: true, __research: { url: '', key: '', teachers: 4, students: 6, server: true } });
+  await p.page.evaluate(async () => {
+    for (const [participant, phase] of [['T04-S01', 'BC'], ['T04-S02', 'A']]) await fetch('/api/study/phases', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'student', participant, phase }) });
+  });
+  await pickWho(p.page, { teacher: 'T04', num: '01' });
+  await p.page.waitForFunction(() => /小老師小方・示範/.test(document.querySelector('#tutor')?.innerText || ''));
+  assert.equal(await p.page.evaluate(() => window.areaResearch.phasePatch('rectangle').mode), 'demo');
+  await p.start();
+  // 示範階段：「看老師做」先鎖住，學生點選小方下一步要做什麼
+  await p.page.waitForSelector('#tutorBubble [data-tutor]');
+  assert.equal(await p.page.$eval('[data-demo]', b => b.disabled), true);
+  const title = await p.page.evaluate(() => { const b = document.querySelector('[data-demo]'); return document.querySelector(`.activity[data-stage="${b.dataset.demo}"] h2, .activity[data-stage="${b.dataset.demo}"] h3`)?.innerText || ''; });
+  const options = await p.page.$$eval('#tutorBubble [data-tutor]', bs => bs.map(b => b.innerText));
+  assert.ok(options.length >= 2);
+  const right = options.find(o => title.includes(o)) || options[0];
+  await p.page.click(`#tutorBubble [data-tutor]:text-is("${right}")`);
+  assert.equal(await p.page.$eval('[data-demo]', b => b.disabled), false);
+  assert.equal(await p.page.$('#buddy'), null, 'BC 階段小方（小幫手）由小老師小方取代');
+  assert.equal(await p.page.$('[id^="aiHint"]'), null, '關閉問 AI');
+  await p.page.click('[data-tp="gesture"]');
+  await p.page.click('#researchFlush'); await p.page.waitForTimeout(500);
+  const ev = await p.page.evaluate(async () => (await (await fetch('/api/teacher/research?student=T04-S01')).json()).events);
+  const pick = ev.find(r => r.event === '小方示範選擇');
+  assert.ok(pick, '記下學生點選小方下一步'); assert.equal(pick.phase, 'BC'); assert.equal(JSON.parse(pick.detail).tutorStage, 'demo');
+  assert.ok(ev.some(r => r.event === '教師提示' && JSON.parse(r.detail).level === 'gesture'));
+  // 換到 A 階段的學生：只做小測驗
+  await p.page.click('#researchNext'); await p.page.click('#researchEndSkip');
+  await pickWho(p.page, { teacher: 'T04', num: '02' });
+  await p.page.waitForSelector('#researchPhaseOnly[open]');
+  assert.match(await p.text('#researchPhaseOnly'), /只做小測驗/);
+  assert.deepEqual(p.errors, []);
+});

@@ -451,3 +451,37 @@ test('第 26 版第三階段：探試題組匯入鎖版、學生拿不到答案�
   // 同一位學生第二次：換下一份複本
   assert.equal((await call('/api/probe/start',{method:'POST',cookie:t8,body:{student:'T08-S01',set:'demoProbe@1'}})).data.formId,'A');
 });
+
+test('第 26 版第四階段：學生研究階段、小老師小方支持階段（前進、退回、實物操作提示）、小方語句不能有數字',async()=>{
+  const login=async teacher=>(await call('/api/test-login',{method:'POST',body:{username:'test',password:'test-pass',teacher}})).headers.get('set-cookie').split(';')[0];
+  const t10=await login('T10');
+  await call('/api/study/phases',{method:'POST',user:owner,body:{kind:'student',participant:'T10-S01',phase:'BC'}});
+  assert.deepEqual((await call('/api/study/phase?student=T10-S01',{cookie:t10})).data,{student:'T10-S01',phase:'BC',teacherWait:10,tutorChars:25,showAdvice:1});
+  let n=0;const rows=(no,act,stage,list)=>list.map(([event,extra])=>({rid:`tu-${++n}-x`,sheet:'操作紀錄',time:`2026-11-0${no} 10:00:${String(n%60).padStart(2,'0')}`,student:'T10-S01',sessionNo:no,actId:act,mode:'self',detail:JSON.stringify({tutorStage:stage,...extra.detail}),event,...extra.top}));
+  const save=async r=>assert.equal((await call('/api/records',{method:'POST',cookie:t10,body:{rows:r}})).status,200);
+  const stage=async(act,no)=>(await call(`/api/tutor/stage?student=T10-S01&act=${act}&sessionNo=${no}`,{cookie:t10})).data;
+  assert.equal((await stage('rectangle',1)).stage,'demo','每個核心活動從示範開始');
+  const pick=ok=>['小方示範選擇',{top:{correct:ok?'是':'否'},detail:{}}];
+  for(const no of [1,2])await save(rows(no,'rectangle','demo',[pick(true),pick(true),pick(true),pick(true),pick(false)]));
+  assert.equal((await stage('rectangle',3)).stage,'guided','連續兩節 80% 進入陪做');
+  assert.equal((await stage('rectangle',3)).stage,'guided','同一節再問一次不會重算');
+  const q=(cycle,maxHint,firstOk)=>[['步驟檢核',{top:{correct:firstOk?'是':'否',cycle,step:7},detail:{}}],['整題完成',{top:{cycle,step:7},detail:{maxHintLevel:maxHint}}]];
+  for(const no of [3,4])await save(rows(no,'rectangle','guided',[...q(1,3,true),...q(2,1,false),...q(3,0,true)]));   // 只有 1/3 算對
+  assert.equal((await stage('rectangle',5)).stage,'demo','連續兩節低於 50% 退回示範');
+  // 示範階段連續 5 節低於 50%：提示加入實物操作
+  for(const no of [1,2,3,4,5])await save(rows(no,'square','demo',[pick(false),pick(false),pick(true)]));
+  await stage('square',1);const hands=await stage('square',6);assert.equal(hands.stage,'demo');assert.equal(hands.handsOn,true);
+  const ch=(await call('/api/study/export?type=tutor',{user:owner})).data.rows;
+  assert.deepEqual(ch.map(c=>[c.act,c.fromStage,c.toStage,c.reason]),[['rectangle','demo','guided','up'],['rectangle','guided','demo','down'],['square','demo','demo','handsOn']]);
+  // 小方語句：AI 有數字就用固定語句
+  const originalFetch=globalThis.fetch;let reply='我數到12格。';
+  globalThis.fetch=async()=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({message:reply})}}]}));
+  try{
+    const body={event:'wrong',stage:'guided',act:'rectangle',stepTitle:'數一數',obs:'countShort'};
+    const a=await call('/api/tutor/line',{method:'POST',cookie:t10,body});assert.equal(a.data.source,'fallback');assert.equal(a.data.text,'再看一次圖，慢慢想。');
+    reply='再一格一格點過去看看。';assert.equal((await call('/api/tutor/line',{method:'POST',cookie:t10,body})).data.text,reply);
+    assert.equal((await call('/api/tutor/line',{method:'POST',cookie:t10,body:{...body,event:'answer'}})).status,400);
+  }finally{globalThis.fetch=originalFetch;}
+  // 第三年：教師端 AI 摘要關閉
+  assert.equal((await call('/api/teacher/summary',{method:'POST',cookie:t10,body:{student:'T10-S01',act:'rectangle',upTo:4}})).data.error,'summary_off');
+});
