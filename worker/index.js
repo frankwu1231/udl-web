@@ -140,7 +140,7 @@ async function teacherGet(request,env,who){const role=who.role;if(role==='none')
 async function teacherSave(request,env,who){const role=who.role;if(role==='none')return json({error:'signin_required'},401);if(role==='student')return json({error:'forbidden'},403);if(!env.DB)return json({error:'lesson_storage_unavailable'},503);const origin=request.headers.get('origin');if(origin&&origin!==new URL(request.url).origin)return json({error:'origin'},403);if(Number(request.headers.get('content-length')||0)>60000)return json({error:'too_large'},413);let body;try{body=await request.json();}catch{return json({error:'invalid_json'},400);}if(!body||!['draft','published'].includes(body.kind)||!validLesson(body.config,true))return json({error:'invalid_input'},400);const config=JSON.stringify(body.config);if(config.length>60000)return json({error:'too_large'},413);const kind=lessonKind(who.ws,body.kind);
 try{const existing=await lessonRow(env,kind),revision=(existing?.revision||0)+1;await env.DB.prepare('INSERT INTO lesson_documents (kind,config_json,revision,updated_at) VALUES (?,?,?,?) ON CONFLICT(kind) DO UPDATE SET config_json=excluded.config_json,revision=excluded.revision,updated_at=excluded.updated_at').bind(kind,config,revision,new Date().toISOString()).run();return json({ok:true,revision});}catch{return json({error:'lesson_storage_unavailable'},503);}}
 const publicAssets=new Set(['/portal.html','/portal.css','/portal.js','/shapes.css','/favicon.svg']);
-const studentAssets=new Set(['/seven.html','/seven.js','/seven.css','/seven-geometry.js','/learning-flow.js','/lesson-content.js','/zhuyin.js','/hands-on.html','/hands-on.pdf','/step-demo.js','/step-demo.css','/seven-guide.html','/act-core.js','/act-unit12.js','/act-unit3.js','/act-unit45.js','/act.css','/buddy.js','/buddy.css','/research.js','/research.css','/observations.js']);
+const studentAssets=new Set(['/probe.html','/probe.js','/probe.css','/seven.html','/seven.js','/seven.css','/seven-geometry.js','/learning-flow.js','/lesson-content.js','/zhuyin.js','/hands-on.html','/hands-on.pdf','/step-demo.js','/step-demo.css','/seven-guide.html','/act-core.js','/act-unit12.js','/act-unit3.js','/act-unit45.js','/act.css','/buddy.js','/buddy.css','/research.js','/research.css','/observations.js']);
 const teacherPages=new Set(['/teacher.html','/teacher.js','/teacher.css','/qrcode.js','/observations.js','/scenario.html','/scenario.js','/study.css','/study-common.js']);
 export default {async fetch(request,env){const url=new URL(request.url);if(url.pathname==='/api/test-login')return request.method==='POST'?testLogin(request,env):json({error:'method'},405);
 if(url.pathname==='/api/test-logout'){if(request.method!=='POST')return json({error:'method'},405);const origin=request.headers.get('origin');if(origin&&origin!==url.origin)return json({error:'origin'},403);return jsonCookie({ok:true},200,sessionCookie('',0));}
@@ -166,6 +166,9 @@ if(url.pathname==='/api/study/export')return request.method==='GET'?studyExport(
 if(url.pathname==='/api/study/scenarios')return request.method==='GET'||request.method==='POST'?studyScenarios(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/study/assignments')return request.method==='POST'?studyAssign(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/scenario'||url.pathname.startsWith('/api/scenario/'))return scenarioRoutes(request,env,who,url.pathname.slice(14));
+if(url.pathname==='/api/probe/sets')return request.method==='GET'?probeSets(request,env,who):json({error:'method'},405);
+if(url.pathname.startsWith('/api/probe/'))return probeRoutes(request,env,who,url.pathname.slice(11));
+if(url.pathname==='/api/study/probe-sets')return request.method==='POST'?studyProbeSets(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/teacher/research')return request.method==='GET'?researchOverview(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/teacher/lessons')return request.method==='GET'?teacherGet(request,env,who):request.method==='POST'?teacherSave(request,env,who):json({error:'method'},405);
 if(request.method!=='GET'&&request.method!=='HEAD')return new Response('Method not allowed',{status:405});let path=url.pathname;if(path==='/')path='/portal.html';else if(!path.includes('.'))path+='.html';if(!publicAssets.has(path)){if(role==='none')return path.endsWith('.html')?Response.redirect(url.origin+'/',302):new Response('Sign in required',{status:401});if(role==='student'&&!studentAssets.has(path))return path.endsWith('.html')?Response.redirect(url.origin+'/seven.html',302):new Response('Forbidden',{status:403});if(role==='test'&&!studentAssets.has(path)&&!teacherPages.has(path))return new Response('Forbidden',{status:403});}return asset(path);}};
@@ -391,6 +394,7 @@ return json({student,act,rules,timeline});}catch{return json({error:'research_st
 async function studyExport(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);const type=new URL(request.url).searchParams.get('type');
 try{if(type==='ai'){const {results}=await env.DB.prepare('SELECT id, task, workspace, subject, provider, model, prompt_version AS promptVersion, input_json AS input, output_text AS text, source, error, ms, at FROM ai_outputs ORDER BY id DESC LIMIT 5000').all();return json({rows:results});}
 if(type==='changes'){const {results}=await env.DB.prepare('SELECT workspace, student, act, session_no AS sessionNo, field, before_value AS before, after_value AS after, direction, reason, note, actor, at FROM setting_changes ORDER BY at, id LIMIT 20000').all();return json({rows:results});}
+if(type==='probes'||type==='probeItems')return json({rows:await probeExport(env,type)});
 if(type==='decisions'){const {results}=await env.DB.prepare('SELECT d.assignment_id AS assignment, a.teacher, a.probe, a.phase, a.set_id AS setId, d.scenario_id AS scenario, d.session_no AS sessionNo, d.decision, d.changes_json AS changes, d.direction, d.expected, d.reason, d.note, d.ai_on AS aiOn, d.ai_used AS aiUsed, d.raw_viewed AS rawViewed, d.shown_at AS shownAt, d.saved_at AS savedAt, d.active_ms AS activeMs, d.total_ms AS totalMs, d.ai_wait_ms AS aiWaitMs FROM scenario_decisions d JOIN scenario_assignments a ON a.id = d.assignment_id ORDER BY a.teacher, d.assignment_id, d.scenario_id, d.session_no').all();return json({rows:results});}
 return json({error:'invalid_input'},400);}catch{return json({error:'research_storage_unavailable'},503);}}
 
@@ -447,3 +451,77 @@ const note=typeof b.note==='string'?b.note.trim().slice(0,60):'';
 try{await env.DB.prepare('INSERT INTO scenario_decisions (assignment_id,scenario_id,session_no,decision,changes_json,direction,expected,reason,note,ai_on,ai_used,raw_viewed,shown_at,saved_at,active_ms,total_ms,ai_wait_ms) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').bind(a.id,c.id,k,b.decision,JSON.stringify(changes),direction,expected,b.reason,note,aiOn?1:0,b.aiUsed===true?1:0,b.rawViewed===true?1:0,b.shownAt,Date.now(),b.activeMs,b.totalMs,b.aiWaitMs).run();}catch{return json({error:'wrong_session'},409);}
 return json({ok:true,direction});}
 return json({error:'not_found'},404);}catch{return json({error:'research_storage_unavailable'},503);}}
+
+// ---------- 第 26 版第三階段：探試模式 ----------
+// 題組由研究團隊編製（每份 10 題：數格子 2、長方形 3、正方形 2、知道面積找邊長 1、複合圖形 2），匯入後鎖定版本。
+// 學生端只拿到題目，拿不到答案；每題送出後由伺服器依固定規則計分，學生只看到和對錯無關的鼓勵。
+const PROBE_TYPES={count:2,rectangle:3,square:2,inverse:1,composite:2},PROBE_KINDS=new Set(['probe','generalization','practice']),STEP_ROLES=new Set(['measure','formula','part','answer','unit']);
+const KEY=/^[a-z][a-zA-Z0-9]{0,11}$/,intIn=(v,a,b)=>Number.isInteger(v)&&v>=a&&v<=b;
+function validFigure(f){if(f===undefined)return true;if(!f||typeof f!=='object'||Array.isArray(f)||!intIn(f.cols,1,20)||!intIn(f.rows,1,20)||typeof (f.grid??false)!=='boolean')return false;
+if(!Array.isArray(f.rects||[])||(f.rects||[]).length>6||!(f.rects||[]).every(r=>Array.isArray(r)&&r.length===4&&r.every(n=>intIn(n,0,20))))return false;
+return Array.isArray(f.labels||[])&&(f.labels||[]).length<=8&&(f.labels||[]).every(l=>l&&typeof l.x==='number'&&typeof l.y==='number'&&Math.abs(l.x)<=21&&Math.abs(l.y)<=21&&safeText(l.text,12));}
+function validProbeItem(it){if(!it||typeof it!=='object'||!SET_ID.test(it.id)||!Object.hasOwn(PROBE_TYPES,it.type)||!safeText(it.prompt,160)||!validFigure(it.figure)||!Array.isArray(it.steps)||it.steps.length<1||it.steps.length>6)return false;
+const keys=new Set();for(const s of it.steps){if(!s||!KEY.test(s.key)||keys.has(s.key)||!safeText(s.label,30)||!STEP_ROLES.has(s.role)||!['number','choice'].includes(s.input))return false;keys.add(s.key);
+if(s.input==='number'&&!(typeof s.answer==='number'&&Number.isFinite(s.answer)))return false;if(s.input==='choice'&&!(Array.isArray(s.options)&&s.options.length>=2&&s.options.length<=5&&s.options.every(o=>safeText(o,20))&&s.options.includes(s.answer)))return false;}
+return it.steps.filter(s=>s.role==='answer').length===1;}
+function validProbeSet(s){if(!s||typeof s!=='object'||Array.isArray(s)||!SET_ID.test(s.id)||typeof s.version!=='string'||!/^[A-Za-z0-9._-]{1,20}$/.test(s.version)||!PROBE_KINDS.has(s.kind)||!safeText(s.title,60)||!Array.isArray(s.forms)||s.forms.length<1||s.forms.length>20)return false;
+if(s.itemSecs!==undefined&&!intIn(s.itemSecs,30,300)||s.totalSecs!==undefined&&!intIn(s.totalSecs,300,3600))return false;const ids=new Set();
+for(const f of s.forms){if(!f||!SET_ID.test(f.id)||ids.has(f.id)||!Array.isArray(f.items)||f.items.length<1||f.items.length>20||!f.items.every(validProbeItem))return false;ids.add(f.id);
+if(new Set(f.items.map(i=>i.id)).size!==f.items.length)return false;
+// 正式探試題組：題數與題型比例固定
+if(s.kind==='probe'){if(f.items.length!==10)return false;for(const [t,n] of Object.entries(PROBE_TYPES))if(f.items.filter(i=>i.type===t).length!==n)return false;}}return true;}
+async function probeSetRow(env,id){const row=await env.DB.prepare('SELECT id, kind, title, set_json FROM probe_sets WHERE id = ?').bind(id).first();if(!row)return null;try{return {...row,set:JSON.parse(row.set_json)};}catch{return null;}}
+// 學生拿到的題目：拿掉答案
+const publicItem=it=>({id:it.id,type:it.type,prompt:it.prompt,figure:it.figure||null,steps:it.steps.map(s=>({key:s.key,label:s.label,role:s.role,input:s.input,...(s.input==='choice'?{options:s.options}:{})}))});
+
+// ---------- 計分 ----------
+const sameAnswer=(v,a)=>v!==null&&v!==undefined&&v!==''&&(typeof a==='number'?Number(v)===a:String(v)===String(a));
+function scoreProbeItem(item,resp){const st=resp&&resp.steps&&typeof resp.steps==='object'?resp.steps:{},tech=resp?.tech===true;
+const confirmsOf=k=>Array.isArray(st[k]?.confirms)?st[k].confirms.filter(c=>c&&(typeof c.v==='number'||typeof c.v==='string')).slice(0,30):[];
+const finalOf=k=>{const c=confirmsOf(k);return c.length?c.at(-1).v:null;},num=k=>{const v=finalOf(k);return v===null||v===''?NaN:Number(v);};
+// 前一步錯了：後面的答案依學生自己前一步的結果判定（只用在步驟計分，不用在最終答案的正確率）
+function carried(step,v){if(step.role!=='answer'||v===null||v==='')return false;const x=Number(v);
+if(item.type==='rectangle'){const m=item.steps.filter(s=>s.role==='measure');return m.length===2&&x===num(m[0].key)*num(m[1].key);}
+if(item.type==='square'){const m=item.steps.find(s=>s.role==='measure');return !!m&&x===num(m.key)**2;}
+if(item.type==='composite'){const p=item.steps.filter(s=>s.role==='part');return p.length>=2&&x===p.reduce((n,s)=>n+num(s.key),0);}return false;}
+const ok=(s,v)=>sameAnswer(v,s.answer)||carried(s,v);
+const steps=item.steps.map(s=>{const c=confirmsOf(s.key),first=c[0]?.v??null,fin=c.length?c.at(-1).v:null,hadError=c.some(x=>!ok(s,x.v));
+return {key:s.key,role:s.role,answered:c.length>0,firstCorrect:ok(s,first),finalCorrect:ok(s,fin),hadError,selfCorrected:hadError&&ok(s,fin),final:fin};});
+const ans=item.steps.find(s=>s.role==='answer'),unit=item.steps.find(s=>s.role==='unit'),answerCorrect=sameAnswer(finalOf(ans.key),ans.answer),unitCorrect=unit?sameAnswer(finalOf(unit.key),unit.answer):true;
+const group=role=>{const l=steps.filter(s=>s.role===role);return l.length?l.every(s=>s.finalCorrect):null;};
+return {itemId:item.id,type:item.type,tech,timedOut:resp?.timedOut===true,answered:steps.some(s=>s.answered),correct:!tech&&answerCorrect&&unitCorrect,answerCorrect,unitCorrect,measureCorrect:group('measure'),formulaCorrect:group('formula'),steps,secs:intIn(resp?.secs,0,3600)?resp.secs:null};}
+function probeSummary(items,results,minValid=8){const byId=new Map(results.map(r=>[r.itemId,r]));const all=items.map(it=>byId.get(it.id)||{...scoreProbeItem(it,{timedOut:true}),missing:true});
+const valid=all.filter(r=>!r.tech),steps=valid.flatMap(r=>r.steps),withErr=steps.filter(s=>s.hadError);
+return {items:all.length,valid:valid.length,correct:valid.filter(r=>r.correct).length,firstSubmitAccuracy:valid.length?Math.round(valid.filter(r=>r.correct).length/valid.length*1000)/10:null,
+scorableSteps:steps.length,independentSteps:steps.filter(s=>s.firstCorrect).length,independentStepRate:steps.length?Math.round(steps.filter(s=>s.firstCorrect).length/steps.length*1000)/10:null,
+errorSteps:withErr.length,selfCorrected:withErr.filter(s=>s.selfCorrected).length,selfCorrectionRate:withErr.length?Math.round(withErr.filter(s=>s.selfCorrected).length/withErr.length*1000)/10:null,
+timedOut:all.filter(r=>r.timedOut).length,unanswered:all.filter(r=>!r.answered).length,tech:all.length-valid.length,dataPoint:valid.length>=minValid};}
+
+// ---------- 路由 ----------
+async function probeSets(request,env,who){if(!researchRole(who))return noResearch(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+const {results}=await env.DB.prepare('SELECT id, kind, title, set_json FROM probe_sets ORDER BY created_at').all();
+return json({sets:results.map(r=>{let s={};try{s=JSON.parse(r.set_json);}catch{}return {id:r.id,kind:r.kind,title:r.title,forms:(s.forms||[]).length,items:(s.forms?.[0]?.items||[]).length};})});}
+async function studyProbeSets(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!sameOrigin(request))return json({error:'origin'},403);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+const s=await readJson(request,950000);if(!validProbeSet(s))return json({error:'invalid_probe_set'},400);
+try{await env.DB.prepare('INSERT INTO probe_sets (id,kind,title,set_json,created_at) VALUES (?,?,?,?,?)').bind(setKey(s),s.kind,s.title,JSON.stringify(s),Date.now()).run();}catch{return json({error:'version_locked'},409);}return json({ok:true,id:setKey(s)});}
+async function probeRun(env,who,id){if(!/^p_[a-f0-9]{16}$/.test(id))return null;const run=await env.DB.prepare('SELECT * FROM probe_runs WHERE id = ?').bind(id).first();if(!run||run.workspace!==who.ws)return null;const set=await probeSetRow(env,run.set_id);const form=set?.set.forms.find(f=>f.id===run.form_id);return form?{run,set:set.set,form}:null;}
+async function probeRoutes(request,env,who,rest){if(!researchRole(who))return noResearch(who);if(request.method!=='POST')return json({error:'method'},405);if(!sameOrigin(request))return json({error:'origin'},403);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+try{if(rest==='start'){const b=await readJson(request,512);if(!b||typeof b.student!=='string'||!STUDENT_CODE.test(b.student)||typeof b.set!=='string'||TEACHER_CODE.test(who.ws)&&b.student.slice(0,3)!==who.ws)return json({error:'invalid_input'},400);
+const no=b.sessionNo===undefined||b.sessionNo===null?null:b.sessionNo;if(no!==null&&!whole(no,9999))return json({error:'invalid_input'},400);const row=await probeSetRow(env,b.set);if(!row)return json({error:'unknown_set'},404);
+// 複本輪替：依學生號碼錯開起點，每做一次換下一份（研究團隊事先排好複本順序）
+const used=(await env.DB.prepare('SELECT COUNT(*) AS n FROM probe_runs WHERE workspace = ? AND student = ? AND set_id = ?').bind(who.ws,b.student,b.set).first())?.n||0,forms=row.set.forms,form=forms[(Number(b.student.slice(-2))+used)%forms.length];
+const id='p_'+crypto.randomUUID().replaceAll('-','').slice(0,16),phase=await currentPhase(env,'student',b.student);
+await env.DB.prepare('INSERT INTO probe_runs (id,workspace,student,set_id,form_id,session_no,phase,started_at,status) VALUES (?,?,?,?,?,?,?,?,?)').bind(id,who.ws,b.student,b.set,form.id,no,phase,Date.now(),'running').run();
+return json({run:id,kind:row.set.kind,formId:form.id,itemSecs:row.set.itemSecs||90,totalSecs:row.set.totalSecs||900,items:form.items.map(publicItem)});}
+const [id,action]=rest.split('/'),p=await probeRun(env,who,id);if(!p)return json({error:'not_found'},404);if(p.run.status!=='running')return json({error:'already_finished'},409);
+if(action==='item'){const b=await readJson(request,16000),idx=p.form.items.findIndex(i=>i.id===b?.itemId);if(idx<0)return json({error:'invalid_input'},400);
+const result=scoreProbeItem(p.form.items[idx],b);
+try{await env.DB.prepare('INSERT INTO probe_items (run_id,item_id,idx,response_json,result_json,at) VALUES (?,?,?,?,?,?)').bind(id,b.itemId,idx,JSON.stringify({steps:b.steps,timedOut:b.timedOut===true,tech:b.tech===true,secs:b.secs}).slice(0,15000),JSON.stringify(result),Date.now()).run();}catch{return json({error:'already_submitted'},409);}
+return json({ok:true});}
+if(action==='finish'){const b=await readJson(request,512)||{},status=['done','timeout','stopped'].includes(b.reason)?b.reason:'done';
+const {results}=await env.DB.prepare('SELECT result_json FROM probe_items WHERE run_id = ?').bind(id).all(),scored=results.map(r=>JSON.parse(r.result_json));
+const now=Date.now(),summary={...probeSummary(p.form.items,scored),minutes:Math.round((now-p.run.started_at)/600)/100};
+await env.DB.prepare('UPDATE probe_runs SET ended_at = ?, status = ?, summary_json = ? WHERE id = ?').bind(now,status,JSON.stringify(summary),id).run();return json({ok:true});}
+return json({error:'not_found'},404);}catch{return json({error:'research_storage_unavailable'},503);}}
+async function probeExport(env,type){if(type==='probes'){const {results}=await env.DB.prepare('SELECT id, workspace, student, set_id AS setId, form_id AS formId, session_no AS sessionNo, phase, started_at AS startedAt, ended_at AS endedAt, status, summary_json AS summary FROM probe_runs ORDER BY started_at LIMIT 20000').all();return results.map(r=>({...r,summary:JSON.parse(r.summary||'{}')}));}
+const {results}=await env.DB.prepare('SELECT r.id AS run, r.workspace, r.student, r.set_id AS setId, r.form_id AS formId, r.session_no AS sessionNo, r.phase, i.idx, i.item_id AS itemId, i.result_json AS result, i.at FROM probe_items i JOIN probe_runs r ON r.id = i.run_id ORDER BY r.started_at, i.idx LIMIT 50000').all();return results.map(r=>({...r,result:JSON.parse(r.result)}));}

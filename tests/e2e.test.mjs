@@ -1254,3 +1254,37 @@ test('第 26 版第二階段：研究管理匯入情境並指派；教師逐節�
   assert.deepEqual(errors, []);
   await ctx.close(); await tctx.close();
 });
+
+test('第 26 版第三階段：探試模式沒有提示與對錯回饋；按確定才算作答；每題 90 秒到了自動送出；老師可以結束', { skip: skip || !distReady }, async () => {
+  await setup();
+  const ctx = await browser.newContext(), page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto(base + '/study.html'); await page.waitForSelector('#probeFile');
+  await page.setInputFiles('#probeFile', new URL('../scenarios/demo-probe.json', import.meta.url).pathname);
+  await page.waitForFunction(() => /已匯入 demoProbe@1/.test(document.querySelector('#probeMsg')?.textContent || ''));
+  const sp = await ctx.newPage(); sp.on('pageerror', e => errors.push(e.message)); sp.on('dialog', d => d.accept());
+  await sp.clock.install();
+  await sp.addInitScript(() => sessionStorage.setItem('area-research-who-v22', JSON.stringify({ teacher: 'T01', student: 'T01-S02', sessionNo: 4, sessionId: 'x' })));
+  await sp.goto(base + '/probe.html'); await sp.waitForSelector('#probeStart'); await sp.click('#probeStart');
+  await sp.waitForSelector('[data-step]');
+  assert.match(await sp.innerText('.probe'), /第 1 題，共 10 題/);
+  assert.equal(await sp.locator('text=提示').count(), 0, '沒有提示');
+  // 第 1 題（數格子）：填了沒按確定不算；按確定只顯示「已確定」
+  await sp.fill('#in_area', '99'); await sp.fill('#in_area', '12'); await sp.click('[data-ok="area"]');
+  assert.equal(await sp.innerText('#done_area'), '已確定');
+  await sp.click('[data-step="unit"] [data-opt="平方公分"]'); await sp.click('[data-ok="unit"]');
+  await sp.click('#submit'); await sp.waitForSelector('.cheer');
+  assert.doesNotMatch(await sp.innerText('.cheer'), /對|錯/);
+  await sp.clock.fastForward(1500); await sp.waitForFunction(() => /第 2 題/.test(document.querySelector('.probe')?.innerText || ''));
+  // 第 2 題：只填不確定，90 秒到了自動送出
+  await sp.fill('#in_area', '20');
+  await sp.clock.fastForward(91000); await sp.waitForSelector('.cheer'); await sp.clock.fastForward(1500);
+  await sp.waitForFunction(() => /第 3 題/.test(document.querySelector('.probe')?.innerText || ''));
+  await sp.click('#stopBtn'); await sp.waitForFunction(() => /小測驗做完了/.test(document.querySelector('.probe')?.innerText || ''));
+  const runs = await page.evaluate(async () => (await (await fetch('/api/study/export?type=probes')).json()).rows);
+  const r = runs.find(x => x.student === 'T01-S02');
+  assert.equal(r.status, 'stopped'); assert.equal(r.sessionNo, 4); assert.equal(r.summary.items, 10); assert.equal(r.summary.correct, 1); assert.equal(r.summary.timedOut, 8, '第 2 題逾時加上沒做到的 7 題'); assert.equal(r.summary.unanswered, 9);
+  const items = await page.evaluate(async () => (await (await fetch('/api/study/export?type=probeItems')).json()).rows.filter(x => x.student === 'T01-S02'));
+  assert.equal(items.length, 3); assert.equal(items[1].result.answered, false, '沒按確定就不算作答'); assert.equal(items[1].result.timedOut, true);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

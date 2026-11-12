@@ -182,7 +182,7 @@
     if (!el) { el = document.createElement('section'); el.id = 'researchBar'; el.className = 'research-bar'; el.setAttribute('aria-label', '現場試用紀錄（老師用）'); (document.querySelector('nav.aids') || document.body.firstChild).after(el); }
     el.innerHTML = `<p class="who"><b>📋 ${esc(who.student)}</b>${who.sessionNo ? `<span class="session-no">第 ${who.sessionNo} 節</span>` : ''}<span>${esc(who.device)}・${esc(who.group)}${who.camera ? '・📷 可用鏡頭' : ''}</span></p>
       <div class="quick">${QUICK.map(([k, t]) => `<button type="button" data-quick="${k}">${t}</button>`).join('')}</div>
-      <div class="ops"><span id="researchCount" class="count"></span><button type="button" id="researchFlush">立即上傳</button><button type="button" id="researchNext">換學生</button><button type="button" id="researchClass">📝 這節課結束</button></div>`;
+      <div class="ops"><span id="researchCount" class="count"></span>${serverOn() ? '<button type="button" id="researchProbe">🧪 小測驗</button>' : ''}<button type="button" id="researchFlush">立即上傳</button><button type="button" id="researchNext">換學生</button><button type="button" id="researchClass">📝 這節課結束</button></div>`;
     el.querySelectorAll('[data-quick]').forEach(b => b.onclick = () => {
       const k = b.dataset.quick, t = QUICK.find(x => x[0] === k)[1];
       api.log('教師即時紀錄', { activity: api.step(), tag: k, tagText: t.replace(/^\S+\s/, '') });
@@ -190,6 +190,8 @@
       toast('已記下：' + t);
     });
     $('researchFlush').onclick = () => { paintCount('上傳中……'); flush(); };
+    // 第 26 版：每節開始時的探試（另一頁，沒有提示與小方；做完回到這裡）
+    if ($('researchProbe')) $('researchProbe').onclick = async () => { await flush(); location.href = 'probe.html'; };
     $('researchNext').onclick = () => endStudent();
     $('researchClass').onclick = () => classEnd();
     paintCount();

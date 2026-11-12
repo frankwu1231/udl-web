@@ -410,3 +410,44 @@ test('第 26 版第二階段：研究階段、標準化情境探試、應有方�
   globalThis.fetch=async()=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({message:'第1節：完成 6 題。\n第2節：完成 6 題。\n依據：第1、2節'})}}]}));
   try{const sum=await call('/api/teacher/summary',{method:'POST',cookie:t7,body:{student:'T07-S01',act:'rectangle',upTo:2}});assert.equal(sum.data.source,'ai');assert.deepEqual(sum.data.sessions,[1,2]);}finally{globalThis.fetch=originalFetch;}
 });
+
+test('第 26 版第三階段：探試題組匯入鎖版、學生拿不到答案、每步獨立計分（連帶錯誤、自行修正）、逾時算錯',async()=>{
+  const login=async teacher=>(await call('/api/test-login',{method:'POST',body:{username:'test',password:'test-pass',teacher}})).headers.get('set-cookie').split(';')[0];
+  const t8=await login('T08');
+  const set=JSON.parse(fs.readFileSync(new URL('../scenarios/demo-probe.json',import.meta.url),'utf8'));
+  assert.equal((await call('/api/study/probe-sets',{method:'POST',cookie:t8,body:set})).status,403,'只有研究人員能匯入');
+  const bad=structuredClone(set);bad.forms[0].items.pop();
+  assert.equal((await call('/api/study/probe-sets',{method:'POST',user:owner,body:bad})).status,400,'正式探試一份要 10 題、題型比例固定');
+  assert.equal((await call('/api/study/probe-sets',{method:'POST',user:owner,body:set})).data.id,'demoProbe@1');
+  assert.equal((await call('/api/study/probe-sets',{method:'POST',user:owner,body:set})).status,409);
+  assert.deepEqual((await call('/api/probe/sets',{cookie:t8})).data.sets.map(s=>[s.id,s.kind,s.items]),[['demoProbe@1','probe',10]]);
+  await call('/api/study/phases',{method:'POST',user:owner,body:{kind:'student',participant:'T08-S01',phase:'B'}});
+  const start=await call('/api/probe/start',{method:'POST',cookie:t8,body:{student:'T08-S01',set:'demoProbe@1',sessionNo:3}});
+  assert.equal(start.status,200);assert.equal(start.data.formId,'B','01 號從第 2 份複本開始');assert.equal(start.data.itemSecs,90);
+  assert.doesNotMatch(JSON.stringify(start.data.items),/"answer":/,'學生拿不到答案');
+  assert.equal((await call('/api/probe/start',{method:'POST',cookie:t8,body:{student:'T09-S01',set:'demoProbe@1'}})).status,400,'不能測別位老師的學生');
+  const run=start.data.run,item=(id,steps,extra={})=>call(`/api/probe/${run}/item`,{method:'POST',cookie:t8,body:{itemId:id,steps,secs:30,...extra}});
+  const c=(...v)=>({confirms:v.map((x,i)=>({v:x,t:i}))});
+  // B03：長 4、寬 6；長填錯 5，面積照自己的長算 30 → 面積這一步算對（連帶錯誤），但這題答錯
+  assert.equal((await item('B03',{len:c(5),wid:c(6),formula:c('長×寬'),area:c(30),unit:c('平方公分')})).status,200);
+  assert.equal((await item('B03',{})).status,409,'一題只送一次');
+  // B04：長 3、寬 8；面積先填 11（相加）再改成 24 → 自行修正
+  await item('B04',{len:c(3),wid:c(8),formula:c('長+寬','長×寬'),area:c(11,24),unit:c('平方公分')});
+  await item('B01',{area:c(12),unit:c('平方公分')});
+  await item('B02',{area:c(20),unit:c('公分')},{});   // 單位錯
+  await item('B06',{},{timedOut:true});              // 逾時沒作答
+  await item('B07',{side:c(4)},{tech:true});         // 技術問題，不計
+  assert.equal((await call(`/api/probe/${run}/finish`,{method:'POST',cookie:t8,body:{reason:'done'}})).status,200);
+  assert.equal((await call(`/api/probe/${run}/item`,{method:'POST',cookie:t8,body:{itemId:'B05',steps:{}}})).status,409,'結束後不能再送');
+  const runs=(await call('/api/study/export?type=probes',{user:owner})).data.rows,sum=runs[0].summary;
+  assert.equal(runs[0].phase,'B');assert.equal(runs[0].sessionNo,3);
+  assert.equal(sum.items,10);assert.equal(sum.valid,9);assert.equal(sum.correct,2);assert.equal(sum.firstSubmitAccuracy,22.2);assert.equal(sum.dataPoint,true);
+  assert.equal(sum.unanswered,5,'沒送的 4 題加上逾時的 1 題');
+  const items=(await call('/api/study/export?type=probeItems',{user:owner})).data.rows,r=id=>items.find(x=>x.itemId===id).result;
+  assert.equal(r('B03').correct,false);assert.equal(r('B03').measureCorrect,false);assert.deepEqual(r('B03').steps.map(s=>[s.key,s.firstCorrect]),[['len',false],['wid',true],['formula',true],['area',true],['unit',true]]);
+  assert.equal(r('B04').correct,true);assert.deepEqual(r('B04').steps.filter(s=>s.selfCorrected).map(s=>s.key),['formula','area']);
+  assert.equal(r('B02').unitCorrect,false);assert.equal(r('B07').tech,true);
+  assert.equal(sum.errorSteps,4);assert.equal(sum.selfCorrected,2);assert.equal(sum.selfCorrectionRate,50);
+  // 同一位學生第二次：換下一份複本
+  assert.equal((await call('/api/probe/start',{method:'POST',cookie:t8,body:{student:'T08-S01',set:'demoProbe@1'}})).data.formId,'A');
+});

@@ -13,7 +13,7 @@
     try { const me = await S.api('/api/session'); if (!me.authenticated) { location.href = '/'; return; } if (!me.teacher || me.test) { $('status').textContent = '這一頁只給研究人員（主持人帳號）使用。'; return; } }
     catch { $('status').textContent = '讀不到登入狀態。'; return; }
     $('status').textContent = ''; $('body').hidden = false;
-    drawPhases(); drawRules(); drawScenarios(); drawDirection(); drawAi(); drawExport();
+    drawPhases(); drawRules(); drawScenarios(); drawProbes(); drawDirection(); drawAi(); drawExport();
   }
 
   // ---------- 研究階段：第二年依教師、第三年依學生，每次切換都留時間與操作者 ----------
@@ -73,6 +73,24 @@
     };
   }
 
+  // ---------- 探試題組：匯入（版本鎖定）、施測紀錄與計分 ----------
+  async function drawProbes(note = '') {
+    const box = $('probeSection');
+    let sets, runs; try { sets = (await S.api('/api/probe/sets')).sets; runs = (await S.api('/api/study/export?type=probes')).rows; } catch { box.textContent = '讀不到探試題組。'; return; }
+    const kind = { probe: '探試', generalization: '類化', practice: '操作練習' };
+    const pct = v => v === null || v === undefined ? '—' : v + '%';
+    box.innerHTML = `<h2>📝 探試題組</h2><p class="subtle">正式探試每份 10 題（數格子 2、長方形 3、正方形 2、知道面積找邊長 1、複合圖形 2）。一個題組可以有多份等值複本，網站依學生號碼錯開起點、每次換下一份。同一個代號和版本匯入後鎖定。</p>
+      <label>匯入題組（.json）<input type="file" id="probeFile" accept="application/json,.json"></label><p id="probeMsg" class="msg" role="status">${esc(note)}</p>
+      ${sets.length ? `<table class="study-table"><thead><tr><th>代號@版本</th><th>種類</th><th>名稱</th><th>複本數</th><th>每份題數</th></tr></thead><tbody>${sets.map(s => `<tr><td>${esc(s.id)}</td><td>${esc(kind[s.kind] || s.kind)}</td><td>${esc(s.title)}</td><td>${s.forms}</td><td>${s.items}</td></tr>`).join('')}</tbody></table>` : '<p>還沒有題組。</p>'}
+      <h3>施測紀錄（最近 50 次）</h3>${runs.length ? `<div class="table-scroll"><table class="study-table"><thead><tr><th>學生</th><th>節次</th><th>階段</th><th>題組／複本</th><th>狀態</th><th>有效題數</th><th>首次提交正確率</th><th>獨立完成步驟</th><th>自行修正</th><th>分鐘</th><th>列為資料點</th></tr></thead><tbody>${runs.slice(-50).reverse().map(r => { const m = r.summary || {}; return `<tr><td>${esc(r.student)}</td><td>${r.sessionNo ?? ''}</td><td>${esc(S.PHASE[r.phase] || r.phase || '')}</td><td>${esc(r.setId)}／${esc(r.formId)}</td><td>${esc({ running: '進行中', done: '完成', timeout: '整份逾時', stopped: '老師結束' }[r.status] || r.status)}</td><td>${m.valid ?? ''}</td><td>${pct(m.firstSubmitAccuracy)}</td><td>${pct(m.independentStepRate)}</td><td>${m.errorSteps === 0 ? '無修正機會' : pct(m.selfCorrectionRate)}</td><td>${m.minutes ?? ''}</td><td>${m.dataPoint === undefined ? '' : m.dataPoint ? '是' : '否（有效題數少於 8）'}</td></tr>`; }).join('')}</tbody></table></div>` : '<p>還沒有施測紀錄。</p>'}`;
+    $('probeFile').onchange = async () => {
+      const f = $('probeFile').files[0]; if (!f) return;
+      let set; try { set = JSON.parse(await f.text()); } catch { $('probeMsg').textContent = '這個檔案不是 JSON。'; return; }
+      try { const out = await S.api('/api/study/probe-sets', set); drawProbes('✓ 已匯入 ' + out.id); }
+      catch (e) { $('probeMsg').textContent = e.message === 'version_locked' ? '這個代號和版本已經匯入過，內容鎖定。要修改請換版本號。' : '格式不對（正式探試每份要 10 題、題型比例固定），沒有匯入。'; }
+    };
+  }
+
   // ---------- 真實學生的應有方向（教師端看不到） ----------
   function drawDirection() {
     const box = $('directionSection');
@@ -104,7 +122,7 @@
   function drawExport() {
     const box = $('exportSection');
     box.innerHTML = `<h2>⬇ 研究匯出（CSV）</h2><p class="subtle">文字欄位開頭是 = + - @ 時會加上 '，避免 Excel 當成公式。只有代號，沒有姓名。</p>
-      <div class="actions"><button type="button" id="expDecisions">情境探試：每節決策</button><button type="button" id="expScenario">情境探試：每個情境的反應延遲與決策時間</button><button type="button" id="expAi">AI 輸出全文</button><button type="button" id="expChanges">真實學生的設定變更（所有教師）</button></div><p id="expMsg" class="msg" role="status"></p>`;
+      <div class="actions"><button type="button" id="expDecisions">情境探試：每節決策</button><button type="button" id="expScenario">情境探試：每個情境的反應延遲與決策時間</button><button type="button" id="expProbes">探試：每次施測</button><button type="button" id="expProbeItems">探試：每題每步</button><button type="button" id="expAi">AI 輸出全文</button><button type="button" id="expChanges">真實學生的設定變更（所有教師）</button></div><p id="expMsg" class="msg" role="status"></p>`;
     const get = async type => { try { return (await S.api('/api/study/export?type=' + type)).rows; } catch { $('expMsg').textContent = '匯出失敗。'; return null; } };
     const consistent = r => ['increase', 'decrease', 'advance', 'maintain'].includes(r.expected) ? (r.direction === r.expected ? '是' : '否') : '不計';
     $('expDecisions').onclick = async () => {
@@ -125,6 +143,18 @@
           Math.max(...list.map(r => r.savedAt)) - Math.min(...list.map(r => r.shownAt)), list.reduce((n, r) => n + r.activeMs, 0), list.reduce((n, r) => n + r.aiWaitMs, 0), list.filter(r => r.aiUsed).length, list.filter(r => r.rawViewed).length];
       });
       S.download(`scenario_summary_${today()}.csv`, S.toCsv([['教師', '探試', '指派時階段', '情境組', '情境', '已決策節數', '需調整的節數', '方向一致節數', '規則一致回應率(%)', '應維持的節數', '其中維持', '觸發節次', '觸發方向', '第一次方向一致的節次', '反應延遲(節)', '決策總經過毫秒', '主動操作毫秒', '等AI毫秒', '用AI摘要的節數', '回查原始紀錄的節數'], ...out]));
+    };
+    const pct = v => v ?? '';
+    $('expProbes').onclick = async () => {
+      const rows = await get('probes'); if (!rows) return;
+      S.download(`probe_runs_${today()}.csv`, S.toCsv([['工作區', '學生', '節次', '階段', '題組', '複本', '狀態', '開始', '結束', '分鐘', '題數', '有效題數', '答對題數', '首次提交正確率(%)', '可評分步驟', '獨立完成步驟', '獨立完成步驟比例(%)', '曾出現錯誤的步驟', '自行修正步驟', '自行修正比例(%)', '逾時題數', '沒作答題數', '技術缺測題數', '列為資料點'],
+        ...rows.map(r => { const m = r.summary || {}; return [r.workspace, r.student, r.sessionNo ?? '', S.PHASE[r.phase] || r.phase, r.setId, r.formId, r.status, new Date(r.startedAt).toISOString(), r.endedAt ? new Date(r.endedAt).toISOString() : '', m.minutes ?? '', m.items ?? '', m.valid ?? '', m.correct ?? '', pct(m.firstSubmitAccuracy), m.scorableSteps ?? '', m.independentSteps ?? '', pct(m.independentStepRate), m.errorSteps ?? '', m.selfCorrected ?? '', m.errorSteps === 0 ? '無修正機會' : pct(m.selfCorrectionRate), m.timedOut ?? '', m.unanswered ?? '', m.tech ?? '', m.dataPoint === undefined ? '' : m.dataPoint ? '是' : '否']; })]));
+    };
+    $('expProbeItems').onclick = async () => {
+      const rows = await get('probeItems'); if (!rows) return;
+      const yn = v => v === null || v === undefined ? '' : v ? '是' : '否';
+      S.download(`probe_items_${today()}.csv`, S.toCsv([['學生', '節次', '階段', '題組', '複本', '第幾題', '題目', '題型', '答對（答案與單位）', '答案對', '單位對', '取量對', '列式對', '逾時', '技術缺測', '秒數', '步驟', '步驟角色', '有作答', '第一次就對', '最後對', '曾出現錯誤', '自行修正', '最後的答案'],
+        ...rows.flatMap(r => r.result.steps.map(s => [r.student, r.sessionNo ?? '', S.PHASE[r.phase] || r.phase, r.setId, r.formId, r.idx + 1, r.itemId, r.result.type, yn(r.result.correct), yn(r.result.answerCorrect), yn(r.result.unitCorrect), yn(r.result.measureCorrect), yn(r.result.formulaCorrect), yn(r.result.timedOut), yn(r.result.tech), r.result.secs ?? '', s.key, s.role, yn(s.answered), yn(s.firstCorrect), yn(s.finalCorrect), yn(s.hadError), yn(s.selfCorrected), s.final ?? '']))]));
     };
     $('expAi').onclick = async () => {
       const rows = await get('ai'); if (!rows) return;

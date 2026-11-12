@@ -1,0 +1,1208 @@
+{
+ "id": "demoProbe",
+ "version": "1",
+ "kind": "probe",
+ "title": "面積探試題組（示範）",
+ "itemSecs": 90,
+ "totalSecs": 900,
+ "forms": [
+  {
+   "id": "A",
+   "items": [
+    {
+     "id": "A01",
+     "type": "count",
+     "prompt": "塗色的部分有多大？每一小格是 1 平方公分。",
+     "figure": {
+      "cols": 10,
+      "rows": 7,
+      "grid": true,
+      "rects": [
+       [
+        1,
+        1,
+        4,
+        3
+       ]
+      ]
+     },
+     "steps": [
+      {
+       "key": "area",
+       "label": "面積是多少",
+       "role": "answer",
+       "input": "number",
+       "answer": 12
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "平方公尺"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "A02",
+     "type": "count",
+     "prompt": "塗色的部分有多大？每一小格是 1 平方公分。",
+     "figure": {
+      "cols": 10,
+      "rows": 7,
+      "grid": true,
+      "rects": [
+       [
+        1,
+        1,
+        5,
+        4
+       ]
+      ]
+     },
+     "steps": [
+      {
+       "key": "area",
+       "label": "面積是多少",
+       "role": "answer",
+       "input": "number",
+       "answer": 20
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "平方公尺"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "A03",
+     "type": "rectangle",
+     "prompt": "書籤是長方形，長 6 公分、寬 4 公分，面積是多少？",
+     "figure": {
+      "cols": 8,
+      "rows": 6,
+      "grid": false,
+      "rects": [
+       [
+        1,
+        1,
+        6,
+        4
+       ]
+      ],
+      "labels": [
+       {
+        "x": 4,
+        "y": 0.6,
+        "text": "6 公分"
+       },
+       {
+        "x": 0.2,
+        "y": 3,
+        "text": "4 公分"
+       }
+      ]
+     },
+     "steps": [
+      {
+       "key": "len",
+       "label": "長是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 6
+      },
+      {
+       "key": "wid",
+       "label": "寬是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 4
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "長×寬",
+        "長+寬",
+        "(長+寬)×2"
+       ],
+       "answer": "長×寬"
+      },
+      {
+       "key": "area",
+       "label": "面積是多少",
+       "role": "answer",
+       "input": "number",
+       "answer": 24
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "平方公尺"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "A04",
+     "type": "rectangle",
+     "prompt": "花圃是長方形，長 8 公分、寬 3 公分，面積是多少？",
+     "figure": {
+      "cols": 10,
+      "rows": 5,
+      "grid": false,
+      "rects": [
+       [
+        1,
+        1,
+        8,
+        3
+       ]
+      ],
+      "labels": [
+       {
+        "x": 5,
+        "y": 0.6,
+        "text": "8 公分"
+       },
+       {
+        "x": 0.2,
+        "y": 2.5,
+        "text": "3 公分"
+       }
+      ]
+     },
+     "steps": [
+      {
+       "key": "len",
+       "label": "長是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 8
+      },
+      {
+       "key": "wid",
+       "label": "寬是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 3
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "長×寬",
+        "長+寬",
+        "(長+寬)×2"
+       ],
+       "answer": "長×寬"
+      },
+      {
+       "key": "area",
+       "label": "面積是多少",
+       "role": "answer",
+       "input": "number",
+       "answer": 24
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "平方公尺"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "A05",
+     "type": "rectangle",
+     "prompt": "桌墊是長方形，長 7 公分、寬 5 公分，面積是多少？",
+     "figure": {
+      "cols": 9,
+      "rows": 7,
+      "grid": false,
+      "rects": [
+       [
+        1,
+        1,
+        7,
+        5
+       ]
+      ],
+      "labels": [
+       {
+        "x": 4.5,
+        "y": 0.6,
+        "text": "7 公分"
+       },
+       {
+        "x": 0.2,
+        "y": 3.5,
+        "text": "5 公分"
+       }
+      ]
+     },
+     "steps": [
+      {
+       "key": "len",
+       "label": "長是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 7
+      },
+      {
+       "key": "wid",
+       "label": "寬是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 5
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "長×寬",
+        "長+寬",
+        "(長+寬)×2"
+       ],
+       "answer": "長×寬"
+      },
+      {
+       "key": "area",
+       "label": "面積是多少",
+       "role": "answer",
+       "input": "number",
+       "answer": 35
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "平方公尺"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "A06",
+     "type": "square",
+     "prompt": "手帕是正方形，邊長 5 公分，面積是多少？",
+     "figure": {
+      "cols": 7,
+      "rows": 7,
+      "grid": false,
+      "rects": [
+       [
+        1,
+        1,
+        5,
+        5
+       ]
+      ],
+      "labels": [
+       {
+        "x": 3.5,
+        "y": 0.6,
+        "text": "5 公分"
+       }
+      ]
+     },
+     "steps": [
+      {
+       "key": "side",
+       "label": "邊長是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 5
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "邊長×邊長",
+        "邊長×4",
+        "邊長+邊長"
+       ],
+       "answer": "邊長×邊長"
+      },
+      {
+       "key": "area",
+       "label": "面積是多少",
+       "role": "answer",
+       "input": "number",
+       "answer": 25
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "平方公尺"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "A07",
+     "type": "square",
+     "prompt": "磁磚是正方形，邊長 7 公分，面積是多少？",
+     "figure": {
+      "cols": 9,
+      "rows": 9,
+      "grid": false,
+      "rects": [
+       [
+        1,
+        1,
+        7,
+        7
+       ]
+      ],
+      "labels": [
+       {
+        "x": 4.5,
+        "y": 0.6,
+        "text": "7 公分"
+       }
+      ]
+     },
+     "steps": [
+      {
+       "key": "side",
+       "label": "邊長是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 7
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "邊長×邊長",
+        "邊長×4",
+        "邊長+邊長"
+       ],
+       "answer": "邊長×邊長"
+      },
+      {
+       "key": "area",
+       "label": "面積是多少",
+       "role": "answer",
+       "input": "number",
+       "answer": 49
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "平方公尺"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "A08",
+     "type": "inverse",
+     "prompt": "長方形的面積是 24 平方公分，長是 6 公分，寬是幾公分？",
+     "steps": [
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "面積÷長",
+        "面積×長",
+        "面積−長"
+       ],
+       "answer": "面積÷長"
+      },
+      {
+       "key": "wid",
+       "label": "寬是多少",
+       "role": "answer",
+       "input": "number",
+       "answer": 4
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "公分",
+        "平方公分"
+       ],
+       "answer": "公分"
+      }
+     ]
+    },
+    {
+     "id": "A09",
+     "type": "composite",
+     "prompt": "沿著虛線切成兩個長方形。每一小格是 1 平方公分，整個圖形的面積是多少？",
+     "figure": {
+      "cols": 8,
+      "rows": 7,
+      "grid": true,
+      "rects": [
+       [
+        1,
+        1,
+        4,
+        2
+       ],
+       [
+        1,
+        3,
+        6,
+        3
+       ]
+      ]
+     },
+     "steps": [
+      {
+       "key": "part1",
+       "label": "上面一塊的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 8
+      },
+      {
+       "key": "part2",
+       "label": "下面一塊的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 18
+      },
+      {
+       "key": "total",
+       "label": "整個圖形的面積",
+       "role": "answer",
+       "input": "number",
+       "answer": 26
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "平方公尺"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "A10",
+     "type": "composite",
+     "prompt": "沿著虛線切成兩個長方形。每一小格是 1 平方公分，整個圖形的面積是多少？",
+     "figure": {
+      "cols": 7,
+      "rows": 7,
+      "grid": true,
+      "rects": [
+       [
+        1,
+        1,
+        3,
+        3
+       ],
+       [
+        1,
+        4,
+        5,
+        2
+       ]
+      ]
+     },
+     "steps": [
+      {
+       "key": "part1",
+       "label": "上面一塊的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 9
+      },
+      {
+       "key": "part2",
+       "label": "下面一塊的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 10
+      },
+      {
+       "key": "total",
+       "label": "整個圖形的面積",
+       "role": "answer",
+       "input": "number",
+       "answer": 19
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "平方公尺"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "B",
+   "items": [
+    {
+     "id": "B01",
+     "type": "count",
+     "prompt": "塗色的部分有多大？每一小格是 1 平方公分。",
+     "figure": {
+      "cols": 10,
+      "rows": 7,
+      "grid": true,
+      "rects": [
+       [
+        1,
+        1,
+        3,
+        4
+       ]
+      ]
+     },
+     "steps": [
+      {
+       "key": "area",
+       "label": "面積是多少",
+       "role": "answer",
+       "input": "number",
+       "answer": 12
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "平方公尺"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "B02",
+     "type": "count",
+     "prompt": "塗色的部分有多大？每一小格是 1 平方公分。",
+     "figure": {
+      "cols": 10,
+      "rows": 7,
+      "grid": true,
+      "rects": [
+       [
+        1,
+        1,
+        4,
+        5
+       ]
+      ]
+     },
+     "steps": [
+      {
+       "key": "area",
+       "label": "面積是多少",
+       "role": "answer",
+       "input": "number",
+       "answer": 20
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "平方公尺"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "B03",
+     "type": "rectangle",
+     "prompt": "卡片是長方形，長 4 公分、寬 6 公分，面積是多少？",
+     "figure": {
+      "cols": 6,
+      "rows": 8,
+      "grid": false,
+      "rects": [
+       [
+        1,
+        1,
+        4,
+        6
+       ]
+      ],
+      "labels": [
+       {
+        "x": 3,
+        "y": 0.6,
+        "text": "4 公分"
+       },
+       {
+        "x": 0.2,
+        "y": 4,
+        "text": "6 公分"
+       }
+      ]
+     },
+     "steps": [
+      {
+       "key": "len",
+       "label": "長是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 4
+      },
+      {
+       "key": "wid",
+       "label": "寬是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 6
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "長×寬",
+        "長+寬",
+        "(長+寬)×2"
+       ],
+       "answer": "長×寬"
+      },
+      {
+       "key": "area",
+       "label": "面積是多少",
+       "role": "answer",
+       "input": "number",
+       "answer": 24
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "平方公尺"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "B04",
+     "type": "rectangle",
+     "prompt": "菜園是長方形，長 3 公分、寬 8 公分，面積是多少？",
+     "figure": {
+      "cols": 5,
+      "rows": 10,
+      "grid": false,
+      "rects": [
+       [
+        1,
+        1,
+        3,
+        8
+       ]
+      ],
+      "labels": [
+       {
+        "x": 2.5,
+        "y": 0.6,
+        "text": "3 公分"
+       },
+       {
+        "x": 0.2,
+        "y": 5,
+        "text": "8 公分"
+       }
+      ]
+     },
+     "steps": [
+      {
+       "key": "len",
+       "label": "長是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 3
+      },
+      {
+       "key": "wid",
+       "label": "寬是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 8
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "長×寬",
+        "長+寬",
+        "(長+寬)×2"
+       ],
+       "answer": "長×寬"
+      },
+      {
+       "key": "area",
+       "label": "面積是多少",
+       "role": "answer",
+       "input": "number",
+       "answer": 24
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "平方公尺"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "B05",
+     "type": "rectangle",
+     "prompt": "地墊是長方形，長 5 公分、寬 7 公分，面積是多少？",
+     "figure": {
+      "cols": 7,
+      "rows": 9,
+      "grid": false,
+      "rects": [
+       [
+        1,
+        1,
+        5,
+        7
+       ]
+      ],
+      "labels": [
+       {
+        "x": 3.5,
+        "y": 0.6,
+        "text": "5 公分"
+       },
+       {
+        "x": 0.2,
+        "y": 4.5,
+        "text": "7 公分"
+       }
+      ]
+     },
+     "steps": [
+      {
+       "key": "len",
+       "label": "長是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 5
+      },
+      {
+       "key": "wid",
+       "label": "寬是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 7
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "長×寬",
+        "長+寬",
+        "(長+寬)×2"
+       ],
+       "answer": "長×寬"
+      },
+      {
+       "key": "area",
+       "label": "面積是多少",
+       "role": "answer",
+       "input": "number",
+       "answer": 35
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "平方公尺"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "B06",
+     "type": "square",
+     "prompt": "杯墊是正方形，邊長 6 公分，面積是多少？",
+     "figure": {
+      "cols": 8,
+      "rows": 8,
+      "grid": false,
+      "rects": [
+       [
+        1,
+        1,
+        6,
+        6
+       ]
+      ],
+      "labels": [
+       {
+        "x": 4,
+        "y": 0.6,
+        "text": "6 公分"
+       }
+      ]
+     },
+     "steps": [
+      {
+       "key": "side",
+       "label": "邊長是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 6
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "邊長×邊長",
+        "邊長×4",
+        "邊長+邊長"
+       ],
+       "answer": "邊長×邊長"
+      },
+      {
+       "key": "area",
+       "label": "面積是多少",
+       "role": "answer",
+       "input": "number",
+       "answer": 36
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "平方公尺"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "B07",
+     "type": "square",
+     "prompt": "便條紙是正方形，邊長 4 公分，面積是多少？",
+     "figure": {
+      "cols": 6,
+      "rows": 6,
+      "grid": false,
+      "rects": [
+       [
+        1,
+        1,
+        4,
+        4
+       ]
+      ],
+      "labels": [
+       {
+        "x": 3,
+        "y": 0.6,
+        "text": "4 公分"
+       }
+      ]
+     },
+     "steps": [
+      {
+       "key": "side",
+       "label": "邊長是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 4
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "邊長×邊長",
+        "邊長×4",
+        "邊長+邊長"
+       ],
+       "answer": "邊長×邊長"
+      },
+      {
+       "key": "area",
+       "label": "面積是多少",
+       "role": "answer",
+       "input": "number",
+       "answer": 16
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "平方公尺"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "B08",
+     "type": "inverse",
+     "prompt": "長方形的面積是 30 平方公分，長是 5 公分，寬是幾公分？",
+     "steps": [
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "面積÷長",
+        "面積×長",
+        "面積−長"
+       ],
+       "answer": "面積÷長"
+      },
+      {
+       "key": "wid",
+       "label": "寬是多少",
+       "role": "answer",
+       "input": "number",
+       "answer": 6
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "公分",
+        "平方公分"
+       ],
+       "answer": "公分"
+      }
+     ]
+    },
+    {
+     "id": "B09",
+     "type": "composite",
+     "prompt": "沿著虛線切成兩個長方形。每一小格是 1 平方公分，整個圖形的面積是多少？",
+     "figure": {
+      "cols": 7,
+      "rows": 8,
+      "grid": true,
+      "rects": [
+       [
+        1,
+        1,
+        5,
+        2
+       ],
+       [
+        1,
+        3,
+        3,
+        4
+       ]
+      ]
+     },
+     "steps": [
+      {
+       "key": "part1",
+       "label": "上面一塊的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 10
+      },
+      {
+       "key": "part2",
+       "label": "下面一塊的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 12
+      },
+      {
+       "key": "total",
+       "label": "整個圖形的面積",
+       "role": "answer",
+       "input": "number",
+       "answer": 22
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "平方公尺"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "B10",
+     "type": "composite",
+     "prompt": "沿著虛線切成兩個長方形。每一小格是 1 平方公分，整個圖形的面積是多少？",
+     "figure": {
+      "cols": 8,
+      "rows": 7,
+      "grid": true,
+      "rects": [
+       [
+        1,
+        1,
+        2,
+        3
+       ],
+       [
+        1,
+        4,
+        6,
+        2
+       ]
+      ]
+     },
+     "steps": [
+      {
+       "key": "part1",
+       "label": "上面一塊的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 6
+      },
+      {
+       "key": "part2",
+       "label": "下面一塊的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 12
+      },
+      {
+       "key": "total",
+       "label": "整個圖形的面積",
+       "role": "answer",
+       "input": "number",
+       "answer": 18
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "平方公尺"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
