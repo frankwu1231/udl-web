@@ -314,7 +314,7 @@ test('第 26 版：研究紀錄存進網站資料庫、開始本節、學生個�
   assert.equal(saved.status,200);assert.deepEqual(saved.data.saved,['abc123-x1','abc123-x2']);
   assert.equal((await call('/api/records',{method:'POST',cookie:sc,body:{rows:[row]}})).status,200,'重送沒關係');
   // 白名單：學生自己打的文字、不認得的欄位都不存
-  assert.equal((await call('/api/records',{method:'POST',cookie:sc,body:{rows:[{...row,rid:'abc123-x3',studentInput:'虛構姓名甲：我不會',detail:JSON.stringify({obs:'blank',studentInput:'虛構姓名甲：我不會',dimensions:{w:3,h:4}})}]}})).status,200);
+  assert.equal((await call('/api/records',{method:'POST',cookie:sc,body:{rows:[{...row,rid:'abc123-x3',studentInput:'虛構姓名甲：我不會',detail:JSON.stringify({obs:'blank',studentInput:'虛構姓名甲：我不會',dimensions:{w:3,h:4,studentInput:'虛構姓名甲'}})}]}})).status,200);
   assert.equal((await call('/api/records',{method:'POST',cookie:sc,body:{rows:[{...row,rid:'abc123-x4',student:'T06-S01'}]}})).status,403,'不能寫別班的學生');
   // 開始本節：同一位學生接著往上加；另一位從 1 開始
   const start=async(cookie,student)=>(await call('/api/sessions/start',{method:'POST',cookie,body:{student,device:'平板'}})).data.no;
@@ -466,12 +466,28 @@ test('第 26 版第三階段：探試題組匯入鎖版、學生拿不到答案�
   const [mL,mW]=rect.steps.filter(x=>x.role==='measure'),ansStep=rect.steps.find(x=>x.role==='answer'),wrongL=mL.answer+1;
   const at=(...p)=>({confirms:p.map(([v,t])=>({v,t}))}),st2={[mL.key]:at([wrongL,1],[mL.answer,4]),[mW.key]:at([mW.answer,2]),[ansStep.key]:at([wrongL*mW.answer,3],[mL.answer*mW.answer,5])};
   for(const x of rect.steps)if(!st2[x.key])st2[x.key]=at([x.answer,2]);
+  // 時間都一樣（t 相同）時用序號 n 分先後
+  for(const [k,list] of Object.entries(st2))list.confirms.forEach(c=>{c.n=c.t;c.t=1;});
+  // 資料庫寫入失敗：回 503（前端會保留答案再送），不能當成「已收件」
+  const prep=env.DB.prepare.bind(env.DB);env.DB.prepare=sql=>/^INSERT INTO probe_items/.test(sql)?{bind:()=>({run:async()=>{throw new Error('disk');}})}:prep(sql);
+  try{assert.equal((await call(`/api/probe/${run2.run}/item`,{method:'POST',cookie:t8,body:{itemId:rect.id,steps:st2,secs:20}})).status,503);}finally{env.DB.prepare=prep;}
   assert.equal((await call(`/api/probe/${run2.run}/item`,{method:'POST',cookie:t8,body:{itemId:rect.id,steps:st2,secs:20}})).status,200);
+  assert.equal((await call(`/api/probe/${run2.run}/item`,{method:'POST',cookie:t8,body:{itemId:rect.id,steps:st2,secs:20}})).data.error,'already_submitted');
+  // 確定 31 次：第一次與真正最後一次都要算；超過每題時間才確定的答案不算，記為逾時
+  const others=form2.items.filter(i=>i.id!==rect.id),it31=others[0],it90=others[1],a31=it31.steps.find(x=>x.role==='answer');
+  const st31={};for(const x of it31.steps)st31[x.key]=x===a31?{confirms:[...Array.from({length:30},(_,i)=>({v:999,t:i+1,n:i+1})),{v:a31.answer,t:40,n:31}]}:at([x.answer,1]);
+  assert.equal((await call(`/api/probe/${run2.run}/item`,{method:'POST',cookie:t8,body:{itemId:it31.id,steps:st31,secs:45}})).status,200);
+  const a90=it90.steps.find(x=>x.role==='answer'),st90={};for(const x of it90.steps)st90[x.key]=x===a90?{confirms:[{v:999,t:10,n:1},{v:a90.answer,t:110,n:2}]}:at([x.answer,1]);
+  assert.equal((await call(`/api/probe/${run2.run}/item`,{method:'POST',cookie:t8,body:{itemId:it90.id,steps:st90,secs:114}})).status,200);
   await call(`/api/probe/${run2.run}/finish`,{method:'POST',cookie:t8,body:{reason:'stopped'}});
-  const it2=(await call('/api/study/export?type=probeItems',{user:owner})).data.rows.find(r=>r.runId===run2.run||r.run===run2.run)||(await call('/api/study/export?type=probeItems',{user:owner})).data.rows.find(r=>r.itemId===rect.id&&r.student==='T08-S02');
+  const it2=(await call('/api/study/export?type=probeItems',{user:owner})).data.rows.find(r=>r.itemId===rect.id&&r.student==='T08-S02');
   const area2=it2.result.steps.find(x=>x.key===ansStep.key);
   assert.equal(area2.firstCorrect,true,'第一次的面積符合當時的長寬');assert.equal(area2.hadError,false);assert.equal(area2.selfCorrected,false);
   assert.equal(it2.result.firstCorrect,false,'最終答案第一次確定時不是正確答案');assert.equal(it2.result.correct,true);
+  const exp2=(await call('/api/study/export?type=probeItems',{user:owner})).data.rows.filter(r=>r.student==='T08-S02');
+  const r31=exp2.find(r=>r.itemId===it31.id).result,s31=r31.steps.find(x=>x.key===a31.key);
+  assert.equal(s31.final,a31.answer);assert.equal(r31.correct,true);assert.equal(s31.firstCorrect,false);assert.equal(s31.selfCorrected,true);
+  const r90=exp2.find(r=>r.itemId===it90.id).result;assert.equal(r90.timedOut,true);assert.equal(r90.correct,false,'時間到了以後改對的不算');
   // 同一位學生第二次：換下一份複本
   assert.equal((await call('/api/probe/start',{method:'POST',cookie:t8,body:{student:'T08-S01',set:'demoProbe@1'}})).data.formId,'A');
 });

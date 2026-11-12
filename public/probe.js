@@ -7,7 +7,7 @@
 (() => {
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const WHO_KEY = 'area-research-who-v22', RUN_KEY = 'area-probe-run-v26';
+  const WHO_KEY = 'area-research-who-v22', RUN_KEY = 'area-probe-run-v26', PEND_KEY = RUN_KEY + ':pending';
   const CHEERS = ['謝謝你，很認真！', '好，下一題。', '你很專心，繼續！'];
   const load = (k, f) => { try { return JSON.parse(sessionStorage.getItem(k) || 'null') ?? f; } catch { return f; } };
   const keep = (k, v) => { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch { /* 略過 */ } };
@@ -28,7 +28,7 @@
   async function start() {
     const who = load(WHO_KEY, null);
     state = load(RUN_KEY, null);
-    if (state && who && state.student === who.student) { $('probeWho').textContent = state.student; return show(); }   // 重新整理：接著做
+    if (state && who && state.student === who.student) { $('probeWho').textContent = state.student; return load(PEND_KEY, null) ? deliver() : show(); }   // 重新整理：先送完還沒送出去的，再接著做
     if (!who || who.off || !who.student) { $('probe').innerHTML = '<p>請老師先在學生頁選學生代號、按「開始本節」，再進入小測驗。</p><p><a href="seven.html">回學生頁</a></p>'; return; }
     $('probeWho').textContent = who.student + (who.sessionNo ? `・第 ${who.sessionNo} 節` : '');
     let sets; try { sets = (await api('/api/probe/sets')).sets; } catch { $('probe').innerHTML = '<p>讀不到題組。請確認「現場試用紀錄」有勾選存進網站資料庫。</p>'; return; }
@@ -84,7 +84,9 @@
         const raw = s.input === 'number' ? $('in_' + s.key).value.trim() : picked();
         if (raw === undefined || raw === '') { $('done_' + s.key).textContent = '還沒填'; return; }
         const v = s.input === 'number' ? Number(raw) : raw;
-        (answers[s.key] = answers[s.key] || { confirms: [] }).confirms.push({ v, t: Math.round((Date.now() - itemStart) / 100) / 10 });
+        // n：全題共用的遞增序號，伺服器用它判斷先後（同一個時間按了好幾個確定也分得出來）
+        const n = 1 + Math.max(0, ...Object.values(answers).flatMap(a => a.confirms.map(c => c.n || 0)));
+        (answers[s.key] = answers[s.key] || { confirms: [] }).confirms.push({ v, t: Math.round((Date.now() - itemStart) / 100) / 10, n });
         $('done_' + s.key).textContent = '已確定';   // 不顯示對錯
         keep(RUN_KEY + ':item', { run: state.run, index: state.index, startedAt: itemStart, answers });
       };
@@ -101,7 +103,8 @@
     if (allLeft <= 0) submit(true, 'timeout');
     else if (itemLeft <= 0) submit(true);
   }
-  // 送出：伺服器確定收到（或回答已經收過）才換題、清掉這一題的答案；送不出去就留在這一題，讓老師按「再送一次」
+  // 送出：先把這次要送的內容（答案快照、逾時、技術問題、要不要結束）存在這台電腦，再送。
+  // 伺服器確定收到才換題、清掉答案；送不出去就停在這裡，答案不能再改，老師按「再送一次」只重送同一份內容；重新整理也會先送完。
   async function send(path, body) {
     for (let i = 0; i < 3; i++) {
       try { await api(path, body); return true; }
@@ -109,31 +112,41 @@
     }
     return false;
   }
-  function failed(text, retry) {
+  function failed(text) {
     const box = document.getElementById('probeRetry') || Object.assign(document.createElement('div'), { id: 'probeRetry', className: 'retry' });
     box.setAttribute('role', 'alert');
     box.innerHTML = `<p>${esc(text)}</p><button type="button" class="primary submit">再送一次</button>`;
     if (!box.isConnected) $('probe').append(box);
-    box.querySelector('button').onclick = () => { box.remove(); retry(); };
+    box.querySelector('button').onclick = () => { box.remove(); deliver(); };
   }
-  async function submit(timedOut, end) {
+  const trim = c => c.length > 30 ? [...c.slice(0, 10), ...c.slice(-20)] : c;
+  function submit(timedOut, end) {
     if (busy) return; busy = true; clearInterval(timer);
-    const body = { itemId: item.id, steps: answers, timedOut, tech, secs: Math.round((Date.now() - itemStart) / 1000) };
-    if (!await send(`/api/probe/${state.run}/item`, body)) { busy = false; failed('這一題還沒送出去（網路可能斷了），答案都還在。網路好了再按「再送一次」。', () => submit(timedOut, end)); return; }
-    state.index++; keep(RUN_KEY, state); try { sessionStorage.removeItem(RUN_KEY + ':item'); } catch { /* 略過 */ }
-    if (end) return finish(end);
-    $('probe').innerHTML = `<p class="cheer" data-say>${CHEERS[state.index % CHEERS.length]}</p>`;
-    setTimeout(show, 1200);
+    const steps = Object.fromEntries(Object.entries(answers).map(([k, a]) => [k, { confirms: trim(a.confirms) }]));
+    keep(PEND_KEY, { kind: 'item', run: state.run, index: state.index, body: { itemId: item.id, steps, timedOut, tech, secs: Math.round((Date.now() - itemStart) / 1000) }, end: end || '' });
+    deliver();
   }
-  async function finish(reason) {
-    clearInterval(timer);
-    if (!await send(`/api/probe/${state.run}/finish`, { reason })) {
-      $('probe').innerHTML = '<p class="cheer">小測驗做完了，謝謝你！</p>';
-      failed('結束的紀錄還沒送出去（網路可能斷了）。網路好了再按「再送一次」。', () => finish(reason));
-      return;
-    }
-    try { sessionStorage.removeItem(RUN_KEY); sessionStorage.removeItem(RUN_KEY + ':item'); } catch { /* 略過 */ }
-    $('probe').innerHTML = '<p class="cheer" data-say>小測驗做完了，謝謝你！</p><p style="text-align:center"><a class="primary submit" href="seven.html">回到學習</a></p>';
+  function finish(reason) { clearInterval(timer); keep(PEND_KEY, { kind: 'finish', run: state.run, reason }); deliver(); }
+  let delivering = false;
+  async function deliver() {
+    const p = load(PEND_KEY, null); if (!p || delivering) return; delivering = true; clearInterval(timer);
+    // 答案已經交出去了：畫面上的輸入都鎖住，不能再改
+    document.querySelectorAll('#probe input, #probe [data-opt], #probe [data-ok], #submit, #techBtn, #stopBtn').forEach(x => { x.disabled = true; });
+    try {
+      if (p.kind === 'item') {
+        if (!await send(`/api/probe/${p.run}/item`, p.body)) { failed('這一題還沒送出去（網路可能斷了），答案都還在。網路好了再按「再送一次」。'); return; }
+        if (state.index === p.index) { state.index++; keep(RUN_KEY, state); }
+        try { sessionStorage.removeItem(RUN_KEY + ':item'); } catch { /* 略過 */ }
+        if (p.end) { keep(PEND_KEY, { kind: 'finish', run: p.run, reason: p.end }); delivering = false; return deliver(); }
+        try { sessionStorage.removeItem(PEND_KEY); } catch { /* 略過 */ }
+        $('probe').innerHTML = `<p class="cheer" data-say>${CHEERS[state.index % CHEERS.length]}</p>`;
+        setTimeout(show, 1200);
+      } else {
+        if (!await send(`/api/probe/${p.run}/finish`, { reason: p.reason })) { $('probe').innerHTML = '<p class="cheer">小測驗做完了，謝謝你！</p>'; failed('結束的紀錄還沒送出去（網路可能斷了）。網路好了再按「再送一次」。'); return; }
+        try { [RUN_KEY, RUN_KEY + ':item', PEND_KEY].forEach(k => sessionStorage.removeItem(k)); } catch { /* 略過 */ }
+        $('probe').innerHTML = '<p class="cheer" data-say>小測驗做完了，謝謝你！</p><p style="text-align:center"><a class="primary submit" href="seven.html">回到學習</a></p>';
+      }
+    } finally { delivering = false; }
   }
   start();
 })();

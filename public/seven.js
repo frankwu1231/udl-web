@@ -1011,7 +1011,7 @@
         if (window.areaTutor?.stage?.()) { const snap = titles().map((t, s) => { const first = records.find(x => x.cycle === cycle && x.actId === type && x.event === '步驟檢核' && x.activity === s + 1); return { step: s + 1, title: t, answer: first ? answerText(s) : '', first: first && !first.correct ? first.choice || '' : '' }; }); snap.cycle = cycle; window.areaTutor.done(snap); }
         carry = { cycle, reason: chosenText('reason'), method: answers.nextMethod, cause: !r.met ? answers.cause : '', badges, fadeMsg: adjustFade(!retryQ) };
         retryQ = !next;
-        log('反思與下一輪調整', { activity: 7, choice: `目標：${probe ? '小測驗' : goalItem ? goalItem[1] : '做完就好'}；結果：${resultLine(r).replace('我的結果：', '')}；自己判斷：${answers.selfMet ? chosenText('selfMet') : '—'}；原因：${answers.cause ? chosenText('cause') : '—'}；幫助我的：${chosenText('reason')}；下一題：${chosenText('nextMethod')}${answers.myReflection ? '；學生說：' + answers.myReflection : ''}${voices[cycle] ? '；有錄音' : ''}`, judgment: answers.selfMet || '', reason: carry.reason, cause: answers.cause || '', studentWords: answers.myReflection || '', nextMethod: carry.method, nextAction: next ? '新題' : '重試' });
+        log('反思與下一輪調整', { activity: 7, choice: `目標：${probe ? '小測驗' : goalItem ? goalItem[1] : '做完就好'}；結果：${resultLine(r).replace('我的結果：', '')}；自己判斷：${answers.selfMet ? chosenText('selfMet') : '—'}；原因：${answers.cause ? chosenText('cause') : '—'}；幫助我的：${chosenText('reason')}；下一題：${chosenText('nextMethod')}${answers.myReflection ? '；有寫給老師的話' : ''}${voices[cycle] ? '；有錄音' : ''}`, judgment: answers.selfMet || '', reason: carry.reason, cause: answers.cause || '', studentWords: answers.myReflection || '', wroteWords: !!answers.myReflection, nextMethod: carry.method, nextAction: next ? '新題' : '重試' });
         if (next) index = (index + 1) % 3; else keepProblem = true;
         cycle++;
         if (toMap) { location.href = mapUrl(); return; }
@@ -1424,7 +1424,7 @@
       if (P()) { settings = ownSettings(); if (!settings.ai) $('apiSettings').hidden = true; pProblem = P().makeProblem(level(), index, Math.random); }
       else if (type) { settings = ownSettings(); orders.lines = F.shuffle(['A', 'B', 'C']); if (!settings.ai) $('apiSettings').hidden = true; if (settings.mode === 'probe') probeDims = F.randomProblem(type, settings.difficulty === 'custom' ? 'standard' : settings.difficulty); }
       attachBuddy(); applyReading();
-      window.areaResearch?.init(lessons.research, { records: () => records, settings: () => settings, activity: () => ({ id: type || '', name: type ? nameOf() : '' }), step, log, changed: () => render(), reset: resetStudent, refresh: () => { if (type) settings = ownSettings(); }, classCode: session.classCode || '', scope: (session.workspace || '') + '/' + (session.className || '') });
+      window.areaResearch?.init(lessons.research, { records: () => records, settings: () => settings, activity: () => ({ id: type || '', name: type ? nameOf() : '' }), step, log, changed: () => render(), reset: resetStudent, refresh: () => { if (type) settings = ownSettings(); }, classCode: session.classCode || '', workspace: session.workspace || '', scope: (session.workspace || '') + '/' + (session.className || '') });
       render();
     } catch (error) { shell('教材暫時無法載入', `<p>${esc(error.message)}</p><a href="/">返回入口</a>`); }
   }

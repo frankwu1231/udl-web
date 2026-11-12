@@ -1314,6 +1314,12 @@ test('第 26 版第四階段：BC 階段有小老師小方（示範階段先點�
   const right = options.find(o => title.includes(o)) || options[0];
   await p.page.click(`#tutorBubble [data-tutor]:text-is("${right}")`);
   assert.equal(await p.page.$eval('[data-demo]', b => b.disabled), false);
+  // 示範階段的題末對照：學生猜的下一步和小方做的並列
+  await p.page.evaluate(() => window.areaTutor.done([]));
+  await p.page.waitForSelector('#tutorCompare[open]');
+  assert.match(await p.text('#tutorCompare'), /小方做的[\s\S]*你猜的/);
+  assert.match(await p.text('#tutorCompare'), new RegExp(right));
+  await p.page.click('#tutorCompareDone');
   assert.equal(await p.page.$('#buddy'), null, 'BC 階段小方（小幫手）由小老師小方取代');
   assert.equal(await p.page.$('[id^="aiHint"]'), null, '關閉問 AI');
   await p.page.click('[data-tp="gesture"]');
@@ -1373,4 +1379,47 @@ test('第 26 版：平板與手機寬度下，小老師小方不擋按鈕、按�
     await sp.click('#stopBtn').catch(() => {});
     await p.page.context().close();
   }
+});
+
+test('第 26 版：小測驗斷線後重新整理，技術缺測與老師結束都會接著送出', { skip: skip || !distReady }, async () => {
+  await setup();
+  const ctx = await browser.newContext(), page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('dialog', d => d.accept());
+  await page.goto(base + '/study.html'); await page.waitForSelector('#probeFile');
+  await page.setInputFiles('#probeFile', fileURLToPath(new URL('../scenarios/demo-probe.json', import.meta.url)));
+  await page.waitForFunction(() => /已匯入 demoProbe@1|匯入過/.test(document.querySelector('#probeMsg')?.textContent || ''));
+  await page.addInitScript(() => { if (!sessionStorage.getItem('area-research-who-v22')) sessionStorage.setItem('area-research-who-v22', JSON.stringify({ teacher: 'T01', student: 'T01-S09', sessionNo: 2, sessionId: 'y' })); });
+  await page.goto(base + '/probe.html'); await page.waitForSelector('#probeStart'); await page.click('#probeStart'); await page.waitForSelector('[data-step]');
+  const down = r => r.abort();
+  // 技術問題：送不出去 → 重新整理 → 自動補送，仍然記成技術缺測
+  await page.route('**/api/probe/*/item', down);
+  await page.click('#techBtn'); await page.waitForSelector('#probeRetry', { timeout: 10000 });
+  assert.equal(await page.$eval('#submit', b => b.disabled), true, '交出去之後答案鎖住');
+  await page.unroute('**/api/probe/*/item', down);
+  await page.reload(); await page.waitForFunction(() => /第 2 題/.test(document.querySelector('.probe')?.innerText || ''), null, { timeout: 10000 });
+  // 老師結束：送不出去 → 重新整理 → 接著送出結束
+  await page.route('**/api/probe/*/finish', down);
+  await page.click('#stopBtn'); await page.waitForSelector('#probeRetry', { timeout: 10000 });
+  await page.unroute('**/api/probe/*/finish', down);
+  await page.reload(); await page.waitForFunction(() => /小測驗做完了/.test(document.querySelector('.probe')?.innerText || ''), null, { timeout: 10000 });
+  const run = (await page.evaluate(async () => (await (await fetch('/api/study/export?type=probes')).json()).rows)).find(x => x.student === 'T01-S09');
+  assert.equal(run.status, 'stopped');
+  const items = await page.evaluate(async () => (await (await fetch('/api/study/export?type=probeItems')).json()).rows.filter(x => x.student === 'T01-S09'));
+  assert.equal(items[0].result.tech, true, '重新整理後仍是技術缺測');
+  assert.equal(items.length, 2);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('第 26 版：用教師代號或他的班級代碼登入時，只能選這位老師；伺服器拒絕時不開始', { skip: skip || !distReady }, async () => {
+  const p = await student('rectangle', { buddyVoice: false, __research: { url: '', key: '', teachers: 4, students: 6, server: true } });
+  await p.page.route('**/api/session', async r => { const res = await r.fetch(); r.fulfill({ response: res, json: { ...(await res.json()), workspace: 'T03' } }); });
+  await p.page.route('**/api/sessions/start', r => r.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ error: 'not_your_student' }) }));
+  await p.page.reload(); await p.page.waitForSelector('#researchWho[open]');
+  assert.deepEqual(await p.page.$$eval('#researchWho [data-pick="teacher"] [data-v]', bs => bs.map(b => b.dataset.v)), ['T03']);
+  for (const [g, v] of [['num', '01'], ['camera', 'no']]) await p.page.click(`#researchWho [data-pick="${g}"] [data-v="${v}"]`);
+  await p.page.click('#researchStart');
+  await p.page.waitForFunction(() => /不是這個班級的學生/.test(document.querySelector('#researchWhyNot')?.textContent || ''));
+  assert.equal(await p.page.$eval('#researchWho', d => d.open), true, '沒有開始');
+  assert.deepEqual(p.errors, []);
+  await p.page.context().close();
 });

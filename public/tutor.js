@@ -11,6 +11,7 @@
   const STAGE_NAME = { demo: '示範', guided: '陪做', faded: '撤除' };
   const SELF_ASK = ['我在找什麼？', '我要先看哪裡？', '我要怎麼做？', '這樣對嗎？'];
   const FIXED = { right: '對了，你做得很仔細。', wrong: '再看一次圖，慢慢想。', idle: '停一下了。想想看：我在找什麼？', predict: '想一想，下一步要做什麼。', compare: '看看我們兩個哪裡一樣。' };
+  const guesses = new Map();   // 示範階段：這一題每一步學生猜小方要做什麼（題末對照用）
   let api = null, root = null, lastStep = null, asked = new Set(), predicted = new Set(), idle = 0, idleSaid = false, cycleKey = '';
 
   const research = () => window.areaResearch;
@@ -70,7 +71,8 @@
     btn.disabled = true;
     say(`${SELF_ASK[Math.min(SELF_ASK.length - 1, Math.floor(s / 2))]}小方下一步要做什麼？`, { buttons: opts, pick: v => {
       predicted.add(cycleKey + s); btn.disabled = false;
-      const ok = v === s;
+      const ok = v === s, gk = api.act() + '|' + api.cycle();
+      if (!guesses.has(gk)) guesses.set(gk, []); guesses.get(gk).push({ step: s + 1, guess: api.title(v), answer: api.title(s), ok });
       api.log('小方示範選擇', { activity: s + 1, correct: ok, choice: api.title(v), answer: api.title(s) });
       say(ok ? `對！我要「${api.title(s)}」。看我做。` : `我要先「${api.title(s)}」。看我做。`, { ttl: 5000 });
     } });
@@ -87,6 +89,24 @@
     } });
   }
 
+  // ---------- 示範階段的題末對照：學生猜的下一步和小方實際做的 ----------
+  function compareDemo(cycle) {
+    const rows = guesses.get(api.act() + '|' + cycle) || [];
+    if (!rows.length) return;
+    let d = document.getElementById('tutorCompare');
+    if (!d) { d = document.createElement('dialog'); d.id = 'tutorCompare'; d.className = 'research-dialog tutor-compare'; document.body.append(d); }
+    const right = rows.filter(r => r.ok).length;
+    d.innerHTML = `<h2 data-say>小方做了哪些步驟？</h2><p data-say>看一看，你猜的下一步和小方做的一不一樣。</p>
+      <table class="study-table"><thead><tr><th>步驟</th><th>小方做的</th><th>你猜的</th><th></th></tr></thead><tbody>${rows.map(r => `<tr><td>${r.step}</td><td>${esc(r.answer)}</td><td>${esc(r.guess)}</td><td>${r.ok ? '✓ 一樣' : '不一樣'}</td></tr>`).join('')}</tbody></table>
+      <div class="actions"><button type="button" id="tutorCompareDone" class="primary">好了</button></div>`;
+    d.oncancel = e => e.preventDefault();
+    d.querySelector('#tutorCompareDone').onclick = () => {
+      api.log('題末對照', { activity: 7, cycle, kind: 'demo', steps: rows.length, correct: right === rows.length, score: right });
+      guesses.delete(api.act() + '|' + cycle); d.close();
+      say(right === rows.length ? '你每一步都猜對了！' : '下一題換你試試看，我在旁邊看。', { ttl: 6000 });
+    };
+    d.showModal();
+  }
   // ---------- 題末對照：小方的正確作品和學生第一次的作答 ----------
   function compare(snapshot) {
     const rows = snapshot.filter(r => r.answer);
@@ -135,6 +155,6 @@
     },
     right(s) { if (!on() || stage() === 'faded' || stage() === 'demo') return; line('right', s).then(t => say(t, { ttl: 3500 })); },
     wrong(s, obs) { if (!on() || stage() === 'demo') return; line('wrong', s, { obs }).then(t => say(t, { ttl: 5000 })); },
-    done(snapshot) { if (!on()) return; setTimeout(() => compare(snapshot), 300); }
+    done(snapshot) { if (!on()) return; const c = snapshot.cycle ?? api.cycle(); setTimeout(() => (stage() === 'demo' ? compareDemo(c) : compare(snapshot)), 300); }
   };
 })();

@@ -29,7 +29,7 @@
     ['assists', '我今天需要介入幾次', [['0', '0 次'], ['1-2', '1～2 次'], ['3-5', '3～5 次'], ['6+', '6 次以上']]]
   ];
 
-  let cfg = null, api = null, who = null, scopeKey = '', sending = false, lastActivity = '', classCode = '';
+  let cfg = null, api = null, who = null, scopeKey = '', sending = false, lastActivity = '', classCode = '', ownTeacher = '';
   const load = (store, key, fallback) => { try { const v = JSON.parse(store.getItem(key) || 'null'); return v ?? fallback; } catch { return fallback; } };
   const keep = (store, key, value) => { try { store.setItem(key, JSON.stringify(value)); return true; } catch { return false; } };
   // 每個試算表網址有自己的佇列：換了網址，舊的離線紀錄不會送到新的試算表
@@ -143,7 +143,8 @@
     if (r.event === '教師觀察' || r.event === '教師即時紀錄') enqueue('教師觀察', { ...base, kind: r.event, tag: r.tagText || '', phase: r.phase || '', level: r.level || '', buddyReact: r.buddyReact || '', note: r.evidence || r.note || '' });
     if (r.event === '學生心情' || r.event === '學生回饋') enqueue('學生回饋', { ...base, kind: r.event, mood: r.moodText || '', fun: r.funText || '', buddyHelp: r.buddyHelpText || '', camFeel: r.camFeelText || '' });
     if (r.event === '小幫手' && r.action === '鏡頭打不開') tech('鏡頭', r.error || '鏡頭打不開');
-    const { time, shape, shapeKey, actId, cycle, activity, stepTitle, event, mode, studyPhase, teacherId, studentId, sessionId, ...rest } = r;
+    // 學生自己寫的話（studentWords）只留在這台電腦給老師看，不上傳
+    const { time, shape, shapeKey, actId, cycle, activity, stepTitle, event, mode, studyPhase, teacherId, studentId, sessionId, studentWords, ...rest } = r;
     enqueue('操作紀錄', { ...base, correct: r.correct === undefined ? '' : r.correct ? '是' : '否', hintLevel: r.hintLevel ?? '', action: r.action || '', detail: JSON.stringify(rest).slice(0, 1500) });
     if (r.event === '整題完成') { summary(r); const ctx = { cycle: r.cycle, shape: r.shape, shapeKey: r.shapeKey, actId: r.actId, sessionId: who.sessionId }; setTimeout(() => askMood(ctx), 600); flush(); }
   }
@@ -221,7 +222,7 @@
   // ---------- 第 26 版：節次與學生個別設定（存在網站資料庫） ----------
   async function startSession(student, device) {
     if (serverOn()) {
-      try { const res = await fetch('/api/sessions/start', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ student, device }), cache: 'no-store' }); const out = await res.json(); if (res.ok && Number.isInteger(out.no)) return out.no; } catch { /* 改用這台電腦的節次 */ }
+      try { const res = await fetch('/api/sessions/start', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ student, device }), cache: 'no-store' }); const out = await res.json(); if (res.ok && Number.isInteger(out.no)) return out.no; if (res.status === 403) return null; } catch { /* 改用這台電腦的節次 */ }
     }
     const all = load(localStorage, SESSIONS_KEY, {}) || {}, k = scopeKey + '|' + student;
     all[k] = (all[k] || 0) + 1; keep(localStorage, SESSIONS_KEY, all);
@@ -284,10 +285,10 @@
   function chooseWho() {
     const t = Math.max(1, Math.min(12, cfg.teachers || 4)), n = Math.max(1, Math.min(20, cfg.students || 6));
     const last = load(sessionStorage, LAST_KEY, {}) || {};   // 記住上一位的教師代號、裝置、上課形式；鏡頭同意每位學生都要重選
-    const st = { teacher: last.teacher || '', num: '', device: last.device || '平板', group: last.group || '一對一', camera: '' };
+    const st = { teacher: ownTeacher || last.teacher || '', num: '', device: last.device || '平板', group: last.group || '一對一', camera: '' };
     const d = dialog('researchWho', `<h2>📋 現場試用：請老師選代號</h2>
       <p class="subtle">只用代號，不寫姓名。代號和姓名的對照請老師自己保存。</p>
-      <h3>教師代號</h3>${pickRow('teacher', Array.from({ length: t }, (_, i) => { const c = 'T' + pad(i + 1); return [c, c]; }), st.teacher)}
+      <h3>教師代號</h3>${pickRow('teacher', ownTeacher ? [[ownTeacher, ownTeacher]] : Array.from({ length: t }, (_, i) => { const c = 'T' + pad(i + 1); return [c, c]; }), st.teacher)}
       <h3>學生號碼</h3>${pickRow('num', Array.from({ length: n }, (_, i) => [pad(i + 1), String(i + 1)]), '')}
       <h3>使用的裝置</h3>${pickRow('device', [['平板', '平板'], ['電腦', '電腦'], ['手機', '手機']], st.device)}
       <h3>上課形式</h3>${pickRow('group', [['一對一', '一對一'], ['小組', '小組'], ['全班', '全班']], st.group)}
@@ -306,6 +307,7 @@
       who = { teacher: st.teacher, student, device: st.device, group: st.group, camera: st.camera === 'yes', sessionId: `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${student}-${Math.random().toString(36).slice(2, 6)}`, startedAt: Date.now(), scope: scopeKey };
       $('researchStart').disabled = true;
       who.sessionNo = await startSession(student, st.device);   // 第 26 版：「開始本節」，這位學生的第幾節
+      if (who.sessionNo === null) { who = null; $('researchStart').disabled = false; $('researchWhyNot').textContent = '這個代號不是這個班級的學生，請選這位老師的代號。'; $('researchWhyNot').hidden = false; return; }
       who.overrides = await loadOverrides(student);
       const ph = await loadPhase(student); who.phase = ph.phase || ''; who.teacherWait = ph.teacherWait || 10; who.adviceOff = ph.showAdvice === 0; who.tutor = {};
       keep(sessionStorage, WHO_KEY, who); keep(sessionStorage, LAST_KEY, { teacher: who.teacher, device: who.device, group: who.group });
@@ -383,7 +385,7 @@
   window.areaResearch = {
     // a：records()、settings()、activity()、step()、log(e, x)、changed()（代號或鏡頭同意改了，請學生頁重畫）、reset()（換學生，清掉上一位的進度）
     init(config, a) {
-      api = a; classCode = a.classCode || '';
+      api = a; classCode = a.classCode || ''; ownTeacher = /^T(0[1-9]|1[0-2])$/.test(a.workspace || '') ? a.workspace : '';   // 用教師代號或他的班級代碼登入：只能選這位老師
       if (!config || !((config.url && config.key) || config.server)) return;
       cfg = config; who = load(sessionStorage, WHO_KEY, null);
       // 第 25 版：代號只在同一個班級、同一個試用表單用；換班級或換表單就重選（不沿用上一班的代號與鏡頭同意）

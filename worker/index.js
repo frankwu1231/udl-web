@@ -245,11 +245,13 @@ const RECORDS_PER_DAY=20000;
 const RECORD_KEYS=new Set(('rid sheet time version sessionId teacher student sessionNo classCode phase activity actId cycle step stepTitle event mode studyPhase correct hintLevel action detail '+
 'siteVersion shape shapeKey support response method flow difficulty tutorStage teacherId studentId '+
 'aid answer attempt attentionReminds badges browser buddyAccepted buddyHelp buddyHelpText buddyOffers buddyReact buddyStuck buddyWrong by camFeel camFeelText cameraConsent carriedFrom cause changes checkGoal checked choice completed confidence corrected decision device different dimensions error errors evidence example fadeLevel fallback finding firstTry frame from fullExample fun funText goal goalKind goalMet group hasCamera helped hints idle index issue judgment kind learnerJudgment level levelText maxHintLevel message minutes model monitors mood moodText nextAction nextMethod nextStep note obs on online operation outcome page part presentation promptVersion provider reason result score screen seconds secs selfMet selfReportedCheck skipped source stage start steps streak stuckPressed studentMarked tag tagText teacherHelp text times to value watched where why wrong cue '+
-'engage timing buddyUseful camAccurate assists fix buddy buddyWait buddyVoice attention attentionSec zhuyin textSize contrast video ai fading selfAsk rest').split(' '));
-const NESTED_KEY=/^[A-Za-z][A-Za-z0-9_]{0,23}$/;
-function cleanRecordValue(v,depth){if(v===null||typeof v==='boolean')return v;if(typeof v==='number')return Number.isFinite(v)?v:null;if(typeof v==='string')return v.slice(0,500);if(depth>2)return null;
-if(Array.isArray(v))return v.slice(0,40).map(x=>cleanRecordValue(x,depth+1));if(typeof v==='object'){const o={};for(const [k,x] of Object.entries(v).slice(0,40))if(NESTED_KEY.test(k))o[k]=cleanRecordValue(x,depth+1);return o;}return null;}
-function cleanRecordObject(obj,depth){const o={};for(const [k,v] of Object.entries(obj))if(RECORD_KEYS.has(k))o[k]=cleanRecordValue(v,depth);return o;}
+'wroteWords engage timing buddyUseful camAccurate assists fix buddy buddyWait buddyVoice attention attentionSec zhuyin textSize contrast video ai fading selfAsk rest').split(' '));
+// 巢狀物件（例如 dimensions、answer）也只收已知欄位；字串一律截短
+const NESTED_KEYS=new Set('w h a b total unit divisor complete correct skipped field before after direction x y'.split(' '));
+const LONG_TEXT=new Set(['message','note','evidence','fix','browser']);
+function cleanRecordValue(v,depth,max){if(v===null||typeof v==='boolean')return v;if(typeof v==='number')return Number.isFinite(v)?v:null;if(typeof v==='string')return v.slice(0,depth>1?60:max);if(depth>2)return null;
+if(Array.isArray(v))return v.slice(0,40).map(x=>cleanRecordValue(x,depth+1,60));if(typeof v==='object'){const o={};for(const [k,x] of Object.entries(v).slice(0,40))if(NESTED_KEYS.has(k))o[k]=cleanRecordValue(x,depth+1,60);return o;}return null;}
+function cleanRecordObject(obj,depth){const o={};for(const [k,v] of Object.entries(obj))if(RECORD_KEYS.has(k))o[k]=cleanRecordValue(v,depth,LONG_TEXT.has(k)?500:300);return o;}
 function cleanRecordRow(r){const o=cleanRecordObject(r,1);if(typeof r.detail==='string'){let d=null;try{d=JSON.parse(r.detail);}catch{}o.detail=d&&typeof d==='object'&&!Array.isArray(d)?JSON.stringify(cleanRecordObject(d,1)):'';}else if(r.detail!==undefined)o.detail='';return o;}
 const researchRole=who=>who.role==='student'||who.role==='test'||who.role==='teacher';
 // 參與教師（T01～T12）與他班級的學生裝置，只能碰自己的學生（代號開頭是自己的教師代號）；主持人與測試工作區不限
@@ -502,10 +504,13 @@ const publicItem=it=>({id:it.id,type:it.type,prompt:it.prompt,figure:it.figure||
 // ---------- 計分 ----------
 const sameAnswer=(v,a)=>v!==null&&v!==undefined&&v!==''&&(typeof a==='number'?Number(v)===a:String(v)===String(a));
 function scoreProbeItem(item,resp){const st=resp&&resp.steps&&typeof resp.steps==='object'?resp.steps:{},tech=resp?.tech===true;
-const confirmsOf=k=>Array.isArray(st[k]?.confirms)?st[k].confirms.filter(c=>c&&(typeof c.v==='number'||typeof c.v==='string')).slice(0,30):[];
+// 確定的次數太多時：保留前 10 次與最後 20 次（第一次與真正最後一次一定在）
+const confirmsOf=k=>{const c=Array.isArray(st[k]?.confirms)?st[k].confirms.filter(c=>c&&(typeof c.v==='number'||typeof c.v==='string')):[];return c.length>30?[...c.slice(0,10),...c.slice(-20)]:c;};
 const finalOf=k=>{const c=confirmsOf(k);return c.length?c.at(-1).v:null;},firstOf=k=>{const c=confirmsOf(k);return c.length?c[0].v:null;};
 // 某一步在時間 t（含）以前最後確定的值：連帶錯誤要依「當時」已確定的取量判定，後來改了取量不會回頭改變先前的評分
-const tOf=c=>typeof c?.t==='number'&&Number.isFinite(c.t)?c.t:Infinity;
+// 先後順序：有全題共用的遞增序號 n 就用 n（同一個時間按了好幾個確定也分得出先後），舊資料才用時間 t
+const seqd=item.steps.some(s=>Array.isArray(st[s.key]?.confirms)&&st[s.key].confirms.some(c=>typeof c?.n==='number'));
+const tOf=c=>{const x=seqd?c?.n:c?.t;return typeof x==='number'&&Number.isFinite(x)?x:Infinity;};
 const numAt=(k,t)=>{const c=confirmsOf(k).filter(x=>tOf(x)<=t);const v=c.length?c.at(-1).v:null;return v===null||v===''?NaN:Number(v);};
 // 前一步錯了：後面的答案依學生自己前一步的結果判定（只用在步驟計分，不用在最終答案的正確率）
 function carried(step,v,t){if(step.role!=='answer'||v===null||v==='')return false;const x=Number(v);
@@ -546,8 +551,13 @@ await env.DB.prepare('INSERT INTO probe_runs (id,workspace,student,set_id,form_i
 return json({run:id,kind:row.set.kind,formId:form.id,itemSecs:row.set.itemSecs||90,totalSecs:row.set.totalSecs||900,items:form.items.map(publicItem)});}
 const [id,action]=rest.split('/'),p=await probeRun(env,who,id);if(!p)return json({error:'not_found'},404);if(p.run.status!=='running')return json({error:'already_finished'},409);
 if(action==='item'){const b=await readJson(request,16000),idx=p.form.items.findIndex(i=>i.id===b?.itemId);if(idx<0)return json({error:'invalid_input'},400);
+// 時間到了之後才確定的答案不算（前端計時停了也一樣）：超過每題時間就記為逾時
+const lim=(p.set?.itemSecs||90)+2,late=intIn(b.secs,0,36000)&&b.secs>lim;if(b.steps&&typeof b.steps==='object')for(const v of Object.values(b.steps))if(v&&Array.isArray(v.confirms))v.confirms=v.confirms.filter(c=>!(c&&typeof c.t==='number'&&c.t>lim));
+if(late)b.timedOut=true;
 const result=scoreProbeItem(p.form.items[idx],b);
-try{await env.DB.prepare('INSERT INTO probe_items (run_id,item_id,idx,response_json,result_json,at) VALUES (?,?,?,?,?,?)').bind(id,b.itemId,idx,JSON.stringify({steps:b.steps,timedOut:b.timedOut===true,tech:b.tech===true,secs:b.secs}).slice(0,15000),JSON.stringify(result),Date.now()).run();}catch{return json({error:'already_submitted'},409);}
+try{await env.DB.prepare('INSERT INTO probe_items (run_id,item_id,idx,response_json,result_json,at) VALUES (?,?,?,?,?,?)').bind(id,b.itemId,idx,JSON.stringify({steps:b.steps,timedOut:b.timedOut===true,tech:b.tech===true,secs:b.secs}).slice(0,15000),JSON.stringify(result),Date.now()).run();}catch{// 只有這一題真的已經存過，才回「已收件」；其他寫入失敗回 503，前端會保留答案再送
+let had=null;try{had=await env.DB.prepare('SELECT 1 AS x FROM probe_items WHERE run_id = ? AND item_id = ?').bind(id,b.itemId).first();}catch{}
+return had?json({error:'already_submitted'},409):json({error:'research_storage_unavailable'},503);}
 return json({ok:true});}
 if(action==='finish'){const b=await readJson(request,512)||{},status=['done','timeout','stopped'].includes(b.reason)?b.reason:'done';
 const {results}=await env.DB.prepare('SELECT result_json FROM probe_items WHERE run_id = ?').bind(id).all(),scored=results.map(r=>JSON.parse(r.result_json));
