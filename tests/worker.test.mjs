@@ -15,9 +15,9 @@ async function testCookie(){const login=await call('/api/test-login',{method:'PO
 
 test('owner, tester and other visitor have separate access',async()=>{
   const cookie=await testCookie();
-  assert.deepEqual((await call('/api/session',{cookie})).data,{authenticated:true,teacher:true,test:true,student:false,workspace:'test',className:'',aiProvider:'deepseek'});
-  assert.deepEqual((await call('/api/session',{user:owner,cookie})).data,{authenticated:true,teacher:true,test:true,student:false,workspace:'test',className:'',aiProvider:'deepseek'});
-  assert.deepEqual((await call('/api/session',{user:owner})).data,{authenticated:true,teacher:true,test:false,student:false,workspace:'main',className:'',aiProvider:null});
+  assert.deepEqual((await call('/api/session',{cookie})).data,{authenticated:true,teacher:true,test:true,student:false,workspace:'test',className:'',classCode:'',aiProvider:'deepseek'});
+  assert.deepEqual((await call('/api/session',{user:owner,cookie})).data,{authenticated:true,teacher:true,test:true,student:false,workspace:'test',className:'',classCode:'',aiProvider:'deepseek'});
+  assert.deepEqual((await call('/api/session',{user:owner})).data,{authenticated:true,teacher:true,test:false,student:false,workspace:'main',className:'',classCode:'',aiProvider:null});
   assert.equal((await call('/api/session',{user:'other'})).data.authenticated,false);
   assert.equal((await call('/api/teacher/lessons',{cookie})).status,200);
   assert.equal((await call('/api/teacher/lessons')).status,401);
@@ -232,7 +232,7 @@ test('第 24 版：每位老師（教師代號）有自己的工作區；班級�
   const s=await call('/api/class-login',{method:'POST',body:{code:' '+code.slice(0,3).toLowerCase()+' '+code.slice(3)}});
   assert.equal(s.status,200);assert.equal(s.data.className,'三年甲班');
   const sc=s.headers.get('set-cookie').split(';')[0];assert.match(s.headers.get('set-cookie'),/HttpOnly; Secure/);
-  assert.deepEqual((await call('/api/session',{cookie:sc})).data,{authenticated:true,teacher:false,test:false,student:true,workspace:'T01',className:'三年甲班',aiProvider:'deepseek'});
+  assert.deepEqual((await call('/api/session',{cookie:sc})).data,{authenticated:true,teacher:false,test:false,student:true,workspace:'T01',className:'三年甲班',classCode:code,aiProvider:'deepseek'});
   assert.equal((await call('/api/lessons',{cookie:sc})).data.config.rectangle.hints[0],'T01 老師的提示。','學生看到自己老師發布的教材');
   assert.equal((await call('/api/teacher/lessons',{cookie:sc})).status,403);
   assert.equal((await call('/api/teacher/lessons',{method:'POST',cookie:sc,body:{kind:'published',config:c1}})).status,403);
@@ -298,4 +298,48 @@ test('第 25 版：AI 收到這一步的提示與活動在做的事；提示文�
  config.rectangle.settings={flow:'seven',support:'full',hintGate:false,difficulty:'standard',tryFirst:false};
  assert.equal((await call('/api/teacher/lessons',{method:'POST',cookie,body:{kind:'draft',config}})).status,200);
  config.rectangle.settings.tryFirst='yes';assert.equal((await call('/api/teacher/lessons',{method:'POST',cookie,body:{kind:'draft',config}})).status,400);
+});
+
+test('第 26 版：研究紀錄存進網站資料庫、開始本節、學生個別設定與變更理由',async()=>{
+  const login=async teacher=>(await call('/api/test-login',{method:'POST',body:{username:'test',password:'test-pass',teacher}})).headers.get('set-cookie').split(';')[0];
+  const t5=await login('T05'),t6=await login('T06');
+  const code=(await call('/api/teacher/classes',{method:'POST',cookie:t5,body:{label:'四年乙班',days:7}})).data.class.code;
+  const sc=(await call('/api/class-login',{method:'POST',body:{code}})).headers.get('set-cookie').split(';')[0];
+  // 紀錄：只收代號；同一筆重送不會重複
+  const row={rid:'abc123-x1',sheet:'操作紀錄',time:'2026-11-12 10:00:00',version:'v26',student:'T05-S01',sessionNo:1,event:'步驟檢核',detail:'{"obs":"eqPerimeter"}'};
+  assert.equal((await call('/api/records',{method:'POST',body:{rows:[row]}})).status,401);
+  assert.equal((await call('/api/records',{method:'POST',cookie:sc,body:{rows:[{...row,student:'王小明'}]}})).status,400,'不收姓名當代號');
+  assert.equal((await call('/api/records',{method:'POST',cookie:sc,body:{rows:[{...row,sheet:'亂寫'}]}})).status,400);
+  const saved=await call('/api/records',{method:'POST',cookie:sc,body:{rows:[row,{...row,rid:'abc123-x2',event:'整題完成'}]}});
+  assert.equal(saved.status,200);assert.deepEqual(saved.data.saved,['abc123-x1','abc123-x2']);
+  assert.equal((await call('/api/records',{method:'POST',cookie:sc,body:{rows:[row]}})).status,200,'重送沒關係');
+  // 開始本節：同一位學生接著往上加；另一位從 1 開始
+  const start=async(cookie,student)=>(await call('/api/sessions/start',{method:'POST',cookie,body:{student,device:'平板'}})).data.no;
+  assert.equal(await start(sc,'T05-S01'),1);assert.equal(await start(sc,'T05-S01'),2);assert.equal(await start(sc,'T05-S02'),1);
+  assert.equal((await call('/api/sessions/start',{method:'POST',cookie:sc,body:{student:'S01'}})).status,400);
+  // 教師端：只看得到自己工作區
+  const ov=(await call('/api/teacher/research',{cookie:t5})).data;
+  assert.deepEqual(ov.students.map(s=>[s.student,s.events,s.sessions]),[['T05-S01',2,2],['T05-S02',0,1]]);
+  assert.deepEqual((await call('/api/teacher/research',{cookie:t6})).data.students,[],'別的老師看不到');
+  assert.equal((await call('/api/teacher/research',{cookie:sc})).status,403,'學生不能看');
+  assert.equal((await call('/api/teacher/research?student=T05-S01',{cookie:t5})).data.events[0].detail,'{"obs":"eqPerimeter"}');
+  // 學生個別設定：一定要主要理由；方向由網站歸類；減少支持一次一級
+  const set=body=>call('/api/student-settings',{method:'POST',cookie:sc,body:{student:'T05-S01',act:'rectangle',sessionNo:2,...body}});
+  assert.equal((await set({changes:{support:'faded'}})).status,400,'沒有理由');
+  assert.equal((await set({changes:{support:'faded',video:'off'},reason:'independent',classSettings:{support:'full',video:'hint'}})).data.error,'one_step_only','一次減兩級不行');
+  assert.equal((await set({changes:{methods:['self']},reason:'independent',classSettings:{methods:['mark','row','self']}})).data.error,'one_step_only','一次關掉兩種具體方法不行');
+  assert.equal((await set({changes:{support:'oops'},reason:'other'})).status,400);
+  const down=await set({changes:{support:'faded'},reason:'independent',note:'連續兩節都自己完成',classSettings:{support:'full'}});
+  assert.equal(down.status,200);assert.deepEqual(down.data.changes,[{field:'support',before:'"full"',after:'"faded"',direction:'decrease'}]);
+  const up=await set({changes:{mode:'demo',lessonGoal:3},reason:'lowAccuracy'});
+  assert.deepEqual(up.data.changes.map(c=>[c.field,c.direction]),[['mode','increase'],['lessonGoal','load']]);
+  assert.equal((await set({changes:{support:'faded'},reason:'other'})).data.error,'no_change');
+  assert.equal((await set({decision:'keep',reason:'lowAccuracy'})).status,200);
+  assert.equal((await set({decision:'advance',to:'square',reason:'independent'})).data.changes[0].direction,'advance');
+  assert.deepEqual((await call('/api/student-settings?student=T05-S01',{cookie:sc})).data.overrides,{rectangle:{support:'faded',mode:'demo',lessonGoal:3}});
+  assert.deepEqual((await call('/api/student-settings?student=T05-S01',{cookie:t6})).data.overrides,{},'別的工作區沒有這位學生的設定');
+  const changes=(await call('/api/teacher/research',{cookie:t5})).data.changes;
+  assert.deepEqual(changes.map(c=>c.direction).sort(),['advance','decrease','increase','load','maintain']);
+  assert.ok(changes.every(c=>c.student==='T05-S01'&&c.act==='rectangle'&&c.sessionNo===2&&c.actor==='student-device'));
+  assert.equal(changes.find(c=>c.direction==='decrease').note,'連續兩節都自己完成');
 });

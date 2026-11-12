@@ -106,7 +106,7 @@ if(s.methods!==undefined&&!(Array.isArray(s.methods)&&s.methods.length>=1&&s.met
 return true;}
 const contextKeys=['desk','tile','garden','flag','card','window','sandwich','paper'];
 // 第 22 版：現場試用紀錄（Apps Script 網址、通行碼、教師與學生人數）
-function validResearch(r){return !!r&&typeof r==='object'&&!Array.isArray(r)&&Object.keys(r).every(k=>['url','key','teachers','students'].includes(k))&&(r.url===''||(typeof r.url==='string'&&/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]{10,200}\/exec$/.test(r.url)))&&typeof r.key==='string'&&r.key.length<=40&&(r.key===''||r.key.length>=4)&&(r.teachers===undefined||(Number.isInteger(r.teachers)&&r.teachers>=1&&r.teachers<=12))&&(r.students===undefined||(Number.isInteger(r.students)&&r.students>=1&&r.students<=20));}
+function validResearch(r){return !!r&&typeof r==='object'&&!Array.isArray(r)&&Object.keys(r).every(k=>['url','key','teachers','students','server'].includes(k))&&(r.server===undefined||typeof r.server==='boolean')&&(r.url===''||(typeof r.url==='string'&&/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]{10,200}\/exec$/.test(r.url)))&&typeof r.key==='string'&&r.key.length<=40&&(r.key===''||r.key.length>=4)&&(r.teachers===undefined||(Number.isInteger(r.teachers)&&r.teachers>=1&&r.teachers<=12))&&(r.students===undefined||(Number.isInteger(r.students)&&r.students>=1&&r.students<=20));}
 function validLesson(value,forSave=false){if(!value||typeof value!=='object'||Array.isArray(value)||!shapeKeys.every(k=>Object.hasOwn(value,k))||Object.keys(value).some(k=>!shapeKeys.includes(k)&&k!=='map'&&k!=='activities'&&k!=='research'))return false;
 if(value.research!==undefined&&!validResearch(value.research))return false;
 if(value.map!==undefined&&!validMap(value.map))return false;if(value.activities!==undefined&&!validActivities(value.activities))return false;
@@ -134,20 +134,24 @@ async function teacherGet(request,env,who){const role=who.role;if(role==='none')
 async function teacherSave(request,env,who){const role=who.role;if(role==='none')return json({error:'signin_required'},401);if(role==='student')return json({error:'forbidden'},403);if(!env.DB)return json({error:'lesson_storage_unavailable'},503);const origin=request.headers.get('origin');if(origin&&origin!==new URL(request.url).origin)return json({error:'origin'},403);if(Number(request.headers.get('content-length')||0)>60000)return json({error:'too_large'},413);let body;try{body=await request.json();}catch{return json({error:'invalid_json'},400);}if(!body||!['draft','published'].includes(body.kind)||!validLesson(body.config,true))return json({error:'invalid_input'},400);const config=JSON.stringify(body.config);if(config.length>60000)return json({error:'too_large'},413);const kind=lessonKind(who.ws,body.kind);
 try{const existing=await lessonRow(env,kind),revision=(existing?.revision||0)+1;await env.DB.prepare('INSERT INTO lesson_documents (kind,config_json,revision,updated_at) VALUES (?,?,?,?) ON CONFLICT(kind) DO UPDATE SET config_json=excluded.config_json,revision=excluded.revision,updated_at=excluded.updated_at').bind(kind,config,revision,new Date().toISOString()).run();return json({ok:true,revision});}catch{return json({error:'lesson_storage_unavailable'},503);}}
 const publicAssets=new Set(['/portal.html','/portal.css','/portal.js','/shapes.css','/favicon.svg']);
-const studentAssets=new Set(['/seven.html','/seven.js','/seven.css','/seven-geometry.js','/learning-flow.js','/lesson-content.js','/zhuyin.js','/hands-on.html','/hands-on.pdf','/step-demo.js','/step-demo.css','/seven-guide.html','/act-core.js','/act-unit12.js','/act-unit3.js','/act-unit45.js','/act.css','/buddy.js','/buddy.css','/research.js','/research.css']);
-const teacherPages=new Set(['/teacher.html','/teacher.js','/teacher.css','/qrcode.js']);
+const studentAssets=new Set(['/seven.html','/seven.js','/seven.css','/seven-geometry.js','/learning-flow.js','/lesson-content.js','/zhuyin.js','/hands-on.html','/hands-on.pdf','/step-demo.js','/step-demo.css','/seven-guide.html','/act-core.js','/act-unit12.js','/act-unit3.js','/act-unit45.js','/act.css','/buddy.js','/buddy.css','/research.js','/research.css','/observations.js']);
+const teacherPages=new Set(['/teacher.html','/teacher.js','/teacher.css','/qrcode.js','/observations.js']);
 export default {async fetch(request,env){const url=new URL(request.url);if(url.pathname==='/api/test-login')return request.method==='POST'?testLogin(request,env):json({error:'method'},405);
 if(url.pathname==='/api/test-logout'){if(request.method!=='POST')return json({error:'method'},405);const origin=request.headers.get('origin');if(origin&&origin!==url.origin)return json({error:'origin'},403);return jsonCookie({ok:true},200,sessionCookie('',0));}
 if(url.pathname==='/api/class-login')return request.method==='POST'?classLogin(request,env):json({error:'method'},405);
 const who=await whoAmI(request,env),role=who.role;
 if(url.pathname==='/api/ai-support')return request.method==='POST'?ai(request,env,who):json({error:'method'},405);
-if(url.pathname==='/api/session')return request.method==='GET'?json({authenticated:role!=='none',teacher:role==='teacher'||role==='test',test:role==='test',student:role==='student',workspace:who.ws,className:who.label||'',aiProvider:role==='test'||role==='student'?'deepseek':null}):json({error:'method'},405);
+if(url.pathname==='/api/session')return request.method==='GET'?json({authenticated:role!=='none',teacher:role==='teacher'||role==='test',test:role==='test',student:role==='student',workspace:who.ws,className:who.label||'',classCode:who.code||'',aiProvider:role==='test'||role==='student'?'deepseek':null}):json({error:'method'},405);
 if(url.pathname==='/api/lessons')return request.method==='GET'?lessonGet(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/teacher/classes')return request.method==='GET'?classList(request,env,who):request.method==='POST'?classCreate(request,env,who):json({error:'method'},405);
 if(url.pathname.startsWith('/api/teacher/classes/'))return request.method==='DELETE'?classRevoke(request,env,who,url.pathname.slice(21)):json({error:'method'},405);
 if(url.pathname==='/api/teacher/videos')return request.method==='POST'?videoUpload(request,env,who):json({error:'method'},405);
 if(url.pathname.startsWith('/api/teacher/videos/'))return request.method==='DELETE'?videoDelete(request,env,who,url.pathname.slice(20)):json({error:'method'},405);
 if(url.pathname.startsWith('/api/videos/'))return request.method==='GET'||request.method==='HEAD'?videoGet(request,env,who,url.pathname.slice(12)):json({error:'method'},405);
+if(url.pathname==='/api/records')return request.method==='POST'?recordsSave(request,env,who):json({error:'method'},405);
+if(url.pathname==='/api/sessions/start')return request.method==='POST'?sessionStart(request,env,who):json({error:'method'},405);
+if(url.pathname==='/api/student-settings')return request.method==='GET'?studentSettingsGet(request,env,who):request.method==='POST'?studentSettingsSave(request,env,who):json({error:'method'},405);
+if(url.pathname==='/api/teacher/research')return request.method==='GET'?researchOverview(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/teacher/lessons')return request.method==='GET'?teacherGet(request,env,who):request.method==='POST'?teacherSave(request,env,who):json({error:'method'},405);
 if(request.method!=='GET'&&request.method!=='HEAD')return new Response('Method not allowed',{status:405});let path=url.pathname;if(path==='/')path='/portal.html';else if(!path.includes('.'))path+='.html';if(!publicAssets.has(path)){if(role==='none')return path.endsWith('.html')?Response.redirect(url.origin+'/',302):new Response('Sign in required',{status:401});if(role==='student'&&!studentAssets.has(path))return path.endsWith('.html')?Response.redirect(url.origin+'/seven.html',302):new Response('Forbidden',{status:403});if(role==='test'&&!studentAssets.has(path)&&!teacherPages.has(path))return new Response('Forbidden',{status:403});}return asset(path);}};
 
@@ -210,3 +214,61 @@ try{const prior=await env.DB.prepare('SELECT failures, reset_at FROM test_login_
 const row=await classRow(env,code);if(!row||row.revoked||row.expires_at<=now){// 用一句 SQL 累加，同時送很多次也不會少算
 await env.DB.prepare('INSERT INTO test_login_attempts (visitor_key,failures,reset_at) VALUES (?,1,?) ON CONFLICT(visitor_key) DO UPDATE SET failures=CASE WHEN test_login_attempts.reset_at>? THEN test_login_attempts.failures+1 ELSE 1 END,reset_at=CASE WHEN test_login_attempts.reset_at>? THEN test_login_attempts.reset_at ELSE excluded.reset_at END').bind(key,now+15*60*1000,now,now).run();return json({error:'unknown_code'},401);}
 const expires=Math.min(now+12*60*60*1000,row.expires_at),token=await signedToken(env,expires,'s',code);return jsonCookie({ok:true,className:row.label},200,sessionCookie(token,Math.max(60,Math.floor((expires-now)/1000))));}catch{return json({error:'class_login_unavailable'},503);}}
+
+// ---------- 第 26 版：研究紀錄存進網站資料庫（只存代號）、節次、學生個別設定與變更紀錄 ----------
+// 存取都集中在這一段：之後改存研究團隊自己的伺服器，只要換掉這裡。
+const STUDENT_CODE=/^T(0[1-9]|1[0-2])-S\d{2}$/,RID=/^[a-z0-9-]{6,40}$/;
+const RESEARCH_SHEETS=new Set(['場次','操作紀錄','每題摘要','教師設定','教師觀察','學生回饋','教師回饋','技術問題','設定變更']);
+const RECORDS_PER_DAY=20000;
+const researchRole=who=>who.role==='student'||who.role==='test'||who.role==='teacher';
+const noResearch=who=>json({error:who.role==='none'?'signin_required':'forbidden'},who.role==='none'?401:403);
+async function recordQuota(env,ws,n){const day=new Date().toISOString().slice(0,10),scope='rec:'+ws;const row=await env.DB.prepare('INSERT INTO ai_usage (day,scope,calls) VALUES (?,?,?) ON CONFLICT(day,scope) DO UPDATE SET calls=calls+excluded.calls WHERE calls+excluded.calls<=? RETURNING calls').bind(day,scope,n,RECORDS_PER_DAY).first();return !!row;}
+async function recordsSave(request,env,who){if(!researchRole(who))return noResearch(who);if(!sameOrigin(request))return json({error:'origin'},403);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+const body=await readJson(request,64000);if(!body||!Array.isArray(body.rows)||!body.rows.length||body.rows.length>40)return json({error:'invalid_input'},400);
+const rows=[];for(const r of body.rows){if(!r||typeof r!=='object'||Array.isArray(r)||typeof r.rid!=='string'||!RID.test(r.rid)||!RESEARCH_SHEETS.has(r.sheet)||typeof r.time!=='string'||r.time.length>30)return json({error:'invalid_input'},400);
+const student=r.student===''||r.student===undefined?'':r.student;if(student!==''&&!(typeof student==='string'&&STUDENT_CODE.test(student)))return json({error:'invalid_input'},400);
+const no=r.sessionNo===undefined||r.sessionNo===null||r.sessionNo===''?null:r.sessionNo;if(no!==null&&!whole(no,9999))return json({error:'invalid_input'},400);
+const data=JSON.stringify(r);if(data.length>6000)return json({error:'too_large'},413);rows.push([r.rid,student,no,r.sheet,r.time,data]);}
+try{if(!await recordQuota(env,who.ws,rows.length))return json({error:'record_limit'},429);const now=Date.now();
+await env.DB.batch(rows.map(([rid,student,no,sheet,time,data])=>env.DB.prepare('INSERT OR IGNORE INTO research_events (rid,workspace,student,session_no,sheet,time,data_json,received_at) VALUES (?,?,?,?,?,?,?,?)').bind(rid,who.ws,student,no,sheet,time,data,now)));
+return json({ok:true,saved:rows.map(r=>r[0])});}catch{return json({error:'research_storage_unavailable'},503);}}
+// 「開始本節」：同一位學生的節次往上加 1（換裝置也接著算）
+async function sessionStart(request,env,who){if(!researchRole(who))return noResearch(who);if(!sameOrigin(request))return json({error:'origin'},403);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+const body=await readJson(request,512),student=body?.student,device=typeof body?.device==='string'?body.device.slice(0,10):'';if(typeof student!=='string'||!STUDENT_CODE.test(student))return json({error:'invalid_input'},400);
+try{for(let i=0;i<5;i++){const last=await env.DB.prepare('SELECT MAX(no) AS n FROM research_sessions WHERE workspace = ? AND student = ?').bind(who.ws,student).first(),no=(last?.n||0)+1;
+try{await env.DB.prepare('INSERT INTO research_sessions (workspace,student,no,started_at,class_code,device) VALUES (?,?,?,?,?,?)').bind(who.ws,student,no,Date.now(),who.code||'',device).run();return json({no});}catch{/* 兩台同時開始：再試下一號 */}}
+return json({error:'research_storage_unavailable'},503);}catch{return json({error:'research_storage_unavailable'},503);}}
+
+// 學生個別設定：只存「和班級設定不同」的欄位。欄位與方向依計畫書的歸類表。
+const OVERRIDE_KEYS=['support','mode','methods','video','tryFirst','lessonGoal','flow'];
+const REASONS=new Set(['lowAccuracy','manyHints','accurateButHints','independent','engagement','taskLoad','other']);
+const DECISIONS=new Set(['change','keep','advance','back']);
+function validOverride(o){if(!o||typeof o!=='object'||Array.isArray(o)||Object.keys(o).some(k=>!OVERRIDE_KEYS.includes(k)))return false;return validSettings({...lessonDefaults.rectangle.settings,...o});}
+const supportLevel={support:v=>({faded:0,full:1})[v],mode:v=>({self:0,together:1,demo:2})[v],video:v=>({off:0,hint:1,always:2})[v],tryFirst:v=>v===true?0:v===false?1:undefined,methods:v=>Array.isArray(v)?(v.includes('mark')?1:0)+(v.includes('row')?1:0):undefined};
+// 回傳 [方向, 幾級]：increase 增加支持、decrease 減少支持、load 任務負荷、other 其他
+function changeDirection(field,before,after){if(field==='lessonGoal'||field==='flow')return ['load',0];const f=supportLevel[field];if(!f)return ['other',0];const a=f(before),b=f(after);if(a===undefined||b===undefined)return ['other',0];return b>a?['increase',b-a]:b<a?['decrease',a-b]:['other',0];}
+async function overridesFor(env,ws,student){const {results}=await env.DB.prepare('SELECT act, settings_json FROM student_settings WHERE workspace = ? AND student = ?').bind(ws,student).all();const out={};for(const r of results){try{out[r.act]=JSON.parse(r.settings_json);}catch{}}return out;}
+async function studentSettingsGet(request,env,who){if(!researchRole(who))return noResearch(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);const student=new URL(request.url).searchParams.get('student')||'';if(!STUDENT_CODE.test(student))return json({error:'invalid_input'},400);
+try{return json({student,overrides:await overridesFor(env,who.ws,student)});}catch{return json({error:'research_storage_unavailable'},503);}}
+// 老師在學生的平板上調整（學生頁的「教師觀察」），或在教師備課頁調整；每次都要選主要理由
+async function studentSettingsSave(request,env,who){if(!researchRole(who))return noResearch(who);if(!sameOrigin(request))return json({error:'origin'},403);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+const b=await readJson(request,4096);if(!b||typeof b.student!=='string'||!STUDENT_CODE.test(b.student)||!ACT_IDS.includes(b.act)||!DECISIONS.has(b.decision||'change')||!REASONS.has(b.reason))return json({error:'invalid_input'},400);
+const decision=b.decision||'change',note=typeof b.note==='string'?b.note.trim().slice(0,60):'',no=b.sessionNo===undefined||b.sessionNo===null?null:b.sessionNo;if(no!==null&&!whole(no,9999))return json({error:'invalid_input'},400);
+if(decision==='change'&&!validOverride(b.changes))return json({error:'invalid_input'},400);if((decision==='advance'||decision==='back')&&!ACT_IDS.includes(b.to))return json({error:'invalid_input'},400);
+try{const all=await overridesFor(env,who.ws,b.student),current={...(all[b.act]||{})},base=lessonDefaults.rectangle.settings,rows=[];
+const cls=b.classSettings&&typeof b.classSettings==='object'&&!Array.isArray(b.classSettings)?Object.fromEntries(Object.entries(b.classSettings).filter(([k])=>OVERRIDE_KEYS.includes(k))):{},classOk=validOverride(cls)?cls:{};const before=k=>Object.hasOwn(current,k)?current[k]:Object.hasOwn(classOk,k)?classOk[k]:base[k];
+if(decision==='change'){let down=0;for(const [k,v] of Object.entries(b.changes)){const was=before(k);if(JSON.stringify(was)===JSON.stringify(v))continue;const [direction,steps]=changeDirection(k,was,v);if(direction==='decrease')down+=steps;rows.push([k,JSON.stringify(was??null),JSON.stringify(v),direction]);current[k]=v;}
+if(down>1)return json({error:'one_step_only'},400);if(!rows.length)return json({error:'no_change'},400);}
+else rows.push(['_decision','',decision==='keep'?'':JSON.stringify(b.to),decision==='keep'?'maintain':decision==='advance'?'advance':'load']);
+const now=Date.now(),actor=who.role==='student'?'student-device':who.ws,st=[];
+if(decision==='change')st.push(env.DB.prepare('INSERT INTO student_settings (workspace,student,act,settings_json,updated_at) VALUES (?,?,?,?,?) ON CONFLICT(workspace,student,act) DO UPDATE SET settings_json=excluded.settings_json,updated_at=excluded.updated_at').bind(who.ws,b.student,b.act,JSON.stringify(current),now));
+for(const [field,was,next,direction] of rows)st.push(env.DB.prepare('INSERT INTO setting_changes (workspace,student,act,session_no,field,before_value,after_value,direction,reason,note,actor,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)').bind(who.ws,b.student,b.act,no,field,was,next,direction,b.reason,note,actor,now));
+await env.DB.batch(st);return json({ok:true,settings:current,changes:rows.map(([field,was,next,direction])=>({field,before:was,after:next,direction}))});}catch{return json({error:'research_storage_unavailable'},503);}}
+// 教師端：看這個工作區每位學生的節次、紀錄筆數、設定變更；也可以下載一位學生的全部紀錄
+async function researchOverview(request,env,who){if(!canManage(who))return notManager(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);const q=new URL(request.url).searchParams,student=q.get('student');
+try{if(student){if(!STUDENT_CODE.test(student))return json({error:'invalid_input'},400);const {results}=await env.DB.prepare('SELECT data_json FROM research_events WHERE workspace = ? AND student = ? ORDER BY time, rid LIMIT 20000').bind(who.ws,student).all();return json({student,events:results.map(r=>{try{return JSON.parse(r.data_json);}catch{return null;}}).filter(Boolean)});}
+const ev=(await env.DB.prepare('SELECT student, COUNT(*) AS events, MAX(time) AS last FROM research_events WHERE workspace = ? AND student != ? GROUP BY student').bind(who.ws,'').all()).results;
+const ss=(await env.DB.prepare('SELECT student, MAX(no) AS sessions FROM research_sessions WHERE workspace = ? GROUP BY student').bind(who.ws).all()).results;
+const changes=(await env.DB.prepare('SELECT student, act, session_no AS sessionNo, field, before_value AS before, after_value AS after, direction, reason, note, actor, at FROM setting_changes WHERE workspace = ? ORDER BY at DESC, id DESC LIMIT 500').bind(who.ws).all()).results;
+const map=new Map();for(const r of ev)map.set(r.student,{student:r.student,events:r.events,last:r.last,sessions:0});for(const r of ss){const x=map.get(r.student)||{student:r.student,events:0,last:'',sessions:0};x.sessions=r.sessions;map.set(r.student,x);}
+return json({students:[...map.values()].sort((a,b)=>a.student.localeCompare(b.student)),changes});}catch{return json({error:'research_storage_unavailable'},503);}}

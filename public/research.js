@@ -7,12 +7,13 @@
 (() => {
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const VERSION = 'v22';
+  const VERSION = 'v26';
   const WHO_KEY = 'area-research-who-v22', QUEUE_KEY = 'area-research-queue-v22', NAMES_KEY = 'area-research-names-v22', SENT_KEY = 'area-research-sent-v22', LAST_KEY = 'area-research-last-v22';
   const MAX_ROWS = 40;            // 一次最多傳幾筆
   const MAX_BYTES = 30000;        // 一次最多傳多少位元組（離頁時的 keepalive 上限是 64 KB）
   const FLUSH_EVERY = 30000;
-  const QUICK = [['help', '🙋 老師幫忙了'], ['wrongBuddy', '❌ 小方這次不準'], ['distracted', '😶 分心'], ['engaged', '🙂 很投入'], ['tech', '⚠️ 技術問題']];
+  const QUICK = [['help', '🙋 老師幫忙了'], ['wrongBuddy', '❌ 小方這次不準'], ['distracted', '😶 分心'], ['engaged', '🙂 很投入'], ['tech', '⚠️ 技術問題'], ['undetermined', '❓ 這題無法判定']];
+  const SESSIONS_KEY = 'area-research-sessions-v26';   // 沒有網站資料庫時，在這台電腦數節次
   const MOODS = [['great', '😀', '很好'], ['ok', '🙂', '還好'], ['meh', '😐', '普通'], ['sad', '🙁', '不好']];
   const END_QS = [
     ['fun', '今天的數學好玩嗎？', [['yes', '😀 好玩'], ['soso', '😐 還好'], ['no', '🙁 不好玩']]],
@@ -27,18 +28,23 @@
     ['assists', '我今天需要介入幾次', [['0', '0 次'], ['1-2', '1～2 次'], ['3-5', '3～5 次'], ['6+', '6 次以上']]]
   ];
 
-  let cfg = null, api = null, who = null, scopeKey = '', sending = false, lastActivity = '', memQueue = null;
+  let cfg = null, api = null, who = null, scopeKey = '', sending = false, lastActivity = '', classCode = '';
   const load = (store, key, fallback) => { try { const v = JSON.parse(store.getItem(key) || 'null'); return v ?? fallback; } catch { return fallback; } };
   const keep = (store, key, value) => { try { store.setItem(key, JSON.stringify(value)); return true; } catch { return false; } };
   // 每個試算表網址有自己的佇列：換了網址，舊的離線紀錄不會送到新的試算表
-  const qKey = () => QUEUE_KEY + ':' + (cfg ? cfg.url.split('/s/')[1] || cfg.url : '');
-  const queue = () => memQueue || load(localStorage, qKey(), []);
-  const setQueue = q => {
-    if (keep(localStorage, qKey(), q)) { memQueue = null; paintCount(); return; }   // 又存得進去了，就回到這台電腦的佇列
+  // 第 26 版：另有一個佇列送到網站資料庫（/api/records）；兩邊各自上傳、各自補傳
+  const sheetOn = () => !!(cfg && cfg.url && cfg.key), serverOn = () => !!(cfg && cfg.server);
+  const qKey = target => target === 'server' ? QUEUE_KEY + ':server' : QUEUE_KEY + ':' + (cfg ? cfg.url.split('/s/')[1] || cfg.url : '');
+  const mem = { sheet: null, server: null };
+  const queueOf = target => mem[target] || load(localStorage, qKey(target), []);
+  const queue = () => [...(sheetOn() ? queueOf('sheet') : []), ...(serverOn() ? queueOf('server') : [])];
+  const setQueueOf = (target, q) => {
+    if (keep(localStorage, qKey(target), q)) { mem[target] = null; paintCount(); return; }   // 又存得進去了，就回到這台電腦的佇列
     // 這台電腦存不了（無痕模式、空間滿）：先留在這一頁，提醒老師不要關掉
-    if (!memQueue) toast('這台電腦存不了紀錄，請先不要關掉這一頁，等上傳完成。');
-    memQueue = q; paintCount();
+    if (!mem.sheet && !mem.server) toast('這台電腦存不了紀錄，請先不要關掉這一頁，等上傳完成。');
+    mem[target] = q; paintCount();
   };
+  const setQueue = q => { if (sheetOn()) setQueueOf('sheet', q); };
   const rid = () => Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
   const pad = n => String(n).padStart(2, '0');
   const local = t => { const d = new Date(t); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
@@ -56,37 +62,48 @@
   // ---------- 上傳佇列 ----------
   function enqueue(sheet, data) {
     if (!on()) return;
-    const hits = [], row = scrub({ rid: rid(), sheet, time: local(Date.now()), version: VERSION, sessionId: who.sessionId, teacher: who.teacher, student: who.student, ...data }, hits);
+    const hits = [], row = scrub({ rid: rid(), sheet, time: local(Date.now()), version: VERSION, sessionId: who.sessionId, teacher: who.teacher, student: who.student, sessionNo: who.sessionNo ?? '', classCode: classCode || '', ...data }, hits);
     if (hits.length) toast('紀錄裡有學生姓名，已改成「○○」再上傳。請只寫代號。');
-    setQueue(queue().concat(row));
+    push(row);
+  }
+  function push(row) {
+    if (sheetOn()) setQueueOf('sheet', queueOf('sheet').concat(row));
+    if (serverOn()) setQueueOf('server', queueOf('server').concat(row));
   }
   // 依位元組切批：最多 MAX_ROWS 筆、MAX_BYTES 位元組
   const bytes = x => new TextEncoder().encode(JSON.stringify(x)).length;
   function nextBatch(q) {
-    const batch = []; let size = bytes({ key: cfg.key, rows: [] });
+    const batch = []; let size = bytes({ key: cfg.key || '', rows: [] });
     for (const r of q) { const b = bytes(r) + 1; if (batch.length && (batch.length >= MAX_ROWS || size + b > MAX_BYTES)) break; batch.push(r); size += b; }
     return batch;
   }
-  async function send(batch, keepalive) {
-    const res = await fetch(cfg.url, { method: 'POST', headers: { 'content-type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ key: cfg.key, rows: batch }), keepalive, cache: 'no-store', redirect: 'follow' });
+  async function send(target, batch, keepalive) {
+    const server = target === 'server';
+    const res = server
+      ? await fetch('/api/records', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ rows: batch }), keepalive, cache: 'no-store' })
+      : await fetch(cfg.url, { method: 'POST', headers: { 'content-type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ key: cfg.key, rows: batch }), keepalive, cache: 'no-store', redirect: 'follow' });
     const out = await res.json();
-    if (!out || !out.ok) throw new Error(out && out.error || 'upload_failed');
+    if (!out || !out.ok) throw new Error((server ? 'server:' : '') + (out && out.error || 'upload_failed'));
     const done = new Set(out.saved || batch.map(r => r.rid));
-    setQueue(queue().filter(r => !done.has(r.rid)));
-    keep(sessionStorage, SENT_KEY, (load(sessionStorage, SENT_KEY, 0) || 0) + done.size);
+    setQueueOf(target, queueOf(target).filter(r => !done.has(r.rid)));
+    if (!server) keep(sessionStorage, SENT_KEY, (load(sessionStorage, SENT_KEY, 0) || 0) + done.size);
   }
   // 離頁時（keepalive）只送一批；平常一批一批送到佇列空為止
   async function upload(keepalive) {
-    try {
-      for (let i = 0; i < 50; i++) {
-        const q = queue(); if (!q.length) break;
-        await send(nextBatch(q), keepalive);
-        if (keepalive) break;
+    let problem = '';
+    for (const target of ['sheet', 'server']) {
+      if (target === 'sheet' ? !sheetOn() : !serverOn()) continue;
+      try {
+        for (let i = 0; i < 50; i++) {
+          const q = queueOf(target); if (!q.length) break;
+          await send(target, nextBatch(q), keepalive);
+          if (keepalive) break;
+        }
+      } catch (e) {
+        problem = problem || (e && e.message === 'bad_key' ? '通行碼不對，請老師到教師備課檢查' : e && String(e.message).startsWith('server:') ? '網站資料庫上傳失敗，稍後自動再試' : '上傳失敗，稍後自動再試');
       }
-      paintCount();
-    } catch (e) {
-      paintCount(e && e.message === 'bad_key' ? '通行碼不對，請老師到教師備課檢查' : '上傳失敗，稍後自動再試');
     }
+    paintCount(problem || undefined);
   }
   async function flush(keepalive = false) {
     if (!cfg || sending || !queue().length) return;
@@ -108,6 +125,8 @@
   function tech(kind, message) {
     const k = kind + message; if (techSeen.has(k) || techSeen.size >= 20) return; techSeen.add(k);
     enqueue('技術問題', { kind, message: String(message).slice(0, 300), page: location.pathname + location.search, browser: navigator.userAgent.slice(0, 200), online: navigator.onLine });
+    // 第 26 版：也記一筆「技術中斷」到操作紀錄，分析時和「答錯」「沒作答」分開
+    if (api && on() && api.activity().id) try { api.log('技術中斷', { activity: api.step(), outcome: 'tech', kind }); } catch { /* 略過 */ }
   }
   addEventListener('error', e => tech('頁面錯誤', e.message || 'error'));
   addEventListener('unhandledrejection', e => tech('頁面錯誤', (e.reason && e.reason.message) || String(e.reason)));
@@ -161,12 +180,13 @@
     let el = $('researchBar');
     if (!on()) { el?.remove(); return; }
     if (!el) { el = document.createElement('section'); el.id = 'researchBar'; el.className = 'research-bar'; el.setAttribute('aria-label', '現場試用紀錄（老師用）'); (document.querySelector('nav.aids') || document.body.firstChild).after(el); }
-    el.innerHTML = `<p class="who"><b>📋 ${esc(who.student)}</b><span>${esc(who.device)}・${esc(who.group)}${who.camera ? '・📷 可用鏡頭' : ''}</span></p>
+    el.innerHTML = `<p class="who"><b>📋 ${esc(who.student)}</b>${who.sessionNo ? `<span class="session-no">第 ${who.sessionNo} 節</span>` : ''}<span>${esc(who.device)}・${esc(who.group)}${who.camera ? '・📷 可用鏡頭' : ''}</span></p>
       <div class="quick">${QUICK.map(([k, t]) => `<button type="button" data-quick="${k}">${t}</button>`).join('')}</div>
       <div class="ops"><span id="researchCount" class="count"></span><button type="button" id="researchFlush">立即上傳</button><button type="button" id="researchNext">換學生</button><button type="button" id="researchClass">📝 這節課結束</button></div>`;
     el.querySelectorAll('[data-quick]').forEach(b => b.onclick = () => {
       const k = b.dataset.quick, t = QUICK.find(x => x[0] === k)[1];
       api.log('教師即時紀錄', { activity: api.step(), tag: k, tagText: t.replace(/^\S+\s/, '') });
+      if (k === 'undetermined') api.log('無法判定', { activity: api.step(), outcome: 'undetermined', by: '老師' });   // 第 26 版：例如學生亂按、老師接手
       toast('已記下：' + t);
     });
     $('researchFlush').onclick = () => { paintCount('上傳中……'); flush(); };
@@ -185,6 +205,31 @@
     }));
   }
 
+  // ---------- 第 26 版：節次與學生個別設定（存在網站資料庫） ----------
+  async function startSession(student, device) {
+    if (serverOn()) {
+      try { const res = await fetch('/api/sessions/start', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ student, device }), cache: 'no-store' }); const out = await res.json(); if (res.ok && Number.isInteger(out.no)) return out.no; } catch { /* 改用這台電腦的節次 */ }
+    }
+    const all = load(localStorage, SESSIONS_KEY, {}) || {}, k = scopeKey + '|' + student;
+    all[k] = (all[k] || 0) + 1; keep(localStorage, SESSIONS_KEY, all);
+    return all[k];
+  }
+  async function loadOverrides(student) {
+    if (!serverOn()) return {};
+    try { const res = await fetch('/api/student-settings?student=' + encodeURIComponent(student), { cache: 'no-store' }); const out = await res.json(); return res.ok && out.overrides && typeof out.overrides === 'object' ? out.overrides : {}; } catch { return {}; }
+  }
+  // 老師調整這位學生的支持：要選主要理由；方向（增加／減少／進階／維持／任務負荷）由網站依規則歸類
+  async function saveSettings(act, body) {
+    if (!on() || !serverOn()) return { error: 'research_off' };
+    try {
+      const res = await fetch('/api/student-settings', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ student: who.student, act, sessionNo: who.sessionNo ?? null, ...body }), cache: 'no-store' });
+      const out = await res.json();
+      if (!res.ok) return { error: out.error || 'save_failed' };
+      if (out.settings) { who.overrides = { ...(who.overrides || {}), [act]: out.settings }; keep(sessionStorage, WHO_KEY, who); }
+      return out;
+    } catch { return { error: 'offline' }; }
+  }
+
   // 上課前：老師點號碼選代號（不用打字），也可以選「老師自己試用」不記錄
   function chooseWho() {
     const t = Math.max(1, Math.min(12, cfg.teachers || 4)), n = Math.max(1, Math.min(20, cfg.students || 6));
@@ -199,19 +244,22 @@
       <h3>家長同意使用鏡頭嗎？</h3>${pickRow('camera', [['yes', '同意'], ['no', '不同意或不確定']], '')}
       <details class="names"${names().length ? '' : ' open'}><summary>擋下誤填的姓名（只存在這台電腦，不會上傳）</summary><label for="researchNames">一行一個姓名或暱稱：</label><textarea id="researchNames" rows="4">${esc(names().join('\n'))}</textarea></details>
       <p id="researchWhyNot" class="feedback" role="alert" hidden></p>
-      <div class="actions"><button type="button" id="researchStart" class="primary">開始記錄</button><button type="button" id="researchSkip">老師自己試用（不記錄）</button></div>`);
+      <div class="actions"><button type="button" id="researchStart" class="primary">開始本節</button><button type="button" id="researchSkip">老師自己試用（不記錄）</button></div>`);
     bindPicks(d, st);
     const saveNames = () => keep(localStorage, NAMES_KEY, $('researchNames').value.split(/\r?\n/).map(x => x.trim()).filter(Boolean));
     d.oncancel = e => e.preventDefault();   // 一定要選一個，避免沒有代號的紀錄
-    $('researchStart').onclick = () => {
+    $('researchStart').onclick = async () => {
       const miss = [['teacher', '教師代號'], ['num', '學生號碼'], ['camera', '鏡頭同意']].filter(([k]) => !st[k]).map(x => x[1]);
       if (miss.length) { $('researchWhyNot').textContent = '請選：' + miss.join('、'); $('researchWhyNot').hidden = false; return; }
       saveNames();
       const student = `${st.teacher}-S${st.num}`, now = new Date();
       who = { teacher: st.teacher, student, device: st.device, group: st.group, camera: st.camera === 'yes', sessionId: `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${student}-${Math.random().toString(36).slice(2, 6)}`, startedAt: Date.now(), scope: scopeKey };
+      $('researchStart').disabled = true;
+      who.sessionNo = await startSession(student, st.device);   // 第 26 版：「開始本節」，這位學生的第幾節
+      who.overrides = await loadOverrides(student);
       keep(sessionStorage, WHO_KEY, who); keep(sessionStorage, LAST_KEY, { teacher: who.teacher, device: who.device, group: who.group });
       enqueue('場次', { kind: '開始', device: who.device, group: who.group, cameraConsent: who.camera ? '是' : '否', hasCamera: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia), browser: navigator.userAgent.slice(0, 200), screen: `${screen.width}x${screen.height}` });
-      d.close(); lastActivity = ''; window.areaBuddy?.newStudent(); bar(); api.reset?.(); settingsRow(); api.changed(); flush();
+      d.close(); lastActivity = ''; window.areaBuddy?.newStudent(); bar(); api.reset?.(); api.refresh?.(); settingsRow(); api.changed(); flush();
     };
     $('researchSkip').onclick = () => { saveNames(); who = { off: true, scope: scopeKey }; keep(sessionStorage, WHO_KEY, who); d.close(); window.areaBuddy?.newStudent(); bar(); api.changed(); };
   }
@@ -265,7 +313,7 @@
       // 這時學生的場次已經結束，教師回饋只帶教師代號
       const hits = [], row = scrub({ rid: rid(), sheet: '教師回饋', time: local(Date.now()), version: VERSION, sessionId: '', teacher, student: '', ...Object.fromEntries(TEACHER_QS.map(([k]) => [k, text(k)])), fix: $('researchFix').value.trim() }, hits);
       if (hits.length) toast('紀錄裡有學生姓名，已改成「○○」再上傳。請只寫代號。');
-      setQueue(queue().concat(row)); flush(); d.close(); classDone();
+      push(row); flush(); d.close(); classDone();
     };
     $('researchTeacherBack').onclick = () => { d.close(); classDone(); };
   }
@@ -283,20 +331,26 @@
   window.areaResearch = {
     // a：records()、settings()、activity()、step()、log(e, x)、changed()（代號或鏡頭同意改了，請學生頁重畫）、reset()（換學生，清掉上一位的進度）
     init(config, a) {
-      api = a;
-      if (!config || !config.url || !config.key) return;
+      api = a; classCode = a.classCode || '';
+      if (!config || !((config.url && config.key) || config.server)) return;
       cfg = config; who = load(sessionStorage, WHO_KEY, null);
       // 第 25 版：代號只在同一個班級、同一個試用表單用；換班級或換表單就重選（不沿用上一班的代號與鏡頭同意）
-      const scope = cfg.url + '|' + (a.scope || '');
+      const scope = (cfg.url || 'server') + '|' + (a.scope || '');
       if (who && who.scope !== scope) { who = null; try { sessionStorage.removeItem(WHO_KEY); } catch { /* 略過 */ } }
       scopeKey = scope;
-      if (!who) chooseWho(); else { bar(); settingsRow(); }
+      if (!who) chooseWho(); else { bar(); settingsRow(); if (serverOn()) loadOverrides(who.student).then(o => { if (who && !who.off) { who.overrides = o; keep(sessionStorage, WHO_KEY, who); api.refresh?.(); api.changed(); } }); }
       flush();
     },
     record,
     page() { if (on()) settingsRow(); },
     cameraAllowed: () => !cfg || !!(who && (who.off || who.camera)),   // 試用時：選好代號、家長同意才開鏡頭
     active: on,
+    // 第 26 版：學生個別設定、節次、存到網站資料庫
+    serverOn: () => on() && serverOn(),
+    overrides: act => (on() && who.overrides && who.overrides[act]) || null,
+    sessionNo: () => (on() ? who.sessionNo ?? null : null),
+    student: () => (on() ? who.student : ''),
+    saveSettings,
     // 測試與教師說明用
     flush, pending: () => queue().length, VERSION
   };

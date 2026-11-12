@@ -22,3 +22,5 @@
 @media(min-width:761px){.research-bar{position:sticky;top:0;z-index:30}}
 html.contrast .research-bar{background:#fff;border-color:#000}
 @media(max-width:760px){.research-bar{padding:10px 14px}.research-bar .ops{margin-left:0}.research-dialog .moods{grid-template-columns:repeat(2,1fr)}}
+/* 第 26 版：節次 */
+.research-bar .session-no{font-weight:700;margin:0 .4rem}

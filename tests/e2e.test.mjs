@@ -309,7 +309,9 @@ test('第 17 版修正：答對後提示收起、點完格子提示改變、先�
   const before = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16')).length);
   await p.page.goto(`${base}/seven.html?shape=square`); await p.page.waitForSelector('#start');
   await p.page.click('#teacher');
-  assert.match(await p.text('#toolBody'), new RegExp(`目前 ${before} 筆紀錄`));
+  // 第 26 版：還沒做完就換頁，會多記一筆「中途離開」
+  assert.match(await p.text('#toolBody'), new RegExp(`目前 ${before + 1} 筆紀錄`));
+  assert.equal(await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16')).at(-1).event), '中途離開');
 });
 
 test('入門題組：長方形不出現正方形、正方形三題不重複', { skip: skip || !distReady }, async () => {
@@ -890,7 +892,7 @@ test('現場試用：開始前老師點選代號（不用打字）；沒選齊�
   assert.match(await p.text('#researchBar .who'), /T02-S05/);
   await p.page.click('#researchFlush'); await p.page.waitForTimeout(300);
   const start = p.rows('場次')[0];
-  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v22');
+  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v26'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
   assert.ok(p.rows('教師設定').some(r => r.actId === 'rectangle' && r.buddy === '開'), '記下老師這次的設定');
   assert.ok(!JSON.stringify(p.posts).match(/姓名/), '不傳姓名欄位');
 
@@ -1180,4 +1182,37 @@ test('第 25 版：學生改網址也跳不過鎖住的活動；反思頁按上�
   await page.goto(base + '/seven.html?a=tile'); await page.waitForSelector('#start');
   assert.deepEqual(errs, []);
   await ctx.close();
+});
+
+test('第 26 版：研究紀錄存網站資料庫：開始本節編節次、錯誤記觀察代碼、老師調整支持要選理由並存成這位學生的設定', { skip: skip || !distReady }, async () => {
+  const p = await student('rectangle', { buddyVoice: false, __research: { url: '', key: '', teachers: 4, students: 6, server: true } });
+  await pickWho(p.page, { teacher: 'T03', num: '02' });
+  await p.page.waitForFunction(() => /第 1 節/.test(document.querySelector('#researchBar .who')?.innerText || ''));
+  assert.match(await p.text('#researchBar .who'), /T03-S02/);
+  await p.start(); await p.choose('target', 'border'); await p.check();
+  await p.page.click('[data-quick="undetermined"]');
+  await p.page.click('#researchFlush'); await p.page.waitForTimeout(400);
+  const events = async () => (await p.page.evaluate(async () => (await (await fetch('/api/teacher/research?student=T03-S02')).json()).events));
+  const ev = await events();
+  const wrong = ev.find(r => r.event === '步驟檢核' && r.correct === '否');
+  assert.ok(wrong, '錯誤存進網站資料庫');
+  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v26');
+  const d = JSON.parse(wrong.detail); assert.equal(d.obs, 'chosePerimeter'); assert.equal(d.outcome, 'wrong'); assert.equal(d.firstTry, true);
+  assert.ok(ev.some(r => r.event === '無法判定'), '老師按「這題無法判定」');
+  // 老師調整支持：沒選理由不能存；減少支持存成這位學生的設定，記下方向
+  await p.page.click('#teacher');
+  await p.page.selectOption('#support', 'faded'); await p.page.click('#apply');
+  assert.match(await p.text('#applyMsg'), /主要理由/);
+  await p.page.selectOption('#reason', 'independent'); await p.page.fill('#reasonNote', '連續兩題自己完成'); await p.page.click('#apply');
+  await p.page.waitForFunction(() => !document.querySelector('#tools').open);
+  const ch = await p.page.evaluate(async () => (await (await fetch('/api/teacher/research')).json()).changes);
+  assert.deepEqual(ch.map(c => [c.student, c.field, c.direction, c.reason, c.sessionNo]), [['T03-S02', 'support', 'decrease', 'independent', 1]]);
+  // 重新整理：這位學生的設定還在
+  await p.page.reload(); await p.page.waitForSelector('#start');
+  await p.page.waitForFunction(() => window.areaResearch.overrides('rectangle')?.support === 'faded');
+  await p.page.click('#teacher'); assert.equal(await p.page.$eval('#support', s => s.value), 'faded');
+  // 維持原設定也要記下
+  await p.page.selectOption('#reason', 'lowAccuracy'); await p.page.click('#decKeep');
+  await p.page.waitForFunction(() => /維持/.test(document.querySelector('#decisionMsg')?.innerText || ''));
+  assert.deepEqual(p.errors, []);
 });
