@@ -1501,3 +1501,40 @@ test('第 26 版：換好學生、還沒按開始時，上一位的補送回來�
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('第 26 版：一題確定滿 300 次就鎖住；重新整理後仍鎖住；每一步都確定過就照常交卷', { skip: skip || !distReady }, async () => {
+  await setup();
+  const ctx = await browser.newContext(), page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto(base + '/study.html'); await page.waitForSelector('#probeFile');
+  await page.setInputFiles('#probeFile', fileURLToPath(new URL('../scenarios/demo-probe.json', import.meta.url)));
+  await page.waitForFunction(() => /已匯入 demoProbe@1|匯入過/.test(document.querySelector('#probeMsg')?.textContent || ''));
+  await page.evaluate(() => sessionStorage.setItem('area-research-who-v22', JSON.stringify({ teacher: 'T01', student: 'T01-S41', sessionNo: 1, sessionId: 'wS41' })));
+  await page.goto(base + '/probe.html'); await page.waitForSelector('#probeStart'); await page.click('#probeStart'); await page.waitForSelector('[data-step]');
+  // 第 1 題：第一步已確定 299 次，其他步驟沒確定；再按一次確定（第 300 次）就鎖住
+  const seed = async plan => page.evaluate(plan => {
+    const st = JSON.parse(sessionStorage.getItem('area-probe-run-v26')), it = st.items[st.index], saved = JSON.parse(sessionStorage.getItem('area-probe-run-v26:item'));
+    const answers = {}; let n = 0;
+    it.steps.forEach((s, i) => { const k = plan[i] || 0; if (k) answers[s.key] = { confirms: Array.from({ length: k }, () => ({ v: s.input === 'number' ? 12 : s.options[0], t: 1, n: ++n })) }; });
+    sessionStorage.setItem('area-probe-run-v26:item', JSON.stringify({ ...saved, answers }));
+    return it.steps.length;
+  }, plan);
+  await seed([299]); await page.reload(); await page.waitForSelector('[data-step]');
+  assert.equal(await page.$('#probeMax'), null, '299 次還沒鎖');
+  await page.click('[data-ok]');
+  await page.waitForSelector('#probeMax button');
+  assert.ok(await page.$eval('#submit', b => b.disabled), '還有步驟沒確定：不能直接交卷');
+  await page.reload(); await page.waitForSelector('#probeMax button');
+  assert.ok(await page.$eval('[data-ok]', b => b.disabled), '重新整理後仍鎖住');
+  await page.click('#probeMax button'); await page.waitForFunction(() => /第 2 題/.test(document.querySelector('.probe')?.innerText || ''), null, { timeout: 10000 });
+  // 第 2 題：每一步都確定過、合計 300 次：鎖住輸入，但可以照常交卷
+  const k = await page.evaluate(() => { const st = JSON.parse(sessionStorage.getItem('area-probe-run-v26')); return st.items[st.index].steps.length; });
+  await seed([300 - (k - 1), ...Array(k - 1).fill(1)]); await page.reload(); await page.waitForSelector('#probeMax');
+  assert.match(await page.innerText('#probeMax'), /記滿/);
+  assert.equal(await page.$eval('#submit', b => b.disabled), false);
+  await page.click('#submit'); await page.waitForFunction(() => /第 3 題/.test(document.querySelector('.probe')?.innerText || ''), null, { timeout: 10000 });
+  const rows = await page.evaluate(async () => (await (await fetch('/api/study/export?type=probeItems')).json()).rows.filter(x => x.student === 'T01-S41'));
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows.sort((a, b) => a.idx - b.idx).map(r => !!r.result.tech), [true, false], '第 1 題記技術問題，第 2 題照常計分');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

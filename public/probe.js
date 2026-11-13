@@ -90,12 +90,14 @@
         const v = s.input === 'number' ? Number(raw) : raw;
         // n：全題共用的遞增序號，伺服器用它判斷先後（同一個時間按了好幾個確定也分得出來）
         const n = 1 + Math.max(0, ...Object.values(answers).flatMap(a => a.confirms.map(c => c.n || 0)));
-        if (n > MAX_CONFIRMS) { tooMany(); return; }
+        if (n > MAX_CONFIRMS) { atLimit(); return; }
         (answers[s.key] = answers[s.key] || { confirms: [] }).confirms.push({ v, t: Math.round((Date.now() - itemStart) / 100) / 10, n });
         $('done_' + s.key).textContent = '已確定';   // 不顯示對錯
         keep(RUN_KEY + ':item', { run: state.run, index: state.index, startedAt: itemStart, answers });
+        atLimit();
       };
     }
+    atLimit();   // 重新整理後也要維持上限的鎖定
     $('submit').onclick = () => submit(false);
     $('techBtn').onclick = () => { tech = true; submit(false); };
     $('stopBtn').onclick = () => { if (confirm('確定要結束這次小測驗嗎？還沒做的題目會記成沒作答。')) submit(false, 'stopped'); };
@@ -126,9 +128,16 @@
   function setPending(p) { mem.set(p.run, p); if (!keep(PK(p.run), p)) toastSave(); }
   function clearPending(run) { mem.delete(run); try { sessionStorage.removeItem(PK(run)); } catch { /* 略過 */ } if (!mem.size) document.getElementById('probeSaveWarn')?.remove(); }
   function toastSave() { if (document.getElementById('probeSaveWarn')) return; const w = Object.assign(document.createElement('p'), { id: 'probeSaveWarn', className: 'count', textContent: '這台電腦存不了暫存資料：送出前請不要重新整理這一頁。' }); w.setAttribute('role', 'alert'); document.querySelector('main')?.prepend(w); }
-  // 確定次數用完：鎖住輸入，請老師把這一題改記成技術問題（不計分）
-  function tooMany() {
-    document.querySelectorAll('#probe input, #probe [data-opt], #probe [data-ok], #submit').forEach(x => { x.disabled = true; });
+  // 確定次數用完：鎖住輸入。每一步都確定過了就照常交卷；還有步驟沒確定，就請老師把這一題改記成技術問題（不計分）
+  function atLimit() {
+    const used = Object.values(answers).reduce((t, a) => t + a.confirms.length, 0);
+    if (used < MAX_CONFIRMS) return;
+    document.querySelectorAll('#probe input, #probe [data-opt], #probe [data-ok]').forEach(x => { x.disabled = true; });
+    if (item.steps.every(s => answers[s.key]?.confirms.length)) {
+      if (!document.getElementById('probeMax')) { const p = Object.assign(document.createElement('p'), { id: 'probeMax', className: 'count', textContent: '這一題確定的次數已經記滿，請按「這一題做好了」。' }); p.setAttribute('role', 'alert'); $('submit').before(p); }
+      return;
+    }
+    $('submit').disabled = true;
     if (document.getElementById('probeMax')) return;
     const box = Object.assign(document.createElement('div'), { id: 'probeMax', className: 'retry' }); box.setAttribute('role', 'alert');
     box.innerHTML = '<p>這一題按「確定」的次數太多，記不下了。請按下面的按鈕，這一題改記成技術問題（不計分），接著做下一題。</p><button type="button" class="primary submit">改記成技術問題，接著做</button>';
