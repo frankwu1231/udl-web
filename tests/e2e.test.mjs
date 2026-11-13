@@ -1606,3 +1606,47 @@ test('第 27 版：3-2 正方體與教師頁換成表面積教材', { skip: skip
   await page.close();
   await publish({});   // 換回面積，免得影響後面的測試
 });
+
+test('第 27 版：表面積 12 個活動都能出題、畫圖，照示範做完每一步都對；錯的答案會被擋下', { skip: skip || !distReady }, async () => {
+  const p = await act('sOpenBox', { difficulty: 'standard', ...SURFACE_MAP });
+  const out = await p.page.evaluate(() => {
+    const A = window.areaActs, bad = [];
+    const ids = A.packages.surface.activities.map(a => a.id);
+    for (const id of ids) {
+      const pl = A.get(id); if (!pl) { bad.push(id + ' 沒有註冊'); continue; }
+      for (const level of ['easy', 'standard', 'challenge']) for (let i = 0; i < 6; i++) {
+        const problem = pl.makeProblem(level, i, Math.random), answers = {}, state = {};
+        const ctx = { answers, state, problem, plugin: pl, settings: {}, method: 'mark', level, hint: () => 2, checked: () => false, invalidate() {}, refreshFigure() {}, rerender() {}, log() {},
+          choice: (k, t, items) => items.map(x => x[1]).join('|') };
+        try { pl.planFigure && pl.planFigure(ctx); } catch (e) { bad.push(`${id} planFigure ${e.message}`); }
+        pl.steps.forEach((st, s) => {
+          try { st.figure && st.figure(ctx); st.answer(ctx); } catch (e) { bad.push(`${id} 第${s + 1}步畫面 ${e.message}`); }
+          try { st.solve(ctx); const r = st.check(ctx); if (r) bad.push(`${id} ${level} ${i} 第${s + 1}步照示範做卻沒過：${r.msg}`); } catch (e) { bad.push(`${id} 第${s + 1}步 ${e.message}`); }
+          try { st.say && (typeof st.say === 'function' ? st.say({ problem }) : 0); } catch (e) { bad.push(`${id} say ${e.message}`); }
+        });
+        try { pl.done(ctx); } catch (e) { bad.push(`${id} done ${e.message}`); }
+      }
+    }
+    return { bad, n: ids.length };
+  });
+  assert.equal(out.n, 12); assert.deepEqual(out.bad, []);
+  // 4-1 沒有蓋子：實際操作，算成有蓋子的會被擋下
+  const q = await p.page.evaluate(() => document.querySelector('.lesson-prompt')?.innerText || '');
+  const [l, w, h] = q.match(/\d+/g).map(Number);
+  await p.choose('count', '6'); await p.check(); assert.match(await p.text('#feedback0'), /蓋子/);
+  await p.choose('count', '5'); await p.check(); await p.next();
+  await p.page.fill('#fa', String(l * w)); await p.page.fill('#fb', String(l * h)); await p.page.fill('#fc', String(w * h)); await p.check(); await p.next();
+  await p.page.fill('#total', String(2 * (l * w + l * h + w * h))); await p.check(); assert.match(await p.text('#feedback2'), /少算上面/);
+  await p.page.fill('#total', String(l * w + 2 * l * h + 2 * w * h)); await p.check(); await p.next();
+  await p.choose('unit', 'cm2'); await p.check(); await p.next();
+  assert.match(await p.text('.done-banner'), new RegExp(`${l * w + 2 * l * h + 2 * w * h} 平方公分`));
+  assert.deepEqual(p.errors, []);
+  // 2-2 正方體展開圖：5 個正方形的會被擋下
+  const c = await act('sCubeNet', SURFACE_MAP);
+  await c.choose('six', '6'); await c.check(); await c.next();
+  const opts = await c.page.evaluate(() => [...document.querySelectorAll('.sf-nets figure')].map(f => [f.querySelector('figcaption').innerText, f.querySelectorAll('rect').length]));
+  assert.equal(opts.length, 3);
+  const five = opts.find(o => o[1] === 5);
+  if (five) { await c.choose('net', five[0]); await c.check(); assert.match(await c.text('#feedback1'), /不是 6 個/); }
+  assert.deepEqual(c.errors, []);
+});
