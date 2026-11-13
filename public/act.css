@@ -111,3 +111,4 @@ html.contrast .map-card{border-color:#000}html.contrast .ac-outline{stroke:#000}
 /* 第 25 版修正：手機特大字時 3-3 的「＋」不會超出畫面 */
 .ac-stepper{flex-wrap:wrap;max-width:100%}.ac-stepper button{flex:0 0 auto}
 @media (max-width:600px){.ac-stepper span{min-width:0;flex-basis:100%}}
+.sf-nets{display:flex;flex-wrap:wrap;gap:16px;justify-content:center}.sf-nets figure{margin:0;text-align:center}.sf-nets figcaption{font-weight:700;font-size:1.2rem}.ac-svg.sf-mini{max-width:180px;height:auto}

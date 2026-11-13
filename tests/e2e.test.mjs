@@ -39,7 +39,7 @@ async function publish(settings) {
     if (s.__research) c.research = s.__research; else delete c.research; delete s.__research;   // 第 22 版：現場試用紀錄只在指定的測試開啟
     for (const k of ['rectangle', 'square', 'triangle', 'parallelogram']) c[k].settings = { ...c[k].settings, ...s };
     for (const k of Object.keys(c.activities || {})) c.activities[k].settings = { ...c.activities[k].settings, ...s };
-    c.map = { assigned: window.areaActs.LIST.map(a => a.id), sequential: false, path: 'all', ...map };
+    c.map = { assigned: window.areaActs.packages[map.pkg || 'area'].activities.map(a => a.id), sequential: false, path: 'all', ...map };
     return (await fetch('/api/teacher/lessons', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'published', config: c }) })).status;
   }, { flow: 'seven', keep: [0, 1, 2, 3], support: 'full', labels: 'reveal', ai: true, reward: false, sound: false, hintGate: false, mode: 'self', goalKind: 'hints', confidence: true, selfAsk: true, badges: true, voice: false, rest: 0, handsOn: false, methods: ['mark', 'row', 'self'], zhuyin: false, textSize: 'normal', contrast: false, video: 'hint', difficulty: 'standard', convert: false, srlAsk: 'first', lessonGoal: 0, stepNames: {}, attention: false, ...settings });
   await page.close(); assert.equal(status, 200);
@@ -893,7 +893,7 @@ test('現場試用：開始前老師點選代號（不用打字）；沒選齊�
   assert.match(await p.text('#researchBar .who'), /T02-S05/);
   await p.page.click('#researchFlush'); await p.page.waitForTimeout(300);
   const start = p.rows('場次')[0];
-  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v26'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
+  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v27'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
   assert.ok(p.rows('教師設定').some(r => r.actId === 'rectangle' && r.buddy === '開'), '記下老師這次的設定');
   assert.ok(!JSON.stringify(p.posts).match(/姓名/), '不傳姓名欄位');
 
@@ -1197,7 +1197,7 @@ test('第 26 版：研究紀錄存網站資料庫：開始本節編節次、錯�
   const ev = await events();
   const wrong = ev.find(r => r.event === '步驟檢核' && r.correct === '否');
   assert.ok(wrong, '錯誤存進網站資料庫');
-  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v26');
+  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v27');
   const d = JSON.parse(wrong.detail); assert.equal(d.obs, 'chosePerimeter'); assert.equal(d.outcome, 'wrong'); assert.equal(d.firstTry, true);
   assert.ok(ev.some(r => r.event === '無法判定'), '老師按「這題無法判定」');
   // 老師調整支持：沒選理由不能存；減少支持存成這位學生的設定，記下方向
@@ -1537,4 +1537,195 @@ test('第 26 版：一題確定滿 300 次就鎖住；重新整理後仍鎖住�
   assert.deepEqual(rows.sort((a, b) => a.idx - b.idx).map(r => !!r.result.tech), [true, false], '第 1 題記技術問題，第 2 題照常計分');
   assert.deepEqual(errors, []);
   await ctx.close();
+});
+
+// ---------- 第 27 版：表面積教材包 ----------
+const SURFACE_MAP = { __map: { pkg: 'surface', assigned: ['sFaces', 'sOpposite', 'sWrap', 'sNet', 'sCubeNet', 'sNetPairs', 'cuboid', 'cube', 'sInverse', 'sWhich', 'sOpenBox', 'sWord', 'sPrismFaces', 'prism', 'cylinder'], path: 'all' } };
+test('第 27 版：3-1 長方體的表面積七步驟：打開盒子、配對對面、量三個邊、列式、算一算再比一比、單位', { skip: skip || !distReady }, async () => {
+  const p = await act('cuboid', { difficulty: 'standard', ...SURFACE_MAP });
+  await p.choose('target', 'inside'); await p.check(); assert.match(await p.text('#feedback0'), /體積/);
+  await p.choose('target', 'outside'); await p.check(); await p.next();
+  await p.check(); assert.match(await p.text('#feedback1'), /把盒子打開/);
+  await p.page.click('#sfOpen'); await p.choose('count', '3'); await p.check(); assert.match(await p.text('#feedback1'), /只看得到 3 個面/);
+  await p.choose('count', '6'); await p.check(); await p.next();
+  const face = f => p.page.locator(`#figure2 [data-face="${f}"]`).dispatchEvent('click');
+  await face('top'); await face('front'); await p.check(); assert.match(await p.text('#feedback2'), /還有 3 組/);
+  for (const [a, b] of [['top', 'bottom'], ['front', 'back'], ['left', 'right']]) { await face(a); await face(b); }
+  await p.check(); await p.next();
+  await p.check(); assert.match(await p.text('#feedback3'), /先點長、寬、高/);
+  for (const e of ['l', 'w', 'h']) await p.page.locator(`#figure3 [data-edge="${e}"]`).dispatchEvent('click');
+  const fig = await p.text('#figure3');
+  const [l, w, h] = ['長', '寬', '高'].map(k => Number(fig.match(new RegExp(k + ' (\\d+)'))[1]));
+  await p.page.fill('#len', String(w)); await p.page.fill('#wid', String(l)); await p.page.fill('#hei', String(h)); await p.check(); assert.match(await p.text('#feedback3'), /哪一個是長/);
+  await p.page.fill('#len', String(l)); await p.page.fill('#wid', String(w)); await p.check(); await p.next();
+  await p.choose('formula', 'three'); await p.check(); assert.match(await p.text('#feedback4'), /只算了 3 個面/);
+  // 第一題是「六個面一個一個加」的階段，算式選六個面相加
+  assert.doesNotMatch(await p.text('[data-stage="4"] .choice'), /× 2/);
+  await p.choose('formula', 'add');
+  await p.page.fill('#fa', String(l * w)); await p.page.fill('#fb', String(l * h)); await p.page.fill('#fc', String(w * h + 1)); await p.check(); assert.match(await p.text('#feedback4'), /右面再算一次/);
+  await p.page.fill('#fc', String(w * h)); await p.check(); await p.next();
+  const half = l * w + l * h + w * h;
+  await p.page.fill('#total', String(half)); await p.check(); assert.match(await p.text('#feedback5'), /六個面都要加/);
+  await p.page.fill('#total', String(2 * half)); await p.choose('compare', '1'); await p.check(); assert.match(await p.text('#feedback5'), /同一個顏色/);
+  await p.choose('compare', '2'); await p.check(); await p.next();
+  await p.choose('unit', 'cm3'); await p.check(); assert.match(await p.text('#feedback6'), /體積的單位/);
+  await p.choose('unit', 'cm2'); await p.check(); await p.next();
+  assert.match(await p.text('.done-banner'), new RegExp(`表面積是 ${2 * half} 平方公分`));
+  // 錯誤的觀察代碼有記下來
+  const obs = await p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || '');
+  assert.match(obs, /choseVolume|eqHalf|unitVolume/);
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 27 版：3-2 正方體與教師頁換成表面積教材', { skip: skip || !distReady }, async () => {
+  const p = await act('cube', { difficulty: 'easy', ...SURFACE_MAP });
+  await p.choose('target', 'outside'); await p.check(); await p.next();
+  await p.page.click('#sfOpen'); await p.choose('count', '6'); await p.check(); await p.next();
+  await p.choose('same', 'pairs'); await p.check(); assert.match(await p.text('#feedback2'), /一樣大/);
+  await p.choose('same', 'all'); await p.check(); await p.next();
+  await p.page.locator('#figure3 [data-edge="l"]').dispatchEvent('click');
+  const s = Number((await p.text('#figure3')).match(/邊長 (\d+)/)[1]);
+  await p.page.fill('#side', String(s)); await p.check(); await p.next();
+  await p.choose('formula', 'vol'); await p.check(); assert.match(await p.text('#feedback4'), /體積/);
+  await p.choose('formula', 'add'); await p.page.fill('#fa', String(s * s)); await p.check(); await p.next();
+  await p.page.fill('#total', String(6 * s * s)); await p.choose('compare', '6'); await p.check(); await p.next();
+  await p.choose('unit', 'cm2'); await p.check(); await p.next();
+  assert.match(await p.text('.done-banner'), new RegExp(`表面積是 ${6 * s * s} 平方公分`));
+  assert.deepEqual(p.errors, []);
+  // 學習地圖只出現表面積的單元
+  await p.page.click('.map-link'); await p.page.waitForSelector('.map-card');
+  const units = await p.page.$$eval('.map-unit h2', h => h.map(x => x.innerText.trim()).join('|'));
+  assert.match(units, /長方體和正方體的表面積/); assert.doesNotMatch(units, /周長和面積/);
+  // 教師頁：可以換回面積教材
+  const page = await browser.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.goto(base + '/teacher.html'); await page.waitForSelector('[data-pkg="area"]');
+  await page.click('[data-pkg="surface"]'); await page.waitForSelector('[data-assign="cuboid"]');
+  assert.equal(await page.getAttribute('[data-pkg="surface"]', 'aria-pressed'), 'true');
+  assert.match(await page.inputValue('#shape'), /^s|cuboid|cube/);
+  await page.click('[data-pkg="area"]'); await page.waitForSelector('[data-assign="rectangle"]');
+  assert.equal(await page.$('[data-assign="cuboid"]'), null);
+  await page.click('[data-pkg="surface"]'); await page.waitForSelector('[data-assign="cuboid"]');
+  assert.deepEqual(errs, []);
+  await page.close();
+  await publish({});   // 換回面積，免得影響後面的測試
+});
+
+test('第 27 版：表面積 15 個活動都能出題、畫圖，照示範做完每一步都對；錯的答案會被擋下', { skip: skip || !distReady }, async () => {
+  const p = await act('sOpenBox', { difficulty: 'standard', ...SURFACE_MAP });
+  const out = await p.page.evaluate(() => {
+    const A = window.areaActs, bad = [];
+    const ids = A.packages.surface.activities.map(a => a.id);
+    for (const id of ids) {
+      const pl = A.get(id); if (!pl) { bad.push(id + ' 沒有註冊'); continue; }
+      for (const opt of [{}, { done: 0 }]) for (const level of ['easy', 'standard', 'challenge']) for (let i = 0; i < 6; i++) {
+        const problem = pl.makeProblem(level, i, Math.random, opt), answers = {}, state = {};
+        const ctx = { answers, state, problem, plugin: pl, settings: {}, method: 'mark', level, hint: () => 2, checked: () => false, invalidate() {}, refreshFigure() {}, rerender() {}, log() {},
+          choice: (k, t, items) => items.map(x => x[1]).join('|') };
+        try { pl.planFigure && pl.planFigure(ctx); } catch (e) { bad.push(`${id} planFigure ${e.message}`); }
+        pl.steps.forEach((st, s) => {
+          try { st.figure && st.figure(ctx); st.answer(ctx); } catch (e) { bad.push(`${id} 第${s + 1}步畫面 ${e.message}`); }
+          try { st.solve(ctx); const r = st.check(ctx); if (r) bad.push(`${id} ${level} ${i} 第${s + 1}步照示範做卻沒過：${r.msg}`); } catch (e) { bad.push(`${id} 第${s + 1}步 ${e.message}`); }
+          try { st.say && (typeof st.say === 'function' ? st.say({ problem }) : 0); } catch (e) { bad.push(`${id} say ${e.message}`); }
+        });
+        try { pl.done(ctx); } catch (e) { bad.push(`${id} done ${e.message}`); }
+      }
+    }
+    return { bad, n: ids.length };
+  });
+  assert.equal(out.n, 15); assert.deepEqual(out.bad, []);
+  // 4-1 沒有蓋子：實際操作，算成有蓋子的會被擋下
+  const q = await p.page.evaluate(() => document.querySelector('.lesson-prompt')?.innerText || '');
+  const [l, w, h] = q.match(/\d+/g).map(Number);
+  await p.choose('count', '6'); await p.check(); assert.match(await p.text('#feedback0'), /蓋子/);
+  await p.choose('count', '5'); await p.check(); await p.next();
+  await p.page.fill('#fa', String(l * w)); await p.page.fill('#fb', String(l * h)); await p.page.fill('#fc', String(w * h)); await p.check(); await p.next();
+  await p.page.fill('#total', String(2 * (l * w + l * h + w * h))); await p.check(); assert.match(await p.text('#feedback2'), /少算上面/);
+  await p.page.fill('#total', String(l * w + 2 * l * h + 2 * w * h)); await p.check(); await p.next();
+  await p.choose('unit', 'cm2'); await p.check(); await p.next();
+  assert.match(await p.text('.done-banner'), new RegExp(`${l * w + 2 * l * h + 2 * w * h} 平方公分`));
+  assert.deepEqual(p.errors, []);
+  // 2-2 正方體展開圖：5 個正方形的會被擋下
+  const c = await act('sCubeNet', SURFACE_MAP);
+  await c.choose('six', '6'); await c.check(); await c.next();
+  const opts = await c.page.evaluate(() => [...document.querySelectorAll('.sf-nets figure')].map(f => [f.querySelector('figcaption').innerText, f.querySelectorAll('rect').length]));
+  assert.equal(opts.length, 3);
+  const five = opts.find(o => o[1] === 5);
+  if (five) { await c.choose('net', five[0]); await c.check(); assert.match(await c.text('#feedback1'), /不是 6 個/); }
+  assert.deepEqual(c.errors, []);
+});
+
+test('第 27 版第 1 輪修正：換教材再換回保留指派；2-1 依實際大小判斷幾種；4-1 展開圖只有 5 個面；紀錄有版本與尺寸', { skip: skip || !distReady }, async () => {
+  await setup(); await publish({ __map: { assigned: ['compare', 'tile', 'rectangle'], path: 'custom' } });
+  const page = await browser.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.goto(base + '/teacher.html');   // 草稿也換成同一份（教師頁先讀草稿）
+  await page.evaluate(async () => { const r = await (await fetch('/api/teacher/lessons')).json(); await fetch('/api/teacher/lessons', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'draft', config: r.published }) }); });
+  await page.reload(); await page.waitForSelector('[data-pkg="surface"]');
+  await page.click('[data-pkg="surface"]'); await page.waitForSelector('[data-assign="cuboid"]');
+  await page.uncheck('[data-assign="sWord"]');
+  await page.click('[data-pkg="area"]'); await page.waitForSelector('[data-assign="rectangle"]');
+  const on = () => page.$$eval('[data-assign]:checked', l => l.map(x => x.dataset.assign));
+  assert.deepEqual(await on(), ['compare', 'tile', 'rectangle'], '切回面積：原本的指派還在');
+  await page.click('[data-pkg="surface"]'); await page.waitForSelector('[data-assign="cuboid"]');
+  assert.ok(!(await on()).includes('sWord'), '切回表面積：剛剛的勾選也還在');
+  await page.click('#saveDraft'); await page.waitForFunction(() => /草稿/.test(document.querySelector('#status')?.textContent || ''));
+  assert.deepEqual(errs, []); await page.close();
+  // 2-1、4-1 的圖與判斷
+  const p = await act('sNet', { difficulty: 'easy', ...SURFACE_MAP });
+  const r = await p.page.evaluate(() => { const pl = window.areaActs.get('sNet'), ob = window.areaActs.get('sOpenBox');
+    const k = pr => { const c = { answers: {}, state: {}, problem: pr }; pl.steps[2].solve(c); return c.answers.kinds; };
+    const net = ob.steps[1].figure({ problem: { l: 4, w: 3, h: 2 }, answers: {}, state: {} });
+    const label = pl.steps[1].figure({ problem: { l: 4, w: 3, h: 2, find: 'top' }, answers: {}, state: {}, checked: () => false, hint: () => 0 });
+    return { k322: k({ l: 3, w: 2, h: 2 }), k432: k({ l: 4, w: 3, h: 2 }), k222: k({ l: 2, w: 2, h: 2 }), faces: (net.match(/class="sf-net/g) || []).length, none: /沒有上面/.test(net), front: />前面</.test(label) && !/>上面</.test(label) }; });
+  assert.deepEqual(r, { k322: '2', k432: '3', k222: '1', faces: 5, none: true, front: true });
+  const rec = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16') || '[]').find(x => x.event === '整題定標'));
+  assert.equal(rec.siteVersion, 'v27'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
+  assert.match(await p.page.title(), /表面積/); assert.match(await p.text('header .brand'), /表面積/);
+  assert.deepEqual(p.errors, []);
+  await publish({});
+});
+
+test('第 27 版（柱體）：5-2 三角柱打開數面、底面忘了除以 2 會被擋、側面積連帶判定；長方體第 3 題起改用 × 2', { skip: skip || !distReady }, async () => {
+  const p = await act('prism', { difficulty: 'easy', ...SURFACE_MAP });
+  const [a, b, c, h] = (await p.text('.lesson-prompt')).match(/\d+/g).map(Number);
+  await p.choose('target', 'outside'); await p.check(); await p.next();
+  await p.page.click('#sfOpen'); await p.choose('count', '3'); await p.check(); assert.match(await p.text('#feedback1'), /底面/);
+  await p.choose('count', '5'); await p.check(); await p.next();
+  await p.page.fill('#base', String(a * b)); await p.check(); assert.match(await p.text('#feedback2'), /除以 2/);
+  await p.page.fill('#base', String(a * b / 2)); await p.check(); await p.next();
+  await p.page.fill('#perim', String(a + b)); await p.check(); assert.match(await p.text('#feedback3'), /斜邊/);
+  await p.page.fill('#perim', String(a + b + c)); await p.page.fill('#side', String((a + b + c) * h)); await p.check(); await p.next();
+  const tb = a * b / 2, side = (a + b + c) * h;
+  await p.choose('formula', 'one'); await p.check(); assert.match(await p.text('#feedback4'), /2 個/);
+  await p.choose('formula', 'two'); await p.page.fill('#total', String(tb + side)); await p.check(); assert.match(await p.text('#feedback4'), /只加了 1 個底面/);
+  await p.page.fill('#total', String(2 * tb + side)); await p.check(); await p.next();
+  await p.choose('unit', 'cm2'); await p.check(); await p.next();
+  assert.match(await p.text('.done-banner'), new RegExp(`表面積是 ${2 * tb + side} 平方公分`));
+  assert.match(await p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || ''), /eqDouble|oneBase/);
+  assert.deepEqual(p.errors, []);
+  // 第 3 輪：5-1 底面形狀的選項不重複；兩個底面都漏記 missBases、漏一個記 oneBase
+  const r3 = await p.page.evaluate(() => { const pl = window.areaActs.get('sPrismFaces'), st = pl.steps;
+    const dup = [3, 4, 5, 6].map(n => { const ctx = { problem: { n }, answers: {}, hint: () => 0, choice: (k, t, items) => '#' + items.map(x => x[0]).join('|') + '#' }; const o = st[1].answer(ctx).split('#')[1].split('|'); return o.length - new Set(o).size; });
+    const obs = v => st[3].check({ problem: { n: 3 }, answers: { sides: '3', count: String(v) } })?.obs;
+    return { dup, a: obs(3), b: obs(4), c: obs(5) }; });
+  assert.deepEqual(r3, { dup: [0, 0, 0, 0], a: 'missBases', b: 'oneBase', c: undefined });
+  // 5-1、5-3 的畫面可以打開，不會出錯
+  for (const id of ['sPrismFaces', 'cylinder']) { const q = await act(id, SURFACE_MAP); assert.ok(await q.page.$('#figure0 svg')); assert.deepEqual(q.errors, []); }
+  // 長方體：已經做完 2 題，下一題的算式改成 × 2
+  const r0 = await act('cuboid', SURFACE_MAP);
+  const stage = await r0.page.evaluate(() => [0, 1, 2, 3].map(done => window.areaActs.get('cuboid').makeProblem('standard', 0, Math.random, { done }).add));
+  assert.deepEqual(stage, [true, true, false, false]);
+  // 學生頁真的把做完的題數傳給出題：記 2 題完成後重新進來，第 1 步看不出來，但示範例題要用同一個階段
+  const pg = await r0.page.context().newPage(), errs2 = []; pg.on('pageerror', e => errs2.push(e.message));
+  await pg.addInitScript(() => { if (!sessionStorage.getItem('area-records-v16')) sessionStorage.setItem('area-records-v16', JSON.stringify([1, 2].map(i => ({ event: '整題完成', actId: 'cuboid', cycle: i, t: Date.now() })))); });
+  await pg.goto(`${base}/seven.html?a=cuboid`); await pg.waitForSelector('#start');
+  const r = { page: pg, errors: errs2, choose: (k, v) => pg.click(`[data-choice="${k}"][data-value="${v}"]`), check: async () => { await pg.click('#check'); await pg.waitForTimeout(60); }, next: async () => { await pg.click('#next'); await pg.waitForTimeout(60); }, text: sel => pg.evaluate(x => document.querySelector(x)?.innerText ?? '', sel) };
+  await begin(r);
+  await r.choose('target', 'outside'); await r.check(); await r.next(); await r.page.click('#sfOpen'); await r.choose('count', '6'); await r.check(); await r.next();
+  for (const [x, y] of [['top', 'bottom'], ['front', 'back'], ['left', 'right']]) { await r.page.locator(`#figure2 [data-face="${x}"]`).dispatchEvent('click'); await r.page.locator(`#figure2 [data-face="${y}"]`).dispatchEvent('click'); }
+  await r.check(); await r.next();
+  for (const e of ['l', 'w', 'h']) await r.page.locator(`#figure3 [data-edge="${e}"]`).dispatchEvent('click');
+  const f3 = await r.text('#figure3'), [L3, W3, H3] = ['長', '寬', '高'].map(k => Number(f3.match(new RegExp(k + ' (\\d+)'))[1]));
+  await r.page.fill('#len', String(L3)); await r.page.fill('#wid', String(W3)); await r.page.fill('#hei', String(H3)); await r.check(); await r.next();
+  assert.match(await r.text('[data-stage="4"] .choice'), /× 2/, '第 3 題起算式有 × 2');
+  assert.deepEqual(r.errors, []);
 });

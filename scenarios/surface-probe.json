@@ -1,0 +1,557 @@
+{
+ "id": "surfaceProbe",
+ "version": "2",
+ "kind": "probe",
+ "title": "表面積小測驗（A 卷）",
+ "itemSecs": 90,
+ "totalSecs": 900,
+ "forms": [
+  {
+   "id": "A",
+   "items": [
+    {
+     "id": "A01",
+     "type": "face",
+     "prompt": "盒子長 4 公分。寬 3 公分。高 2 公分。只算上面這一個面。面積是多少？",
+     "steps": [
+      {
+       "key": "len",
+       "label": "上面的長是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 4
+      },
+      {
+       "key": "wid",
+       "label": "上面的寬是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 3
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "長×寬",
+        "長×寬×高",
+        "長×寬×6"
+       ],
+       "answer": "長×寬"
+      },
+      {
+       "key": "area",
+       "label": "上面這一個面的面積",
+       "role": "answer",
+       "input": "number",
+       "answer": 12
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "立方公分"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "A02",
+     "type": "prism",
+     "prompt": "三角柱的底面是直角三角形，兩條直角邊是 3 公分和 4 公分，斜邊 5 公分。柱高 5 公分。表面積是多少？",
+     "steps": [
+      {
+       "key": "base",
+       "label": "一個底面（三角形）的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 6
+      },
+      {
+       "key": "side",
+       "label": "側面合起來的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 60
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "底面積×2＋側面積",
+        "底面積＋側面積",
+        "底面積×高"
+       ],
+       "answer": "底面積×2＋側面積"
+      },
+      {
+       "key": "area",
+       "label": "三角柱的表面積",
+       "role": "answer",
+       "input": "number",
+       "answer": 72
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "立方公分"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "A03",
+     "type": "cuboid",
+     "prompt": "有蓋的長方體盒子，長 3 公分。寬 2 公分。高 1 公分。六個面的表面積是多少？",
+     "steps": [
+      {
+       "key": "top",
+       "label": "上面一個面的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 6
+      },
+      {
+       "key": "front",
+       "label": "前面一個面的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 3
+      },
+      {
+       "key": "right",
+       "label": "右邊一個面的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 2
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "三種面積加起來再乘2",
+        "三種面積直接相加",
+        "長×寬×高"
+       ],
+       "answer": "三種面積加起來再乘2"
+      },
+      {
+       "key": "area",
+       "label": "六個面的表面積",
+       "role": "answer",
+       "input": "number",
+       "answer": 22
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "立方公分"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "A04",
+     "type": "cuboid",
+     "prompt": "有蓋的長方體盒子，長 4 公分。寬 3 公分。高 2 公分。六個面的表面積是多少？",
+     "steps": [
+      {
+       "key": "top",
+       "label": "上面一個面的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 12
+      },
+      {
+       "key": "front",
+       "label": "前面一個面的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 8
+      },
+      {
+       "key": "right",
+       "label": "右邊一個面的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 6
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "三種面積加起來再乘2",
+        "三種面積直接相加",
+        "長×寬×高"
+       ],
+       "answer": "三種面積加起來再乘2"
+      },
+      {
+       "key": "area",
+       "label": "六個面的表面積",
+       "role": "answer",
+       "input": "number",
+       "answer": 52
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "立方公分"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "A05",
+     "type": "cuboid",
+     "prompt": "有蓋的長方體盒子，長 5 公分。寬 3 公分。高 2 公分。六個面的表面積是多少？",
+     "steps": [
+      {
+       "key": "top",
+       "label": "上面一個面的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 15
+      },
+      {
+       "key": "front",
+       "label": "前面一個面的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 10
+      },
+      {
+       "key": "right",
+       "label": "右邊一個面的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 6
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "三種面積加起來再乘2",
+        "三種面積直接相加",
+        "長×寬×高"
+       ],
+       "answer": "三種面積加起來再乘2"
+      },
+      {
+       "key": "area",
+       "label": "六個面的表面積",
+       "role": "answer",
+       "input": "number",
+       "answer": 62
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "立方公分"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "A06",
+     "type": "prism",
+     "prompt": "三角柱的底面是直角三角形，兩條直角邊是 6 公分和 8 公分，斜邊 10 公分。柱高 2 公分。表面積是多少？",
+     "steps": [
+      {
+       "key": "base",
+       "label": "一個底面（三角形）的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 24
+      },
+      {
+       "key": "side",
+       "label": "側面合起來的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 48
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "底面積×2＋側面積",
+        "底面積＋側面積",
+        "底面積×高"
+       ],
+       "answer": "底面積×2＋側面積"
+      },
+      {
+       "key": "area",
+       "label": "三角柱的表面積",
+       "role": "answer",
+       "input": "number",
+       "answer": 96
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "立方公分"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "A07",
+     "type": "cube",
+     "prompt": "正方體盒子的邊長是 2 公分。六個面的表面積是多少？",
+     "steps": [
+      {
+       "key": "side",
+       "label": "邊長是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 2
+      },
+      {
+       "key": "face",
+       "label": "一個面的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 4
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "一個面的面積×6",
+        "邊長×6",
+        "邊長×邊長×邊長"
+       ],
+       "answer": "一個面的面積×6"
+      },
+      {
+       "key": "area",
+       "label": "六個面的表面積",
+       "role": "answer",
+       "input": "number",
+       "answer": 24
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "立方公分"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "A08",
+     "type": "cube",
+     "prompt": "正方體盒子的邊長是 3 公分。六個面的表面積是多少？",
+     "steps": [
+      {
+       "key": "side",
+       "label": "邊長是幾公分",
+       "role": "measure",
+       "input": "number",
+       "answer": 3
+      },
+      {
+       "key": "face",
+       "label": "一個面的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 9
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "一個面的面積×6",
+        "邊長×6",
+        "邊長×邊長×邊長"
+       ],
+       "answer": "一個面的面積×6"
+      },
+      {
+       "key": "area",
+       "label": "六個面的表面積",
+       "role": "answer",
+       "input": "number",
+       "answer": 54
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "立方公分"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "A09",
+     "type": "inverse",
+     "prompt": "正方體的表面積是 96 平方公分。六個面一樣大。一個面的面積是多少？",
+     "steps": [
+      {
+       "key": "total",
+       "label": "全部的表面積",
+       "role": "measure",
+       "input": "number",
+       "answer": 96
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "表面積÷6",
+        "表面積×6",
+        "表面積−6"
+       ],
+       "answer": "表面積÷6"
+      },
+      {
+       "key": "area",
+       "label": "一個面的面積",
+       "role": "answer",
+       "input": "number",
+       "answer": 16
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "立方公分"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    },
+    {
+     "id": "A10",
+     "type": "openBox",
+     "prompt": "盒子長 4 公分。寬 3 公分。高 2 公分。上面沒有蓋子。只算底和四個側面。面積合起來是多少？",
+     "steps": [
+      {
+       "key": "base",
+       "label": "底面一個面的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 12
+      },
+      {
+       "key": "front",
+       "label": "前面一個面的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 8
+      },
+      {
+       "key": "right",
+       "label": "右邊一個面的面積",
+       "role": "part",
+       "input": "number",
+       "answer": 6
+      },
+      {
+       "key": "formula",
+       "label": "要用哪個算式",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "底面＋前面×2＋右面×2",
+        "底面×2＋前面×2＋右面×2",
+        "底面×5"
+       ],
+       "answer": "底面＋前面×2＋右面×2"
+      },
+      {
+       "key": "area",
+       "label": "五個面的面積合起來",
+       "role": "answer",
+       "input": "number",
+       "answer": 40
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "平方公分",
+        "公分",
+        "立方公分"
+       ],
+       "answer": "平方公分"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "package": "surface"
+}

@@ -3,42 +3,15 @@
 // 每個新活動（外掛）用 areaActs.register(id, plugin) 註冊，學生頁（seven.js）用同一套
 // 「看題選方法 → 動手做 → 檢查回顧」、三層提示、示範影片與紀錄來執行。
 (() => {
-  // 學習地圖：單元 → 活動。kind: shape（原本的圖形解題）｜plugin（新活動）
-  const UNITS = [
-    { id: 'u1', title: '面積是什麼', icon: '🔍', code: 'N-2-12、N-3-14' },
-    { id: 'u2', title: '周長和面積', icon: '📏', code: 'S-4-3' },
-    { id: 'u3', title: '長方形和正方形', icon: '▭', code: 'S-4-3、R-4-3、N-4-11' },
-    { id: 'u4', title: '三角形和四邊形', icon: '△', code: 'S-5-2' },
-    { id: 'u5', title: '用在生活', icon: '🏠', code: 'R-4-3、N-4-11' }
-  ];
-  const LIST = [
-    { id: 'compare', unit: 'u1', no: '1-1', title: '比一比，哪個比較大', code: 'N-2-12', icon: '⚖️', kind: 'plugin' },
-    { id: 'tile', unit: 'u1', no: '1-2', title: '鋪方格', code: 'N-3-14', icon: '🟦', kind: 'plugin' },
-    { id: 'conserve', unit: 'u1', no: '1-3', title: '剪開再拼，面積一樣嗎', code: 'N-3-14', icon: '✂️', kind: 'plugin' },
-    { id: 'estimate', unit: 'u1', no: '1-4', title: '先估一估，再數一數', code: 'N-3-14', icon: '🤔', kind: 'plugin' },
-    { id: 'perimeter', unit: 'u2', no: '2-1', title: '周長：沿著邊走一圈', code: 'S-4-3', icon: '🚶', kind: 'plugin' },
-    { id: 'which', unit: 'u2', no: '2-2', title: '要算面積還是周長', code: 'S-4-3', icon: '❓', kind: 'plugin' },
-    { id: 'samePerimeter', unit: 'u2', no: '2-3', title: '周長一樣，面積也一樣嗎', code: 'S-4-3', icon: '🟰', kind: 'plugin' },
-    { id: 'rectangle', unit: 'u3', no: '3-1', title: '長方形的面積', code: 'S-4-3、R-4-3', icon: '▭', kind: 'shape' },
-    { id: 'square', unit: 'u3', no: '3-1', title: '正方形的面積', code: 'S-4-3、R-4-3', icon: '◻️', kind: 'shape' },
-    { id: 'inverse', unit: 'u3', no: '3-2', title: '知道面積，找邊長', code: 'S-4-3', icon: '🔁', kind: 'plugin' },
-    { id: 'arrange', unit: 'u3', no: '3-3', title: '12 格可以排成哪些長方形', code: 'S-4-3', icon: '🧩', kind: 'plugin' },
-    { id: 'composite', unit: 'u3', no: '3-4', title: '複合圖形：切開再加起來', code: 'S-4-3', icon: '⬛', kind: 'plugin' },
-    { id: 'squareMeter', unit: 'u3', no: '3-5', title: '平方公尺', code: 'N-4-11', icon: '📰', kind: 'plugin' },
-    { id: 'parallelogram', unit: 'u4', no: '4-1', title: '平行四邊形的面積', code: 'S-5-2', icon: '▱', kind: 'shape' },
-    { id: 'triangle', unit: 'u4', no: '4-2', title: '三角形的面積', code: 'S-5-2', icon: '△', kind: 'shape' },
-    { id: 'trapezoid', unit: 'u4', no: '4-3', title: '梯形的面積', code: 'S-5-2、s-III-1', icon: '⏢', kind: 'plugin' },
-    { id: 'word', unit: 'u5', no: '5-1', title: '生活應用題', code: 'R-4-3、N-4-11', icon: '🏠', kind: 'plugin' }
-  ];
+  // 教材包（content-area.js、content-surface.js…）要比這個檔先載入。
+  // 第 27 版：可以有好幾個教材包；老師在學習地圖選用哪一個（config.map.pkg），頁面讀到設定後呼叫 use()
+  const PKGS = window.lessonPackages || {};
+  let P = window.lessonPackage || Object.values(PKGS)[0];
+  const allActs = () => Object.values(PKGS).flatMap(p => p.activities);
   const plugins = {};
-  const available = () => LIST.filter(a => a.kind === 'shape' || plugins[a.id]);
-  // 課綱路徑（老師一鍵套用，再依 IEP 增減）
-  const PATHS = {
-    g3: { title: '三年級版', ids: ['compare', 'tile', 'conserve', 'estimate', 'rectangle', 'square'] },
-    g4: { title: '四年級版', ids: ['compare', 'tile', 'conserve', 'estimate', 'perimeter', 'which', 'samePerimeter', 'rectangle', 'square', 'inverse', 'arrange', 'composite', 'squareMeter', 'word'] },
-    g5: { title: '五年級延伸', ids: LIST.map(a => a.id) },
-    all: { title: '全部', ids: LIST.map(a => a.id) }
-  };
+  const available = () => P.activities.filter(a => a.kind === 'shape' || plugins[a.id]);
+  const use = id => { if (id && PKGS[id]) P = PKGS[id]; return P; };
+  const pkgOf = actId => Object.values(PKGS).find(p => p.activities.some(a => a.id === actId)) || null;
 
   // ---------- 共用工具 ----------
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -93,12 +66,15 @@
     const ok = p => !same(p) && (!target || numbers(p) !== target);
     // 固定種子的亂數，讓「隨機都抽不到」時可以有系統地找
     const seeded = seed => () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    // 例題和學生這一題用同一個做法階段（例如表面積先一個一個加，之後才乘 2）
+    const opt = current && 'add' in current ? { done: current.add ? 0 : Infinity } : {};
+    const mk = (lv, i, r) => pl.makeProblem(lv, i, r, opt);
     const make = () => {
-      for (let i = 0; i < 30; i++) { const p = pl.makeProblem(level, 1 + Math.floor(Math.random() * 6), Math.random); if (ok(p)) return blank(p); }
+      for (let i = 0; i < 30; i++) { const p = mk(level, 1 + Math.floor(Math.random() * 6), Math.random); if (ok(p)) return blank(p); }
       // 再依序找：先找同一個難度，再找其他難度（例如 3-3 一般難度每題都是 12 格，只能換難度）
       for (const lv of [level, ...['easy', 'standard', 'challenge'].filter(x => x !== level)])
-        for (let i = 0; i < 6; i++) for (let seed = 1; seed <= 20; seed++) { const p = pl.makeProblem(lv, i, seeded(seed)); if (ok(p)) return blank(p); }
-      return blank(pl.makeProblem(level, 1, Math.random));   // 這一步的答案和數字無關（例如選單位），用哪一題都一樣
+        for (let i = 0; i < 6; i++) for (let seed = 1; seed <= 20; seed++) { const p = mk(lv, i, seeded(seed)); if (ok(p)) return blank(p); }
+      return blank(mk(level, 1, Math.random));   // 這一步的答案和數字無關（例如選單位），用哪一題都一樣
     };
     let ex = make();
     const view = () => `<div class="sd-plugin">${st.figure ? `<div class="sd-pfig">${st.figure(ex)}</div>` : ''}<div class="sd-ans">${st.answer(ex)}</div></div>`;
@@ -111,8 +87,9 @@
     ];
   }
 
-  function register(id, plugin) { plugins[id] = { id, ...LIST.find(a => a.id === id), ...plugin }; }
+  function register(id, plugin) { plugins[id] = { id, ...allActs().find(a => a.id === id), ...plugin }; }
 
-  window.areaActs = { UNITS, LIST, PATHS, plugins, available, register, demoScenes, get: id => plugins[id] || null, info: id => LIST.find(a => a.id === id) || null,
+  window.areaActs = { get UNITS() { return P.units; }, get LIST() { return P.activities; }, get PATHS() { return P.paths; }, get pkg() { return P; }, packages: PKGS, use, pkgOf,
+    plugins, available, register, demoScenes, get: id => plugins[id] || null, info: id => allActs().find(a => a.id === id) || null,
     util: { esc, pick, shuffle, rectCells, key, gridSVG, outlineOf, bounds, num, fieldHtml } };
 })();
