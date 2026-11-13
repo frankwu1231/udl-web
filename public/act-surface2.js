@@ -109,8 +109,9 @@
 
   // =============== 2-1 打開盒子：展開圖 ===============
   const FACES = ['top', 'bottom', 'front', 'back', 'left', 'right'], FN = S.FACE_NAME;
+  const kindsOf = p => new Set([[p.l, p.w], [p.l, p.h], [p.w, p.h]].map(x => x.slice().sort((a, b) => a - b).join('x'))).size;   // 幾種大小（形狀一樣才算同一種）
   A.register('sNet', {
-    methods, makeProblem: (level, i) => ({ ...box(level, i), find: pick(['top', 'front', 'right', 'bottom', 'back', 'left'], i), prompt: '把盒子打開攤平，就是展開圖。看一看展開圖上的每一個面。' }),
+    methods, makeProblem: (level, i) => ({ ...box(level, i), find: pick(['top', 'right', 'bottom', 'back', 'left'], i), prompt: '把盒子打開攤平，就是展開圖。看一看展開圖上的每一個面。' }),
     planFigure: ctx => boxSVG(ctx.problem, {}),
     steps: [
       { title: '打開盒子', ids: ['count'], hints: ['按按鈕，把盒子打開。', '數一數展開圖有幾個長方形。', '展開圖有 6 個面。'], think: '老師把盒子打開，數一數有幾個長方形。', together: '一起做：打開數一數。',
@@ -119,18 +120,18 @@
         check: ctx => !ctx.state.open ? { code: 'open', obs: 'unfinished', msg: '先按「把盒子打開」。' } : !ctx.answers.count ? { code: 'count', msg: '數一數，再選一個答案。' } : ctx.answers.count === '6' ? null : { code: 'count', obs: 'missFace', msg: '再數一次，上面和下面也是面。' },
         solve: ctx => { ctx.state.open = true; ctx.answers.count = '6'; }, say: () => '展開圖有 6 個面。' },
       { title: '找一個面', ids: ['picked'], hints: ['想一想盒子合起來時，這個面在哪裡。', '前面在中間；上面在前面的上方，下面在前面的下方。', '看閃爍的面。'], think: '老師想：前面在中間，其他的面圍在旁邊。', together: '一起找：這個面在展開圖的哪裡？',
-        figure: ctx => netSVG(ctx.problem, { clickFaces: true, pick: ctx.answers.picked, labels: ctx.checked(1), pulse: ctx.hint(1) >= 2 ? [ctx.problem.find] : [] }),
+        figure: ctx => netSVG(ctx.problem, { clickFaces: true, pick: ctx.answers.picked, labels: ctx.checked(1), labelOnly: ['front'], pulse: ctx.hint(1) >= 2 ? [ctx.problem.find] : [] }),
         answer: ctx => `<p data-read data-say>前面已經標在中間。在展開圖上，點一下「${FN[ctx.problem.find]}」。</p><p class="notice" data-read data-say>${ctx.answers.picked ? '已經選好了，按檢查。' : '還沒點。'}</p>`,
         bind: ctx => document.querySelectorAll('#figure1 [data-face]').forEach(el => { const go = () => { ctx.answers.picked = el.dataset.face; ctx.rerender(); }; el.onclick = go; el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } }; }),
         check: ctx => !ctx.answers.picked ? { code: 'picked', msg: '先在展開圖上點一個面。' } : ctx.answers.picked === ctx.problem.find ? null : { code: 'picked', obs: PAIR[ctx.answers.picked] === PAIR[ctx.problem.find] ? 'swapped' : 'wrongChoice', msg: PAIR[ctx.answers.picked] === PAIR[ctx.problem.find] ? `這是它的對面，和${FN[ctx.problem.find]}一樣大。再找一次。` : '想一想盒子合起來時，這個面在哪裡。' },
         solve: ctx => { ctx.answers.picked = ctx.problem.find; }, say: ex => `${FN[ex.problem.find]}在這裡。` },
-      { title: '有幾種大小', ids: ['kinds'], hints: ['比一比六個面的大小。', '面對面的兩個面一樣大。', '6 個面，兩個兩個一樣大，有 3 種大小。'], think: '老師比一比：兩個兩個一樣大，所以有 3 種。', together: '一起比：有幾種大小？',
+      { title: '有幾種大小', ids: ['kinds'], hints: ['比一比六個面的大小。', '看面上的數字：長 × 寬一樣，就是一樣大。', '把一樣大的面算成同一種，數一數有幾種。'], think: '老師看每個面的長和寬，一樣的算同一種。', together: '一起比：有幾種大小？',
         figure: ctx => netSVG(ctx.problem, { colored: ctx.hint(2) >= 2 || ctx.checked(2) ? ['tb', 'fb', 'lr'] : [], labels: true, nums: true }),
-        answer: ctx => ctx.choice('kinds', '六個面一共有幾種大小？', [['3', '3 種'], ['6', '6 種'], ['1', '1 種']], true),
-        check: ctx => !ctx.answers.kinds ? { code: 'kinds', msg: '先選一個答案。' } : ctx.answers.kinds === '3' ? null : { code: 'kinds', obs: ctx.answers.kinds === '1' ? 'sixSame' : 'wrongChoice', msg: ctx.answers.kinds === '1' ? '長方體的面不是都一樣大。看面上的數字。' : '面對面的兩個面一樣大，再數一次。' },
-        solve: ctx => { ctx.answers.kinds = '3'; }, say: () => '有 3 種大小。' }
+        answer: ctx => ctx.choice('kinds', '六個面一共有幾種大小？', [['1', '1 種'], ['2', '2 種'], ['3', '3 種'], ['6', '6 種']], true),
+        check: ctx => { const k = String(kindsOf(ctx.problem)); return !ctx.answers.kinds ? { code: 'kinds', msg: '先選一個答案。' } : ctx.answers.kinds === k ? null : { code: 'kinds', obs: ctx.answers.kinds === '1' ? 'sixSame' : 'wrongChoice', msg: ctx.answers.kinds === '1' ? '這個盒子的面不是都一樣大。看面上的數字。' : '看面上的數字，長和寬一樣的算同一種，再數一次。' }; },
+        solve: ctx => { ctx.answers.kinds = String(kindsOf(ctx.problem)); }, say: ex => `有 ${kindsOf(ex.problem)} 種大小。` }
     ],
-    reasons, done: () => '盒子打開是展開圖，有 6 個面、3 種大小。', chant: '打開盒子：六個面，三種大小。', transfer: '拆開一個空的牙膏盒，看看它的展開圖。'
+    reasons, done: ctx => `盒子打開是展開圖，有 6 個面、${kindsOf(ctx.problem)} 種大小。`, chant: '打開盒子：六個面，對面一樣大。', transfer: '拆開一個空的牙膏盒，看看它的展開圖。'
   });
 
   // =============== 2-2 哪些展開圖能摺成正方體 ===============
@@ -164,14 +165,14 @@
     methods, makeProblem: (level, i) => ({ ...box(level, i), prompt: '這是盒子的展開圖，面上沒有寫名字。找出合起來時面對面的三組面。' }),
     planFigure: ctx => netSVG(ctx.problem, {}),
     steps: [
-      { title: '看題目', ids: ['know'], hints: ['對面是盒子合起來時面對面的兩個面。', '對面不會連在一起。', '對面一樣大，中間隔著一個面。'], think: '老師想：對面一樣大，中間隔一個面。', together: '一起想：對面有什麼特別？',
+      { title: '看題目', ids: ['know'], hints: ['對面是盒子合起來時面對面的兩個面。', '在這張展開圖上，對面不會連在一起。', '在這張展開圖上，對面一樣大，中間隔著一個面。'], think: '老師想：在這張展開圖上，對面一樣大，中間隔一個面。', together: '一起想：對面有什麼特別？',
         figure: ctx => netSVG(ctx.problem, {}),
-        answer: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>${ctx.choice('know', '面對面的兩個面怎麼樣？', [['same', '一樣大，中間隔一個面'], ['touch', '連在一起'], ['diff', '大小不一樣']])}`,
+        answer: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>${ctx.choice('know', '面對面的兩個面怎麼樣？', [['same', '一樣大；在這張展開圖上，中間隔一個面'], ['touch', '連在一起'], ['diff', '大小不一樣']])}`,
         check: ctx => !ctx.answers.know ? { code: 'know', msg: '先選一個答案。' } : ctx.answers.know === 'same' ? null : { code: 'know', obs: 'wrongChoice', msg: '把盒子合起來想一想：上面和下面有連在一起嗎？' },
         solve: ctx => { ctx.answers.know = 'same'; }, say: () => '對面一樣大，中間隔一個面。' },
       pairStep(1, { labels: false })
     ],
-    reasons, done: () => '展開圖上，對面一樣大，中間隔著一個面。', chant: '找對面：一樣大，隔一個。', transfer: '拿一個骰子：對面的點數加起來是 7，找一找。'
+    reasons, done: () => '在這張展開圖上，對面一樣大，中間隔著一個面。', chant: '找對面：合起來面對面。', transfer: '拿一個骰子：對面的點數加起來是 7，找一找。'
   });
 
   // =============== 3-3 知道表面積，找邊長（正方體） ===============
@@ -185,7 +186,7 @@
         answer: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>${fieldHtml(ctx, 'face', `一個面：${ctx.problem.S} ÷ 6 = ？`, 0)}`,
         check: ctx => { const v = num(ctx.answers.face), p = ctx.problem; return v === null ? { code: 'face', msg: '把一個面的面積填進去。' } : v === p.s * p.s ? null : { code: 'face', obs: v === p.S / 4 ? 'other' : Math.abs(v - p.s * p.s) === 1 ? 'offByOne' : 'other', msg: '表面積 ÷ 6，再算一次。' }; },
         solve: ctx => { ctx.answers.face = String(ctx.problem.s * ctx.problem.s); }, say: ex => `一個面是 ${ex.problem.s * ex.problem.s} 平方公分。` },
-      { title: '找邊長', ids: ['side'], hints: ['一個面是正方形：邊長 × 邊長。', '哪個數乘自己，會等於一個面？', '試試看：1 × 1、2 × 2、3 × 3……'], think: '找一個數，乘自己等於一個面。', together: '一起試：幾乘幾？',
+      { title: '找邊長', ids: ['side'], hints: ['一個面是正方形：邊長 × 邊長。', '找兩個一樣的數相乘，例如 3 × 3。', '試試看：1 × 1、2 × 2、3 × 3……'], think: '找兩個一樣的數，相乘等於一個面。', together: '一起試：幾乘幾？',
         figure: ctx => { const f = num(ctx.answers.face) || ctx.problem.s * ctx.problem.s; return `<p class="ac-big" data-read data-say>？ × ？ = ${f}</p>`; },
         answer: ctx => fieldHtml(ctx, 'side', '邊長是幾公分？', 1),
         check: ctx => { const v = num(ctx.answers.side), f = num(ctx.answers.face); if (v === null) return { code: 'side', msg: '把邊長填進去。' };
@@ -217,7 +218,7 @@
         check: ctx => { const want = ctx.problem.k === 'surface' ? 'cm2' : 'cm3'; return !ctx.answers.unit ? { code: 'unit', msg: '選一個單位。' } : ctx.answers.unit === want ? null : { code: 'unit', obs: ctx.answers.unit === 'cm' ? 'unitLength' : want === 'cm2' ? 'unitVolume' : 'wrongChoice', msg: want === 'cm2' ? '表面積是面積，用平方公分。' : '體積用立方公分。' }; },
         solve: ctx => { ctx.answers.unit = ctx.problem.k === 'surface' ? 'cm2' : 'cm3'; }, say: ex => ex.problem.k === 'surface' ? '表面積用平方公分。' : '體積用立方公分。' }
     ],
-    reasons, done: ctx => ctx.problem.k === 'surface' ? '在外面：算表面積，單位是平方公分。' : '在裡面：算體積，單位是立方公分。', chant: '外面是表面積，裡面是體積。', transfer: '說一說：包粽子的葉子是表面積還是體積？'
+    reasons, done: ctx => ctx.problem.k === 'surface' ? '在外面：算表面積，單位是平方公分。' : '在裡面：算體積，單位是立方公分。', chant: '外面是表面積，裡面是體積。', transfer: '說一說：要知道粽葉能包住多大的外面，要算表面積還是體積？'
   });
 
   // =============== 4-1 沒有蓋子的盒子 ===============
@@ -227,12 +228,12 @@
     planFigure: ctx => boxSVG(ctx.problem, { edges: ['l', 'w', 'h'] }),
     steps: [
       { title: '數面', ids: ['count'], hints: ['沒有蓋子，就是少了哪一個面？', '上面沒有了，其他的面都還在。', '6 個面少 1 個，是 5 個面。'], think: '沒有蓋子，少了上面，剩下 5 個面。', together: '一起數：沒有蓋子有幾個面？',
-        figure: ctx => netSVG(ctx.problem, { labels: true, pulse: ctx.hint(0) >= 2 ? ['top'] : [] }),
+        figure: ctx => netSVG(ctx.problem, { labels: true, omit: ['top'] }),
         answer: ctx => `<p class="lesson-prompt" data-read data-say>沒有蓋子的盒子，長 ${ctx.problem.l} 公分、寬 ${ctx.problem.w} 公分、高 ${ctx.problem.h} 公分。外面的面積是多少？</p>${ctx.choice('count', '沒有蓋子的盒子，有幾個面？', [['5', '5 個'], ['6', '6 個'], ['4', '4 個']], true)}`,
         check: ctx => !ctx.answers.count ? { code: 'count', msg: '先選一個答案。' } : ctx.answers.count === '5' ? null : { code: 'count', obs: ctx.answers.count === '6' ? 'other' : 'missFace', msg: ctx.answers.count === '6' ? '上面（蓋子）沒有了。' : '只少了上面，下面還在。' },
         solve: ctx => { ctx.answers.count = '5'; }, say: () => '沒有蓋子，有 5 個面。' },
       { title: '算五個面', ids: ['fa', 'fb', 'fc'], hints: ['下面 1 個、前後 2 個、左右 2 個。', '下面：長 × 寬；前面：長 × 高；右面：寬 × 高。', '先算三種面，再看各有幾個。'], think: '下面只有 1 個；前後、左右各有 2 個。', together: '一起算三種面。',
-        figure: ctx => { const p = ctx.problem, net = netSVG(p, { labels: true, nums: true, colored: ['fb', 'lr'] }); return net.replace(/(data-face="top"[^>]*)/, '$1'); },
+        figure: ctx => netSVG(ctx.problem, { labels: true, nums: true, colored: ['tb', 'fb', 'lr'], omit: ['top'] }),
         answer: ctx => { const p = ctx.problem; return `${fieldHtml(ctx, 'fa', `下面：${p.l} × ${p.w} = ？`, 1)}${fieldHtml(ctx, 'fb', `前面：${p.l} × ${p.h} = ？`, 1)}${fieldHtml(ctx, 'fc', `右面：${p.w} × ${p.h} = ？`, 1)}`; },
         check: ctx => { const p = ctx.problem, bad = [['fa', p.l * p.w, '下面'], ['fb', p.l * p.h, '前面'], ['fc', p.w * p.h, '右面']].filter(([k, v]) => num(ctx.answers[k]) !== v);
           if (bad.some(([k]) => num(ctx.answers[k]) === null)) return { code: 'faces', msg: '三種面都要填。' };
@@ -253,9 +254,9 @@
   // =============== 4-2 生活應用題：包裝紙、油漆 ===============
   // k: all 六個面｜open 五個面（沒有上面）｜one 一個面
   const WORD = [
-    { e: '🎁', t: p => `禮物盒長 ${p.l} 公分、寬 ${p.w} 公分、高 ${p.h} 公分。要用包裝紙包住整個盒子，至少要多少包裝紙？`, k: 'all' },
+    { e: '🎁', t: p => `禮物盒長 ${p.l} 公分、寬 ${p.w} 公分、高 ${p.h} 公分。要用包裝紙包住整個盒子。不用算重疊的地方，包裝紙的面積是多少平方公分？`, k: 'all' },
     { e: '🖌️', t: p => `木箱長 ${p.l} 公分、寬 ${p.w} 公分、高 ${p.h} 公分，沒有蓋子。外面（不含上面）都要塗油漆，要塗多少面積？`, k: 'open' },
-    { e: '📦', t: p => `紙盒長 ${p.l} 公分、寬 ${p.w} 公分、高 ${p.h} 公分。只在上面貼一張貼紙剛好貼滿，貼紙多大？`, k: 'one' },
+    { e: '📦', t: p => `紙盒長 ${p.l} 公分、寬 ${p.w} 公分、高 ${p.h} 公分。只貼盒子的上面。貼紙剛好貼滿。貼紙的面積是多少？`, k: 'one' },
     { e: '🧻', t: p => `面紙盒長 ${p.l} 公分、寬 ${p.w} 公分、高 ${p.h} 公分。外面全部貼上色紙，要多少色紙？`, k: 'all' }
   ];
   const wordAns = p => p.k === 'all' ? total(p) : p.k === 'open' ? openTotal(p) : p.l * p.w;

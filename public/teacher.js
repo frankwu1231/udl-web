@@ -42,7 +42,12 @@
     // 換教材：學習地圖換成那個教材包的全部活動（之後再用課綱路徑或勾選增減）
     document.querySelectorAll('[data-pkg]').forEach(b => b.onclick = () => {
       if (b.dataset.pkg === A.pkg.id) return;
-      collect(); A.use(b.dataset.pkg); config.map.pkg = b.dataset.pkg; config.map.path = 'all'; config.map.assigned = A.LIST.map(a => a.id);
+      // 每個教材包各自記住指派和路徑（map.others），切回來時還原
+      collect(); const m = config.map, others = m.others = m.others || {};
+      others[A.pkg.id] = { assigned: m.assigned, path: m.path || 'all' };
+      A.use(b.dataset.pkg); const back = others[b.dataset.pkg]; delete others[b.dataset.pkg];
+      m.pkg = b.dataset.pkg; m.path = back ? back.path : 'all'; m.assigned = back ? back.assigned : A.LIST.map(a => a.id);
+      if (!Object.keys(others).length) delete m.others;
       for (const a of A.available()) if (isP(a.id)) sec(a.id);
       drawMap(); buildSelect(); if ($('shape').options.length) { $('shape').value = $('shape').options[0].value; draw(); }
       $('status').textContent = `已換成「${A.pkg.title}」，記得按「儲存草稿」或「發布給學生」。`;

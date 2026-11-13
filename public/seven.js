@@ -33,7 +33,7 @@
   // ---------- 小工具 ----------
   const L = () => P() ? ((lessons.activities || {})[type] || {}) : lessons[type];
   const level = () => settings.difficulty === 'custom' ? 'standard' : (settings.difficulty || 'standard');
-  const dims = () => { if (P()) return [0, 0, 0]; const p = probeDims || L().problems[index]; return [p.a, p.b, p.offset]; };
+  const dims = () => { if (P()) { const q = pProblem || {}; return 'l' in q ? [q.l, q.w, q.h] : 's' in q ? [q.s, q.s, q.s] : [0, 0, 0]; } const p = probeDims || L().problems[index]; return [p.a, p.b, p.offset]; };
   const grid = () => type === 'rectangle' || type === 'square';
   const area = () => dims()[0] * dims()[1] / (type === 'triangle' ? 2 : 1);
   const pages = () => P() ? P().steps.map((_, i) => [i]) : F.pages(settings);
@@ -62,7 +62,7 @@
 
   // 第 26 版：班級設定，再套上這位學生的個別設定（老師在「教師觀察」調整、存在網站資料庫）
   function ownSettings() { return { ...F.settings(L()), ...(window.areaResearch?.overrides?.(type) || {}), ...(window.areaResearch?.phasePatch?.(type) || {}) }; }   // 第 26 版第四階段：研究階段（B、BC 關閉 AI；BC 由小老師小方取代小幫手；示範階段用老師示範模式）
-  const SITE_VERSION = 'v26';
+  const SITE_VERSION = 'v27';
   function log(event, extra = {}) {
     const st = extra.activity && phase !== 'plan' ? (titles()[extra.activity - 1] || '') : '';
     const r = { time: new Date().toISOString(), siteVersion: SITE_VERSION, shape: nameOf(), shapeKey: type, actId: type, stepTitle: st, cycle, activity: extra.activity ?? null, event, support: settings.support, response, method, flow: settings.flow, difficulty: settings.difficulty, mode: mode(), studyPhase, ...(window.areaTutor?.stage?.() ? { tutorStage: window.areaTutor.stage() } : {}), ...extra };
@@ -86,7 +86,7 @@
     const meter = total > 1 ? `<div class="step-meter" aria-label="解題步驟 ${page + 1}／${total}"><span class="meter-label">解題步驟</span>${pages().map((_, i) => `<span class="dot ${i < page ? 'done' : i === page ? 'now' : ''}">${i + 1}</span>`).join('')}</div>` : '';
     const steps = type ? `<nav class="progress" aria-label="學習階段"><span class="stage-label">學習階段</span><span class="${phase === 'plan' ? 'active' : ''}">① 看題、選方法</span><span class="${phase === 'solve' ? 'active' : ''}">② 動手算</span><span class="${phase === 'reflect' ? 'active' : ''}">③ 檢查、回顧</span></nav>${meter}` : '';
     const banner = type ? { together: '一起做：老師和你一起想、一起做。', demo: '老師示範：先看老師怎麼做，聽老師說出想法。', probe: '小測驗：這次沒有提示，自己試試看就好。' }[mode()] : '';
-    $('app').innerHTML = `<section class="surface"><div class="head"><p class="eyebrow">${type ? `<a class="map-link" href="${mapUrl()}">🗺️ 學習地圖</a>　${(ACT && ACT.info(type) || {}).no || ''} ${nameOf()} · 第 ${cycle} 題${settings.lessonGoal ? `<span class="lesson-goal">　這次：第 ${Math.min(doneHere() + 1, settings.lessonGoal)}／${settings.lessonGoal} 題</span>` : ''}` : '四種圖形面積'}</p><h1 tabindex="-1" data-read>${title}</h1></div>${steps}${banner ? `<p class="mode-banner mode-${mode()}" data-read data-say>${banner}</p>` : ''}<div class="body">${body}</div></section>`;
+    $('app').innerHTML = `<section class="surface"><div class="head"><p class="eyebrow">${type ? `<a class="map-link" href="${mapUrl()}">🗺️ 學習地圖</a>　${(ACT && ACT.info(type) || {}).no || ''} ${nameOf()} · 第 ${cycle} 題${settings.lessonGoal ? `<span class="lesson-goal">　這次：第 ${Math.min(doneHere() + 1, settings.lessonGoal)}／${settings.lessonGoal} 題</span>` : ''}` : esc(ACT ? ACT.pkg.title : '四種圖形面積')}</p><h1 tabindex="-1" data-read>${title}</h1></div>${steps}${banner ? `<p class="mode-banner mode-${mode()}" data-read data-say>${banner}</p>` : ''}<div class="body">${body}</div></section>`;
     addSayButtons($('app'));
   }
   function focus() { document.querySelector('h1')?.focus({ preventScroll: true }); window.scrollTo({ top: 0 }); }
@@ -1421,7 +1421,7 @@
       const res = await fetch(draft ? '/api/teacher/lessons' : '/api/lessons', { cache: 'no-store' }), result = await res.json();
       if (!res.ok) throw new Error(result.error || 'load_failed');
       lessons = draft ? result.draft || result.published : result.config;
-      if (ACT) ACT.use(lessons.map?.pkg || (type && ACT.pkgOf(type)?.id));   // 第 27 版：老師選用的教材包
+      if (ACT) { ACT.use(lessons.map?.pkg || (type && ACT.pkgOf(type)?.id)); document.title = document.title.replace('四種圖形面積', ACT.pkg.title); }   // 第 27 版：老師選用的教材包
       isTeacher = !!session.teacher;
       lessons.activities = lessons.activities || {};
       if (P() && !lessons.activities[type]) lessons.activities[type] = {};

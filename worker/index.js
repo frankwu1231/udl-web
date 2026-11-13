@@ -94,7 +94,10 @@ const hintList=v=>Array.isArray(v)&&v.length<=7&&v.every(x=>typeof x==='string'&
 const videoMap=v=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.entries(v).every(([k,x])=>/^[0-6]$/.test(k)&&typeof x==='string'&&/^v_[a-z0-9]{20}$/.test(x));
 // 學習地圖：pkg 是用哪一個教材包（沒寫就是面積）；指派的活動和課綱路徑都要是這個教材包的
 function validMap(m){if(!m||typeof m!=='object'||Array.isArray(m)||m.pkg!==undefined&&!Object.hasOwn(PKG,m.pkg))return false;const p=PKG[m.pkg||DEFAULT_PKG];
-return Array.isArray(m.assigned)&&m.assigned.length<=p.actIds.length&&m.assigned.every(x=>p.actIds.includes(x))&&new Set(m.assigned).size===m.assigned.length&&(m.sequential===undefined||typeof m.sequential==='boolean')&&(m.path===undefined||[...p.paths,'custom'].includes(m.path));}
+const fits=(q,x)=>!!x&&typeof x==='object'&&!Array.isArray(x)&&Array.isArray(x.assigned)&&x.assigned.length<=q.actIds.length&&x.assigned.every(a=>q.actIds.includes(a))&&new Set(x.assigned).size===x.assigned.length&&(x.path===undefined||[...q.paths,'custom'].includes(x.path));
+// others：其他教材包先前的指派和路徑（老師換教材再換回來時還原）
+if(m.others!==undefined&&!(m.others&&typeof m.others==='object'&&!Array.isArray(m.others)&&Object.entries(m.others).every(([k,x])=>Object.hasOwn(PKG,k)&&k!==p.id&&Object.keys(x||{}).every(z=>['assigned','path'].includes(z))&&fits(PKG[k],x))))return false;
+return fits(p,m)&&(m.sequential===undefined||typeof m.sequential==='boolean');}
 function validActivities(a){if(!a||typeof a!=='object'||Array.isArray(a))return false;for(const [k,v] of Object.entries(a)){if(!PLUGIN_IDS.includes(k)||!v||typeof v!=='object'||Array.isArray(v))return false;if(v.settings!==undefined&&!validSettings(v.settings))return false;for(const h of ['hints','hints2','hints3'])if(v[h]!==undefined&&!hintList(v[h]))return false;if(v.videos!==undefined&&!videoMap(v.videos))return false;}return true;}
 function validSettings(s){if(!s||typeof s!=='object'||Array.isArray(s))return false;if(!['seven','three','custom'].includes(s.flow)||!['full','faded'].includes(s.support)||typeof s.hintGate!=='boolean'||!['easy','standard','challenge','custom'].includes(s.difficulty))return false;
 if(s.breaks!==undefined&&!(Array.isArray(s.breaks)&&s.breaks.length<=6&&s.breaks.every((v,i)=>Number.isInteger(v)&&v>=0&&v<6&&(i===0||v>s.breaks[i-1]))))return false;

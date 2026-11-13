@@ -32,7 +32,7 @@
     for (const k of o.edgeKeys || ['l', 'w', 'h']) {
       const [a, b] = E[k], on = (o.edges || []).includes(k);
       g += `<path d="M${pts([a])}L${pts([b])}" class="ac-side${on ? ' on' : ''}${(o.pulseEdges || []).includes(k) ? ' ac-pulse' : ''}"/>`;
-      if (o.clickEdges) g += `<path d="M${pts([a])}L${pts([b])}" class="ac-side-hit" data-edge="${k}" role="button" aria-label="${NAME[k]}"/>`;
+      if (o.clickEdges) g += `<path d="M${pts([a])}L${pts([b])}" class="ac-side-hit" vector-effect="non-scaling-stroke" data-edge="${k}" role="button" aria-label="${NAME[k]}"/>`;
       if (on) { const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2; g += `<text x="${r1(mx + (k === 'h' ? 10 : k === 'w' ? 12 : 0))}" y="${r1(my + (k === 'l' ? 24 : k === 'w' ? 18 : 4))}" text-anchor="${k === 'l' ? 'middle' : 'start'}" class="ac-len">${NAME[k]} ${LEN[k]} 公分</text>`; }
     }
     const W = x0 + L + dx + 110, Ht = y0 + H + 40;
@@ -46,13 +46,15 @@
     const R = { left: [0, p.w, p.w, p.h], front: [p.w, p.w, p.l, p.h], right: [p.w + p.l, p.w, p.w, p.h], back: [p.w + p.l + p.w, p.w, p.l, p.h], top: [p.w, 0, p.l, p.w], bottom: [p.w, p.w + p.h, p.l, p.w] };
     let g = '';
     for (const [f, [x, y, w, h]] of Object.entries(R)) {
+      // o.omit：不算的面（例如沒有蓋子），畫成虛線框、寫「沒有」
+      if ((o.omit || []).includes(f)) { g += `<rect x="${r1(x0 + x * u)}" y="${r1(y0 + y * u)}" width="${r1(w * u)}" height="${r1(h * u)}" fill="none" stroke="#9aa7b8" stroke-width="2" stroke-dasharray="6 5"/><text x="${r1(x0 + (x + w / 2) * u)}" y="${r1(y0 + (y + h / 2) * u + 6)}" text-anchor="middle" font-size="${Math.max(11, Math.min(16, u * 0.6))}" fill="#6b7a90">沒有${FACE_NAME[f]}</text>`; continue; }
       const on = (o.colored || []).includes(PAIR[f]) || o.colorAll, picked = o.pick === f;
       g += `<rect x="${r1(x0 + x * u)}" y="${r1(y0 + y * u)}" width="${r1(w * u)}" height="${r1(h * u)}" fill="${on ? COLOR[PAIR[f]] : picked ? '#fff3b0' : PLAIN}" stroke="${picked ? '#c2410c' : STROKE}" stroke-width="${picked ? 4 : 2}" class="sf-net${(o.pulse || []).includes(f) ? ' ac-pulse' : ''}"${o.clickFaces ? ` data-face="${f}" role="button" tabindex="0" aria-label="${FACE_NAME[f]}"` : ''}/>`;
       const cx = x0 + (x + w / 2) * u, cy = y0 + (y + h / 2) * u;
-      if (o.labels) g += `<text x="${r1(cx)}" y="${r1(cy + (o.nums ? -2 : 6))}" text-anchor="middle" font-size="${Math.max(11, Math.min(16, u * 0.6))}" fill="#1d2b44" pointer-events="none">${FACE_NAME[f]}</text>`;
+      if (o.labels || (o.labelOnly || []).includes(f)) g += `<text x="${r1(cx)}" y="${r1(cy + (o.nums ? -2 : 6))}" text-anchor="middle" font-size="${Math.max(11, Math.min(16, u * 0.6))}" fill="#1d2b44" pointer-events="none">${FACE_NAME[f]}</text>`;
       if (o.nums) { const [a, b] = faceSize(p, f); g += `<text x="${r1(cx)}" y="${r1(cy + 16)}" text-anchor="middle" font-size="${Math.max(11, Math.min(15, u * 0.55))}" fill="#1d2b44" pointer-events="none">${a}×${b}</text>`; }
     }
-    return `<svg class="ac-svg" viewBox="0 0 ${r1(cols * u + 12)} ${r1(rows * u + 12)}" role="img" aria-label="盒子的展開圖，有六個面">${g}</svg>`;
+    return `<svg class="ac-svg" viewBox="0 0 ${r1(cols * u + 12)} ${r1(rows * u + 12)}" role="img" aria-label="盒子的展開圖，有${6 - (o.omit || []).length}個面">${g}</svg>`;
   }
 
   // 錯誤的觀察代碼（表面積）：先看答案剛好等於哪一個常見的錯誤數
@@ -105,10 +107,10 @@
           answer: ctx => ctx.choice('same', '正方體的六個面怎麼樣？', [['all', '六個面都一樣大'], ['pairs', '只有對面一樣大'], ['none', '每個面都不一樣']]),
           check: ctx => !ctx.answers.same ? { code: 'same', msg: '先選一個答案。' } : ctx.answers.same === 'all' ? null : { code: 'same', obs: 'wrongChoice', msg: '量一量：正方體每一條邊都一樣長，每個面也一樣大。' },
           solve: ctx => { ctx.answers.same = 'all'; }, say: () => '正方體的六個面都一樣大。' }
-        : { title: '找面配對', ids: ['pairs'], hints: ['點一個面，再點和它一樣大的面。', '看閃爍的兩個面：它們一樣大。', '對面一樣大：上和下、前和後、左和右。'],
+        : { title: '找面配對', ids: ['pairs'], hints: ['點一個面，再點盒子合起來時和它面對面的面。', '看閃爍的兩個面：合起來時它們面對面。', '對面一樣大：上和下、前和後、左和右。'],
           think: '老師找一樣大的面：上和下、前和後、左和右。', together: '一起找：哪兩個面一樣大？',
           figure: ctx => { const left = ['tb', 'fb', 'lr'].find(k => !(ctx.state.pairs || []).includes(k)); return netSVG(ctx.problem, { clickFaces: true, labels: true, colored: ctx.state.pairs || [], pick: ctx.state.pick, pulse: ctx.hint(2) >= 2 && left ? Object.keys(PAIR).filter(f => PAIR[f] === left) : [] }); },
-          answer: ctx => `<p data-read data-say>點一個面，再點和它一樣大的面。一樣大的兩個面會塗上同一個顏色。</p><p class="notice" data-read data-say>找到了 ${(ctx.state.pairs || []).length} 組，共 3 組。</p>`,
+          answer: ctx => `<p data-read data-say>找盒子合起來時，面對面的兩個面。點一個面，再點它的對面。找到的兩個面會塗上同一個顏色。</p><p class="notice" data-read data-say>找到了 ${(ctx.state.pairs || []).length} 組，共 3 組。</p>`,
           bind: ctx => document.querySelectorAll('#figure2 [data-face]').forEach(el => {
             const go = () => {
               const f = el.dataset.face, st = ctx.state; st.pairs = st.pairs || [];
@@ -120,7 +122,7 @@
             };
             el.onclick = go; el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
           }),
-          check: ctx => pairsDone(ctx) ? null : { code: 'pairs', obs: 'unfinished', msg: `還有 ${3 - (ctx.state.pairs || []).length} 組沒找到。一樣大的兩個面，在盒子上是面對面的。` },
+          check: ctx => pairsDone(ctx) ? null : { code: 'pairs', obs: 'unfinished', msg: `還有 ${3 - (ctx.state.pairs || []).length} 組沒找到。找盒子合起來時面對面的兩個面。` },
           solve: ctx => { ctx.state.open = true; ctx.state.pairs = ['tb', 'fb', 'lr']; ctx.state.pick = null; ctx.answers.pairs = '3'; }, say: () => '上和下、前和後、左和右，一共 3 組。' },
       cube
         ? { title: '量邊長', ids: ['side'], hints: ['點一下盒子的邊，看它多長。', '正方體每一條邊都一樣長，量一條就好。', '點了邊就會看到長度，把數字填進去。'],
