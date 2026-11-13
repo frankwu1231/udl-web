@@ -167,7 +167,7 @@
     steps: [
       { title: '看題目', ids: ['know'], hints: ['對面是盒子合起來時面對面的兩個面。', '在這張展開圖上，對面不會連在一起。', '在這張展開圖上，對面一樣大，中間隔著一個面。'], think: '老師想：在這張展開圖上，對面一樣大，中間隔一個面。', together: '一起想：對面有什麼特別？',
         figure: ctx => netSVG(ctx.problem, {}),
-        answer: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>${ctx.choice('know', '面對面的兩個面怎麼樣？', [['same', '一樣大；在這張展開圖上，中間隔一個面'], ['touch', '連在一起'], ['diff', '大小不一樣']])}`,
+        answer: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>${ctx.choice('know', '面對面的兩個面怎麼樣？', [['same', '兩個面一樣大'], ['touch', '連在一起'], ['diff', '大小不一樣']])}`,
         check: ctx => !ctx.answers.know ? { code: 'know', msg: '先選一個答案。' } : ctx.answers.know === 'same' ? null : { code: 'know', obs: 'wrongChoice', msg: '把盒子合起來想一想：上面和下面有連在一起嗎？' },
         solve: ctx => { ctx.answers.know = 'same'; }, say: () => '對面一樣大，中間隔一個面。' },
       pairStep(1, { labels: false })
@@ -218,7 +218,7 @@
         check: ctx => { const want = ctx.problem.k === 'surface' ? 'cm2' : 'cm3'; return !ctx.answers.unit ? { code: 'unit', msg: '選一個單位。' } : ctx.answers.unit === want ? null : { code: 'unit', obs: ctx.answers.unit === 'cm' ? 'unitLength' : want === 'cm2' ? 'unitVolume' : 'wrongChoice', msg: want === 'cm2' ? '表面積是面積，用平方公分。' : '體積用立方公分。' }; },
         solve: ctx => { ctx.answers.unit = ctx.problem.k === 'surface' ? 'cm2' : 'cm3'; }, say: ex => ex.problem.k === 'surface' ? '表面積用平方公分。' : '體積用立方公分。' }
     ],
-    reasons, done: ctx => ctx.problem.k === 'surface' ? '在外面：算表面積，單位是平方公分。' : '在裡面：算體積，單位是立方公分。', chant: '外面是表面積，裡面是體積。', transfer: '說一說：要知道粽葉能包住多大的外面，要算表面積還是體積？'
+    reasons, done: ctx => ctx.problem.k === 'surface' ? '在外面：算表面積，單位是平方公分。' : '在裡面：算體積，單位是立方公分。', chant: '外面是表面積，裡面是體積。', transfer: '粽葉包在粽子的外面。要算外面的大小，是表面積還是體積？'
   });
 
   // =============== 4-1 沒有蓋子的盒子 ===============
@@ -254,7 +254,7 @@
   // =============== 4-2 生活應用題：包裝紙、油漆 ===============
   // k: all 六個面｜open 五個面（沒有上面）｜one 一個面
   const WORD = [
-    { e: '🎁', t: p => `禮物盒長 ${p.l} 公分、寬 ${p.w} 公分、高 ${p.h} 公分。要用包裝紙包住整個盒子。不用算重疊的地方，包裝紙的面積是多少平方公分？`, k: 'all' },
+    { e: '🎁', t: p => `禮物盒長 ${p.l} 公分、寬 ${p.w} 公分、高 ${p.h} 公分。包裝紙剛好蓋滿六個面。包裝紙沒有重疊。面積是多少平方公分？`, k: 'all' },
     { e: '🖌️', t: p => `木箱長 ${p.l} 公分、寬 ${p.w} 公分、高 ${p.h} 公分，沒有蓋子。外面（不含上面）都要塗油漆，要塗多少面積？`, k: 'open' },
     { e: '📦', t: p => `紙盒長 ${p.l} 公分、寬 ${p.w} 公分、高 ${p.h} 公分。只貼盒子的上面。貼紙剛好貼滿。貼紙的面積是多少？`, k: 'one' },
     { e: '🧻', t: p => `面紙盒長 ${p.l} 公分、寬 ${p.w} 公分、高 ${p.h} 公分。外面全部貼上色紙，要多少色紙？`, k: 'all' }

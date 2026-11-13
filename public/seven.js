@@ -1421,7 +1421,7 @@
       const res = await fetch(draft ? '/api/teacher/lessons' : '/api/lessons', { cache: 'no-store' }), result = await res.json();
       if (!res.ok) throw new Error(result.error || 'load_failed');
       lessons = draft ? result.draft || result.published : result.config;
-      if (ACT) { ACT.use(lessons.map?.pkg || (type && ACT.pkgOf(type)?.id)); document.title = document.title.replace('四種圖形面積', ACT.pkg.title); }   // 第 27 版：老師選用的教材包
+      if (ACT) { ACT.use(lessons.map?.pkg || (type && ACT.pkgOf(type)?.id)); document.title = document.title.replace('四種圖形面積', ACT.pkg.title); const brand = document.querySelector('header .brand'); if (brand) brand.textContent = (ACT.pkg.id === 'area' ? '▦ ' : '📦 ') + ACT.pkg.title; }   // 第 27 版：老師選用的教材包
       isTeacher = !!session.teacher;
       lessons.activities = lessons.activities || {};
       if (P() && !lessons.activities[type]) lessons.activities[type] = {};

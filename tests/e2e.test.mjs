@@ -1676,7 +1676,7 @@ test('第 27 版第 1 輪修正：換教材再換回保留指派；2-1 依實際
   assert.deepEqual(r, { k322: '2', k432: '3', k222: '1', faces: 5, none: true, front: true });
   const rec = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16') || '[]').find(x => x.event === '整題定標'));
   assert.equal(rec.siteVersion, 'v27'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
-  assert.match(await p.page.title(), /表面積/);
+  assert.match(await p.page.title(), /表面積/); assert.match(await p.text('header .brand'), /表面積/);
   assert.deepEqual(p.errors, []);
   await publish({});
 });
