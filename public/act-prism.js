@@ -29,6 +29,9 @@
       g += `<polygon points="${pts(quad)}" fill="${o.sides ? SIDE : PLAIN}" fill-opacity="0.85" stroke="${STROKE}" stroke-width="2" class="${o.pulseSides ? 'ac-pulse' : ''}" data-pf="side"/>`;
     }
     g += `<polygon points="${pts(top)}" fill="${o.bases ? BASE : PLAIN}" fill-opacity="0.9" stroke="${STROKE}" stroke-width="2" class="${o.pulseBases ? 'ac-pulse' : ''}" data-pf="base"/>`;
+    // 直角記號：上底第 0 個頂點（o.rightAngle）
+    if (o.rightAngle) { const v = top[0], d = q => { const dx = q[0] - v[0], dy = q[1] - v[1], L = Math.hypot(dx, dy) || 1; return [dx / L * 11, dy / L * 11]; }, a1 = d(top[1]), a2 = d(top[n - 1]);
+      g += `<path d="M${r1(v[0] + a1[0])} ${r1(v[1] + a1[1])}L${r1(v[0] + a1[0] + a2[0])} ${r1(v[1] + a1[1] + a2[1])}L${r1(v[0] + a2[0])} ${r1(v[1] + a2[1])}" fill="none" stroke="#c2410c" stroke-width="2"/>`; }
     for (const l of o.labels || []) { const a = top[l.edge], b = top[(l.edge + 1) % n]; g += `<text x="${r1((a[0] + b[0]) / 2 + (l.dx || 0))}" y="${r1((a[1] + b[1]) / 2 + (l.dy || -6))}" text-anchor="middle" class="ac-len">${esc(l.text)}</text>`; }
     if (o.hLabel) { const k = top.reduce((m, q, i) => q[0] > top[m][0] ? i : m, 0); g += `<text x="${r1(top[k][0] + 8)}" y="${r1((top[k][1] + bot[k][1]) / 2 + 4)}" class="ac-len">${esc(o.hLabel)}</text>`; }
     const W = X0 + (maxX - minX) * u + 110, H = Y0 + (maxY - minY) * u + 30;
@@ -54,8 +57,8 @@
       x += w;
     }
     if (o.nums) g += `<text x="${X(a / 4)}" y="${Y(b * 0.72)}" text-anchor="middle" font-size="${fs(u, 0.5)}" fill="#1d2b44">${a}×${b}÷2</text>`;
-    if (o.strip) g += `<rect x="${X(0)}" y="${Y(b)}" width="${r1(W * u)}" height="${r1(h * u)}" fill="none" stroke="#c2410c" stroke-width="4"/><text x="${X(W / 2)}" y="${Y(b + h) + 18}" text-anchor="middle" font-size="${fs(u)}" fill="#c2410c">長：底面一圈 ${a}＋${c}＋${b}　寬：高 ${h}</text>`;
-    return `<svg class="ac-svg" viewBox="0 0 ${r1(W * u + 16)} ${r1(Ht * u + 16 + (o.strip ? 22 : 0))}" role="img" aria-label="三角柱的展開圖：2 個三角形的底面，3 個長方形的側面">${g}</svg>`;
+    if (o.strip) g += `<rect x="${X(0)}" y="${Y(b)}" width="${r1(W * u)}" height="${r1(h * u)}" fill="none" stroke="#c2410c" stroke-width="4"/>`;   // 長、寬的說明寫在圖外（答案區），圖縮小時字才不會太小
+    return `<svg class="ac-svg" viewBox="0 0 ${r1(W * u + 16)} ${r1(Ht * u + 16)}" role="img" aria-label="三角柱的展開圖：2 個三角形的底面，3 個長方形的側面">${g}</svg>`;
   }
 
   // ---------- 圓柱：立體圖與展開圖 ----------
@@ -73,7 +76,6 @@
     let g = `<circle cx="${X(p.r)}" cy="${Y(p.r)}" r="${r1(p.r * u)}" fill="${o.bases ? BASE : PLAIN}" stroke="${STROKE}" stroke-width="2" class="${o.pulseBases ? 'ac-pulse' : ''}"/>`;
     g += `<circle cx="${X(p.r)}" cy="${Y(3 * p.r + p.h)}" r="${r1(p.r * u)}" fill="${o.bases ? BASE : PLAIN}" stroke="${STROKE}" stroke-width="2" class="${o.pulseBases ? 'ac-pulse' : ''}"/>`;
     g += `<rect x="${X(0)}" y="${Y(2 * p.r)}" width="${r1(C * u)}" height="${r1(p.h * u)}" fill="${o.sides ? SIDE : PLAIN}" stroke="${o.strip ? '#c2410c' : STROKE}" stroke-width="${o.strip ? 4 : 2}" class="${o.pulseSides ? 'ac-pulse' : ''}"/>`;
-    if (o.strip) g += `<text x="${X(C / 2)}" y="${Y(2 * p.r + p.h / 2) + 5}" text-anchor="middle" font-size="${fs(u)}" fill="#c2410c">長：圓周 ${p.r}×2×3.14　寬：高 ${p.h}</text>`;
     return `<svg class="ac-svg" viewBox="0 0 ${r1(W * u + 16)} ${r1(Ht * u + 16)}" role="img" aria-label="圓柱的展開圖：2 個圓形的底面，1 個長方形的側面">${g}</svg>`;
   }
 
@@ -130,10 +132,10 @@
         answer: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>${ctx.choice('bases', '底面有幾個？', [['2', '2 個'], ['1', '1 個'], [String(ctx.problem.n), `${ctx.problem.n} 個`]], true)}`,
         check: ctx => !ctx.answers.bases ? { code: 'bases', msg: '先選一個答案。' } : ctx.answers.bases === '2' ? null : { code: 'bases', obs: ctx.answers.bases === '1' ? 'oneBase' : 'wrongChoice', msg: ctx.answers.bases === '1' ? '下面也有一個底面，被擋住了。' : '底面是上面和下面一樣的面。' },
         solve: ctx => { ctx.answers.bases = '2'; }, say: () => '角柱有 2 個底面。' },
-      { title: '底面的形狀', ids: ['bshape'], hints: ['看一看上面的底面，數它有幾個角。', '底面有幾個角，就是幾邊形。', '3 個角是三角形，4 個角是四邊形，5 個角是五邊形，6 個角是六邊形。'],
+      { title: '底面的形狀', ids: ['bshape'], hints: ['看一看上面的底面，數它有幾個角。', '看閃爍的底面，一個角一個角數。', '底面有幾個角，就叫幾邊形。'],
         think: '老師數底面有幾個角。', together: '一起數：底面有幾個角？',
-        figure: ctx => nFig(ctx.problem, { bases: true }),
-        answer: ctx => { const n = ctx.problem.n, opts = [n, n === 3 ? 4 : n - 1, n === 6 ? 5 : n + 1].map(k => [String(k), POLY[k]]); return ctx.choice('bshape', '底面是什麼形狀？', opts.sort((a, b) => a[0] - b[0]), true); },
+        figure: ctx => nFig(ctx.problem, { bases: true, pulseBases: ctx.hint(1) >= 2 }),
+        answer: ctx => { const n = ctx.problem.n, opts = [n, ...[3, 4, 5, 6].filter(k => k !== n).sort((x, y) => Math.abs(x - n) - Math.abs(y - n) || x - y).slice(0, 2)].map(k => [String(k), POLY[k]]); return `${ctx.hint(1) >= 3 ? `<p class="notice" data-read data-say>底面有 ${n} 個角，叫${POLY[n]}。</p>` : ''}${ctx.choice('bshape', '底面是什麼形狀？', opts.sort((a, b) => a[0] - b[0]), true)}`; },
         check: ctx => !ctx.answers.bshape ? { code: 'bshape', msg: '先選一個答案。' } : ctx.answers.bshape === String(ctx.problem.n) ? null : { code: 'bshape', obs: 'wrongChoice', msg: '數一數底面的角。' },
         solve: ctx => { ctx.answers.bshape = String(ctx.problem.n); }, say: ex => `底面是${POLY[ex.problem.n]}，所以叫${PRISM[ex.problem.n]}。` },
       { title: '數側面', ids: ['sides'], hints: ['底面旁邊一圈的面，叫做側面。', '看閃爍的面：後面還有看不到的側面。', '底面有幾條邊，就有幾個側面。'],
@@ -146,7 +148,7 @@
         think: '老師把底面和側面加起來。', together: '一起算：一共幾個面？',
         figure: ctx => nFig(ctx.problem, { bases: true, sides: true }),
         answer: ctx => fieldHtml(ctx, 'count', `2 ＋ ${esc(ctx.answers.sides ?? '側面')} ＝ ？（一共幾個面）`, 3),
-        check: ctx => { const v = num(ctx.answers.count), s = num(ctx.answers.sides); if (v === null) return { code: 'count', msg: '把數字填進去。' }; return s !== null && v === s + 2 ? null : { code: 'count', obs: s !== null && v === s ? 'oneBase' : 'other', msg: s !== null && v === s ? '底面還沒加進去。' : '2 個底面加上側面，再算一次。' }; },
+        check: ctx => { const v = num(ctx.answers.count), s = num(ctx.answers.sides); if (v === null) return { code: 'count', msg: '把數字填進去。' }; return s !== null && v === s + 2 ? null : { code: 'count', obs: s !== null && v === s ? 'missBases' : s !== null && v === s + 1 ? 'oneBase' : 'other', msg: s !== null && v === s ? '底面還沒加進去。' : s !== null && v === s + 1 ? '底面有 2 個：上面 1 個，下面 1 個。' : '2 個底面加上側面，再算一次。' }; },
         solve: ctx => { ctx.answers.count = String((num(ctx.answers.sides) ?? ctx.problem.n) + 2); }, say: ex => `2 ＋ ${ex.problem.n} ＝ ${ex.problem.n + 2}，一共 ${ex.problem.n + 2} 個面。` },
       { title: '側面的形狀', ids: ['sshape'], hints: ['看一看側面的樣子。', '側面有 4 個直角。', '角柱的側面都是長方形。'],
         think: '老師看側面：有 4 個直角，是長方形。', together: '一起看：側面是什麼形狀？',
@@ -164,9 +166,9 @@
   const TRI = { easy: [[3, 4, 5, 2], [3, 4, 5, 3]], standard: [[3, 4, 5, 5], [3, 4, 5, 6], [6, 8, 10, 6]], challenge: [[6, 8, 10, 5], [5, 12, 13, 4], [6, 8, 10, 7]] };
   const triP = { base: p => p.a * p.b / 2, perim: p => p.a + p.b + p.c, side: p => (p.a + p.b + p.c) * p.h, total: p => p.a * p.b + (p.a + p.b + p.c) * p.h, net: prismNetSVG };
   const triFig = (p, o = {}) => prismSVG({ base: rightTri(p), h: p.h }, { aria: `三角柱，底面是直角三角形，兩條直角邊 ${p.a} 和 ${p.b} 公分，斜邊 ${p.c} 公分，高 ${p.h} 公分`, ...o,
-    labels: o.labels ? [{ edge: 0, text: `${p.a}`, dy: 16 }, { edge: 1, text: `${p.c}`, dx: 14 }, { edge: 2, text: `${p.b}`, dx: -12 }] : [], hLabel: o.hLabel ? `高 ${p.h} 公分` : '' });
+    rightAngle: true, labels: o.labels ? [{ edge: 0, text: `${p.a}`, dy: 16 }, { edge: 1, text: `${p.c}`, dx: 14 }, { edge: 2, text: `${p.b}`, dx: -12 }] : [], hLabel: o.hLabel ? `高 ${p.h} 公分` : '' });
   A.register('prism', {
-    methods, makeProblem: (level, i) => { const [a, b, c, h] = pick(TRI[level] || TRI.standard, i); return { a, b, c, h, dims: [a, b, h], prompt: `三角柱的底面是直角三角形，兩條直角邊是 ${a} 公分和 ${b} 公分，斜邊是 ${c} 公分。柱的高是 ${h} 公分。表面積是多少平方公分？` }; },
+    methods, makeProblem: (level, i) => { const [a, b, c, h] = pick(TRI[level] || TRI.standard, i); return { a, b, c, h, dims: [a, b, h], prompt: `三角柱的底面是直角三角形。兩條直角邊是 ${a} 公分和 ${b} 公分。斜邊是 ${c} 公分。柱的高是 ${h} 公分。表面積是多少平方公分？` }; },
     planFigure: ctx => triFig(ctx.problem, { labels: true, hLabel: true }),
     steps: [
       targetStep(triFig, '三角柱'),
@@ -178,10 +180,10 @@
         check: ctx => { const v = num(ctx.answers.base), p = ctx.problem; if (v === null) return { code: 'base', msg: '把底面積填進去。' };
           return v === triP.base(p) ? null : { code: 'base', obs: v === p.a * p.b ? 'eqDouble' : 'other', msg: v === p.a * p.b ? '三角形要再除以 2。' : '兩條直角邊相乘，再除以 2。' }; },
         solve: ctx => { ctx.answers.base = String(triP.base(ctx.problem)); }, say: ex => `${ex.problem.a} × ${ex.problem.b} ÷ 2 ＝ ${triP.base(ex.problem)}。` },
-      { title: '側面積', ids: ['perim', 'side'], hints: ['三個側面排成一排，合起來是一個大長方形。', '大長方形的長是底面一圈，寬是柱的高。', '側面積 ＝ 底面一圈 × 高。'],
+      { title: '側面積', ids: ['perim', 'side'], hints: ['三個側面排成一排，合起來是一個大長方形。', '長是底面三條邊加起來。寬是柱體的高。', '側面積 ＝ 底面一圈 × 高。'],
         think: '三個側面合起來是一個大長方形：長是底面一圈，寬是高。', together: '一起看：側面合起來是什麼形狀？',
         figure: ctx => prismNetSVG(ctx.problem, { sides: true, strip: true, pulseSides: ctx.hint(3) >= 2 }),
-        answer: ctx => { const p = ctx.problem; return `${fieldHtml(ctx, 'perim', `底面一圈：${p.a} ＋ ${p.c} ＋ ${p.b} ＝ ？`, 3)}${fieldHtml(ctx, 'side', `側面積：${esc(ctx.answers.perim ?? '底面一圈')} × ${p.h} ＝ ？`, 3)}`; },
+        answer: ctx => { const p = ctx.problem; return `<p class="notice sf-strip" data-read data-say>橘色框是側面合起來的大長方形。<br>長：底面三條邊加起來。<br>寬：柱體的高 ${p.h} 公分。</p>${fieldHtml(ctx, 'perim', `底面一圈：${p.a} ＋ ${p.c} ＋ ${p.b} ＝ ？`, 3)}${fieldHtml(ctx, 'side', `側面積：${esc(ctx.answers.perim ?? '底面一圈')} × ${p.h} ＝ ？`, 3)}`; },
         check: ctx => { const p = ctx.problem, c = num(ctx.answers.perim), s = num(ctx.answers.side);
           if (c === null) return { code: 'perim', msg: '先算底面一圈多長。' };
           if (c !== triP.perim(p)) return { code: 'perim', obs: c === p.a + p.b ? 'missFace' : 'other', msg: c === p.a + p.b ? '斜邊也要加。一圈有 3 條邊。' : '三條邊加起來，再算一次。' };
@@ -212,13 +214,13 @@
         check: ctx => { const v = num(ctx.answers.base), p = ctx.problem; if (v === null) return { code: 'base', msg: '把底面積填進去。' };
           return near(v, cylP.base(p)) ? null : { code: 'base', obs: 'other', msg: near(v, cylP.circ(p)) ? '這是圓周長。面積是半徑 × 半徑 × 3.14。' : '半徑 × 半徑 × 3.14，再算一次。' }; },
         solve: ctx => { ctx.answers.base = String(cylP.base(ctx.problem)); }, say: ex => `${ex.problem.r} × ${ex.problem.r} × 3.14 ＝ ${cylP.base(ex.problem)}。` },
-      { title: '側面積', ids: ['perim', 'side'], hints: ['側面打開是一個長方形。', '長方形的長是底面一圈（圓周長），寬是圓柱的高。', '側面積 ＝ 圓周長 × 高；圓周長 ＝ 半徑 × 2 × 3.14。'],
+      { title: '側面積', ids: ['perim', 'side'], hints: ['側面打開是一個長方形。', '長是底面的圓周長。寬是圓柱的高。', '先算圓周長：半徑 × 2 × 3.14。再算側面積：圓周長 × 高。'],
         think: '側面打開是長方形：長是圓周長，寬是高。', together: '一起看：側面打開是什麼形狀？',
         figure: ctx => cylNetSVG(ctx.problem, { sides: true, strip: true, pulseSides: ctx.hint(3) >= 2 }),
-        answer: ctx => { const p = ctx.problem; return `${fieldHtml(ctx, 'perim', `圓周長：${p.r} × 2 × 3.14 ＝ ？`, 3)}${fieldHtml(ctx, 'side', `側面積：${esc(ctx.answers.perim ?? '圓周長')} × ${p.h} ＝ ？`, 3)}`; },
+        answer: ctx => { const p = ctx.problem; return `<p class="notice sf-strip" data-read data-say>橘色框是側面打開的長方形。<br>長：底面的圓周長。<br>寬：圓柱的高 ${p.h} 公分。</p>${fieldHtml(ctx, 'perim', `先算圓周長：${p.r} × 2 × 3.14 ＝ ？`, 3)}${fieldHtml(ctx, 'side', `再算側面積：${esc(ctx.answers.perim ?? '圓周長')} × ${p.h} ＝ ？`, 3)}`; },
         check: ctx => { const p = ctx.problem, c = num(ctx.answers.perim), s = num(ctx.answers.side);
           if (c === null) return { code: 'perim', msg: '先算圓周長。' };
-          if (!near(c, cylP.circ(p))) return { code: 'perim', obs: 'other', msg: near(c, r2(p.r * 3.14)) ? '圓周長要用直徑：半徑 × 2 × 3.14。' : '半徑 × 2 × 3.14，再算一次。' };
+          if (!near(c, cylP.circ(p))) return { code: 'perim', obs: near(c, r2(p.r * 3.14)) ? 'halfCirc' : 'other', msg: near(c, r2(p.r * 3.14)) ? '先把半徑乘 2，算出直徑。再乘 3.14。' : '半徑 × 2 × 3.14，再算一次。' };
           if (s === null) return { code: 'side', msg: '再算側面積。' };
           return near(s, r2(c * p.h)) ? null : { code: 'side', obs: 'other', msg: '圓周長 × 高，再算一次。' }; },
         solve: ctx => { const p = ctx.problem; ctx.answers.perim = String(cylP.circ(p)); ctx.answers.side = String(cylP.side(p)); }, say: ex => `圓周長 ${cylP.circ(ex.problem)}，× ${ex.problem.h} ＝ ${cylP.side(ex.problem)}。` },

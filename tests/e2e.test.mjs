@@ -1702,6 +1702,12 @@ test('第 27 版（柱體）：5-2 三角柱打開數面、底面忘了除以 2 
   assert.match(await p.text('.done-banner'), new RegExp(`表面積是 ${2 * tb + side} 平方公分`));
   assert.match(await p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || ''), /eqDouble|oneBase/);
   assert.deepEqual(p.errors, []);
+  // 第 3 輪：5-1 底面形狀的選項不重複；兩個底面都漏記 missBases、漏一個記 oneBase
+  const r3 = await p.page.evaluate(() => { const pl = window.areaActs.get('sPrismFaces'), st = pl.steps;
+    const dup = [3, 4, 5, 6].map(n => { const ctx = { problem: { n }, answers: {}, hint: () => 0, choice: (k, t, items) => '#' + items.map(x => x[0]).join('|') + '#' }; const o = st[1].answer(ctx).split('#')[1].split('|'); return o.length - new Set(o).size; });
+    const obs = v => st[3].check({ problem: { n: 3 }, answers: { sides: '3', count: String(v) } })?.obs;
+    return { dup, a: obs(3), b: obs(4), c: obs(5) }; });
+  assert.deepEqual(r3, { dup: [0, 0, 0, 0], a: 'missBases', b: 'oneBase', c: undefined });
   // 5-1、5-3 的畫面可以打開，不會出錯
   for (const id of ['sPrismFaces', 'cylinder']) { const q = await act(id, SURFACE_MAP); assert.ok(await q.page.$('#figure0 svg')); assert.deepEqual(q.errors, []); }
   // 長方體：已經做完 2 題，下一題的算式改成 × 2
