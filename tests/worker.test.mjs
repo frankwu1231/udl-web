@@ -545,3 +545,32 @@ test('第 26 版第四階段：學生研究階段、小老師小方支持階段�
   // 第三年：教師端 AI 摘要關閉
   assert.equal((await call('/api/teacher/summary',{method:'POST',cookie:t10,body:{student:'T10-S01',act:'rectangle',upTo:4}})).data.error,'summary_off');
 });
+
+test('第 27 版：表面積題組依教材包驗證題型；連帶錯誤依學生自己算的面判定',async()=>{
+  const login=async teacher=>(await call('/api/test-login',{method:'POST',body:{username:'test',password:'test-pass',teacher}})).headers.get('set-cookie').split(';')[0];
+  const t10=await login('T10');
+  const set=JSON.parse(fs.readFileSync(new URL('../scenarios/surface-probe.json',import.meta.url),'utf8'));
+  const noPkg=structuredClone(set);delete noPkg.package;
+  assert.equal((await call('/api/study/probe-sets',{method:'POST',user:owner,body:noPkg})).status,400,'沒寫教材包就照面積的題型，表面積的題型不收');
+  const badPkg=structuredClone(set);badPkg.package='volume';
+  assert.equal((await call('/api/study/probe-sets',{method:'POST',user:owner,body:badPkg})).status,400);
+  assert.equal((await call('/api/study/probe-sets',{method:'POST',user:owner,body:set})).data.id,'surfaceProbe@1');
+  const start=await call('/api/probe/start',{method:'POST',cookie:t10,body:{student:'T10-S01',set:'surfaceProbe@1',sessionNo:1}});
+  assert.equal(start.status,200);assert.doesNotMatch(JSON.stringify(start.data.items),/"answer":/);
+  const run=start.data.run,item=(id,steps)=>call(`/api/probe/${run}/item`,{method:'POST',cookie:t10,body:{itemId:id,steps,secs:30}});
+  const c=(...v)=>({confirms:v.map((x,i)=>({v:x,t:i,n:i+1}))});
+  // A04：4×3×2；前面算錯成 9，總和照自己的面算 (12+9+6)×2=54 → 總和這一步算對（連帶），整題答錯
+  await item('A04',{top:c(12),front:c(9),right:c(6),formula:c('三種面積加起來再乘2'),area:c(54),unit:c('平方公分')});
+  // A07：邊長 2，一個面算成 6，總和 36 → 連帶算對
+  await item('A07',{side:c(2),face:c(6),formula:c('一個面的面積×6'),area:c(36),unit:c('平方公分')});
+  // A10：沒有蓋子 12、8、6 → 40；先填有蓋子的 52 再改 40 → 自行修正
+  await item('A10',{base:c(12),front:c(8),right:c(6),formula:c('底面＋前面×2＋右面×2'),area:c(52,40),unit:c('平方公分')});
+  // A09：反推 96 ÷ 6 = 16，單位選立方公分
+  await item('A09',{total:c(96),formula:c('表面積÷6'),area:c(16),unit:c('立方公分')});
+  await call(`/api/probe/${run}/finish`,{method:'POST',cookie:t10,body:{reason:'done'}});
+  const rows=(await call('/api/study/export?type=probeItems',{user:owner})).data.rows.filter(x=>x.run===run),r=id=>rows.find(x=>x.itemId===id).result,st=(id,k)=>r(id).steps.find(s=>s.key===k);
+  assert.equal(r('A04').correct,false);assert.equal(st('A04','front').finalCorrect,false);assert.equal(st('A04','area').finalCorrect,true,'總和依學生自己的面判定');
+  assert.equal(st('A07','area').finalCorrect,true);assert.equal(r('A07').correct,false);
+  assert.equal(r('A10').correct,true);assert.equal(st('A10','area').selfCorrected,true);
+  assert.equal(r('A09').answerCorrect,true);assert.equal(r('A09').unitCorrect,false);
+});

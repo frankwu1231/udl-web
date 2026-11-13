@@ -522,7 +522,14 @@ const numAt=(k,t)=>{const c=confirmsOf(k).filter(x=>tOf(x)<=t);const v=c.length?
 function carried(step,v,t){if(step.role!=='answer'||v===null||v==='')return false;const x=Number(v);
 if(item.type==='rectangle'){const m=item.steps.filter(s=>s.role==='measure');return m.length===2&&x===numAt(m[0].key,t)*numAt(m[1].key,t);}
 if(item.type==='square'){const m=item.steps.find(s=>s.role==='measure');return !!m&&x===numAt(m.key,t)**2;}
-if(item.type==='composite'){const p=item.steps.filter(s=>s.role==='part');return p.length>=2&&x===p.reduce((n,s)=>n+numAt(s.key,t),0);}return false;}
+if(item.type==='composite'){const p=item.steps.filter(s=>s.role==='part');return p.length>=2&&x===p.reduce((n,s)=>n+numAt(s.key,t),0);}
+// 第 27 版：表面積的題型。一個面：兩個邊相乘；長方體：三種面加起來 × 2；正方體：一個面 × 6；反推：表面積 ÷ 6；沒有蓋子：底 ＋ 另外兩種面各 × 2
+const parts=item.steps.filter(s=>s.role==='part').map(s=>numAt(s.key,t)),meas=item.steps.filter(s=>s.role==='measure').map(s=>numAt(s.key,t));
+if(item.type==='face')return meas.length===2&&x===meas[0]*meas[1];
+if(item.type==='cuboid')return parts.length===3&&x===2*(parts[0]+parts[1]+parts[2]);
+if(item.type==='cube')return parts.length===1&&x===6*parts[0];
+if(item.type==='inverse')return meas.length===1&&x===meas[0]/6;
+if(item.type==='openBox')return parts.length===3&&x===parts[0]+2*parts[1]+2*parts[2];return false;}
 const ok=(s,c)=>!!c&&(sameAnswer(c.v,s.answer)||carried(s,c.v,tOf(c)));
 const steps=item.steps.map(s=>{const c=confirmsOf(s.key),fin=c.length?c.at(-1).v:null,hadError=c.some(x=>!ok(s,x));
 return {key:s.key,role:s.role,answered:c.length>0,firstCorrect:ok(s,c[0]),finalCorrect:ok(s,c.at(-1)),hadError,selfCorrected:hadError&&ok(s,c.at(-1)),final:fin};});
