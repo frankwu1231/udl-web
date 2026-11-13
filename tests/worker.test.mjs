@@ -496,6 +496,17 @@ test('第 26 版第三階段：探試題組匯入鎖版、學生拿不到答案�
   const r90=exp2.find(r=>r.itemId===it90.id).result;assert.equal(r90.timedOut,true);assert.equal(r90.correct,false,'時間到了以後改對的不算');
   const r91=exp2.find(r=>r.itemId===it91.id).result;assert.equal(r91.timedOut,true);assert.equal(r91.correct,false,'第 91 秒確定的不算');
   const s3=exp2.find(r=>r.itemId===it3.id).result.steps.find(x=>x.key===a3.key);assert.equal(s3.hadError,true);assert.equal(s3.selfCorrected,true);assert.equal(s3.firstCorrect,true);
+  // 面積值相同但取量改了：第二次的面積依當時的取量算對（不能把相同值去掉）
+  const run3=(await call('/api/probe/start',{method:'POST',cookie:t8,body:{student:'T08-S03',set:'demoProbe@1',sessionNo:1}})).data;
+  const form3=set.forms.find(f=>f.id===run3.formId),r3=form3.items.find(i=>i.type==='rectangle'&&i.steps.filter(x=>x.role==='measure').length===2);
+  const [L3,W3]=r3.steps.filter(x=>x.role==='measure'),A3=r3.steps.find(x=>x.role==='answer'),st3b={[L3.key]:{confirms:[{v:L3.answer,t:1,n:1},{v:L3.answer+1,t:3,n:3}]},[W3.key]:{confirms:[{v:W3.answer,t:1,n:2}]},[A3.key]:{confirms:[{v:(L3.answer+1)*W3.answer,t:2,n:2.5},{v:(L3.answer+1)*W3.answer,t:4,n:4}]}};
+  for(const x of r3.steps)if(!st3b[x.key])st3b[x.key]={confirms:[{v:x.answer,t:1,n:0.5}]};
+  assert.equal((await call(`/api/probe/${run3.run}/item`,{method:'POST',cookie:t8,body:{itemId:r3.id,steps:st3b,secs:20}})).status,200);
+  // 太大的紀錄：明確回 too_large，不會截斷存成壞掉的資料
+  const r3b=form3.items.find(i=>i.id!==r3.id),big={};for(const x of r3b.steps)big[x.key]={confirms:Array.from({length:9000},(_,i)=>({v:i%2?999:x.answer,t:1,n:i}))};
+  const tl=await call(`/api/probe/${run3.run}/item`,{method:'POST',cookie:t8,body:{itemId:r3b.id,steps:big,secs:20}});assert.equal(tl.status,413);assert.equal(tl.data.error,'too_large');
+  const a3row=(await call('/api/study/export?type=probeItems',{user:owner})).data.rows.find(r=>r.itemId===r3.id&&r.student==='T08-S03').result.steps.find(x=>x.key===A3.key);
+  assert.equal(a3row.finalCorrect,true);assert.equal(a3row.selfCorrected,true);assert.equal(a3row.hadError,true);
   // 同一位學生第二次：換下一份複本
   assert.equal((await call('/api/probe/start',{method:'POST',cookie:t8,body:{student:'T08-S01',set:'demoProbe@1'}})).data.formId,'A');
 });

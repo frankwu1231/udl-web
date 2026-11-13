@@ -1001,10 +1001,13 @@
       if ($('aiReflect')) $('aiReflect').onclick = () => askAI('reflection', 6, $('aiReflectText'));
       if ($('recordVoice')) $('recordVoice').onclick = toggleRecord;
       // 第 25 版修正：按「回學習地圖」（或上面的地圖連結）也要先把這一題記成完成，地圖才會有星星、解鎖下一個
-      let tutorWait = false, tutorThen = null;
+      let tutorWait = false, tutorThen = null, finishing = false;
       const finish = (next, toMap = false) => {
         const need = [!probe && r.goal !== 'any' && !judged && '有沒有達到目標', !probe && judged && !r.met && !answers.cause && '可能的原因', !answers.reason && '什麼幫助你', !answers.nextMethod && '下一題怎麼做'].filter(Boolean);
         if (need.length) { showStatus($('reflectFeedback'), '請選：' + need.join('、') + '。'); return false; }
+        // 只完成一次：連按「下一題」「再做一次」「回學習地圖」不會多記一題，也不會略過小老師小方的題末對照
+        if (finishing) return 'busy'; finishing = true;
+        ['retry', 'new', 'toMap'].forEach(id => { if ($(id)) $(id).disabled = true; });
         if (recorder) toggleRecord();
         const badges = earned(r), secs = startedAt ? Math.round((Date.now() - startedAt) / 1000) : null;
         log('整題完成', { activity: 7, maxHintLevel: Math.max(...hintLevel), hints: r.hints, errors, goal: r.goal, goalKind: settings.goalKind, goalMet: r.watched ? false : r.met, watched: !!r.watched, selfMet: answers.selfMet || '', confidence: answers.confidence || '', firstTry: r.firstTry, steps: r.steps, secs, badges, dimensions: dims() });

@@ -1445,10 +1445,34 @@ test('第 26 版：上一位學生沒送出去的答案不影響下一位；這�
   assert.equal((await rows('T01-S11')).length, 1, '上一位的答案補送了');
   assert.equal((await rows('T01-S12')).length, 0);
   // 存不了暫存資料：記在記憶體裡照樣送出，技術缺測不會不見
-  await page.addInitScript(() => { const set = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (String(k).endsWith(':pending')) throw new DOMException('full', 'QuotaExceededError'); return set.call(this, k, v); }; });
+  await page.addInitScript(() => { const set = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (String(k).includes(':pending')) throw new DOMException('full', 'QuotaExceededError'); return set.call(this, k, v); }; });
   await page.reload(); await page.waitForSelector('[data-step]');
   await page.click('#techBtn'); await page.waitForFunction(() => /第 2 題/.test(document.querySelector('.probe')?.innerText || ''), null, { timeout: 10000 });
   assert.equal((await rows('T01-S12'))[0].result.tech, true);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('第 26 版：上一位學生的補送回應很慢，也不會讓下一位跳題', { skip: skip || !distReady }, async () => {
+  await setup();
+  const ctx = await browser.newContext(), page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto(base + '/study.html'); await page.waitForSelector('#probeFile');
+  await page.setInputFiles('#probeFile', fileURLToPath(new URL('../scenarios/demo-probe.json', import.meta.url)));
+  await page.waitForFunction(() => /已匯入 demoProbe@1|匯入過/.test(document.querySelector('#probeMsg')?.textContent || ''));
+  const as = async student => { await page.evaluate(s => sessionStorage.setItem('area-research-who-v22', JSON.stringify({ teacher: 'T01', student: s, sessionNo: 1, sessionId: 'w' + s })), student); await page.goto(base + '/probe.html'); };
+  await as('T01-S21'); await page.waitForSelector('#probeStart'); await page.click('#probeStart'); await page.waitForSelector('[data-step]');
+  const old = await page.evaluate(() => JSON.parse(sessionStorage.getItem('area-probe-run-v26')).run);
+  const down = r => r.abort(); await page.route('**/api/probe/*/item', down);
+  await page.click('#submit'); await page.waitForSelector('#probeRetry', { timeout: 10000 });
+  await page.unroute('**/api/probe/*/item', down);
+  // 上一位的補送故意慢 3 秒才回來
+  await page.route(`**/api/probe/${old}/item`, async r => { await new Promise(x => setTimeout(x, 3000)); await r.continue(); });
+  await as('T01-S22'); await page.waitForSelector('#probeStart'); await page.click('#probeStart'); await page.waitForSelector('[data-step]');
+  await page.waitForTimeout(4000);
+  assert.match(await page.innerText('.probe'), /第 1 題/, '舊的回應回來後，下一位還在第 1 題');
+  await page.click('#submit'); await page.waitForFunction(() => /第 2 題/.test(document.querySelector('.probe')?.innerText || ''), null, { timeout: 10000 });
+  const rows = async s => page.evaluate(async st => (await (await fetch('/api/study/export?type=probeItems')).json()).rows.filter(x => x.student === st), s);
+  assert.equal((await rows('T01-S21')).length, 1); assert.equal((await rows('T01-S22')).length, 1);
   assert.deepEqual(errors, []);
   await ctx.close();
 });

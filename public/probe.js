@@ -28,8 +28,9 @@
   async function start() {
     const who = load(WHO_KEY, null);
     state = load(RUN_KEY, null);
-    if (state && who && state.student === who.student) { $('probeWho').textContent = state.student; return pending() ? deliver() : show(); }   // 重新整理：先送完還沒送出去的，再接著做
-    if (pending()) deliver();   // 上一位學生還沒送出去的資料：先補送（不影響這一位）
+    // 別次施測（例如上一位學生）還沒送出去的資料：在背景補送，不影響這一次
+    for (const run of pendingRuns()) if (!state || run !== state.run || !who || state.student !== who.student) deliver(run);
+    if (state && who && state.student === who.student) { $('probeWho').textContent = state.student; return pending(state.run) ? deliver(state.run) : show(); }   // 重新整理：先送完這一次還沒送出去的，再接著做
     if (!who || who.off || !who.student) { $('probe').innerHTML = '<p>請老師先在學生頁選學生代號、按「開始本節」，再進入小測驗。</p><p><a href="seven.html">回學生頁</a></p>'; return; }
     $('probeWho').textContent = who.student + (who.sessionNo ? `・第 ${who.sessionNo} 節` : '');
     let sets; try { sets = (await api('/api/probe/sets')).sets; } catch { $('probe').innerHTML = '<p>讀不到題組。請確認「現場試用紀錄」有勾選存進網站資料庫。</p>'; return; }
@@ -87,6 +88,7 @@
         const v = s.input === 'number' ? Number(raw) : raw;
         // n：全題共用的遞增序號，伺服器用它判斷先後（同一個時間按了好幾個確定也分得出來）
         const n = 1 + Math.max(0, ...Object.values(answers).flatMap(a => a.confirms.map(c => c.n || 0)));
+        if (n > MAX_CONFIRMS) { $('done_' + s.key).textContent = '已經確定很多次了，請按「這一題做好了」'; return; }
         (answers[s.key] = answers[s.key] || { confirms: [] }).confirms.push({ v, t: Math.round((Date.now() - itemStart) / 100) / 10, n });
         $('done_' + s.key).textContent = '已確定';   // 不顯示對錯
         keep(RUN_KEY + ':item', { run: state.run, index: state.index, startedAt: itemStart, answers });
@@ -106,63 +108,72 @@
   }
   // 送出：先把這次要送的內容（答案快照、逾時、技術問題、要不要結束）存在這台電腦，再送。
   // 伺服器確定收到才換題、清掉答案；送不出去就停在這裡，答案不能再改，老師按「再送一次」只重送同一份內容；重新整理也會先送完。
-  async function send(path, body) {
-    for (let i = 0; i < 3; i++) {
-      try { await api(path, body); return true; }
-      catch (e) { if (['already_submitted', 'already_finished'].includes(e.message)) return true; if (e.status && e.status < 500 && e.status !== 429) return false; await new Promise(r => setTimeout(r, 1000 * (i + 1))); }
-    }
-    return false;
-  }
-  function failed(text) {
+  function failed(text, run, opts = {}) {
     const box = document.getElementById('probeRetry') || Object.assign(document.createElement('div'), { id: 'probeRetry', className: 'retry' });
     box.setAttribute('role', 'alert');
-    box.innerHTML = `<p>${esc(text)}</p><button type="button" class="primary submit">再送一次</button>`;
+    box.innerHTML = `<p>${esc(text)}</p>${opts.skip ? '<button type="button" class="primary submit" data-skip>改記成技術問題，接著做</button>' : '<button type="button" class="primary submit" data-retry>再送一次</button>'}`;
     if (!box.isConnected) $('probe').append(box);
-    box.querySelector('button').onclick = () => { box.remove(); deliver(); };
+    box.querySelector('[data-retry]')?.addEventListener('click', () => { box.remove(); deliver(run); });
+    box.querySelector('[data-skip]')?.addEventListener('click', () => { box.remove(); const p = pending(run); if (p && p.kind === 'item') { setPending({ ...p, body: { itemId: p.body.itemId, steps: {}, timedOut: p.body.timedOut, tech: true, secs: p.body.secs } }); } deliver(run); });
   }
-  // 連續按好幾次確定、值都一樣：只留第一次（對計分沒有影響），其他每一次都完整送出
-  const compact = c => c.filter((x, i) => i === 0 || x.v !== c[i - 1].v);
-  let memPending = null;   // 這台電腦存不了的時候，先留在記憶體
-  const pending = () => load(PEND_KEY, null) || memPending;
-  function setPending(p) { memPending = p; if (!keep(PEND_KEY, p)) toastSave(); }
-  function clearPending() { memPending = null; try { sessionStorage.removeItem(PEND_KEY); } catch { /* 略過 */ } }
+  // 每一次施測的待送資料分開存（鍵名帶施測代號），補送某一次不會動到別一次
+  const PK = run => PEND_KEY + ':' + run;
+  const mem = new Map();   // 這台電腦存不了的時候，先留在記憶體
+  const pending = run => load(PK(run), null) || mem.get(run) || null;
+  function pendingRuns() { const runs = new Set(mem.keys()); try { for (let i = 0; i < sessionStorage.length; i++) { const k = sessionStorage.key(i); if (k && k.startsWith(PEND_KEY + ':')) runs.add(k.slice(PEND_KEY.length + 1)); } } catch { /* 略過 */ } return [...runs]; }
+  function setPending(p) { mem.set(p.run, p); if (!keep(PK(p.run), p)) toastSave(); }
+  function clearPending(run) { mem.delete(run); try { sessionStorage.removeItem(PK(run)); } catch { /* 略過 */ } if (!mem.size) document.getElementById('probeSaveWarn')?.remove(); }
   function toastSave() { if (document.getElementById('probeSaveWarn')) return; const w = Object.assign(document.createElement('p'), { id: 'probeSaveWarn', className: 'count', textContent: '這台電腦存不了暫存資料：送出前請不要重新整理這一頁。' }); w.setAttribute('role', 'alert'); document.querySelector('main')?.prepend(w); }
+  const MAX_CONFIRMS = 300;   // 一題最多記 300 次確定（一般作答遠低於這個數）
   function submit(timedOut, end) {
     if (busy) return; busy = true; clearInterval(timer);
-    const steps = Object.fromEntries(Object.entries(answers).map(([k, a]) => [k, { confirms: compact(a.confirms) }]));
+    const steps = Object.fromEntries(Object.entries(answers).map(([k, a]) => [k, { confirms: a.confirms }]));   // 每一次確定都完整送出
     setPending({ kind: 'item', run: state.run, index: state.index, body: { itemId: item.id, steps, timedOut, tech, secs: Math.round((Date.now() - itemStart) / 1000) }, end: end || '' });
-    deliver();
+    deliver(state.run);
   }
-  function finish(reason) { clearInterval(timer); setPending({ kind: 'finish', run: state.run, reason }); deliver(); }
-  let delivering = false;
-  async function deliver() {
-    const p = pending(); if (!p || delivering) return; delivering = true;
-    // 別次施測（例如上一位學生）的待送資料：只補送，不動這一次的進度
-    if (!state || p.run !== state.run) {
-      try {
-        const ok = p.kind === 'item' ? await send(`/api/probe/${p.run}/item`, p.body) && (!p.end || await send(`/api/probe/${p.run}/finish`, { reason: p.end })) : await send(`/api/probe/${p.run}/finish`, { reason: p.reason });
-        if (ok) clearPending();
-      } finally { delivering = false; }
-      return;
+  function finish(reason) { clearInterval(timer); setPending({ kind: 'finish', run: state.run, reason }); deliver(state.run); }
+  // 送出結果：ok、retry（網路或伺服器暫時不行）、reject（內容被拒絕，例如太大）
+  async function sendFor(path, body) {
+    for (let i = 0; i < 3; i++) {
+      try { await api(path, body); return 'ok'; }
+      catch (e) { if (['already_submitted', 'already_finished'].includes(e.message)) return 'ok'; if (e.status && e.status < 500 && e.status !== 429) return e.message === 'too_large' ? 'large' : 'reject'; await new Promise(r => setTimeout(r, 1000 * (i + 1))); }
     }
-    clearInterval(timer);
-    // 答案已經交出去了：畫面上的輸入都鎖住，不能再改
-    document.querySelectorAll('#probe input, #probe [data-opt], #probe [data-ok], #submit, #techBtn, #stopBtn').forEach(x => { x.disabled = true; });
+    return 'retry';
+  }
+  const busyRuns = new Set();
+  const current = run => !!state && state.run === run;   // 每次等完網路都要再確認：畫面上還是同一次施測
+  async function deliver(run) {
+    const p = pending(run); if (!p || busyRuns.has(run)) return; busyRuns.add(run);
     try {
+      if (!current(run)) {   // 別次施測：只補送，不動這一次的進度與畫面
+        const r = p.kind === 'item' ? await sendFor(`/api/probe/${run}/item`, p.body) : await sendFor(`/api/probe/${run}/finish`, { reason: p.reason });
+        if (r === 'ok' && p.kind === 'item' && p.end) { if (await sendFor(`/api/probe/${run}/finish`, { reason: p.end }) === 'ok') clearPending(run); }
+        else if (r === 'ok' || r === 'reject') clearPending(run);
+        return;
+      }
+      clearInterval(timer);
+      // 答案已經交出去了：畫面上的輸入都鎖住，不能再改
+      document.querySelectorAll('#probe input, #probe [data-opt], #probe [data-ok], #submit, #techBtn, #stopBtn').forEach(x => { x.disabled = true; });
       if (p.kind === 'item') {
-        if (!await send(`/api/probe/${p.run}/item`, p.body)) { failed('這一題還沒送出去（網路可能斷了），答案都還在。網路好了再按「再送一次」。'); return; }
+        const r = await sendFor(`/api/probe/${run}/item`, p.body);
+        if (!current(run)) return;
+        if (r === 'reject') { failed('伺服器不收這一題的紀錄。請按下面的按鈕，這一題改記成技術問題（不計分），接著做下一題。', run, { skip: true }); return; }
+        if (r === 'large') { failed('這一題的紀錄太多，送不出去。請按下面的按鈕，這一題改記成技術問題（不計分），接著做下一題。', run, { skip: true }); return; }
+        if (r === 'retry') { failed('這一題還沒送出去（網路可能斷了），答案都還在。網路好了再按「再送一次」。', run); return; }
         if (state.index === p.index) { state.index++; keep(RUN_KEY, state); }
         try { sessionStorage.removeItem(RUN_KEY + ':item'); } catch { /* 略過 */ }
-        if (p.end) { setPending({ kind: 'finish', run: p.run, reason: p.end }); delivering = false; return deliver(); }
-        clearPending();
+        if (p.end) { setPending({ kind: 'finish', run, reason: p.end }); busyRuns.delete(run); return deliver(run); }
+        clearPending(run);
         $('probe').innerHTML = `<p class="cheer" data-say>${CHEERS[state.index % CHEERS.length]}</p>`;
-        setTimeout(show, 1200);
+        setTimeout(() => { if (current(run)) show(); }, 1200);
       } else {
-        if (!await send(`/api/probe/${p.run}/finish`, { reason: p.reason })) { $('probe').innerHTML = '<p class="cheer">小測驗做完了，謝謝你！</p>'; failed('結束的紀錄還沒送出去（網路可能斷了）。網路好了再按「再送一次」。'); return; }
-        clearPending(); try { [RUN_KEY, RUN_KEY + ':item'].forEach(k => sessionStorage.removeItem(k)); } catch { /* 略過 */ }
+        const r = await sendFor(`/api/probe/${run}/finish`, { reason: p.reason });
+        if (!current(run)) return;
+        if (r === 'retry') { $('probe').innerHTML = '<p class="cheer">小測驗做完了，謝謝你！</p>'; failed('結束的紀錄還沒送出去（網路可能斷了）。網路好了再按「再送一次」。', run); return; }
+        clearPending(run); try { [RUN_KEY, RUN_KEY + ':item'].forEach(k => sessionStorage.removeItem(k)); } catch { /* 略過 */ }
         $('probe').innerHTML = '<p class="cheer" data-say>小測驗做完了，謝謝你！</p><p style="text-align:center"><a class="primary submit" href="seven.html">回到學習</a></p>';
       }
-    } finally { delivering = false; }
+    } finally { busyRuns.delete(run); }
   }
   start();
 })();

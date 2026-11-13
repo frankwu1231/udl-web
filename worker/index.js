@@ -504,8 +504,8 @@ const publicItem=it=>({id:it.id,type:it.type,prompt:it.prompt,figure:it.figure||
 // ---------- 計分 ----------
 const sameAnswer=(v,a)=>v!==null&&v!==undefined&&v!==''&&(typeof a==='number'?Number(v)===a:String(v)===String(a));
 function scoreProbeItem(item,resp){const st=resp&&resp.steps&&typeof resp.steps==='object'?resp.steps:{},tech=resp?.tech===true;
-// 每一次確定都算（連續確定同一個值只留第一次，對計分沒有影響）
-const confirmsOf=k=>{const c=Array.isArray(st[k]?.confirms)?st[k].confirms.filter(c=>c&&(typeof c.v==='number'||typeof c.v==='string')):[];return c.filter((x,i)=>i===0||x.v!==c[i-1].v);};
+// 每一次確定都算（前端一題最多記 300 次）
+const confirmsOf=k=>Array.isArray(st[k]?.confirms)?st[k].confirms.filter(c=>c&&(typeof c.v==='number'||typeof c.v==='string')):[];
 const finalOf=k=>{const c=confirmsOf(k);return c.length?c.at(-1).v:null;},firstOf=k=>{const c=confirmsOf(k);return c.length?c[0].v:null;};
 // 某一步在時間 t（含）以前最後確定的值：連帶錯誤要依「當時」已確定的取量判定，後來改了取量不會回頭改變先前的評分
 // 先後順序：有全題共用的遞增序號 n 就用 n（同一個時間按了好幾個確定也分得出先後），舊資料才用時間 t
@@ -540,6 +540,7 @@ return json({sets:results.map(r=>{let s={};try{s=JSON.parse(r.set_json);}catch{}
 async function studyProbeSets(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!sameOrigin(request))return json({error:'origin'},403);if(!env.DB)return json({error:'research_storage_unavailable'},503);
 const s=await readJson(request,950000);if(!validProbeSet(s))return json({error:'invalid_probe_set'},400);
 try{await env.DB.prepare('INSERT INTO probe_sets (id,kind,title,set_json,created_at) VALUES (?,?,?,?,?)').bind(setKey(s),s.kind,s.title,JSON.stringify(s),Date.now()).run();}catch{return json({error:'version_locked'},409);}return json({ok:true,id:setKey(s)});}
+const PROBE_ITEM_MAX=200000;   // 一題的作答紀錄最多 200 KB：完整保存，不截斷；超過就回 too_large
 async function probeRun(env,who,id){if(!/^p_[a-f0-9]{16}$/.test(id))return null;const run=await env.DB.prepare('SELECT * FROM probe_runs WHERE id = ?').bind(id).first();if(!run||run.workspace!==who.ws)return null;const set=await probeSetRow(env,run.set_id);const form=set?.set.forms.find(f=>f.id===run.form_id);return form?{run,set:set.set,form}:null;}
 async function probeRoutes(request,env,who,rest){if(!researchRole(who))return noResearch(who);if(request.method!=='POST')return json({error:'method'},405);if(!sameOrigin(request))return json({error:'origin'},403);if(!env.DB)return json({error:'research_storage_unavailable'},503);
 try{if(rest==='start'){const b=await readJson(request,512);if(!b||typeof b.student!=='string'||!STUDENT_CODE.test(b.student)||typeof b.set!=='string'||TEACHER_CODE.test(who.ws)&&b.student.slice(0,3)!==who.ws)return json({error:'invalid_input'},400);
@@ -550,12 +551,12 @@ const id='p_'+crypto.randomUUID().replaceAll('-','').slice(0,16),phase=await cur
 await env.DB.prepare('INSERT INTO probe_runs (id,workspace,student,set_id,form_id,session_no,phase,started_at,status) VALUES (?,?,?,?,?,?,?,?,?)').bind(id,who.ws,b.student,b.set,form.id,no,phase,Date.now(),'running').run();
 return json({run:id,kind:row.set.kind,formId:form.id,itemSecs:row.set.itemSecs||90,totalSecs:row.set.totalSecs||900,items:form.items.map(publicItem)});}
 const [id,action]=rest.split('/'),p=await probeRun(env,who,id);if(!p)return json({error:'not_found'},404);if(p.run.status!=='running')return json({error:'already_finished'},409);
-if(action==='item'){const b=await readJson(request,64000),idx=p.form.items.findIndex(i=>i.id===b?.itemId);if(idx<0)return json({error:'invalid_input'},400);
+if(action==='item'){if(Number(request.headers.get('content-length')||0)>PROBE_ITEM_MAX)return json({error:'too_large'},413);let raw='';try{raw=await request.text();}catch{}if(raw.length>PROBE_ITEM_MAX)return json({error:'too_large'},413);let b=null;try{b=JSON.parse(raw);}catch{}const idx=p.form.items.findIndex(i=>i.id===b?.itemId);if(idx<0)return json({error:'invalid_input'},400);
 // 每題時間到了以後才確定的答案不算，這題記為逾時（前端計時停了也一樣）；網路傳送另外容許幾秒，不算作答時間
 const lim=p.set?.itemSecs||90;let late=intIn(b.secs,0,36000)&&b.secs>lim+5;if(b.steps&&typeof b.steps==='object')for(const v of Object.values(b.steps))if(v&&Array.isArray(v.confirms)){const keepC=v.confirms.filter(c=>!(c&&typeof c.t==='number'&&c.t>lim));if(keepC.length<v.confirms.length)late=true;v.confirms=keepC;}
 if(late)b.timedOut=true;
 const result=scoreProbeItem(p.form.items[idx],b);
-try{await env.DB.prepare('INSERT INTO probe_items (run_id,item_id,idx,response_json,result_json,at) VALUES (?,?,?,?,?,?)').bind(id,b.itemId,idx,JSON.stringify({steps:b.steps,timedOut:b.timedOut===true,tech:b.tech===true,secs:b.secs}).slice(0,60000),JSON.stringify(result),Date.now()).run();}catch{// 只有這一題真的已經存過，才回「已收件」；其他寫入失敗回 503，前端會保留答案再送
+try{await env.DB.prepare('INSERT INTO probe_items (run_id,item_id,idx,response_json,result_json,at) VALUES (?,?,?,?,?,?)').bind(id,b.itemId,idx,JSON.stringify({steps:b.steps,timedOut:b.timedOut===true,tech:b.tech===true,secs:b.secs}),JSON.stringify(result),Date.now()).run();}catch{// 只有這一題真的已經存過，才回「已收件」；其他寫入失敗回 503，前端會保留答案再送
 let had=null;try{had=await env.DB.prepare('SELECT 1 AS x FROM probe_items WHERE run_id = ? AND item_id = ?').bind(id,b.itemId).first();}catch{}
 return had?json({error:'already_submitted'},409):json({error:'research_storage_unavailable'},503);}
 return json({ok:true});}
