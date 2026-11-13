@@ -33,7 +33,7 @@
   // ---------- 小工具 ----------
   const L = () => P() ? ((lessons.activities || {})[type] || {}) : lessons[type];
   const level = () => settings.difficulty === 'custom' ? 'standard' : (settings.difficulty || 'standard');
-  const dims = () => { if (P()) { const q = pProblem || {}; return 'l' in q ? [q.l, q.w, q.h] : 's' in q ? [q.s, q.s, q.s] : [0, 0, 0]; } const p = probeDims || L().problems[index]; return [p.a, p.b, p.offset]; };
+  const dims = () => { if (P()) { const q = pProblem || {}; return Array.isArray(q.dims) ? q.dims : 'l' in q ? [q.l, q.w, q.h] : 's' in q ? [q.s, q.s, q.s] : [0, 0, 0]; } const p = probeDims || L().problems[index]; return [p.a, p.b, p.offset]; };
   const grid = () => type === 'rectangle' || type === 'square';
   const area = () => dims()[0] * dims()[1] / (type === 'triangle' ? 2 : 1);
   const pages = () => P() ? P().steps.map((_, i) => [i]) : F.pages(settings);
@@ -102,7 +102,7 @@
     checked = new Set(); orders = {}; frame = 0; tiles = []; revealed = {}; lineOk = false; dragFrom = null; aiMsg = {}; videoOpen = new Set(); stuckOpen = null; stuckNote = {};
     hintLevel = [0, 0, 0, 0, 0, 0, 0]; tried2 = new Set(); nudged = new Set(); hintPending = false; errors = 0; hintsUsed = 0; page = 0; entered = new Set(); returnTo = null;
     settings = ownSettings(); applyReading();
-    if (P()) { pState = {}; if (!keepProblem || !pProblem) pProblem = P().makeProblem(level(), index, Math.random); keepProblem = false; }
+    if (P()) { pState = {}; if (!keepProblem || !pProblem) pProblem = P().makeProblem(level(), index, Math.random, { done: doneAll() }); keepProblem = false; }
     probeDims = !P() && mode() === 'probe' ? F.randomProblem(type, settings.difficulty === 'custom' ? 'standard' : settings.difficulty) : null;
     if (carry && carry.method && !methodOptions().some(o => o[0] === carry.method)) delete answers.method;
     orders.lines = F.shuffle(['A', 'B', 'C']);
@@ -1427,7 +1427,7 @@
       if (P() && !lessons.activities[type]) lessons.activities[type] = {};
       loadRecords(); doneBase = doneAll();
       if (type && blockedByMap(type)) { location.replace(mapUrl()); return; }
-      if (P()) { settings = ownSettings(); if (!settings.ai) $('apiSettings').hidden = true; pProblem = P().makeProblem(level(), index, Math.random); }
+      if (P()) { settings = ownSettings(); if (!settings.ai) $('apiSettings').hidden = true; pProblem = P().makeProblem(level(), index, Math.random, { done: doneAll() }); }
       else if (type) { settings = ownSettings(); orders.lines = F.shuffle(['A', 'B', 'C']); if (!settings.ai) $('apiSettings').hidden = true; if (settings.mode === 'probe') probeDims = F.randomProblem(type, settings.difficulty === 'custom' ? 'standard' : settings.difficulty); }
       attachBuddy(); applyReading();
       window.areaResearch?.init(lessons.research, { records: () => records, settings: () => settings, activity: () => ({ id: type || '', name: type ? nameOf() : '' }), step, log, changed: () => render(), reset: resetStudent, refresh: () => { if (type) settings = ownSettings(); }, classCode: session.classCode || '', workspace: session.workspace || '', scope: (session.workspace || '') + '/' + (session.className || '') });

@@ -66,12 +66,15 @@
     const ok = p => !same(p) && (!target || numbers(p) !== target);
     // 固定種子的亂數，讓「隨機都抽不到」時可以有系統地找
     const seeded = seed => () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    // 例題和學生這一題用同一個做法階段（例如表面積先一個一個加，之後才乘 2）
+    const opt = current && 'add' in current ? { done: current.add ? 0 : Infinity } : {};
+    const mk = (lv, i, r) => pl.makeProblem(lv, i, r, opt);
     const make = () => {
-      for (let i = 0; i < 30; i++) { const p = pl.makeProblem(level, 1 + Math.floor(Math.random() * 6), Math.random); if (ok(p)) return blank(p); }
+      for (let i = 0; i < 30; i++) { const p = mk(level, 1 + Math.floor(Math.random() * 6), Math.random); if (ok(p)) return blank(p); }
       // 再依序找：先找同一個難度，再找其他難度（例如 3-3 一般難度每題都是 12 格，只能換難度）
       for (const lv of [level, ...['easy', 'standard', 'challenge'].filter(x => x !== level)])
-        for (let i = 0; i < 6; i++) for (let seed = 1; seed <= 20; seed++) { const p = pl.makeProblem(lv, i, seeded(seed)); if (ok(p)) return blank(p); }
-      return blank(pl.makeProblem(level, 1, Math.random));   // 這一步的答案和數字無關（例如選單位），用哪一題都一樣
+        for (let i = 0; i < 6; i++) for (let seed = 1; seed <= 20; seed++) { const p = mk(lv, i, seeded(seed)); if (ok(p)) return blank(p); }
+      return blank(mk(level, 1, Math.random));   // 這一步的答案和數字無關（例如選單位），用哪一題都一樣
     };
     let ex = make();
     const view = () => `<div class="sd-plugin">${st.figure ? `<div class="sd-pfig">${st.figure(ex)}</div>` : ''}<div class="sd-ans">${st.answer(ex)}</div></div>`;

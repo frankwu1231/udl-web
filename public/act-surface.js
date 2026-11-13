@@ -2,6 +2,7 @@
 // 第 27 版：表面積教材包的活動（content-surface.js）。
 // 共用：長方體的立體圖（斜視圖）、展開圖（十字形）、三種面的配色。
 // 核心活動 3-1 長方體、3-2 正方體：看題目 → 展開 → 找面配對 → 量邊 → 列式 → 計算與比較 → 單位。
+// 前 2 題六個面一個一個加，之後才用「× 2」（正方體「× 6」）。
 // 計分的連帶規則：面的面積依學生自己量的邊判定，總和依學生自己算的面判定。
 (() => {
   const A = window.areaActs, U = A.util, { esc, pick, num, fieldHtml } = U;
@@ -73,6 +74,9 @@
   // ---------- 核心活動：長方體（3-1）、正方體（3-2） ----------
   const CUBOID = { easy: [[3, 2, 1], [4, 2, 1], [3, 2, 2]], standard: [[4, 3, 2], [5, 3, 2], [5, 4, 2]], challenge: [[6, 4, 2], [6, 4, 3], [5, 4, 3]] };
   const CUBE = { easy: [2, 3], standard: [3, 4], challenge: [4, 5] };
+  // 第 27 版（吳老師 2026-11-13）：先六個面一個一個加，做完 ADD_FIRST 題以後才退到「× 2」（正方體是「× 6」）
+  // 題目產生時記在 problem.add（true＝一個一個加的階段），整題做的方法不會中途改變
+  const ADD_FIRST = 2;
 
   function core(cube) {
     const word = cube ? '正方體' : '長方體';
@@ -145,46 +149,50 @@
             return { code: 'lwh', obs: same ? 'swapped' : 'other', msg: same ? '數字都找到了，看一看哪一個是長、寬、高。' : '看邊旁邊的數字，再填一次。' }; },
           solve: ctx => { const p = ctx.problem; ctx.state.edges = ['l', 'w', 'h']; Object.assign(ctx.answers, { len: String(p.l), wid: String(p.w), hei: String(p.h) }); }, say: ex => `長 ${ex.problem.l}、寬 ${ex.problem.w}、高 ${ex.problem.h} 公分。` },
       cube
-        ? { title: '列式', ids: ['formula', 'fa'], hints: ['一個面是正方形，怎麼算？', '一個面的面積 × 面的個數。', '一個面是邊長 × 邊長，有 6 個面。'],
+        ? { title: '列式', ids: ['formula', 'fa'], hints: ['一個面是正方形，怎麼算？', '六個面都要算到，每個面一樣大。', '一個面是邊長 × 邊長，一共有 6 個面。'],
           think: '一個面是邊長 × 邊長，一共有 6 個一樣的面。', together: '一起想：一個面多大？有幾個？',
           figure: ctx => netSVG(ctx.problem, { colorAll: true, nums: true }),
-          answer: ctx => `${ctx.choice('formula', '選一個算正方體表面積的算式', [['six', '邊長 × 邊長 × 6'], ['one', '邊長 × 邊長'], ['vol', '邊長 × 邊長 × 邊長'], ['four', '邊長 × 4']])}
+          answer: ctx => `${ctx.choice('formula', '選一個算正方體表面積的算式', ctx.problem.add ? [['add', '一個面的面積，六個面一個一個加'], ['one', '邊長 × 邊長（只有一個面）'], ['vol', '邊長 × 邊長 × 邊長']] : [['six', '邊長 × 邊長 × 6'], ['one', '邊長 × 邊長'], ['vol', '邊長 × 邊長 × 邊長'], ['four', '邊長 × 4']])}
             ${fieldHtml(ctx, 'fa', `再算一個面：${esc(ctx.answers.side ?? '邊長')} × ${esc(ctx.answers.side ?? '邊長')} = ？`, 4)}`,
           check: ctx => { const f = ctx.answers.formula; if (!f) return { code: 'formula', msg: '先選一個算式。' };
-            if (f !== 'six') return { code: 'formula', obs: f === 'one' ? 'eqOneFace' : f === 'vol' ? 'choseVolume' : 'wrongChoice', msg: f === 'one' ? '這是一個面。正方體有 6 個面。' : f === 'vol' ? '這是算裡面可以裝多少（體積）。' : '邊長 × 4 是一個面的四條邊，不是面積。' };
+            if (f !== (ctx.problem.add ? 'add' : 'six')) return { code: 'formula', obs: f === 'one' ? 'eqOneFace' : f === 'vol' ? 'choseVolume' : 'wrongChoice', msg: f === 'one' ? '這是一個面。正方體有 6 個面。' : f === 'vol' ? '這是算裡面可以裝多少（體積）。' : '邊長 × 4 是一個面的四條邊，不是面積。' };
             const s = own(ctx), v = num(ctx.answers.fa); if (v === null) return { code: 'fa', soft: true, msg: '再算一個面的面積。' };
             return s && v === s.l * s.l ? null : { code: 'fa', obs: 'other', msg: '一個面是邊長 × 邊長，再算一次。' }; },
-          solve: ctx => { ctx.answers.formula = 'six'; const s = own(ctx) || ctx.problem; ctx.answers.fa = String(s.l * s.l); }, say: ex => `一個面 ${ex.problem.l} × ${ex.problem.l}，有 6 個。` }
-        : { title: '列式', ids: ['formula', 'fa', 'fb', 'fc'], hints: ['三種面，每種是哪兩個邊？', '看顏色：同一個顏色的面一樣大，每種有 2 個。', '三種面加起來，每種有 2 個，所以要乘 2。'],
+          solve: ctx => { ctx.answers.formula = ctx.problem.add ? 'add' : 'six'; const s = own(ctx) || ctx.problem; ctx.answers.fa = String(s.l * s.l); }, say: ex => ex.problem.add ? `一個面 ${ex.problem.l} × ${ex.problem.l}，六個面一個一個加。` : `一個面 ${ex.problem.l} × ${ex.problem.l}，有 6 個。` }
+        : { title: '列式', ids: ['formula', 'fa', 'fb', 'fc'], hints: ['三種面，每種是哪兩個邊？', '看顏色：同一個顏色的面一樣大，每種有 2 個。', '六個面都要算到：上下、前後、左右。'],
           think: '三種面：上面是長 × 寬，前面是長 × 高，右面是寬 × 高；每種有 2 個。', together: '一起想：三種面各是哪兩個邊？',
           figure: ctx => netSVG(ctx.problem, { colored: ['tb', 'fb', 'lr'], labels: true, nums: true }),
-          answer: ctx => { const a = ctx.answers; return `${ctx.choice('formula', '選一個算長方體表面積的算式', [['pairs', '（長×寬 ＋ 長×高 ＋ 寬×高）× 2'], ['three', '長×寬 ＋ 長×高 ＋ 寬×高'], ['vol', '長 × 寬 × 高'], ['six', '長 × 寬 × 6']])}
+          answer: ctx => { const a = ctx.answers; return `${ctx.choice('formula', '選一個算長方體表面積的算式', ctx.problem.add ? [['add', '上＋下＋前＋後＋左＋右（六個面一個一個加）'], ['three', '上＋前＋右'], ['vol', '長 × 寬 × 高']] : [['pairs', '（長×寬 ＋ 長×高 ＋ 寬×高）× 2'], ['three', '長×寬 ＋ 長×高 ＋ 寬×高'], ['vol', '長 × 寬 × 高'], ['six', '長 × 寬 × 6']])}
             <p data-read data-say>再算三種面的面積：</p>${fieldHtml(ctx, 'fa', `上面：${esc(a.len ?? '長')} × ${esc(a.wid ?? '寬')} = ？`, 4)}${fieldHtml(ctx, 'fb', `前面：${esc(a.len ?? '長')} × ${esc(a.hei ?? '高')} = ？`, 4)}${fieldHtml(ctx, 'fc', `右面：${esc(a.wid ?? '寬')} × ${esc(a.hei ?? '高')} = ？`, 4)}`; },
           check: ctx => { const f = ctx.answers.formula; if (!f) return { code: 'formula', msg: '先選一個算式。' };
-            if (f !== 'pairs') return { code: 'formula', obs: { three: 'eqHalf', vol: 'choseVolume', six: 'sixSame' }[f] || 'wrongChoice', msg: { three: '這樣只算了 3 個面。每種面有 2 個。', vol: '這是算裡面可以裝多少（體積）。', six: '長方體的面不是都一樣大。' }[f] };
+            if (f !== (ctx.problem.add ? 'add' : 'pairs')) return { code: 'formula', obs: { three: 'eqHalf', vol: 'choseVolume', six: 'sixSame' }[f] || 'wrongChoice', msg: { three: '這樣只算了 3 個面。盒子有 6 個面。', vol: '這是算裡面可以裝多少（體積）。', six: '長方體的面不是都一樣大。' }[f] };
             const s = own(ctx), fa = num(ctx.answers.fa), fb = num(ctx.answers.fb), fc = num(ctx.answers.fc);
             if ([fa, fb, fc].includes(null)) return { code: 'faces', soft: true, msg: '再算三種面的面積。' };
             if (!s) return { code: 'faces', msg: '先回到上一步，填好長、寬、高。' };
             const bad = [[fa, s.l * s.w, '上面'], [fb, s.l * s.h, '前面'], [fc, s.w * s.h, '右面']].filter(x => x[0] !== x[1]);
             return bad.length ? { code: 'faces', obs: 'other', msg: `${bad.map(x => x[2]).join('、')}再算一次。` } : null; },
-          solve: ctx => { ctx.answers.formula = 'pairs'; const s = own(ctx) || ctx.problem; Object.assign(ctx.answers, { fa: String(s.l * s.w), fb: String(s.l * s.h), fc: String(s.w * s.h) }); },
-          say: ex => `（${ex.problem.l}×${ex.problem.w} ＋ ${ex.problem.l}×${ex.problem.h} ＋ ${ex.problem.w}×${ex.problem.h}）× 2。` },
-      { title: '計算與比較', ids: ['total', 'compare'], hints: cube ? ['把一個面的面積乘 6。', '六個面一個一個加起來，也會一樣。', '一個面的面積 × 6，就是表面積。'] : ['把三種面加起來，再乘 2。', '六個面一個一個加起來，和算式比一比。', '三種面加起來，再乘 2，就是表面積。'],
-        think: cube ? '一個面乘 6；六個面一個一個加，也一樣。' : '三種面加起來再乘 2；六個面一個一個加，也一樣。', together: '一起算，再用一個一個加的方法檢查。',
+          solve: ctx => { ctx.answers.formula = ctx.problem.add ? 'add' : 'pairs'; const s = own(ctx) || ctx.problem; Object.assign(ctx.answers, { fa: String(s.l * s.w), fb: String(s.l * s.h), fc: String(s.w * s.h) }); },
+          say: ex => ex.problem.add ? `上下各 ${ex.problem.l}×${ex.problem.w}、前後各 ${ex.problem.l}×${ex.problem.h}、左右各 ${ex.problem.w}×${ex.problem.h}，六個面一個一個加。` : `（${ex.problem.l}×${ex.problem.w} ＋ ${ex.problem.l}×${ex.problem.h} ＋ ${ex.problem.w}×${ex.problem.h}）× 2。` },
+      { title: '計算與比較', ids: ['total', 'compare'], hints: ['照你選的算式，一步一步算。', '六個面一個一個加起來，看看有沒有漏掉。', cube ? '正方體有 6 個一樣大的面。' : '六個面都要算到，每種面有 2 個。'],
+        think: '照算式算；再看一看：一樣大的面出現了幾次。', together: '一起算，再看一樣大的面出現幾次。',
         figure: ctx => netSVG(ctx.problem, { colorAll: true, nums: true }),
         answer: ctx => { const fs = ownFaces(ctx);
-          const expr = !fs ? '' : cube ? `${fs.tb} × 6 = ？` : `（${fs.tb} ＋ ${fs.fb} ＋ ${fs.lr}）× 2 = ？`;
           const list = !fs ? '' : cube ? Array(6).fill(fs.tb).join(' ＋ ') : [fs.tb, fs.tb, fs.fb, fs.fb, fs.lr, fs.lr].join(' ＋ ');
+          // 一個一個加的階段：算式就是六個面相加；比較時看一樣大的面出現幾次（為之後的 × 2 / × 6 鋪路）
+          if (ctx.problem.add) return `<p class="ac-big" data-read data-say>${esc(fs ? list + ' = ？' : '')}</p>${fieldHtml(ctx, 'total', '表面積是多少？', 5)}
+            ${fs ? ctx.choice('compare', cube ? '同一個數出現了幾次？' : '每一種面的數，各出現了幾次？', cube ? [['6', '6 次'], ['2', '2 次'], ['3', '3 次']] : [['2', '2 次'], ['1', '1 次'], ['3', '3 次']], true) : ''}`;
+          const expr = !fs ? '' : cube ? `${fs.tb} × 6 = ？` : `（${fs.tb} ＋ ${fs.fb} ＋ ${fs.lr}）× 2 = ？`;
           return `<p class="ac-big" data-read data-say>${esc(expr)}</p>${fieldHtml(ctx, 'total', '表面積是多少？', 5)}
             ${fs ? `<p data-read data-say>檢查：六個面一個一個加，${list}</p>${ctx.choice('compare', '一個一個加起來，和你算的一樣嗎？', [['same', '一樣'], ['diff', '不一樣']], true)}` : ''}`; },
         check: ctx => { const fs = ownFaces(ctx), v = num(ctx.answers.total); if (v === null) return { code: 'total', msg: '請填你算出的表面積。' };
           if (!fs) return { code: 'total', msg: '先回到上一步，算好面的面積。' };
           const t = cube ? 6 * fs.tb : 2 * (fs.tb + fs.fb + fs.lr);
-          if (v !== t) return { code: 'total', obs: surfObs(v, t, own(ctx) || ctx.problem, fs), msg: v === fs.tb + fs.fb + fs.lr && !cube ? '這是 3 個面。別忘了乘 2。' : '用一個一個加的方法，再算一次。' };
-          if (!ctx.answers.compare) return { code: 'compare', soft: true, msg: '比一比：六個面一個一個加，和你算的一樣嗎？' };
-          return ctx.answers.compare === 'same' ? null : { code: 'compare', obs: 'wrongChoice', msg: '再一個一個加一次，和你的答案比一比。' }; },
-        solve: ctx => { const fs = ownFaces(ctx) || areas(ctx.problem); ctx.answers.total = String(cube ? 6 * fs.tb : 2 * (fs.tb + fs.fb + fs.lr)); ctx.answers.compare = 'same'; },
-        say: ex => `表面積是 ${total(ex.problem)}。一個一個加也是 ${total(ex.problem)}。` },
+          if (v !== t) return { code: 'total', obs: surfObs(v, t, own(ctx) || ctx.problem, fs), msg: v === fs.tb + fs.fb + fs.lr && !cube ? (ctx.problem.add ? '這是 3 個面。六個面都要加。' : '這是 3 個面。別忘了乘 2。') : '用一個一個加的方法，再算一次。' };
+          const want = ctx.problem.add ? (cube ? '6' : '2') : 'same';
+          if (!ctx.answers.compare) return { code: 'compare', soft: true, msg: ctx.problem.add ? '再看一看：一樣大的面出現了幾次？' : '比一比：六個面一個一個加，和你算的一樣嗎？' };
+          return ctx.answers.compare === want ? null : { code: 'compare', obs: 'wrongChoice', msg: ctx.problem.add ? (cube ? '數一數加法裡有幾個一樣的數。' : '看顏色：同一個顏色的面有幾個？') : '再一個一個加一次，和你的答案比一比。' }; },
+        solve: ctx => { const fs = ownFaces(ctx) || areas(ctx.problem); ctx.answers.total = String(cube ? 6 * fs.tb : 2 * (fs.tb + fs.fb + fs.lr)); ctx.answers.compare = ctx.problem.add ? (cube ? '6' : '2') : 'same'; },
+        say: ex => ex.problem.add ? `表面積是 ${total(ex.problem)}。${cube ? '同一個數出現 6 次。' : '每一種面都出現 2 次。'}` : `表面積是 ${total(ex.problem)}。一個一個加也是 ${total(ex.problem)}。` },
       { title: '寫單位', ids: ['unit'], hints: ['表面積是面積，單位是什麼？', '不是長度的單位，也不是體積的單位。', '表面積要寫平方公分。'],
         think: '表面積是面積，單位是平方公分。', together: '一起想：表面積的單位？',
         answer: ctx => `<p class="notice" data-read data-say>你的答案：${esc(ctx.answers.total ?? '')}</p>${ctx.choice('unit', '表面積用哪個單位？', [['cm2', '平方公分'], ['cm3', '立方公分'], ['cm', '公分']])}`,
@@ -194,14 +202,16 @@
     ];
     return {
       methods: genericMethods,
-      makeProblem(level, i) {
-        if (cube) { const s = pick(CUBE[level] || CUBE.standard, i); return { l: s, w: s, h: s, cube: true, prompt: `正方體的盒子，邊長 ${s} 公分。請算出它的表面積是多少平方公分。` }; }
-        const [l, w, h] = pick(CUBOID[level] || CUBOID.standard, i); return { l, w, h, prompt: `長方體的盒子，長 ${l} 公分、寬 ${w} 公分、高 ${h} 公分。請算出它的表面積是多少平方公分。` };
+      makeProblem(level, i, rand, opt = {}) {
+        const add = (opt.done ?? ADD_FIRST) < ADD_FIRST;
+        if (cube) { const s = pick(CUBE[level] || CUBE.standard, i); return { l: s, w: s, h: s, cube: true, add, prompt: `正方體的盒子，邊長 ${s} 公分。請算出它的表面積是多少平方公分。` }; }
+        const [l, w, h] = pick(CUBOID[level] || CUBOID.standard, i); return { l, w, h, add, prompt: `長方體的盒子，長 ${l} 公分、寬 ${w} 公分、高 ${h} 公分。請算出它的表面積是多少平方公分。` };
       },
       planFigure: ctx => boxSVG(ctx.problem, { edges: cube ? ['l'] : ['l', 'w', 'h'], edgeKeys: cube ? ['l'] : ['l', 'w', 'h'] }),
       steps,
       reasons: [['open', '打開盒子看'], ['pairs', '找一樣大的面'], ['formula', '選對算式'], ['hint', '看提示']],
-      done: ctx => cube ? `${ctx.problem.l} × ${ctx.problem.l} × 6 = ${total(ctx.problem)}，表面積是 ${total(ctx.problem)} 平方公分。`
+      done: ctx => ctx.problem.add ? `六個面一個一個加，表面積是 ${total(ctx.problem)} 平方公分。${cube ? '下次可以想：一樣的數加 6 次，就是乘 6。' : '下次可以想：每一種面有 2 個，就是乘 2。'}`
+        : cube ? `${ctx.problem.l} × ${ctx.problem.l} × 6 = ${total(ctx.problem)}，表面積是 ${total(ctx.problem)} 平方公分。`
         : `（${ctx.problem.l}×${ctx.problem.w} ＋ ${ctx.problem.l}×${ctx.problem.h} ＋ ${ctx.problem.w}×${ctx.problem.h}）× 2 = ${total(ctx.problem)}，表面積是 ${total(ctx.problem)} 平方公分。`,
       chant: cube ? '正方體：一個面，邊長乘邊長，再乘六。' : '長方體：三種面加起來，再乘二。',
       transfer: `找一找：生活中有什麼東西是${word}？（例如：${cube ? '骰子、魔術方塊' : '面紙盒、牛奶盒'}）`
