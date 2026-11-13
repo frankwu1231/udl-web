@@ -28,8 +28,10 @@
   async function start() {
     const who = load(WHO_KEY, null);
     state = load(RUN_KEY, null);
+    // 已經換學生了：上一位的施測不再是「這一次」，先放下（沒送出去的資料留著，在背景補送）
+    if (state && (!who || !who.student || who.off || state.student !== who.student)) { state = null; try { [RUN_KEY, RUN_KEY + ':item'].forEach(k => sessionStorage.removeItem(k)); } catch { /* 略過 */ } }
     // 別次施測（例如上一位學生）還沒送出去的資料：在背景補送，不影響這一次
-    for (const run of pendingRuns()) if (!state || run !== state.run || !who || state.student !== who.student) deliver(run);
+    for (const run of pendingRuns()) if (!state || run !== state.run) deliver(run);
     if (state && who && state.student === who.student) { $('probeWho').textContent = state.student; return pending(state.run) ? deliver(state.run) : show(); }   // 重新整理：先送完這一次還沒送出去的，再接著做
     if (!who || who.off || !who.student) { $('probe').innerHTML = '<p>請老師先在學生頁選學生代號、按「開始本節」，再進入小測驗。</p><p><a href="seven.html">回學生頁</a></p>'; return; }
     $('probeWho').textContent = who.student + (who.sessionNo ? `・第 ${who.sessionNo} 節` : '');
@@ -88,7 +90,7 @@
         const v = s.input === 'number' ? Number(raw) : raw;
         // n：全題共用的遞增序號，伺服器用它判斷先後（同一個時間按了好幾個確定也分得出來）
         const n = 1 + Math.max(0, ...Object.values(answers).flatMap(a => a.confirms.map(c => c.n || 0)));
-        if (n > MAX_CONFIRMS) { $('done_' + s.key).textContent = '已經確定很多次了，請按「這一題做好了」'; return; }
+        if (n > MAX_CONFIRMS) { tooMany(); return; }
         (answers[s.key] = answers[s.key] || { confirms: [] }).confirms.push({ v, t: Math.round((Date.now() - itemStart) / 100) / 10, n });
         $('done_' + s.key).textContent = '已確定';   // 不顯示對錯
         keep(RUN_KEY + ':item', { run: state.run, index: state.index, startedAt: itemStart, answers });
@@ -124,6 +126,15 @@
   function setPending(p) { mem.set(p.run, p); if (!keep(PK(p.run), p)) toastSave(); }
   function clearPending(run) { mem.delete(run); try { sessionStorage.removeItem(PK(run)); } catch { /* 略過 */ } if (!mem.size) document.getElementById('probeSaveWarn')?.remove(); }
   function toastSave() { if (document.getElementById('probeSaveWarn')) return; const w = Object.assign(document.createElement('p'), { id: 'probeSaveWarn', className: 'count', textContent: '這台電腦存不了暫存資料：送出前請不要重新整理這一頁。' }); w.setAttribute('role', 'alert'); document.querySelector('main')?.prepend(w); }
+  // 確定次數用完：鎖住輸入，請老師把這一題改記成技術問題（不計分）
+  function tooMany() {
+    document.querySelectorAll('#probe input, #probe [data-opt], #probe [data-ok], #submit').forEach(x => { x.disabled = true; });
+    if (document.getElementById('probeMax')) return;
+    const box = Object.assign(document.createElement('div'), { id: 'probeMax', className: 'retry' }); box.setAttribute('role', 'alert');
+    box.innerHTML = '<p>這一題按「確定」的次數太多，記不下了。請按下面的按鈕，這一題改記成技術問題（不計分），接著做下一題。</p><button type="button" class="primary submit">改記成技術問題，接著做</button>';
+    box.querySelector('button').onclick = () => { box.remove(); tech = true; submit(false); };
+    $('probe').append(box);
+  }
   const MAX_CONFIRMS = 300;   // 一題最多記 300 次確定（一般作答遠低於這個數）
   function submit(timedOut, end) {
     if (busy) return; busy = true; clearInterval(timer);

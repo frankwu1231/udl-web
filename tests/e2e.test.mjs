@@ -1476,3 +1476,28 @@ test('第 26 版：上一位學生的補送回應很慢，也不會讓下一位�
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('第 26 版：換好學生、還沒按開始時，上一位的補送回來也不會接回上一位的施測', { skip: skip || !distReady }, async () => {
+  await setup();
+  const ctx = await browser.newContext(), page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto(base + '/study.html'); await page.waitForSelector('#probeFile');
+  await page.setInputFiles('#probeFile', fileURLToPath(new URL('../scenarios/demo-probe.json', import.meta.url)));
+  await page.waitForFunction(() => /已匯入 demoProbe@1|匯入過/.test(document.querySelector('#probeMsg')?.textContent || ''));
+  const as = async student => { await page.evaluate(s => sessionStorage.setItem('area-research-who-v22', JSON.stringify({ teacher: 'T01', student: s, sessionNo: 1, sessionId: 'w' + s })), student); await page.goto(base + '/probe.html'); };
+  await as('T01-S31'); await page.waitForSelector('#probeStart'); await page.click('#probeStart'); await page.waitForSelector('[data-step]');
+  const old = await page.evaluate(() => JSON.parse(sessionStorage.getItem('area-probe-run-v26')).run);
+  const down = r => r.abort(); await page.route('**/api/probe/*/item', down);
+  await page.click('#submit'); await page.waitForSelector('#probeRetry', { timeout: 10000 });
+  await page.unroute('**/api/probe/*/item', down);
+  await page.route(`**/api/probe/${old}/item`, async r => { await new Promise(x => setTimeout(x, 1500)); await r.continue(); });
+  await as('T01-S32'); await page.waitForSelector('#probeStart');
+  await page.waitForTimeout(3000);
+  assert.ok(await page.$('#probeStart'), '還停在選題組畫面');
+  assert.doesNotMatch(await page.innerText('.probe'), /第 \d 題/);
+  await page.click('#probeStart'); await page.waitForSelector('[data-step]');
+  await page.click('#submit'); await page.waitForFunction(() => /第 2 題/.test(document.querySelector('.probe')?.innerText || ''), null, { timeout: 10000 });
+  const rows = async s => page.evaluate(async st => (await (await fetch('/api/study/export?type=probeItems')).json()).rows.filter(x => x.student === st), s);
+  assert.equal((await rows('T01-S31')).length, 1); assert.equal((await rows('T01-S32')).length, 1);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
