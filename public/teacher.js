@@ -25,6 +25,7 @@
   function drawMap() {
     const m = config.map, avail = A.available();
     $('mapSection').innerHTML = `<h2>🗺️ 學習地圖與指派</h2>
+      ${Object.keys(A.packages).length > 1 ? `<div class="path-buttons" role="group" aria-label="教材">教材：${Object.values(A.packages).map(p => `<button type="button" data-pkg="${p.id}" aria-pressed="${A.pkg.id === p.id}">${esc(p.title)}</button>`).join('')}</div>` : ''}
       <p class="subtle">學生的學習地圖只會出現勾選的活動。可以先選一個課綱路徑，再依 IEP 增減（減量、分解）。</p>
       <div class="path-buttons">${Object.entries(A.PATHS).map(([k, p]) => `<button type="button" data-path="${k}" aria-pressed="${m.path === k}">${p.title}</button>`).join('')}</div>
       <label class="check"><input id="sequential" type="checkbox" ${m.sequential ? 'checked' : ''}>依序完成才解鎖（前一個活動完成一題，下一個才打開）</label>
@@ -37,6 +38,14 @@
       const ids = A.PATHS[b.dataset.path].ids; config.map.path = b.dataset.path;
       config.map.assigned = A.LIST.map(a => a.id).filter(id => ids.includes(id));
       drawMap(); $('status').textContent = `已套用「${A.PATHS[b.dataset.path].title}」，可以再自己增減。`;
+    });
+    // 換教材：學習地圖換成那個教材包的全部活動（之後再用課綱路徑或勾選增減）
+    document.querySelectorAll('[data-pkg]').forEach(b => b.onclick = () => {
+      if (b.dataset.pkg === A.pkg.id) return;
+      collect(); A.use(b.dataset.pkg); config.map.pkg = b.dataset.pkg; config.map.path = 'all'; config.map.assigned = A.LIST.map(a => a.id);
+      for (const a of A.available()) if (isP(a.id)) sec(a.id);
+      drawMap(); buildSelect(); if ($('shape').options.length) { $('shape').value = $('shape').options[0].value; draw(); }
+      $('status').textContent = `已換成「${A.pkg.title}」，記得按「儲存草稿」或「發布給學生」。`;
     });
     $('sequential').onchange = () => { config.map.sequential = $('sequential').checked; count(); };
     document.querySelectorAll('[data-assign]').forEach(c => c.onchange = () => {
@@ -445,13 +454,14 @@
       const res = await fetch('/api/teacher/lessons', { cache: 'no-store' }); const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'load_failed');
       config = data.draft || data.published; testWorkspace = !!data.testWorkspace; published = data.published;
+      if (config && config.map) A.use(config.map.pkg);
       for (const k of SHAPES) config[k].settings = F.settings(config[k]);
       config.activities = config.activities || {};
       config.map = config.map || { assigned: A.LIST.map(a => a.id), sequential: false, path: 'all' };
       for (const a of A.available()) if (isP(a.id)) sec(a.id).settings = F.settings(sec(a.id));
       $('editor').hidden = false;
       $('status').textContent = testWorkspace ? `測試工作區${/^T\d\d$/.test(data.workspace) ? `（教師代號 ${data.workspace}，只有您的學生看得到）` : ''}：可編修與發布，正式教材不受影響。` : data.draft ? '已載入草稿，可繼續編修。' : '已載入目前發布版本。';
-      buildSelect(); $('shape').value = 'rectangle';
+      buildSelect(); $('shape').value = [...$('shape').options].some(o => o.value === 'rectangle') ? 'rectangle' : $('shape').options[0]?.value || '';
       // 第 26 版：研究人員到「研究管理」，參與教師到「情境探試」
       const nav = document.querySelector('header > div');
       if (nav) nav.insertAdjacentHTML('afterbegin', session.test ? '<a href="scenario.html">🧪 情境探試</a>　' : '<a href="study.html">🔬 研究管理</a>　');

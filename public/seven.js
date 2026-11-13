@@ -1421,6 +1421,7 @@
       const res = await fetch(draft ? '/api/teacher/lessons' : '/api/lessons', { cache: 'no-store' }), result = await res.json();
       if (!res.ok) throw new Error(result.error || 'load_failed');
       lessons = draft ? result.draft || result.published : result.config;
+      if (ACT) ACT.use(lessons.map?.pkg || (type && ACT.pkgOf(type)?.id));   // 第 27 版：老師選用的教材包
       isTeacher = !!session.teacher;
       lessons.activities = lessons.activities || {};
       if (P() && !lessons.activities[type]) lessons.activities[type] = {};

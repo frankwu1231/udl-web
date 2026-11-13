@@ -3,12 +3,15 @@
 // 每個新活動（外掛）用 areaActs.register(id, plugin) 註冊，學生頁（seven.js）用同一套
 // 「看題選方法 → 動手做 → 檢查回顧」、三層提示、示範影片與紀錄來執行。
 (() => {
-  const P = window.lessonPackage;   // 教材包（content-area.js 等），要比這個檔先載入
-  const UNITS = P.units;
-  const LIST = P.activities;
+  // 教材包（content-area.js、content-surface.js…）要比這個檔先載入。
+  // 第 27 版：可以有好幾個教材包；老師在學習地圖選用哪一個（config.map.pkg），頁面讀到設定後呼叫 use()
+  const PKGS = window.lessonPackages || {};
+  let P = window.lessonPackage || Object.values(PKGS)[0];
+  const allActs = () => Object.values(PKGS).flatMap(p => p.activities);
   const plugins = {};
-  const available = () => LIST.filter(a => a.kind === 'shape' || plugins[a.id]);
-  const PATHS = P.paths;
+  const available = () => P.activities.filter(a => a.kind === 'shape' || plugins[a.id]);
+  const use = id => { if (id && PKGS[id]) P = PKGS[id]; return P; };
+  const pkgOf = actId => Object.values(PKGS).find(p => p.activities.some(a => a.id === actId)) || null;
 
   // ---------- 共用工具 ----------
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -81,8 +84,9 @@
     ];
   }
 
-  function register(id, plugin) { plugins[id] = { id, ...LIST.find(a => a.id === id), ...plugin }; }
+  function register(id, plugin) { plugins[id] = { id, ...allActs().find(a => a.id === id), ...plugin }; }
 
-  window.areaActs = { UNITS, LIST, PATHS, plugins, available, register, demoScenes, get: id => plugins[id] || null, info: id => LIST.find(a => a.id === id) || null,
+  window.areaActs = { get UNITS() { return P.units; }, get LIST() { return P.activities; }, get PATHS() { return P.paths; }, get pkg() { return P; }, packages: PKGS, use, pkgOf,
+    plugins, available, register, demoScenes, get: id => plugins[id] || null, info: id => allActs().find(a => a.id === id) || null,
     util: { esc, pick, shuffle, rectCells, key, gridSVG, outlineOf, bounds, num, fieldHtml } };
 })();

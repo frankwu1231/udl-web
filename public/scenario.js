@@ -53,7 +53,7 @@
     const sessions = c.sessions.map((x, i) => `<details class="scn-session"${i === c.sessions.length - 1 ? ' open' : ''}><summary>第 ${x.no} 節（完成 ${x.events.filter(r => r.event === '整題完成').length} 題）</summary><div class="table-scroll">${S.sessionTable(x.events, c.act)}</div></details>`).join('');
     const past = c.decisions.length ? `<h3>您前面的決策</h3><ul>${c.decisions.map(d => `<li>第 ${d.sessionNo} 節：${d.decision === 'keep' ? '維持原設定' : d.decision === 'change' ? '調整：' + Object.entries(d.changes).map(([f, v]) => `${S.FIELD[f] || f} → ${S.value(f, v)}`).join('、') : (d.decision === 'advance' ? '進階到 ' : '退回到 ') + S.actName(d.changes.to)}（${S.REASON[d.reason] || d.reason}）</li>`).join('')}</ul>` : '';
     const ai = view.aiOn && k ? `<div><button type="button" id="aiSummary">🤖 產生 AI 跨節摘要</button> <span class="subtle">AI 只整理您已經看到的節次，不提調整建議。</span><div id="aiText" class="ai-box" hidden></div></div>` : '';
-    const ids = window.areaActs.LIST.map(a => a.id), i = ids.indexOf(c.act), next = ids[i + 1] || ids[i], prev = ids[i - 1] || ids[i];
+    const ids = (window.areaActs.pkgOf(c.act) || window.areaActs.pkg).activities.map(a => a.id), i = ids.indexOf(c.act), next = ids[i + 1] || ids[i], prev = ids[i - 1] || ids[i];
     const actOpts = sel => ids.map(id => `<option value="${id}"${id === sel ? ' selected' : ''}>${esc(S.actName(id))}</option>`).join('');
     const form = k ? `<fieldset class="decide"><legend>第 ${k} 節看完了，您的決定</legend>
         <div class="choices" role="radiogroup">${[['keep', '維持原設定'], ['change', '調整支持設定'], ['advance', '進階到下一個活動'], ['back', '退回前一個活動']].map(([v, t]) => `<label><input type="radio" name="decision" value="${v}"> ${t}</label>`).join('')}</div>

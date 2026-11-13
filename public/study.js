@@ -95,7 +95,7 @@
   function drawDirection() {
     const box = $('directionSection');
     box.innerHTML = `<h2>🎯 真實學生每一節的應有方向</h2><p class="subtle">依目前的判準，用網站資料庫裡的紀錄計算；和老師在那一節的決策並列。</p>
-      <div class="study-grid"><label>學生代號<input id="dirStudent" placeholder="T01-S01" maxlength="7"></label><label>活動<select id="dirAct">${window.areaActs.LIST.map(a => `<option value="${a.id}"${a.id === 'rectangle' ? ' selected' : ''}>${esc(S.actName(a.id))}</option>`).join('')}</select></label></div>
+      <div class="study-grid"><label>學生代號<input id="dirStudent" placeholder="T01-S01" maxlength="7"></label><label>活動<select id="dirAct">${Object.values(window.areaActs.packages).flatMap(p => p.activities).map(a => `<option value="${a.id}"${a.id === 'rectangle' ? ' selected' : ''}>${esc(S.actName(a.id))}</option>`).join('')}</select></label></div>
       <button type="button" id="dirGo">計算</button><div id="dirOut" class="table-scroll"></div>`;
     $('dirGo').onclick = async () => {
       let out; try { out = await S.api(`/api/study/direction?student=${encodeURIComponent($('dirStudent').value.trim().toUpperCase())}&act=${$('dirAct').value}`); } catch { $('dirOut').textContent = '算不出來，請檢查代號。'; return; }

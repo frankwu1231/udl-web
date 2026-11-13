@@ -86,12 +86,15 @@ const isTeacher=(request,env)=>!!userId(request)&&!!env.TEACHER_EMAIL&&String(re
 const clone=x=>JSON.parse(JSON.stringify(x));
 const shapeKeys=['rectangle','square','triangle','parallelogram'];
 // 第 27 版：活動代號與探試題型比例來自教材包（public/content-area.js，建置時放進來）
-const LESSON_PACKAGE=__LESSON_PACKAGE__;
-const ACT_IDS=LESSON_PACKAGE.actIds;
+const LESSON_PACKAGES=__LESSON_PACKAGE__;   // [{id, actIds, paths, probeTypes}]，第一個是預設（面積）
+const PKG=Object.fromEntries(LESSON_PACKAGES.map(p=>[p.id,p])),DEFAULT_PKG=LESSON_PACKAGES[0].id;
+const ACT_IDS=LESSON_PACKAGES.flatMap(p=>p.actIds);
 const PLUGIN_IDS=ACT_IDS.filter(id=>!shapeKeys.includes(id));
 const hintList=v=>Array.isArray(v)&&v.length<=7&&v.every(x=>typeof x==='string'&&x.length<=180);
 const videoMap=v=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.entries(v).every(([k,x])=>/^[0-6]$/.test(k)&&typeof x==='string'&&/^v_[a-z0-9]{20}$/.test(x));
-function validMap(m){return !!m&&typeof m==='object'&&!Array.isArray(m)&&Array.isArray(m.assigned)&&m.assigned.length<=ACT_IDS.length&&m.assigned.every(x=>ACT_IDS.includes(x))&&new Set(m.assigned).size===m.assigned.length&&(m.sequential===undefined||typeof m.sequential==='boolean')&&(m.path===undefined||['g3','g4','g5','all','custom'].includes(m.path));}
+// 學習地圖：pkg 是用哪一個教材包（沒寫就是面積）；指派的活動和課綱路徑都要是這個教材包的
+function validMap(m){if(!m||typeof m!=='object'||Array.isArray(m)||m.pkg!==undefined&&!Object.hasOwn(PKG,m.pkg))return false;const p=PKG[m.pkg||DEFAULT_PKG];
+return Array.isArray(m.assigned)&&m.assigned.length<=p.actIds.length&&m.assigned.every(x=>p.actIds.includes(x))&&new Set(m.assigned).size===m.assigned.length&&(m.sequential===undefined||typeof m.sequential==='boolean')&&(m.path===undefined||[...p.paths,'custom'].includes(m.path));}
 function validActivities(a){if(!a||typeof a!=='object'||Array.isArray(a))return false;for(const [k,v] of Object.entries(a)){if(!PLUGIN_IDS.includes(k)||!v||typeof v!=='object'||Array.isArray(v))return false;if(v.settings!==undefined&&!validSettings(v.settings))return false;for(const h of ['hints','hints2','hints3'])if(v[h]!==undefined&&!hintList(v[h]))return false;if(v.videos!==undefined&&!videoMap(v.videos))return false;}return true;}
 function validSettings(s){if(!s||typeof s!=='object'||Array.isArray(s))return false;if(!['seven','three','custom'].includes(s.flow)||!['full','faded'].includes(s.support)||typeof s.hintGate!=='boolean'||!['easy','standard','challenge','custom'].includes(s.difficulty))return false;
 if(s.breaks!==undefined&&!(Array.isArray(s.breaks)&&s.breaks.length<=6&&s.breaks.every((v,i)=>Number.isInteger(v)&&v>=0&&v<6&&(i===0||v>s.breaks[i-1]))))return false;
@@ -142,7 +145,7 @@ async function teacherGet(request,env,who){const role=who.role;if(role==='none')
 async function teacherSave(request,env,who){const role=who.role;if(role==='none')return json({error:'signin_required'},401);if(role==='student')return json({error:'forbidden'},403);if(!env.DB)return json({error:'lesson_storage_unavailable'},503);const origin=request.headers.get('origin');if(origin&&origin!==new URL(request.url).origin)return json({error:'origin'},403);if(Number(request.headers.get('content-length')||0)>60000)return json({error:'too_large'},413);let body;try{body=await request.json();}catch{return json({error:'invalid_json'},400);}if(!body||!['draft','published'].includes(body.kind)||!validLesson(body.config,true))return json({error:'invalid_input'},400);const config=JSON.stringify(body.config);if(config.length>60000)return json({error:'too_large'},413);const kind=lessonKind(who.ws,body.kind);
 try{const existing=await lessonRow(env,kind),revision=(existing?.revision||0)+1;await env.DB.prepare('INSERT INTO lesson_documents (kind,config_json,revision,updated_at) VALUES (?,?,?,?) ON CONFLICT(kind) DO UPDATE SET config_json=excluded.config_json,revision=excluded.revision,updated_at=excluded.updated_at').bind(kind,config,revision,new Date().toISOString()).run();return json({ok:true,revision});}catch{return json({error:'lesson_storage_unavailable'},503);}}
 const publicAssets=new Set(['/portal.html','/portal.css','/portal.js','/shapes.css','/favicon.svg']);
-const studentAssets=new Set(['/content-area.js','/tutor.js','/tutor.css','/probe.html','/probe.js','/probe.css','/seven.html','/seven.js','/seven.css','/seven-geometry.js','/learning-flow.js','/lesson-content.js','/zhuyin.js','/hands-on.html','/hands-on.pdf','/step-demo.js','/step-demo.css','/seven-guide.html','/act-core.js','/act-unit12.js','/act-unit3.js','/act-unit45.js','/act.css','/buddy.js','/buddy.css','/research.js','/research.css','/observations.js']);
+const studentAssets=new Set(['/content-area.js','/content-surface.js','/tutor.js','/tutor.css','/probe.html','/probe.js','/probe.css','/seven.html','/seven.js','/seven.css','/seven-geometry.js','/learning-flow.js','/lesson-content.js','/zhuyin.js','/hands-on.html','/hands-on.pdf','/step-demo.js','/step-demo.css','/seven-guide.html','/act-core.js','/act-unit12.js','/act-unit3.js','/act-unit45.js','/act.css','/buddy.js','/buddy.css','/research.js','/research.css','/observations.js']);
 const teacherPages=new Set(['/teacher.html','/teacher.js','/teacher.css','/qrcode.js','/observations.js','/scenario.html','/scenario.js','/study.css','/study-common.js']);
 export default {async fetch(request,env){const url=new URL(request.url);if(url.pathname==='/api/test-login')return request.method==='POST'?testLogin(request,env):json({error:'method'},405);
 if(url.pathname==='/api/test-logout'){if(request.method!=='POST')return json({error:'method'},405);const origin=request.headers.get('origin');if(origin&&origin!==url.origin)return json({error:'origin'},403);return jsonCookie({ok:true},200,sessionCookie('',0));}
@@ -484,21 +487,22 @@ return json({error:'not_found'},404);}catch{return json({error:'research_storage
 // ---------- 第 26 版第三階段：探試模式 ----------
 // 題組由研究團隊編製（每份 10 題：數格子 2、長方形 3、正方形 2、知道面積找邊長 1、複合圖形 2），匯入後鎖定版本。
 // 學生端只拿到題目，拿不到答案；每題送出後由伺服器依固定規則計分，學生只看到和對錯無關的鼓勵。
-const PROBE_TYPES=LESSON_PACKAGE.probeTypes,PROBE_KINDS=new Set(['probe','generalization','practice']),STEP_ROLES=new Set(['measure','formula','part','answer','unit']);
+// 題組用哪一個教材包（package，沒寫就是面積）就照那個教材包的題型
+const probeTypesOf=s=>(PKG[s&&s.package]||PKG[DEFAULT_PKG]).probeTypes,PROBE_KINDS=new Set(['probe','generalization','practice']),STEP_ROLES=new Set(['measure','formula','part','answer','unit']);
 const KEY=/^[a-z][a-zA-Z0-9]{0,11}$/,intIn=(v,a,b)=>Number.isInteger(v)&&v>=a&&v<=b;
 function validFigure(f){if(f===undefined)return true;if(!f||typeof f!=='object'||Array.isArray(f)||!intIn(f.cols,1,20)||!intIn(f.rows,1,20)||typeof (f.grid??false)!=='boolean')return false;
 if(!Array.isArray(f.rects||[])||(f.rects||[]).length>6||!(f.rects||[]).every(r=>Array.isArray(r)&&r.length===4&&r.every(n=>intIn(n,0,20))))return false;
 return Array.isArray(f.labels||[])&&(f.labels||[]).length<=8&&(f.labels||[]).every(l=>l&&typeof l.x==='number'&&typeof l.y==='number'&&Math.abs(l.x)<=21&&Math.abs(l.y)<=21&&safeText(l.text,12));}
-function validProbeItem(it){if(!it||typeof it!=='object'||!SET_ID.test(it.id)||!Object.hasOwn(PROBE_TYPES,it.type)||!safeText(it.prompt,160)||!validFigure(it.figure)||!Array.isArray(it.steps)||it.steps.length<1||it.steps.length>6)return false;
+function validProbeItem(it,types){if(!it||typeof it!=='object'||!SET_ID.test(it.id)||!Object.hasOwn(types,it.type)||!safeText(it.prompt,160)||!validFigure(it.figure)||!Array.isArray(it.steps)||it.steps.length<1||it.steps.length>6)return false;
 const keys=new Set();for(const s of it.steps){if(!s||!KEY.test(s.key)||keys.has(s.key)||!safeText(s.label,30)||!STEP_ROLES.has(s.role)||!['number','choice'].includes(s.input))return false;keys.add(s.key);
 if(s.input==='number'&&!(typeof s.answer==='number'&&Number.isFinite(s.answer)))return false;if(s.input==='choice'&&!(Array.isArray(s.options)&&s.options.length>=2&&s.options.length<=5&&s.options.every(o=>safeText(o,20))&&s.options.includes(s.answer)))return false;}
 return it.steps.filter(s=>s.role==='answer').length===1;}
-function validProbeSet(s){if(!s||typeof s!=='object'||Array.isArray(s)||!SET_ID.test(s.id)||typeof s.version!=='string'||!/^[A-Za-z0-9._-]{1,20}$/.test(s.version)||!PROBE_KINDS.has(s.kind)||!safeText(s.title,60)||!Array.isArray(s.forms)||s.forms.length<1||s.forms.length>20)return false;
-if(s.itemSecs!==undefined&&!intIn(s.itemSecs,30,300)||s.totalSecs!==undefined&&!intIn(s.totalSecs,300,3600))return false;const ids=new Set();
-for(const f of s.forms){if(!f||!SET_ID.test(f.id)||ids.has(f.id)||!Array.isArray(f.items)||f.items.length<1||f.items.length>20||!f.items.every(validProbeItem))return false;ids.add(f.id);
+function validProbeSet(s){if(!s||typeof s!=='object'||Array.isArray(s)||!SET_ID.test(s.id)||typeof s.version!=='string'||!/^[A-Za-z0-9._-]{1,20}$/.test(s.version)||!PROBE_KINDS.has(s.kind)||s.package!==undefined&&!Object.hasOwn(PKG,s.package)||!safeText(s.title,60)||!Array.isArray(s.forms)||s.forms.length<1||s.forms.length>20)return false;
+if(s.itemSecs!==undefined&&!intIn(s.itemSecs,30,300)||s.totalSecs!==undefined&&!intIn(s.totalSecs,300,3600))return false;const ids=new Set(),types=probeTypesOf(s);
+for(const f of s.forms){if(!f||!SET_ID.test(f.id)||ids.has(f.id)||!Array.isArray(f.items)||f.items.length<1||f.items.length>20||!f.items.every(it=>validProbeItem(it,types)))return false;ids.add(f.id);
 if(new Set(f.items.map(i=>i.id)).size!==f.items.length)return false;
 // 正式探試題組：題數與題型比例固定
-if(s.kind==='probe'){if(f.items.length!==10)return false;for(const [t,n] of Object.entries(PROBE_TYPES))if(f.items.filter(i=>i.type===t).length!==n)return false;}}return true;}
+if(s.kind==='probe'){if(f.items.length!==10)return false;for(const [t,n] of Object.entries(types))if(f.items.filter(i=>i.type===t).length!==n)return false;}}return true;}
 async function probeSetRow(env,id){const row=await env.DB.prepare('SELECT id, kind, title, set_json FROM probe_sets WHERE id = ?').bind(id).first();if(!row)return null;try{return {...row,set:JSON.parse(row.set_json)};}catch{return null;}}
 // 學生拿到的題目：拿掉答案
 const publicItem=it=>({id:it.id,type:it.type,prompt:it.prompt,figure:it.figure||null,steps:it.steps.map(s=>({key:s.key,label:s.label,role:s.role,input:s.input,...(s.input==='choice'?{options:s.options}:{})}))});
