@@ -85,7 +85,9 @@ const userId=request=>request.headers.get('oai-authenticated-user-id')||'';
 const isTeacher=(request,env)=>!!userId(request)&&!!env.TEACHER_EMAIL&&String(request.headers.get('oai-authenticated-user-email')||'').trim().toLowerCase()===String(env.TEACHER_EMAIL).trim().toLowerCase();
 const clone=x=>JSON.parse(JSON.stringify(x));
 const shapeKeys=['rectangle','square','triangle','parallelogram'];
-const ACT_IDS=['compare','tile','conserve','estimate','perimeter','which','samePerimeter','rectangle','square','inverse','arrange','composite','squareMeter','parallelogram','triangle','trapezoid','word'];
+// 第 27 版：活動代號與探試題型比例來自教材包（public/content-area.js，建置時放進來）
+const LESSON_PACKAGE=__LESSON_PACKAGE__;
+const ACT_IDS=LESSON_PACKAGE.actIds;
 const PLUGIN_IDS=ACT_IDS.filter(id=>!shapeKeys.includes(id));
 const hintList=v=>Array.isArray(v)&&v.length<=7&&v.every(x=>typeof x==='string'&&x.length<=180);
 const videoMap=v=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.entries(v).every(([k,x])=>/^[0-6]$/.test(k)&&typeof x==='string'&&/^v_[a-z0-9]{20}$/.test(x));
@@ -140,7 +142,7 @@ async function teacherGet(request,env,who){const role=who.role;if(role==='none')
 async function teacherSave(request,env,who){const role=who.role;if(role==='none')return json({error:'signin_required'},401);if(role==='student')return json({error:'forbidden'},403);if(!env.DB)return json({error:'lesson_storage_unavailable'},503);const origin=request.headers.get('origin');if(origin&&origin!==new URL(request.url).origin)return json({error:'origin'},403);if(Number(request.headers.get('content-length')||0)>60000)return json({error:'too_large'},413);let body;try{body=await request.json();}catch{return json({error:'invalid_json'},400);}if(!body||!['draft','published'].includes(body.kind)||!validLesson(body.config,true))return json({error:'invalid_input'},400);const config=JSON.stringify(body.config);if(config.length>60000)return json({error:'too_large'},413);const kind=lessonKind(who.ws,body.kind);
 try{const existing=await lessonRow(env,kind),revision=(existing?.revision||0)+1;await env.DB.prepare('INSERT INTO lesson_documents (kind,config_json,revision,updated_at) VALUES (?,?,?,?) ON CONFLICT(kind) DO UPDATE SET config_json=excluded.config_json,revision=excluded.revision,updated_at=excluded.updated_at').bind(kind,config,revision,new Date().toISOString()).run();return json({ok:true,revision});}catch{return json({error:'lesson_storage_unavailable'},503);}}
 const publicAssets=new Set(['/portal.html','/portal.css','/portal.js','/shapes.css','/favicon.svg']);
-const studentAssets=new Set(['/tutor.js','/tutor.css','/probe.html','/probe.js','/probe.css','/seven.html','/seven.js','/seven.css','/seven-geometry.js','/learning-flow.js','/lesson-content.js','/zhuyin.js','/hands-on.html','/hands-on.pdf','/step-demo.js','/step-demo.css','/seven-guide.html','/act-core.js','/act-unit12.js','/act-unit3.js','/act-unit45.js','/act.css','/buddy.js','/buddy.css','/research.js','/research.css','/observations.js']);
+const studentAssets=new Set(['/content-area.js','/tutor.js','/tutor.css','/probe.html','/probe.js','/probe.css','/seven.html','/seven.js','/seven.css','/seven-geometry.js','/learning-flow.js','/lesson-content.js','/zhuyin.js','/hands-on.html','/hands-on.pdf','/step-demo.js','/step-demo.css','/seven-guide.html','/act-core.js','/act-unit12.js','/act-unit3.js','/act-unit45.js','/act.css','/buddy.js','/buddy.css','/research.js','/research.css','/observations.js']);
 const teacherPages=new Set(['/teacher.html','/teacher.js','/teacher.css','/qrcode.js','/observations.js','/scenario.html','/scenario.js','/study.css','/study-common.js']);
 export default {async fetch(request,env){const url=new URL(request.url);if(url.pathname==='/api/test-login')return request.method==='POST'?testLogin(request,env):json({error:'method'},405);
 if(url.pathname==='/api/test-logout'){if(request.method!=='POST')return json({error:'method'},405);const origin=request.headers.get('origin');if(origin&&origin!==url.origin)return json({error:'origin'},403);return jsonCookie({ok:true},200,sessionCookie('',0));}
@@ -482,7 +484,7 @@ return json({error:'not_found'},404);}catch{return json({error:'research_storage
 // ---------- 第 26 版第三階段：探試模式 ----------
 // 題組由研究團隊編製（每份 10 題：數格子 2、長方形 3、正方形 2、知道面積找邊長 1、複合圖形 2），匯入後鎖定版本。
 // 學生端只拿到題目，拿不到答案；每題送出後由伺服器依固定規則計分，學生只看到和對錯無關的鼓勵。
-const PROBE_TYPES={count:2,rectangle:3,square:2,inverse:1,composite:2},PROBE_KINDS=new Set(['probe','generalization','practice']),STEP_ROLES=new Set(['measure','formula','part','answer','unit']);
+const PROBE_TYPES=LESSON_PACKAGE.probeTypes,PROBE_KINDS=new Set(['probe','generalization','practice']),STEP_ROLES=new Set(['measure','formula','part','answer','unit']);
 const KEY=/^[a-z][a-zA-Z0-9]{0,11}$/,intIn=(v,a,b)=>Number.isInteger(v)&&v>=a&&v<=b;
 function validFigure(f){if(f===undefined)return true;if(!f||typeof f!=='object'||Array.isArray(f)||!intIn(f.cols,1,20)||!intIn(f.rows,1,20)||typeof (f.grid??false)!=='boolean')return false;
 if(!Array.isArray(f.rects||[])||(f.rects||[]).length>6||!(f.rects||[]).every(r=>Array.isArray(r)&&r.length===4&&r.every(n=>intIn(n,0,20))))return false;
