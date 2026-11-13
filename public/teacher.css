@@ -39,3 +39,10 @@ button.small{min-height:40px;padding:6px 10px;font-size:15px}
 .class-list{display:grid;gap:12px;margin-top:10px}.class-card{display:flex;gap:16px;align-items:center;border:1px solid #ccd9ec;border-radius:12px;padding:12px;flex-wrap:wrap}
 .class-qr svg{display:block;width:120px;height:120px}.class-name{font-weight:bold;margin:0}.class-code{font-size:34px;font-weight:bold;letter-spacing:.25em;margin:4px 0;font-family:ui-monospace,Consolas,monospace}
 dialog.class-big{text-align:center;padding:24px 32px;border-radius:16px;max-width:95vw}.class-big .class-qr-big svg{width:min(70vh,80vw);height:auto}.class-big .class-code{font-size:56px}
+/* 第 26 版：研究紀錄 */
+.study-table{width:100%;border-collapse:collapse;margin:.5rem 0 1rem;font-size:.92rem}
+.study-table th,.study-table td{border:1px solid #d7dde5;padding:.35rem .5rem;text-align:left;vertical-align:top}
+.study-table th{background:#f2f5f9}
+.csv-copy{width:100%;min-height:140px;font-size:13px}
+label.check{display:flex;gap:.5rem;align-items:flex-start}
+.ai-summary{border:2px dashed #6b3fc0;border-radius:10px;padding:8px 12px;background:#fbf8ff;margin:8px 0}

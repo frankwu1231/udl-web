@@ -2,6 +2,7 @@
 // 單元 4「梯形」（S-5-2、s-III-1）與單元 5「生活應用題」（R-4-3、N-4-11）
 (() => {
   const A = window.areaActs, U = A.util, { esc, pick, num, fieldHtml } = U;
+  const ob = (...a) => window.areaObs ? window.areaObs.numeric(...a) : 'other';   // 第 26 版：錯誤的觀察代碼
   const genericMethods = [['mark', '✂️ 先動手拼拼看'], ['self', '🧠 先自己算，需要時看提示']];
 
   // =============== 4-3 梯形 ===============
@@ -47,7 +48,7 @@
         think: '老師想：面積是圖形裡面的大小。', together: '一起想：面積要算哪裡？',
         figure: ctx => traFig(ctx, { pulse: ctx.hint(0) >= 2 }),
         answer: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>${ctx.choice('target', '這題要找什麼？', [['inside', '圖形裡面的大小'], ['border', '沿著邊走一圈的長度'], ['corner', '圖形有幾個角']])}`,
-        check: ctx => !ctx.answers.target ? { code: 'target', msg: '請先選一個答案。' } : ctx.answers.target === 'inside' ? null : { code: 'target', msg: ctx.answers.target === 'border' ? '沿著邊走一圈，是在量邊有多長。' : '數角，是在數有幾個角。' },
+        check: ctx => !ctx.answers.target ? { code: 'target', msg: '請先選一個答案。' } : ctx.answers.target === 'inside' ? null : { code: 'target', obs: ctx.answers.target === 'border' ? 'chosePerimeter' : 'wrongChoice', msg: ctx.answers.target === 'border' ? '沿著邊走一圈，是在量邊有多長。' : '數角，是在數有幾個角。' },
         solve: ctx => { ctx.answers.target = 'inside'; }, say: () => '面積是圖形裡面的大小。' },
       { title: '拿一片來拼', ids: ['pieces', 'relation'], hints: ['按按鈕，拿一片一樣的梯形。', '把它轉過來，拼在旁邊，數一數用了幾片。', '兩片拼成平行四邊形，一片是一半。'],
         think: '老師拿一片一樣的梯形，轉過來拼成平行四邊形。', together: '一起做：拿一片，轉過來拼起來。',
@@ -56,14 +57,14 @@
           ${ctx.state.frame === 2 ? ctx.choice('pieces', '拼好的平行四邊形，用了幾片梯形？', [['1', '1 片'], ['2', '2 片'], ['3', '3 片']], true) : ''}
           ${ctx.state.frame === 2 && ctx.answers.pieces === '2' ? ctx.choice('relation', '一片梯形和拼好的平行四邊形比，怎麼樣？', [['half', '一片是拼好圖形的一半'], ['same', '一片和拼好圖形一樣大'], ['double', '一片是拼好圖形的兩倍']]) : ''}`,
         bind: ctx => { document.querySelectorAll('[data-choice="pieces"]').forEach(el => el.addEventListener('click', () => setTimeout(() => { if (ctx.answers.pieces === '2' && !document.querySelector('[data-choice="relation"]')) ctx.rerender(); }))); const t = document.getElementById('trTake'), j = document.getElementById('trJoin'); if (t) t.onclick = () => { ctx.state.frame = 1; ctx.log('圖形操作', { activity: 2, frame: 1 }); ctx.rerender(); }; if (j) j.onclick = () => { ctx.state.frame = 2; ctx.state.anim = true; ctx.log('圖形操作', { activity: 2, frame: 2 }); ctx.rerender(); setTimeout(() => { ctx.state.anim = false; }, 3000); }; },
-        check: ctx => ctx.state.frame !== 2 ? { code: 'relation', msg: '先按上面的按鈕，把兩片拼好。' } : !ctx.answers.pieces ? { code: 'pieces', msg: '先數一數用了幾片。' } : ctx.answers.pieces !== '2' ? { code: 'pieces', msg: '再數一次：原來的一片，加上拿來的一片，一共幾片？' } : !ctx.answers.relation ? { code: 'relation', msg: '請選一個答案。' } : ctx.answers.relation === 'half' ? null : { code: 'relation', msg: ctx.answers.relation === 'same' ? '兩片才是拼好的圖形，一片比較小。' : '一片比拼好的圖形小喔。' },
+        check: ctx => ctx.state.frame !== 2 ? { code: 'relation', obs: 'unfinished', msg: '先按上面的按鈕，把兩片拼好。' } : !ctx.answers.pieces ? { code: 'pieces', msg: '先數一數用了幾片。' } : ctx.answers.pieces !== '2' ? { code: 'pieces', msg: '再數一次：原來的一片，加上拿來的一片，一共幾片？' } : !ctx.answers.relation ? { code: 'relation', msg: '請選一個答案。' } : ctx.answers.relation === 'half' ? null : { code: 'relation', msg: ctx.answers.relation === 'same' ? '兩片才是拼好的圖形，一片比較小。' : '一片比拼好的圖形小喔。' },
         solve: ctx => { ctx.state.frame = 2; ctx.answers.pieces = '2'; ctx.answers.relation = 'half'; }, say: () => '用了 2 片，拼成平行四邊形，一片是一半。' },
       { title: '找上底和下底', ids: ['top', 'bottom'], hints: ['點上面和下面兩條平行的邊。', '上面的邊叫上底，下面的邊叫下底。', '點了邊就會看到長度，把數字填進去。'],
         think: '老師點上面的邊和下面的邊，看它們多長。', together: '一起找：上底和下底在哪裡？',
         figure: ctx => traFig(ctx, { clickEdges: true, ...shown(ctx), showHeight: false }),
         answer: ctx => `<p data-read data-say>點一下上面和下面的邊。</p>${fieldHtml(ctx, 'top', '上底是幾公分？', 2)}${fieldHtml(ctx, 'bottom', '下底是幾公分？', 2)}`,
         bind: ctx => document.querySelectorAll('#figure2 [data-edge]').forEach(el => el.onclick = () => { const l = ctx.state.edges = ctx.state.edges || []; if (!l.includes(el.dataset.edge)) l.push(el.dataset.edge); ctx.refreshFigure(2); }),
-        check: ctx => { const t = num(ctx.answers.top), b = num(ctx.answers.bottom); if ((ctx.state.edges || []).length < 2) return { code: 'edge', msg: '先點上面和下面的邊，看它們多長。' }; if (t === null || b === null) return { code: 'tb', msg: '上底和下底都要填。' }; return t === ctx.problem.t && b === ctx.problem.b ? null : { code: 'tb', msg: t === ctx.problem.b && b === ctx.problem.t ? '上下相反了：上面是上底，下面是下底。' : '看邊旁邊的數字，再填一次。' }; },
+        check: ctx => { const t = num(ctx.answers.top), b = num(ctx.answers.bottom); if ((ctx.state.edges || []).length < 2) return { code: 'edge', obs: 'unfinished', msg: '先點上面和下面的邊，看它們多長。' }; if (t === null || b === null) return { code: 'tb', msg: '上底和下底都要填。' }; return t === ctx.problem.t && b === ctx.problem.b ? null : { code: 'tb', obs: t === ctx.problem.b && b === ctx.problem.t ? 'swapped' : 'other', msg: t === ctx.problem.b && b === ctx.problem.t ? '上下相反了：上面是上底，下面是下底。' : '看邊旁邊的數字，再填一次。' }; },
         solve: ctx => { ctx.state.edges = ['top', 'bottom']; ctx.answers.top = String(ctx.problem.t); ctx.answers.bottom = String(ctx.problem.b); }, say: ex => `上底 ${ex.problem.t} 公分，下底 ${ex.problem.b} 公分。` },
       { title: '找高', ids: ['line', 'height'], hints: ['高要和底成直角。', '找有直角記號的線。', '斜的邊不是高；有直角記號的才是高。'],
         think: '老師找有直角記號的線，它才是高。', together: '一起找：哪一條有直角記號？',
@@ -71,14 +72,14 @@
         answer: ctx => ctx.state.lineOk ? `<p class="notice" data-read data-say>找到了！高旁邊有它的長度。</p>${fieldHtml(ctx, 'height', '高是幾公分？', 3)}` : `${ctx.choice('line', '哪一條是高？（可以點圖上的線）', [['A', 'A 線'], ['B', 'B 線'], ['C', 'C 線']], true)}<p class="subtle" data-read data-say>選好後按「檢查」。</p>`,
         bind: ctx => document.querySelectorAll('#figure3 [data-line]').forEach(el => el.onclick = () => { if (ctx.state.lineOk) return; ctx.answers.line = el.dataset.line; ctx.invalidate(3); ctx.rerender(); }),
         check: ctx => { if (!ctx.state.lineOk) { if (!ctx.answers.line) return { code: 'line', msg: '先選一條線。' }; if (ctx.answers.line !== 'B') return { code: 'line', msg: ctx.answers.line === 'A' ? '這是斜的邊，和底沒有成直角。' : '這條線斜斜的，沒有直角記號。' }; ctx.state.lineOk = true; }
-          const v = num(ctx.answers.height); return v === null ? { code: 'height', soft: true, msg: '找到高了！再填它的長度。' } : v === ctx.problem.h ? null : { code: 'height', msg: '看高旁邊的數字，再填一次。' }; },
+          const v = num(ctx.answers.height); return v === null ? { code: 'height', soft: true, msg: '找到高了！再填它的長度。' } : v === ctx.problem.h ? null : { code: 'height', obs: ob(v, ctx.problem.h), msg: '看高旁邊的數字，再填一次。' }; },
         solve: ctx => { ctx.answers.line = 'B'; ctx.state.lineOk = true; ctx.answers.height = String(ctx.problem.h); }, say: ex => `有直角記號的是高，高 ${ex.problem.h} 公分。` },
       { title: '列算式', ids: ['formula', 'ft', 'fb', 'fh'], hints: ['拼好的平行四邊形，底是上底 + 下底。', '平行四邊形是底 × 高，一片梯形呢？', '梯形面積 =（上底 + 下底）× 高 ÷ 2。'],
         think: '拼好的是（上底 + 下底）× 高，一片要再 ÷ 2。', together: '一起想：要不要 ÷ 2？',
         figure: ctx => traFig(ctx, { frame: 2, nums: true }),
         answer: ctx => `${ctx.choice('formula', '選一個算梯形面積的算式', [['half', '（上底 + 下底）× 高 ÷ 2'], ['full', '（上底 + 下底）× 高'], ['mul', '上底 × 下底 × 高']])}
           <div class="equation"><span class="op">(</span><label><span>上底</span><input id="ft" data-answer="ft" inputmode="decimal" autocomplete="off" value="${esc(ctx.answers.ft ?? '')}"></label><span class="op">+</span><label><span>下底</span><input id="fb" data-answer="fb" inputmode="decimal" autocomplete="off" value="${esc(ctx.answers.fb ?? '')}"></label><span class="op">) ×</span><label><span>高</span><input id="fh" data-answer="fh" inputmode="decimal" autocomplete="off" value="${esc(ctx.answers.fh ?? '')}"></label><span class="op">÷ 2</span></div>`,
-        check: ctx => { const p = ctx.problem; if (!ctx.answers.formula) return { code: 'formula', msg: '先選一個算式。' }; if (ctx.answers.formula !== 'half') return { code: 'formula', msg: ctx.answers.formula === 'full' ? '這是兩片拼好的面積，這題只有一片。' : '梯形不是用上底乘下底。想想拼好的平行四邊形。' };
+        check: ctx => { const p = ctx.problem; if (!ctx.answers.formula) return { code: 'formula', msg: '先選一個算式。' }; if (ctx.answers.formula !== 'half') return { code: 'formula', obs: ctx.answers.formula === 'full' ? 'eqDouble' : 'wrongChoice', msg: ctx.answers.formula === 'full' ? '這是兩片拼好的面積，這題只有一片。' : '梯形不是用上底乘下底。想想拼好的平行四邊形。' };
           const t = num(ctx.answers.ft), b = num(ctx.answers.fb), h = num(ctx.answers.fh); if (t === null || b === null || h === null) return { code: 'ab', msg: '把上底、下底和高填進方格。' };
           return ((t === p.t && b === p.b) || (t === p.b && b === p.t)) && h === p.h ? null : { code: 'ab', msg: '方格裡要填圖上的上底、下底和高。' }; },
         solve: ctx => { const p = ctx.problem; Object.assign(ctx.answers, { formula: 'half', ft: String(p.t), fb: String(p.b), fh: String(p.h) }); }, say: ex => `（${ex.problem.t} + ${ex.problem.b}）× ${ex.problem.h} ÷ 2。` },
@@ -86,12 +87,12 @@
         think: '先加，再乘，最後除以 2。', together: '一起算：先加、再乘、再除以 2。',
         figure: ctx => traFig(ctx, { frame: 2, nums: true }),
         answer: ctx => `<p class="ac-big" data-read data-say>（${ctx.problem.t} + ${ctx.problem.b}）× ${ctx.problem.h} ÷ 2 = ？</p>${fieldHtml(ctx, 'total', '面積是多少？', 5)}`,
-        check: ctx => { const v = num(ctx.answers.total), p = ctx.problem; return v === null ? { code: 'total', msg: '請填你算出的面積。' } : v === area(p) ? null : { code: 'total', msg: v === (p.t + p.b) * p.h ? '這是兩片的面積。別忘了 ÷ 2。' : v === p.t + p.b ? '還要乘高、再除以 2。' : '先加、再乘、再除以 2，再算一次。' }; },
+        check: ctx => { const v = num(ctx.answers.total), p = ctx.problem; return v === null ? { code: 'total', msg: '請填你算出的面積。' } : v === area(p) ? null : { code: 'total', obs: ob(v, area(p), { double: (p.t + p.b) * p.h, sum: p.t + p.b }), msg: v === (p.t + p.b) * p.h ? '這是兩片的面積。別忘了 ÷ 2。' : v === p.t + p.b ? '還要乘高、再除以 2。' : '先加、再乘、再除以 2，再算一次。' }; },
         solve: ctx => { ctx.answers.total = String(area(ctx.problem)); }, say: ex => `面積是 ${area(ex.problem)}。` },
       { title: '寫單位', ids: ['unit'], hints: ['面積的單位是什麼？', '不是公分。', '面積要寫平方公分。'],
         think: '面積的單位是平方公分。', together: '一起想：面積的單位？',
         answer: ctx => `<p class="notice" data-read data-say>你的答案：${esc(ctx.answers.total ?? '')}</p>${ctx.choice('unit', '面積用哪個單位？', [['cm2', '平方公分'], ['cm', '公分'], ['m', '公尺']])}`,
-        check: ctx => !ctx.answers.unit ? { code: 'unit', msg: '選一個單位。' } : ctx.answers.unit === 'cm2' ? null : { code: 'unit', msg: '這是量長度的。面積要用平方公分。' },
+        check: ctx => !ctx.answers.unit ? { code: 'unit', msg: '選一個單位。' } : ctx.answers.unit === 'cm2' ? null : { code: 'unit', obs: 'unitLength', msg: '這是量長度的。面積要用平方公分。' },
         solve: ctx => { ctx.answers.unit = 'cm2'; }, say: () => '面積的單位是平方公分。' }
     ],
     reasons: [['join', '拿一片來拼'], ['height', '找底和高'], ['formula', '選對算式'], ['hint', '看提示']],
@@ -137,7 +138,7 @@
         think: '老師找關鍵字：是要蓋滿，還是繞一圈？', together: '一起找：題目的關鍵字是什麼？',
         figure: wordFig,
         answer: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.text)}</p>${ctx.choice('kind', '這題要算什麼？', [['area', '面積（蓋滿裡面）'], ['per', '周長（沿著邊一圈）']], true)}`,
-        check: ctx => !ctx.answers.kind ? { code: 'kind', msg: '選一個答案。' } : ctx.answers.kind === ctx.problem.kind ? null : { code: 'kind', msg: ctx.problem.kind === 'per' ? '題目說「一圈」「沿著邊」，是周長。' : '題目說「鋪滿」「面積」，是面積。' },
+        check: ctx => !ctx.answers.kind ? { code: 'kind', msg: '選一個答案。' } : ctx.answers.kind === ctx.problem.kind ? null : { code: 'kind', obs: ctx.problem.kind === 'per' ? 'choseArea' : 'chosePerimeter', msg: ctx.problem.kind === 'per' ? '題目說「一圈」「沿著邊」，是周長。' : '題目說「鋪滿」「面積」，是面積。' },
         solve: ctx => { ctx.answers.kind = ctx.problem.kind; }, say: ex => ex.problem.kind === 'per' ? '沿著邊一圈，要算周長。' : '要蓋滿，要算面積。' },
       { title: '選算式', ids: ['formula'], hints: ['想一想圖形：是長方形、正方形，還是三角形？', '面積用乘的；周長是邊加起來。', '三角形面積還要 ÷ 2；正方形周長是邊長 × 4。'],
         think: '老師想圖形和要算的東西，選算式。', together: '一起選：要用哪一個算式？',
@@ -149,12 +150,12 @@
         think: '老師照算式算出答案。', together: '一起算：答案是多少？',
         figure: wordFig,
         answer: ctx => `<p class="ac-big" data-read data-say>${esc(ctx.problem.formula)} = ？</p>${fieldHtml(ctx, 'answer', '答案是多少？', 2)}`,
-        check: ctx => { const v = num(ctx.answers.answer); return v === null ? { code: 'answer', msg: '請填答案。' } : v === ctx.problem.answer ? null : { code: 'answer', msg: '照算式再算一次。' }; },
+        check: ctx => { const v = num(ctx.answers.answer); return v === null ? { code: 'answer', msg: '請填答案。' } : v === ctx.problem.answer ? null : { code: 'answer', obs: ob(v, ctx.problem.answer), msg: '照算式再算一次。' }; },
         solve: ctx => { ctx.answers.answer = String(ctx.problem.answer); }, say: ex => `答案是 ${ex.problem.answer}。` },
       { title: '寫單位', ids: ['unit'], hints: ['題目的長度用公分還是公尺？', '面積要加「平方」；周長不用。', '公尺 → 平方公尺；公分 → 平方公分。周長就是公分或公尺。'],
         think: '看題目的長度單位，面積要加「平方」。', together: '一起想：答案的單位？',
         answer: ctx => `<p class="notice" data-read data-say>你的答案：${esc(ctx.answers.answer ?? '')}</p>${ctx.choice('unit', '答案用哪個單位？', [['cm2', '平方公分'], ['m2', '平方公尺'], ['cm', '公分'], ['m', '公尺']], true)}`,
-        check: ctx => { const u = ctx.answers.unit, p = ctx.problem; if (!u) return { code: 'unit', msg: '選一個單位。' }; if (u === p.unit) return null; const areaU = u.endsWith('2'); return { code: 'unit', msg: p.kind === 'area' && !areaU ? '面積的單位要有「平方」。' : p.kind === 'per' && areaU ? '周長是長度，不用「平方」。' : '看題目的長度是公分還是公尺。' }; },
+        check: ctx => { const u = ctx.answers.unit, p = ctx.problem; if (!u) return { code: 'unit', msg: '選一個單位。' }; if (u === p.unit) return null; const areaU = u.endsWith('2'); return { code: 'unit', obs: p.kind === 'area' && !areaU ? 'unitLength' : p.kind === 'per' && areaU ? 'unitArea' : 'unitScale', msg: p.kind === 'area' && !areaU ? '面積的單位要有「平方」。' : p.kind === 'per' && areaU ? '周長是長度，不用「平方」。' : '看題目的長度是公分還是公尺。' }; },
         solve: ctx => { ctx.answers.unit = ctx.problem.unit; }, say: ex => `單位是${UNIT[ex.problem.unit]}。` }
     ],
     reasons: [['key', '找關鍵字'], ['draw', '想像圖形'], ['formula', '選對算式'], ['hint', '看提示']],

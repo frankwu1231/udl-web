@@ -1,0 +1,17 @@
+/* 第 26 版第二階段：情境探試與研究管理 */
+.study-table{border-collapse:collapse;width:100%;margin:8px 0;font-size:15px}.study-table th,.study-table td{border:1px solid #ccd9ec;padding:6px 8px;text-align:left;vertical-align:top}.study-table th{background:#f3f7ff}
+.table-scroll{overflow-x:auto;max-width:100%}
+.scn-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.scn-tabs button{min-height:44px;padding:6px 12px}.scn-tabs button[aria-pressed=true]{background:#dceaff;border:2px solid #2157da;font-weight:bold}
+.scn-panel{border:1px solid #ccd9ec;border-radius:12px;padding:12px 16px;margin:10px 0}
+.scn-settings{background:#f3f7ff;border-radius:10px;padding:8px 12px;line-height:1.7}
+.scn-session{border:1px solid #dde6f2;border-radius:10px;padding:6px 12px;margin:8px 0}.scn-session summary{cursor:pointer;font-weight:bold;padding:6px 0}
+.mark{display:inline-block;width:1.6em;text-align:center;border-radius:4px;margin:1px;font-weight:bold}.mark.ok{background:#e3f4e7;color:#1d6b33}.mark.no{background:#fde8e8;color:#a12626}
+.ai-box{border:2px dashed #6b3fc0;border-radius:10px;padding:10px 14px;margin:10px 0;background:#fbf8ff;white-space:pre-line}
+.decide{border:2px solid #2157da;border-radius:12px;padding:10px 14px;margin:12px 0}.decide legend{font-weight:bold}
+.decide .choices{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.decide .choices label{display:flex;align-items:center;gap:6px;border:1px solid #9eafc7;border-radius:8px;padding:6px 10px;margin:0}
+.setting-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px 14px;margin:8px 0}.setting-form fieldset{border:1px solid #ccd9ec;border-radius:8px}
+.study-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 12px}
+.study-grid label{margin:0}
+.study-section{border-top:2px solid #ccd9ec;margin-top:18px;padding-top:6px}
+.msg{min-height:1.4em}
+@media(max-width:700px){.study-table{font-size:14px}}

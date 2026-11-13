@@ -2,6 +2,7 @@
 // 單元 1「面積是什麼」與單元 2「周長和面積」的活動（N-2-12、N-3-14、S-4-3）
 (() => {
   const A = window.areaActs, U = A.util, { esc, pick, rectCells, key, gridSVG, outlineOf, bounds, num, fieldHtml } = U;
+  const ob = (...a) => window.areaObs ? window.areaObs.numeric(...a) : 'other';   // 第 26 版：錯誤的觀察代碼
   const U40 = 40;
   const pressed = (ctx, id, v) => ctx.answers[id] === v;
 
@@ -58,8 +59,8 @@
         bind: ctx => bindMarks(ctx, 1),
         check: ctx => { const a = num(ctx.answers.countA), b = num(ctx.answers.countB);
           if (a === null || b === null) return { code: 'count', msg: '請填 A 和 B 各有幾格。' };
-          if (a !== ctx.problem.A.length) return { code: 'count', msg: '再數一次 A，可以點格子幫忙。' };
-          if (b !== ctx.problem.B.length) return { code: 'count', msg: '再數一次 B，可以點格子幫忙。' }; return null; },
+          if (a !== ctx.problem.A.length) return { code: 'count', obs: ob(a, ctx.problem.A.length), msg: '再數一次 A，可以點格子幫忙。' };
+          if (b !== ctx.problem.B.length) return { code: 'count', obs: ob(b, ctx.problem.B.length), msg: '再數一次 B，可以點格子幫忙。' }; return null; },
         solve: ctx => { ctx.state.marksA = ctx.problem.A.map(key); ctx.state.marksB = ctx.problem.B.map(key); ctx.answers.countA = String(ctx.problem.A.length); ctx.answers.countB = String(ctx.problem.B.length); },
         say: ex => `A 有 ${ex.problem.A.length} 格，B 有 ${ex.problem.B.length} 格。` },
       { title: '比一比', ids: ['cmp'], hints: ['格子多的，面積比較大。', '比一比 A 和 B 的格數，哪個多？', '格數一樣多，面積就一樣大。'],
@@ -104,19 +105,19 @@
           // 第 25 版：一次鋪一排，跳來跳去點的學生可以改用這個
           const row = document.getElementById('tileRow'); if (row) row.onclick = () => { const [w, h] = ctx.problem.size, t = ctx.state.tiles = ctx.state.tiles || []; for (let y = 0; y < h; y++) { const miss = rectCells(w, 1, 0, y).map(key).filter(k => !t.includes(k)); if (miss.length) { t.push(...miss); break; } } ctx.invalidate(1); ctx.rerender(); };
         },
-        check: ctx => { const [w, h] = ctx.problem.size, n = (ctx.state.tiles || []).length; return n < w * h ? { code: 'gap', msg: `還有 ${w * h - n} 個空隙，要鋪滿。` } : null; },
+        check: ctx => { const [w, h] = ctx.problem.size, n = (ctx.state.tiles || []).length; return n < w * h ? { code: 'gap', obs: 'unfinished', msg: `還有 ${w * h - n} 個空隙，要鋪滿。` } : null; },
         solve: ctx => { const [w, h] = ctx.problem.size; ctx.state.tiles = rectCells(w, h).map(key); }, say: () => '一排一排鋪，鋪滿了，沒有空隙。' },
       { title: '用了幾塊', ids: ['count'], hints: ['數一數，一共用了幾塊小方塊。', '看右下角最後一格的數字。', '右下角最後一格的數字，就是一共用了幾塊。'],
         think: '右下角最後一格的數字，就是一共用了幾塊。', together: '一起數：一共用了幾塊？',
         figure: ctx => tileFig(ctx, {}),
         answer: ctx => fieldHtml(ctx, 'count', '一共用了幾塊小方塊？', 2),
-        check: ctx => { const [w, h] = ctx.problem.size, v = num(ctx.answers.count); return v === null ? { code: 'count', msg: '請填一共用了幾塊。' } : v === w * h ? null : { code: 'count', msg: '看右下角最後一格的數字，再填一次。' }; },
+        check: ctx => { const [w, h] = ctx.problem.size, v = num(ctx.answers.count); return v === null ? { code: 'count', msg: '請填一共用了幾塊。' } : v === w * h ? null : { code: 'count', obs: ob(v, w * h), msg: '看右下角最後一格的數字，再填一次。' }; },
         solve: ctx => { const [w, h] = ctx.problem.size; ctx.state.tiles = rectCells(w, h).map(key); ctx.answers.count = String(w * h); }, say: ex => `一共用了 ${ex.problem.size[0] * ex.problem.size[1]} 塊。` },
       { title: '面積是多少', ids: ['area', 'unit'], hints: ['一塊是 1 平方公分。', '用了幾塊，就是幾平方公分。', '面積 = 塊數，單位是平方公分。'],
         think: '一塊是 1 平方公分，用了幾塊，就是幾平方公分。', together: '一起想：一塊是多少？',
         figure: ctx => tileFig(ctx, { legend: true }),
         answer: ctx => `${fieldHtml(ctx, 'area', '面積是多少？', 3)}${ctx.choice('unit', '單位是什麼？', [['cm2', '平方公分'], ['cm', '公分'], ['piece', '塊']])}`,
-        check: ctx => { const [w, h] = ctx.problem.size, v = num(ctx.answers.area); if (v === null) return { code: 'area', msg: '請填面積。' }; if (v !== w * h) return { code: 'area', msg: '用了幾塊，面積就是幾平方公分。' }; if (!ctx.answers.unit) return { code: 'unit', msg: '選一個單位。' }; return ctx.answers.unit === 'cm2' ? null : { code: 'unit', msg: ctx.answers.unit === 'cm' ? '公分是量長度的。面積用平方公分。' : '「塊」要換成面積的單位：平方公分。' }; },
+        check: ctx => { const [w, h] = ctx.problem.size, v = num(ctx.answers.area); if (v === null) return { code: 'area', msg: '請填面積。' }; if (v !== w * h) return { code: 'area', obs: ob(v, w * h, { perimeter: 2 * (w + h), sum: w + h }), msg: '用了幾塊，面積就是幾平方公分。' }; if (!ctx.answers.unit) return { code: 'unit', msg: '選一個單位。' }; return ctx.answers.unit === 'cm2' ? null : { code: 'unit', obs: ctx.answers.unit === 'cm' ? 'unitLength' : 'other', msg: ctx.answers.unit === 'cm' ? '公分是量長度的。面積用平方公分。' : '「塊」要換成面積的單位：平方公分。' }; },
         solve: ctx => { const [w, h] = ctx.problem.size; ctx.answers.area = String(w * h); ctx.answers.unit = 'cm2'; }, say: ex => `面積是 ${ex.problem.size[0] * ex.problem.size[1]} 平方公分。` }
     ],
     reasons: [['tile', '一塊一塊鋪'], ['row', '一排一排想'], ['hint', '看提示'], ['alone', '我自己想']],
@@ -163,7 +164,7 @@
         think: '老師數原來的有幾格，新的有幾格。', together: '一起數：兩個圖形各有幾格？',
         figure: ctx => `<div class="ac-pair">${conFig(ctx, 'from')}${conFig(ctx, 'to')}</div>`,
         answer: ctx => `${fieldHtml(ctx, 'before', '原來的圖形有幾格？', 2)}${fieldHtml(ctx, 'after', '拼好的新圖形有幾格？', 2)}`,
-        check: ctx => { const n = ctx.problem.from.length, a = num(ctx.answers.before), b = num(ctx.answers.after); if (a === null || b === null) return { code: 'count', msg: '兩個都要填。' }; if (a !== n) return { code: 'count', msg: '再數一次原來的圖形。' }; if (b !== ctx.problem.to.length) return { code: 'count', msg: '再數一次新的圖形。' }; return null; },
+        check: ctx => { const n = ctx.problem.from.length, a = num(ctx.answers.before), b = num(ctx.answers.after); if (a === null || b === null) return { code: 'count', msg: '兩個都要填。' }; if (a !== n) return { code: 'count', obs: ob(a, n), msg: '再數一次原來的圖形。' }; if (b !== ctx.problem.to.length) return { code: 'count', obs: ob(b, ctx.problem.to.length), msg: '再數一次新的圖形。' }; return null; },
         solve: ctx => { ctx.answers.before = String(ctx.problem.from.length); ctx.answers.after = String(ctx.problem.to.length); }, say: ex => `原來 ${ex.problem.from.length} 格，新的也是 ${ex.problem.to.length} 格。` },
       { title: '想一想', ids: ['concl'], hints: ['格數有改變嗎？', '只是移動，沒有多也沒有少。', '剪開再拼，形狀變了，面積一樣大。'],
         think: '形狀變了，但格數一樣，面積一樣大。', together: '一起想：形狀變了，面積呢？',
@@ -211,20 +212,20 @@
         think: '老師先點完整的格子，一格一格數。', together: '一起數：完整的格子有幾格？',
         figure: ctx => estFig(ctx, { click: 'full', pulse: ctx.hint(1) >= 2 ? 'full' : '' }), answer: ctx => fieldHtml(ctx, 'full', '整格有幾格？', 1),
         bind: ctx => document.querySelectorAll('#figure1 [data-est]').forEach(el => el.onclick = () => { const k = el.dataset.est.split(':')[1], l = ctx.state.full = ctx.state.full || [], i = l.indexOf(k); if (i >= 0) l.splice(i, 1); else l.push(k); ctx.invalidate(1); ctx.refreshFigure(1); }),
-        check: ctx => { const v = num(ctx.answers.full); return v === null ? { code: 'full', msg: '請填整格有幾格。' } : v === ctx.problem.full.length ? null : { code: 'full', msg: '再數一次完整的格子，可以點格子幫忙。' }; },
+        check: ctx => { const v = num(ctx.answers.full); return v === null ? { code: 'full', msg: '請填整格有幾格。' } : v === ctx.problem.full.length ? null : { code: 'full', obs: ob(v, ctx.problem.full.length), msg: '再數一次完整的格子，可以點格子幫忙。' }; },
         solve: ctx => { ctx.state.full = ctx.problem.full.map(key); ctx.answers.full = String(ctx.problem.full.length); }, say: ex => `整格有 ${ex.problem.full.length} 格。` },
       { title: '數半格', ids: ['half'], hints: ['再數一半的格子（三角形的），點一點。', '一半的格子，兩個湊成一格。', '半格有幾個？兩個半格是一格。'],
         think: '老師再數一半的格子，兩個半格湊成一格。', together: '一起數：半格有幾個？',
         figure: ctx => estFig(ctx, { click: 'half', pulse: ctx.hint(2) >= 2 ? 'half' : '' }),
         answer: ctx => ctx.problem.half.length ? fieldHtml(ctx, 'half', '半格有幾個？', 2) : '<p data-read data-say>這個圖形沒有半格，填 0。</p>' + fieldHtml(ctx, 'half', '半格有幾個？', 2),
         bind: ctx => document.querySelectorAll('#figure2 [data-est]').forEach(el => el.onclick = () => { const k = el.dataset.est.split(':')[1], l = ctx.state.half = ctx.state.half || [], i = l.indexOf(k); if (i >= 0) l.splice(i, 1); else l.push(k); ctx.invalidate(2); ctx.refreshFigure(2); }),
-        check: ctx => { const v = num(ctx.answers.half); return v === null ? { code: 'half', msg: '請填半格有幾個。' } : v === ctx.problem.half.length ? null : { code: 'half', msg: '再數一次一半的格子。' }; },
+        check: ctx => { const v = num(ctx.answers.half); return v === null ? { code: 'half', msg: '請填半格有幾個。' } : v === ctx.problem.half.length ? null : { code: 'half', obs: ob(v, ctx.problem.half.length), msg: '再數一次一半的格子。' }; },
         solve: ctx => { ctx.state.half = ctx.problem.half.map(key); ctx.answers.half = String(ctx.problem.half.length); }, say: ex => `半格有 ${ex.problem.half.length} 個。` },
       { title: '合起來', ids: ['total'], hints: ['兩個半格是一格。', '整格的數，加上半格數 ÷ 2。', '面積 = 整格 + 半格 ÷ 2。'],
         think: '整格加上半格的一半，就是面積。', together: '一起算：整格加上半格湊成的格子。',
         figure: ctx => estFig(ctx),
         answer: ctx => `<p data-read data-say>整格 ${ctx.problem.full.length} 格，半格 ${ctx.problem.half.length} 個（${ctx.problem.half.length / 2} 格）。</p>${fieldHtml(ctx, 'total', '面積大約是幾平方公分？', 3)}`,
-        check: ctx => { const v = num(ctx.answers.total), t = ctx.plugin.total(ctx.problem); return v === null ? { code: 'total', msg: '請填面積。' } : v === t ? null : { code: 'total', msg: v === ctx.problem.full.length + ctx.problem.half.length ? '半格要兩個湊成一格。' : '整格 + 半格 ÷ 2，再算一次。' }; },
+        check: ctx => { const v = num(ctx.answers.total), t = ctx.plugin.total(ctx.problem); return v === null ? { code: 'total', msg: '請填面積。' } : v === t ? null : { code: 'total', obs: ob(v, t, { double: ctx.problem.full.length + ctx.problem.half.length }), msg: v === ctx.problem.full.length + ctx.problem.half.length ? '半格要兩個湊成一格。' : '整格 + 半格 ÷ 2，再算一次。' }; },
         solve: ctx => { ctx.answers.total = String(ctx.plugin.total(ctx.problem)); }, say: ex => `合起來大約是 ${ex.plugin.total(ex.problem)} 平方公分。` }
     ],
     reasons: [['guess', '先估一估'], ['count', '數格子'], ['half', '兩個半格湊一格'], ['hint', '看提示']],
@@ -249,25 +250,25 @@
       { title: '什麼是周長', ids: ['what'], hints: ['周長是在量哪裡？', '沿著邊走一圈。', '周長是沿著邊走一圈的長度。'],
         think: '周長是沿著邊走一圈的長度。', together: '一起想：周長是裡面，還是邊？',
         figure: ctx => perFig(ctx, {}), answer: ctx => ctx.choice('what', '周長是什麼？', [['edge', '沿著邊走一圈的長度'], ['inside', '圖形裡面的大小'], ['corner', '圖形有幾個角']]),
-        check: ctx => !ctx.answers.what ? { code: 'what', msg: '選一個答案。' } : ctx.answers.what === 'edge' ? null : { code: 'what', msg: ctx.answers.what === 'inside' ? '裡面的大小是面積。周長是邊。' : '周長是長度，不是數角。' },
+        check: ctx => !ctx.answers.what ? { code: 'what', msg: '選一個答案。' } : ctx.answers.what === 'edge' ? null : { code: 'what', obs: ctx.answers.what === 'inside' ? 'choseArea' : 'wrongChoice', msg: ctx.answers.what === 'inside' ? '裡面的大小是面積。周長是邊。' : '周長是長度，不是數角。' },
         solve: ctx => { ctx.answers.what = 'edge'; }, say: () => '周長是沿著邊走一圈的長度。' },
       { title: '走一圈', ids: ['walk'], hints: ['點每一條邊，看它多長。', '還有沒點到的邊（閃爍的邊）。', '上、右、下、左，四條邊都要走到。'],
         think: '老師沿著邊走一圈：上、右、下、左。', together: '一起走：點每一條邊。',
         figure: ctx => perFig(ctx, { click: true, pulse: ctx.hint(1) >= 2 }),
         answer: ctx => `<p data-read data-say>沿著邊走一圈，點每一條邊。</p><p class="subtle" data-read>已經走了 ${(ctx.state.sides || []).length}／4 條邊。</p>`,
         bind: ctx => document.querySelectorAll('#figure1 [data-side]').forEach(el => el.onclick = () => { const l = ctx.state.sides = ctx.state.sides || []; if (!l.includes(el.dataset.side)) l.push(el.dataset.side); ctx.invalidate(1); ctx.rerender(); }),
-        check: ctx => (ctx.state.sides || []).length < 4 ? { code: 'walk', msg: `還有 ${4 - (ctx.state.sides || []).length} 條邊沒走到。` } : null,
+        check: ctx => (ctx.state.sides || []).length < 4 ? { code: 'walk', obs: 'unfinished', msg: `還有 ${4 - (ctx.state.sides || []).length} 條邊沒走到。` } : null,
         solve: ctx => { ctx.state.sides = ['top', 'right', 'bottom', 'left']; }, say: ex => `四條邊是 ${ex.problem.size[0]}、${ex.problem.size[1]}、${ex.problem.size[0]}、${ex.problem.size[1]} 公分。` },
       { title: '算周長', ids: ['formula', 'per'], hints: ['四條邊加起來。', '長 + 寬 + 長 + 寬。', '周長 = （長 + 寬）× 2。'],
         think: '四條邊加起來，就是周長。', together: '一起算：四條邊加起來。',
         figure: ctx => perFig(ctx, { all: true }),
         answer: ctx => `${ctx.choice('formula', '選一個算周長的算式', [['sum', '長 + 寬 + 長 + 寬'], ['area', '長 × 寬'], ['two', '長 + 寬']])}${fieldHtml(ctx, 'per', '周長是幾公分？', 2)}`,
-        check: ctx => { if (!ctx.answers.formula) return { code: 'formula', msg: '先選一個算式。' }; if (ctx.answers.formula !== 'sum') return { code: 'formula', msg: ctx.answers.formula === 'area' ? '長 × 寬是面積。周長是四條邊加起來。' : '長 + 寬只有半圈，還要再走一半。' }; const v = num(ctx.answers.per); return v === null ? { code: 'per', msg: '請填周長。' } : v === perimeter(ctx.problem) ? null : { code: 'per', msg: '四條邊加起來，再算一次。' }; },
+        check: ctx => { if (!ctx.answers.formula) return { code: 'formula', msg: '先選一個算式。' }; if (ctx.answers.formula !== 'sum') return { code: 'formula', obs: ctx.answers.formula === 'area' ? 'choseArea' : 'wrongChoice', msg: ctx.answers.formula === 'area' ? '長 × 寬是面積。周長是四條邊加起來。' : '長 + 寬只有半圈，還要再走一半。' }; const v = num(ctx.answers.per); return v === null ? { code: 'per', msg: '請填周長。' } : v === perimeter(ctx.problem) ? null : { code: 'per', obs: ob(v, perimeter(ctx.problem), { sum: perimeter(ctx.problem) / 2 }), msg: '四條邊加起來，再算一次。' }; },
         solve: ctx => { ctx.answers.formula = 'sum'; ctx.answers.per = String(perimeter(ctx.problem)); }, say: ex => `四條邊加起來，周長是 ${perimeter(ex.problem)} 公分。` },
       { title: '寫單位', ids: ['unit'], hints: ['周長是長度。', '長度用公分。', '周長的單位是公分，不是平方公分。'],
         think: '周長是長度，單位是公分。', together: '一起想：周長是長度還是面積？',
         figure: ctx => perFig(ctx, { all: true }), answer: ctx => ctx.choice('unit', '周長用哪個單位？', [['cm', '公分'], ['cm2', '平方公分'], ['piece', '格']]),
-        check: ctx => !ctx.answers.unit ? { code: 'unit', msg: '選一個單位。' } : ctx.answers.unit === 'cm' ? null : { code: 'unit', msg: ctx.answers.unit === 'cm2' ? '平方公分是面積的單位。周長是長度。' : '周長是長度，用公分。' },
+        check: ctx => !ctx.answers.unit ? { code: 'unit', msg: '選一個單位。' } : ctx.answers.unit === 'cm' ? null : { code: 'unit', obs: ctx.answers.unit === 'cm2' ? 'unitArea' : 'other', msg: ctx.answers.unit === 'cm2' ? '平方公分是面積的單位。周長是長度。' : '周長是長度，用公分。' },
         solve: ctx => { ctx.answers.unit = 'cm'; }, say: () => '周長的單位是公分。' }
     ],
     reasons: [['walk', '沿著邊走一圈'], ['formula', '選對算式'], ['hint', '看提示'], ['alone', '我自己想']],
@@ -291,7 +292,7 @@
         return `<div class="ac-sit"><span aria-hidden="true">${s[0]}</span><div class="ac-sitpair">${card('per', '周長：沿著邊走一圈', '<rect x="0" y="0" width="120" height="80" class="ac-mini-in"/><rect x="0" y="0" width="120" height="80" class="ac-mini-edge ac-trace"/>')}${card('area', '面積：蓋滿裡面', '<rect x="0" y="0" width="120" height="80" class="ac-mini-in"/><rect x="0" y="0" width="120" height="80" class="ac-mini-fill ac-grow"/>')}</div></div>`; },
       // 看到第 2 個提示後，句子裡的關鍵字（圍、繞、沿著、鋪、貼滿……）會標出來
       answer: ctx => { const t = esc(ctx.problem.sits[n][1]), key = ctx.hint(n) >= 2 ? t.replace(/(圍一圈|繞著|沿著|一圈|鋪滿|貼滿|刷滿|種滿|蓋滿)/g, '<mark>$1</mark>') : t; return `<p class="lesson-prompt" data-read data-say>${key}</p>${ctx.choice(id, '要算面積，還是周長？', [['area', '面積（蓋滿裡面）'], ['per', '周長（沿著邊一圈）']], true)}`; },
-      check: ctx => !ctx.answers[id] ? { code: 'which', msg: '選一個答案。' } : ctx.answers[id] === ctx.problem.sits[n][2] ? null : { code: 'which', msg: ctx.problem.sits[n][2] === 'per' ? '這是沿著邊一圈的長度，是周長。' : '這是要蓋滿裡面，是面積。' },
+      check: ctx => !ctx.answers[id] ? { code: 'which', msg: '選一個答案。' } : ctx.answers[id] === ctx.problem.sits[n][2] ? null : { code: 'which', obs: ctx.problem.sits[n][2] === 'per' ? 'choseArea' : 'chosePerimeter', msg: ctx.problem.sits[n][2] === 'per' ? '這是沿著邊一圈的長度，是周長。' : '這是要蓋滿裡面，是面積。' },
       solve: ctx => { ctx.answers[id] = ctx.problem.sits[n][2]; }, say: ex => ex.problem.sits[n][2] === 'per' ? '沿著邊一圈，是周長。' : '蓋滿裡面，是面積。' };
   }
   A.register('which', {
@@ -326,13 +327,13 @@
         think: '四條邊加起來，A 和 B 分開算。', together: '一起算：A 和 B 的周長。',
         figure: ctx => sameFig(ctx, { labels: true, lines: false }),
         answer: ctx => `${fieldHtml(ctx, 'pA', 'A 的周長是幾公分？', 1)}${fieldHtml(ctx, 'pB', 'B 的周長是幾公分？', 1)}`,
-        check: ctx => { const [a, b] = ctx.problem.rects, x = num(ctx.answers.pA), y = num(ctx.answers.pB); if (x === null || y === null) return { code: 'per', msg: '兩個都要填。' }; if (x !== 2 * (a[0] + a[1])) return { code: 'per', msg: 'A：長 + 寬 + 長 + 寬，再算一次。' }; if (y !== 2 * (b[0] + b[1])) return { code: 'per', msg: 'B：長 + 寬 + 長 + 寬，再算一次。' }; return null; },
+        check: ctx => { const [a, b] = ctx.problem.rects, x = num(ctx.answers.pA), y = num(ctx.answers.pB); if (x === null || y === null) return { code: 'per', msg: '兩個都要填。' }; if (x !== 2 * (a[0] + a[1])) return { code: 'per', obs: x === a[0] * a[1] ? 'eqAreaValue' : ob(x, 2 * (a[0] + a[1]), { sum: a[0] + a[1] }), msg: 'A：長 + 寬 + 長 + 寬，再算一次。' }; if (y !== 2 * (b[0] + b[1])) return { code: 'per', obs: y === b[0] * b[1] ? 'eqAreaValue' : ob(y, 2 * (b[0] + b[1]), { sum: b[0] + b[1] }), msg: 'B：長 + 寬 + 長 + 寬，再算一次。' }; return null; },
         solve: ctx => { const [a, b] = ctx.problem.rects; ctx.answers.pA = String(2 * (a[0] + a[1])); ctx.answers.pB = String(2 * (b[0] + b[1])); }, say: ex => { const [a, b] = ex.problem.rects; return `A 的周長是 ${2 * (a[0] + a[1])} 公分，B 的周長是 ${2 * (b[0] + b[1])} 公分。`; } },
       { title: '算面積', ids: ['aA', 'aB'], hints: ['面積可以數格子，也可以用長 × 寬。', '一排幾格、有幾排。', 'A 和 B 分開算面積。'],
         think: '長 × 寬，A 和 B 分開算面積。', together: '一起算：A 和 B 的面積。',
         figure: ctx => sameFig(ctx, { labels: true }),
         answer: ctx => `${fieldHtml(ctx, 'aA', 'A 的面積是幾平方公分？', 2)}${fieldHtml(ctx, 'aB', 'B 的面積是幾平方公分？', 2)}`,
-        check: ctx => { const [a, b] = ctx.problem.rects, x = num(ctx.answers.aA), y = num(ctx.answers.aB); if (x === null || y === null) return { code: 'area', msg: '兩個都要填。' }; if (x !== a[0] * a[1]) return { code: 'area', msg: 'A：長 × 寬，或數一數格子。' }; if (y !== b[0] * b[1]) return { code: 'area', msg: 'B：長 × 寬，或數一數格子。' }; return null; },
+        check: ctx => { const [a, b] = ctx.problem.rects, x = num(ctx.answers.aA), y = num(ctx.answers.aB); if (x === null || y === null) return { code: 'area', msg: '兩個都要填。' }; if (x !== a[0] * a[1]) return { code: 'area', obs: ob(x, a[0] * a[1], { perimeter: 2 * (a[0] + a[1]), sum: a[0] + a[1] }), msg: 'A：長 × 寬，或數一數格子。' }; if (y !== b[0] * b[1]) return { code: 'area', obs: ob(y, b[0] * b[1], { perimeter: 2 * (b[0] + b[1]), sum: b[0] + b[1] }), msg: 'B：長 × 寬，或數一數格子。' }; return null; },
         solve: ctx => { const [a, b] = ctx.problem.rects; ctx.answers.aA = String(a[0] * a[1]); ctx.answers.aB = String(b[0] * b[1]); }, say: ex => { const [a, b] = ex.problem.rects; return `A 的面積是 ${a[0] * a[1]}，B 是 ${b[0] * b[1]} 平方公分。`; } },
       { title: '想一想', ids: ['concl'], hints: ['比一比，哪一個一樣，哪一個不一樣？', '算出來的數字，告訴你答案。', ''].map((h, i) => h || '周長一樣，面積不一定一樣；面積一樣，周長也不一定一樣。'),
         think: '算出來的數字告訴我們：不一定一樣。', together: '一起想：算出來的結果怎麼樣？',

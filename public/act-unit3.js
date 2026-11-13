@@ -2,6 +2,7 @@
 // 單元 3「長方形和正方形」的延伸活動（S-4-3、R-4-3、N-4-11）
 (() => {
   const A = window.areaActs, U = A.util, { esc, pick, rectCells, gridSVG, outlineOf, num, fieldHtml } = U;
+  const ob = (...a) => window.areaObs ? window.areaObs.numeric(...a) : 'other';   // 第 26 版：錯誤的觀察代碼
   const U40 = 40;
   const genericMethods = [['mark', '✋ 先動手排排看'], ['self', '🧠 先自己想，需要時看提示']];
   const btn = (id, text, extra = '') => `<button type="button" id="${id}" class="primary-soft" ${extra}>${text}</button>`;
@@ -39,19 +40,19 @@
           <div class="actions">${btn('lessRow', ctx.problem.square ? '➖ 變小' : '➖ 拿掉一排')}${btn('moreRow', ctx.problem.square ? '➕ 變大' : '➕ 加一排')}</div>
           <p class="ac-big" data-read data-say>現在一共 ${invTotal(ctx)} 格，要剛好 ${ctx.problem.area} 格。</p>`,
         bind: ctx => { const ch = d => { ctx.state.n = Math.max(1, Math.min(10, (ctx.state.n || 1) + d)); ctx.answers.rows = String(ctx.state.n); ctx.invalidate(1); ctx.rerender(); }; const m = document.getElementById('moreRow'), l = document.getElementById('lessRow'); if (m) m.onclick = () => ch(1); if (l) l.onclick = () => ch(-1); },
-        check: ctx => { const t = invTotal(ctx), area = ctx.problem.area; return t === area ? null : { code: 'rows', msg: t < area ? `還差 ${area - t} 格，再加一些。` : `多了 ${t - area} 格，拿掉一些。` }; },
+        check: ctx => { const t = invTotal(ctx), area = ctx.problem.area; return t === area ? null : { code: 'rows', obs: t < area ? 'countShort' : 'countOver', msg: t < area ? `還差 ${area - t} 格，再加一些。` : `多了 ${t - area} 格，拿掉一些。` }; },
         solve: ctx => { ctx.state.n = ctx.problem.b; ctx.answers.rows = String(ctx.problem.b); }, demo: countRowsDemo, say: ex => ex.problem.square ? `${ex.problem.b} 乘 ${ex.problem.b} 剛好是 ${ex.problem.area}。` : `排了 ${ex.problem.b} 排，剛好 ${ex.problem.area} 格。` },
       { title: '寫邊長', ids: ['side'], hints: ['排了幾排，邊長就是幾公分。', '看圖上的排數。', ''].map(h => h || '一排一格是 1 公分，幾排就是幾公分。'),
         think: '排了幾排，這條邊就是幾公分。', together: '一起想：排了幾排？',
         figure: ctx => invFig(ctx), answer: ctx => fieldHtml(ctx, 'side', ctx.problem.square ? '邊長是幾公分？' : '寬是幾公分？', 2),
-        check: ctx => { const v = num(ctx.answers.side); return v === null ? { code: 'side', msg: '請填邊長。' } : v === ctx.problem.b ? null : { code: 'side', msg: v === ctx.problem.area ? '這是面積。要填邊長（排數）。' : '看排了幾排，再填一次。' }; },
+        check: ctx => { const v = num(ctx.answers.side); return v === null ? { code: 'side', msg: '請填邊長。' } : v === ctx.problem.b ? null : { code: 'side', obs: v === ctx.problem.area ? 'eqArea' : ob(v, ctx.problem.b), msg: v === ctx.problem.area ? '這是面積。要填邊長（排數）。' : '看排了幾排，再填一次。' }; },
         solve: ctx => { ctx.state.n = ctx.problem.b; ctx.answers.side = String(ctx.problem.b); }, demo: countRowsDemo,
         say: ex => ex.problem.square ? `排了 ${ex.problem.b} 排，邊長是 ${ex.problem.b} 公分。` : `從上往下數，排了 ${ex.problem.b} 排，寬是 ${ex.problem.b} 公分。` },
       { title: '用乘法檢查', ids: ['product'], hints: ['把兩條邊乘起來。', '乘出來要等於面積。', ''].map(h => h || '長 × 寬 = 面積，乘乘看對不對。'),
         think: '兩條邊乘起來，要等於面積。', together: '一起乘：等於面積嗎？',
         figure: ctx => invFig(ctx, { showB: true }),
         answer: ctx => `<p class="ac-big" data-read data-say>${ctx.problem.a} × ${num(ctx.answers.side) ?? '？'} = ？</p>${fieldHtml(ctx, 'product', '乘出來是多少？', 3)}`,
-        check: ctx => { const v = num(ctx.answers.product); return v === null ? { code: 'product', msg: '請填乘出來的數。' } : v === ctx.problem.area ? null : { code: 'product', msg: '再乘一次。乘出來要等於面積。' }; },
+        check: ctx => { const v = num(ctx.answers.product); return v === null ? { code: 'product', msg: '請填乘出來的數。' } : v === ctx.problem.area ? null : { code: 'product', obs: ob(v, ctx.problem.area), msg: '再乘一次。乘出來要等於面積。' }; },
         solve: ctx => { ctx.answers.side = String(ctx.problem.b); ctx.answers.product = String(ctx.problem.area); }, say: ex => `${ex.problem.a} 乘 ${ex.problem.b} 等於 ${ex.problem.area}，答案沒問題。` }
     ],
     reasons: [['rows', '一排一排加'], ['times', '想乘法'], ['hint', '看提示'], ['alone', '我自己想']],
@@ -91,7 +92,7 @@
   }
   function arrCheck(ctx, s) {
     const w = ctx.state.w || 1, h = ctx.state.h || 1, N = ctx.problem.n;
-    if (w * h !== N) return { code: 'shape', msg: w * h < N ? `還差 ${N - w * h} 格。` : `多了 ${w * h - N} 格。` };
+    if (w * h !== N) return { code: 'shape', obs: w * h < N ? 'countShort' : 'countOver', msg: w * h < N ? `還差 ${N - w * h} 格。` : `多了 ${w * h - N} 格。` };
     const f = ctx.state.found = ctx.state.found || [], k = pk(w, h), seen = ctx.state.seen = ctx.state.seen || {};
     if (s === 1 && f[0] === k) return { code: 'same', msg: '這個和第一個一樣（轉過來也算一樣），排一個不一樣的。' };
     const fresh = !f.includes(k) || ctx.state.lastNew === s + ':' + k;   // 同一次檢查可能被呼叫兩次
@@ -155,7 +156,7 @@
       check: ctx => { const [x, y] = pieces(ctx.problem, ctx.answers.cut)[n], l = num(ctx.answers[ids[0]]), w = num(ctx.answers[ids[1]]), a = num(ctx.answers[ids[2]]);
         if (l === null || w === null) return { code: 'side', msg: '先填這一塊的長和寬。' };
         if (!((l === x && w === y) || (l === y && w === x))) return { code: 'side', msg: '看這一塊的邊。如果圖上沒有寫，用大的邊減掉小的邊。' };
-        if (a === null) return { code: 'area', msg: '再填這一塊的面積。' }; if (a !== x * y) return { code: 'area', msg: '長 × 寬，再算一次。' };
+        if (a === null) return { code: 'area', msg: '再填這一塊的面積。' }; if (a !== x * y) return { code: 'area', obs: ob(a, x * y, { perimeter: 2 * (x + y), sum: x + y }), msg: '長 × 寬，再算一次。' };
         // 第 25 版：長和寬寫反了也算對（乘法順序不影響答案），答對後提醒一句
         return l < w ? { note: `小提醒：比較長的邊叫「長」，這一塊的長是 ${w}、寬是 ${l}。` } : null; },
       solve: ctx => { if (!ctx.answers.cut) ctx.answers.cut = 'v'; const [x, y] = pieces(ctx.problem, ctx.answers.cut)[n]; ctx.answers[ids[0]] = String(Math.max(x, y)); ctx.answers[ids[1]] = String(Math.min(x, y)); ctx.answers[ids[2]] = String(x * y); },
@@ -178,12 +179,12 @@
         think: '兩塊的面積加起來，就是全部。', together: '一起加：兩塊合起來是多少？',
         figure: ctx => compFig(ctx, { cut: ctx.answers.cut, inner: true }),
         answer: ctx => `<p class="ac-big" data-read data-say>${esc(ctx.answers.a0 ?? '？')} + ${esc(ctx.answers.a1 ?? '？')} = ？</p>${fieldHtml(ctx, 'total', '整個圖形的面積是多少？', 3)}`,
-        check: ctx => { const ps = pieces(ctx.problem, ctx.answers.cut || 'v'), t = ps[0][0] * ps[0][1] + ps[1][0] * ps[1][1], v = num(ctx.answers.total); return v === null ? { code: 'total', msg: '請填面積。' } : v === t ? null : { code: 'total', msg: '把兩塊的面積加起來，再算一次。' }; },
+        check: ctx => { const ps = pieces(ctx.problem, ctx.answers.cut || 'v'), t = ps[0][0] * ps[0][1] + ps[1][0] * ps[1][1], v = num(ctx.answers.total); return v === null ? { code: 'total', msg: '請填面積。' } : v === t ? null : { code: 'total', obs: ob(v, t), msg: '把兩塊的面積加起來，再算一次。' }; },
         solve: ctx => { const ps = pieces(ctx.problem, ctx.answers.cut || 'v'); ctx.answers.total = String(ps[0][0] * ps[0][1] + ps[1][0] * ps[1][1]); }, say: ex => { const ps = pieces(ex.problem, ex.answers.cut || 'v'); return `${ps[0][0] * ps[0][1]} 加 ${ps[1][0] * ps[1][1]}，等於 ${ps[0][0] * ps[0][1] + ps[1][0] * ps[1][1]}。`; } },
       { title: '寫單位', ids: ['unit'], hints: ['面積用什麼單位？', '不是公分，是……', '面積的單位是平方公分。'],
         think: '面積的單位是平方公分。', together: '一起想：面積的單位？',
         figure: ctx => compFig(ctx, { cut: ctx.answers.cut }), answer: ctx => ctx.choice('unit', '面積用哪個單位？', [['cm2', '平方公分'], ['cm', '公分'], ['m', '公尺']]),
-        check: ctx => !ctx.answers.unit ? { code: 'unit', msg: '選一個單位。' } : ctx.answers.unit === 'cm2' ? null : { code: 'unit', msg: '這是量長度的單位。面積用平方公分。' },
+        check: ctx => !ctx.answers.unit ? { code: 'unit', msg: '選一個單位。' } : ctx.answers.unit === 'cm2' ? null : { code: 'unit', obs: 'unitLength', msg: '這是量長度的單位。面積用平方公分。' },
         solve: ctx => { ctx.answers.unit = 'cm2'; }, say: () => '面積的單位是平方公分。' }
     ],
     reasons: [['cut', '切成兩塊'], ['formula', '長乘寬'], ['hint', '看提示'], ['alone', '我自己想']],
@@ -204,7 +205,7 @@
     return { title: '選單位', ids: ['u0', 'u1', 'u2'], hints: ['想一想：東西很小，還是很大？', '小的東西用平方公分，很大的地方用平方公尺。', '桌面以下的大小用平方公分；地板、球場用平方公尺。'],
       think: '小的東西用平方公分，大的地方用平方公尺。', together: '一起想：它很小還是很大？',
       answer: ctx => ctx.problem.items.map((it, i) => ctx.choice('u' + i, `${it[0]} ${it[1]}的面積，用哪個單位比較適合？`, [['cm2', '平方公分'], ['m2', '平方公尺']], true)).join(''),
-      check: ctx => { for (let i = 0; i < 3; i++) { const v = ctx.answers['u' + i]; if (!v) return { code: 'unit', msg: '三題都要選。' }; if (v !== ctx.problem.items[i][2]) return { code: 'unit', msg: `再想一想「${ctx.problem.items[i][1]}」：${ctx.problem.items[i][2] === 'm2' ? '很大，用平方公尺。' : '比較小，用平方公分。'}` }; } return null; },
+      check: ctx => { for (let i = 0; i < 3; i++) { const v = ctx.answers['u' + i]; if (!v) return { code: 'unit', msg: '三題都要選。' }; if (v !== ctx.problem.items[i][2]) return { code: 'unit', obs: 'unitScale', msg: `再想一想「${ctx.problem.items[i][1]}」：${ctx.problem.items[i][2] === 'm2' ? '很大，用平方公尺。' : '比較小，用平方公分。'}` }; } return null; },
       solve: ctx => ctx.problem.items.forEach((it, i) => { ctx.answers['u' + i] = it[2]; }), say: ex => ex.problem.items.map(it => `${it[1]}用${it[2] === 'm2' ? '平方公尺' : '平方公分'}`).join('，') + '。' };
   }
   A.register('squareMeter', {
@@ -229,13 +230,13 @@
         think: '長 × 寬，單位是公尺，面積用平方公尺。', together: '一起算：長乘寬是多少？',
         figure: ctx => { const [a, b] = ctx.problem.calc; return `<p class="ac-big" data-read data-say>🌷 花圃：長 ${a} 公尺、寬 ${b} 公尺</p>`; },
         answer: ctx => `${fieldHtml(ctx, 'area', '花圃的面積是多少？', 3)}${ctx.choice('unit', '單位是什麼？', [['m2', '平方公尺'], ['cm2', '平方公分'], ['m', '公尺']])}`,
-        check: ctx => { const [a, b] = ctx.problem.calc, v = num(ctx.answers.area); if (v === null) return { code: 'area', msg: '請填面積。' }; if (v !== a * b) return { code: 'area', msg: v === 2 * (a + b) ? '這是周長。面積要用長 × 寬。' : '長 × 寬，再算一次。' }; if (!ctx.answers.unit) return { code: 'unit', msg: '選一個單位。' }; return ctx.answers.unit === 'm2' ? null : { code: 'unit', msg: ctx.answers.unit === 'cm2' ? '長和寬是公尺，面積用平方公尺。' : '公尺是長度。面積用平方公尺。' }; },
+        check: ctx => { const [a, b] = ctx.problem.calc, v = num(ctx.answers.area); if (v === null) return { code: 'area', msg: '請填面積。' }; if (v !== a * b) return { code: 'area', obs: ob(v, a * b, { perimeter: 2 * (a + b), sum: a + b }), msg: v === 2 * (a + b) ? '這是周長。面積要用長 × 寬。' : '長 × 寬，再算一次。' }; if (!ctx.answers.unit) return { code: 'unit', msg: '選一個單位。' }; return ctx.answers.unit === 'm2' ? null : { code: 'unit', obs: ctx.answers.unit === 'cm2' ? 'unitScale' : 'unitLength', msg: ctx.answers.unit === 'cm2' ? '長和寬是公尺，面積用平方公尺。' : '公尺是長度。面積用平方公尺。' }; },
         solve: ctx => { const [a, b] = ctx.problem.calc; ctx.answers.area = String(a * b); ctx.answers.unit = 'm2'; }, say: ex => `${ex.problem.calc[0]} 乘 ${ex.problem.calc[1]}，是 ${ex.problem.calc[0] * ex.problem.calc[1]} 平方公尺。` },
       { title: '換算', ids: ['conv'], when: s => !!s.convert, hints: ['1 公尺 = 100 公分。', '邊長 100 公分的正方形，一排 100 格，有 100 排。', '100 × 100 = 10000，所以 1 平方公尺 = 10000 平方公分。'],
         think: '1 公尺是 100 公分，100 乘 100 是 10000。', together: '一起算：100 乘 100？',
         figure: () => `<div class="ac-m2"><div class="ac-m2-sq"><span>100 公分 × 100 公分</span></div></div>`,
         answer: ctx => fieldHtml(ctx, 'conv', '1 平方公尺 = 幾平方公分？', 4),
-        check: ctx => { const v = num(ctx.answers.conv); return v === null ? { code: 'conv', msg: '請填數字。' } : v === 10000 ? null : { code: 'conv', msg: v === 100 ? '100 是一排的格數，還要乘有幾排。' : '100 × 100，再算一次。' }; },
+        check: ctx => { const v = num(ctx.answers.conv); return v === null ? { code: 'conv', msg: '請填數字。' } : v === 10000 ? null : { code: 'conv', obs: ob(v, 10000), msg: v === 100 ? '100 是一排的格數，還要乘有幾排。' : '100 × 100，再算一次。' }; },
         solve: ctx => { ctx.answers.conv = '10000'; }, say: () => '1 平方公尺等於 10000 平方公分。' }
     ],
     reasons: [['paper', '想像課桌'], ['compare', '和平方公分比'], ['hint', '看提示'], ['alone', '我自己想']],

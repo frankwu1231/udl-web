@@ -29,6 +29,34 @@
       "when": 1793100000000,
       "tag": "0003_class_codes",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1794500000000,
+      "tag": "0004_research_store",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1794500001000,
+      "tag": "0005_study_management",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1794500002000,
+      "tag": "0006_probe",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1794500003000,
+      "tag": "0007_tutor",
+      "breakpoints": true
     }
   ]
 }

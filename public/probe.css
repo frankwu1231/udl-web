@@ -1,0 +1,19 @@
+/* 第 26 版第三階段：探試模式（沒有提示、沒有對錯回饋） */
+.probe{max-width:860px;margin:0 auto;padding:12px 16px 24px;font-size:22px;line-height:1.6}
+.probe h1{font-size:28px;margin:6px 0}.probe .prompt{font-size:26px;font-weight:bold;margin:10px 0}
+.probe .bars{display:grid;gap:4px;margin:6px 0 10px}.probe .bar{height:10px;background:#e6edf7;border-radius:6px;overflow:hidden}.probe .bar i{display:block;height:100%;background:#7aa7e6;transition:width 1s linear}
+.probe .count{font-size:18px;color:#526b89}
+.probe figure{margin:8px 0;text-align:center}.probe svg{max-width:100%;height:auto}
+.probe .step{display:flex;flex-wrap:wrap;align-items:center;gap:10px;border:1px solid #ccd9ec;border-radius:12px;padding:10px 12px;margin:8px 0}
+.probe .step .label{flex:1 1 12em;font-weight:bold}
+.probe .step input{font-size:24px;width:6em;padding:8px;border:2px solid #8097b8;border-radius:8px}
+.probe .step .opts{display:flex;flex-wrap:wrap;gap:8px}.probe .step .opts button{font-size:22px;min-height:52px;padding:6px 14px}.probe .step .opts button[aria-pressed=true]{background:#dceaff;border:2px solid #2157da;font-weight:bold}
+.probe .step .done{font-size:18px;color:#526b89;min-width:6em}
+.probe .ok{font-size:20px;min-height:52px}
+.probe .submit{font-size:24px;min-height:60px;padding:8px 22px;margin-top:10px}
+.probe .cheer{font-size:30px;text-align:center;padding:40px 0}
+.probe .teacher{margin-top:24px;border-top:1px dashed #ccd9ec;padding-top:8px;font-size:16px}.probe .teacher button{font-size:15px;min-height:40px}
+.probe select{font-size:18px}
+/* 送不出去時的提示：答案還在，請老師再送一次 */
+.retry { margin: 16px 0; padding: 12px 16px; border: 2px solid #c0392b; border-radius: 12px; background: #fff3f1; }
+.retry p { margin: 0 0 8px; }

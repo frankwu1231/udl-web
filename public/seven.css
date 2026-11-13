@@ -263,3 +263,7 @@ header button,.aids button{min-height:48px;font-size:16px}
 .lesson-controls button,.hint-actions button,.answer .actions button{min-height:52px;font-size:19px}
 .self-ask summary,.progress-panel summary{min-height:48px}
 @media (pointer:coarse){.choice button{min-height:56px;font-size:20px}.answer input{min-height:52px;font-size:22px}}
+/* 第 26 版：在學生頁調整這位學生的支持 */
+.research-support{border:1px solid #c9d3df;border-radius:8px;padding:.6rem .8rem;margin:.6rem 0}
+.research-support label{display:block;margin:.3rem 0}
+.decisions{display:flex;flex-wrap:wrap;gap:.4rem}

@@ -4,6 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 let chromium = null;
 try { ({ chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright')); } catch { /* 略過 */ }
@@ -16,7 +17,7 @@ async function setup() {
   if (server) return;
   const worker = (await import('../dist/server/index.js')).default;
   const { makeD1 } = await import('../scripts/d1-sqlite.mjs');
-  const env = { TEACHER_EMAIL: 'preview@example.test', DB: makeD1(), TEST_SESSION_SECRET: 'e2e-session-secret-for-class-codes' };
+  const env = { TEACHER_EMAIL: 'preview@example.test', DB: makeD1(), TEST_SESSION_SECRET: 'e2e-session-secret-for-class-codes', TEST_PASSWORD: 'e2e-pass' };
   server = http.createServer(async (req, res) => {
     const chunks = []; for await (const c of req) chunks.push(c);
     const headers = new Headers(req.headers); headers.set('oai-authenticated-user-id', 'local'); headers.set('oai-authenticated-user-email', 'preview@example.test');
@@ -309,7 +310,9 @@ test('第 17 版修正：答對後提示收起、點完格子提示改變、先�
   const before = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16')).length);
   await p.page.goto(`${base}/seven.html?shape=square`); await p.page.waitForSelector('#start');
   await p.page.click('#teacher');
-  assert.match(await p.text('#toolBody'), new RegExp(`目前 ${before} 筆紀錄`));
+  // 第 26 版：還沒做完就換頁，會多記一筆「中途離開」
+  assert.match(await p.text('#toolBody'), new RegExp(`目前 ${before + 1} 筆紀錄`));
+  assert.equal(await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16')).at(-1).event), '中途離開');
 });
 
 test('入門題組：長方形不出現正方形、正方形三題不重複', { skip: skip || !distReady }, async () => {
@@ -469,7 +472,7 @@ test('老師上傳影片取代動畫：學生看到老師的影片；刪除後�
   await setup(); await publish({ video: 'always' });
   const t = await browser.newPage(); await t.goto(base + '/teacher.html'); await t.waitForSelector('[data-vupload="1"]');
   assert.match(await t.textContent('#vstatus1'), /動畫示範/);
-  await t.setInputFiles('[data-vupload="1"]', new URL('./fixtures/sample.webm', import.meta.url).pathname);
+  await t.setInputFiles('[data-vupload="1"]', fileURLToPath(new URL('./fixtures/sample.webm', import.meta.url)));
   await t.waitForFunction(() => /已上傳/.test(document.querySelector('#vstatus1').textContent));
   await t.click('#publish'); await t.waitForFunction(() => /已發布/.test(document.querySelector('#status').textContent));
   const vid = await t.evaluate(async () => (await (await fetch('/api/lessons')).json()).config.rectangle.videos[1]);
@@ -890,7 +893,7 @@ test('現場試用：開始前老師點選代號（不用打字）；沒選齊�
   assert.match(await p.text('#researchBar .who'), /T02-S05/);
   await p.page.click('#researchFlush'); await p.page.waitForTimeout(300);
   const start = p.rows('場次')[0];
-  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v22');
+  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v26'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
   assert.ok(p.rows('教師設定').some(r => r.actId === 'rectangle' && r.buddy === '開'), '記下老師這次的設定');
   assert.ok(!JSON.stringify(p.posts).match(/姓名/), '不傳姓名欄位');
 
@@ -1179,5 +1182,359 @@ test('第 25 版：學生改網址也跳不過鎖住的活動；反思頁按上�
   assert.equal(await page.$('.map-card.locked[data-map="tile"]'), null, '完成後解鎖下一個');
   await page.goto(base + '/seven.html?a=tile'); await page.waitForSelector('#start');
   assert.deepEqual(errs, []);
+  await ctx.close();
+});
+
+test('第 26 版：研究紀錄存網站資料庫：開始本節編節次、錯誤記觀察代碼、老師調整支持要選理由並存成這位學生的設定', { skip: skip || !distReady }, async () => {
+  const p = await student('rectangle', { buddyVoice: false, __research: { url: '', key: '', teachers: 4, students: 6, server: true } });
+  await pickWho(p.page, { teacher: 'T03', num: '02' });
+  await p.page.waitForFunction(() => /第 1 節/.test(document.querySelector('#researchBar .who')?.innerText || ''));
+  assert.match(await p.text('#researchBar .who'), /T03-S02/);
+  await p.start(); await p.choose('target', 'border'); await p.check();
+  await p.page.click('[data-quick="undetermined"]');
+  await p.page.click('#researchFlush'); await p.page.waitForTimeout(400);
+  const events = async () => (await p.page.evaluate(async () => (await (await fetch('/api/teacher/research?student=T03-S02')).json()).events));
+  const ev = await events();
+  const wrong = ev.find(r => r.event === '步驟檢核' && r.correct === '否');
+  assert.ok(wrong, '錯誤存進網站資料庫');
+  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v26');
+  const d = JSON.parse(wrong.detail); assert.equal(d.obs, 'chosePerimeter'); assert.equal(d.outcome, 'wrong'); assert.equal(d.firstTry, true);
+  assert.ok(ev.some(r => r.event === '無法判定'), '老師按「這題無法判定」');
+  // 老師調整支持：沒選理由不能存；減少支持存成這位學生的設定，記下方向
+  await p.page.click('#teacher');
+  await p.page.selectOption('#support', 'faded'); await p.page.click('#apply');
+  assert.match(await p.text('#applyMsg'), /主要理由/);
+  await p.page.selectOption('#reason', 'independent'); await p.page.fill('#reasonNote', '連續兩題自己完成'); await p.page.click('#apply');
+  await p.page.waitForFunction(() => !document.querySelector('#tools').open);
+  const ch = await p.page.evaluate(async () => (await (await fetch('/api/teacher/research')).json()).changes);
+  assert.deepEqual(ch.map(c => [c.student, c.field, c.direction, c.reason, c.sessionNo]), [['T03-S02', 'support', 'decrease', 'independent', 1]]);
+  // 重新整理：這位學生的設定還在
+  await p.page.reload(); await p.page.waitForSelector('#start');
+  await p.page.waitForFunction(() => window.areaResearch.overrides('rectangle')?.support === 'faded');
+  await p.page.click('#teacher'); assert.equal(await p.page.$eval('#support', s => s.value), 'faded');
+  // 維持原設定也要記下
+  await p.page.selectOption('#reason', 'lowAccuracy'); await p.page.click('#decKeep');
+  await p.page.waitForFunction(() => /維持/.test(document.querySelector('#decisionMsg')?.innerText || ''));
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 26 版第二階段：研究管理匯入情境並指派；教師逐節看紀錄、存決策；AI 不能用時改用固定格式摘要', { skip: skip || !distReady }, async () => {
+  await setup();
+  // 研究人員（主持人帳號）
+  const ctx = await browser.newContext({ acceptDownloads: true }), page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto(base + '/study.html'); await page.waitForSelector('#setFile');
+  await page.setInputFiles('#setFile', fileURLToPath(new URL('../scenarios/demo-set.json', import.meta.url)));
+  await page.waitForFunction(() => document.querySelector('#asgSet option'));
+  await page.selectOption('#asgTeacher', 'T03'); await page.fill('#asgProbe', 'P1'); await page.click('#asgSave');
+  await page.waitForFunction(() => /已指派/.test(document.querySelector('#asgMsg')?.textContent || ''));
+  await page.selectOption('[data-phase-teacher="T03"]', 'intervention');
+  await page.waitForFunction(() => /T03 切換到 介入期/.test(document.querySelector('#phaseMsg')?.textContent || ''));
+  // 參與教師 T03
+  const tctx = await browser.newContext(), tp = await tctx.newPage(); tp.on('pageerror', e => errors.push(e.message));
+  await tp.goto(base + '/portal.html');
+  assert.equal(await tp.evaluate(async () => (await fetch('/api/test-login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: 'test', password: 'e2e-pass', teacher: 'T03' }) })).status), 200);
+  await tp.goto(base + '/scenario.html'); await tp.waitForSelector('[data-scn]');
+  assert.equal(await tp.locator('[data-scn]').count(), 5);
+  assert.match(await tp.innerText('.scn-panel h2'), /情境 1・3-1 長方形的面積・第 1 節（共 7 節）/);
+  assert.equal(await tp.locator('.scn-session .mark').count() > 0, true);
+  assert.doesNotMatch(await tp.content(), /應有方向|insufficient/);
+  await tp.click('#raw'); await tp.waitForSelector('#rawBox table');
+  await tp.click('#aiSummary'); await tp.waitForFunction(() => /第1節：完成 6 題/.test(document.querySelector('#aiText')?.textContent || ''));
+  await tp.check('[name=decision][value=keep]'); await tp.click('#save');
+  assert.match(await tp.innerText('#msg'), /主要理由/);
+  await tp.selectOption('#reason', 'lowAccuracy'); await tp.click('#save');
+  await tp.waitForFunction(() => /第 2 節（共 7 節）/.test(document.querySelector('.scn-panel h2')?.textContent || ''));
+  await tp.check('[name=decision][value=change]'); await tp.selectOption('[data-set=mode]', 'demo'); await tp.selectOption('#reason', 'lowAccuracy'); await tp.click('#save');
+  await tp.waitForFunction(() => /第 3 節/.test(document.querySelector('.scn-panel h2')?.textContent || ''));
+  assert.match(await tp.innerText('.scn-settings'), /您目前的設定：教學階段：老師示範/);
+  // 研究人員匯出：方向、應有方向、AI 與回查原始紀錄
+  const rows = await page.evaluate(async () => (await (await fetch('/api/study/export?type=decisions')).json()).rows);
+  assert.deepEqual(rows.map(r => [r.sessionNo, r.direction, r.expected, r.aiOn, r.aiUsed, r.rawViewed]), [[1, 'maintain', 'insufficient', 1, 1, 1], [2, 'increase', 'insufficient', 1, 0, 0]]);
+  assert.ok(rows[0].totalMs >= rows[0].activeMs);
+  const dl = page.waitForEvent('download'); await page.click('#expScenario'); assert.match((await dl).suggestedFilename(), /^scenario_summary_/);
+  assert.deepEqual(errors, []);
+  await ctx.close(); await tctx.close();
+});
+
+test('第 26 版第三階段：探試模式沒有提示與對錯回饋；按確定才算作答；每題 90 秒到了自動送出；老師可以結束', { skip: skip || !distReady }, async () => {
+  await setup();
+  const ctx = await browser.newContext(), page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto(base + '/study.html'); await page.waitForSelector('#probeFile');
+  await page.setInputFiles('#probeFile', fileURLToPath(new URL('../scenarios/demo-probe.json', import.meta.url)));
+  await page.waitForFunction(() => /已匯入 demoProbe@1/.test(document.querySelector('#probeMsg')?.textContent || ''));
+  const sp = await ctx.newPage(); sp.on('pageerror', e => errors.push(e.message)); sp.on('dialog', d => d.accept());
+  await sp.clock.install();
+  await sp.addInitScript(() => sessionStorage.setItem('area-research-who-v22', JSON.stringify({ teacher: 'T01', student: 'T01-S02', sessionNo: 4, sessionId: 'x' })));
+  await sp.goto(base + '/probe.html'); await sp.waitForSelector('#probeStart'); await sp.click('#probeStart');
+  await sp.waitForSelector('[data-step]');
+  assert.match(await sp.innerText('.probe'), /第 1 題，共 10 題/);
+  assert.equal(await sp.locator('text=提示').count(), 0, '沒有提示');
+  // 第 1 題（數格子）：填了沒按確定不算；按確定只顯示「已確定」
+  await sp.fill('#in_area', '99'); await sp.fill('#in_area', '12'); await sp.click('[data-ok="area"]');
+  assert.equal(await sp.innerText('#done_area'), '已確定');
+  await sp.click('[data-step="unit"] [data-opt="平方公分"]'); await sp.click('[data-ok="unit"]');
+  // 斷線：送不出去就留在這一題，答案還在，按「再送一次」才送
+  const down = r => r.abort(); await sp.route('**/api/probe/*/item', down);
+  await sp.click('#submit'); await sp.clock.fastForward(1100); await sp.clock.fastForward(2100); await sp.waitForSelector('#probeRetry');
+  assert.match(await sp.innerText('.probe'), /第 1 題/); assert.equal(await sp.inputValue('#in_area'), '12');
+  assert.match(await sp.evaluate(() => sessionStorage.getItem('area-probe-run-v26:item')), /"v":12/);
+  await sp.unroute('**/api/probe/*/item', down);
+  await sp.click('#probeRetry button'); await sp.waitForSelector('.cheer');
+  assert.doesNotMatch(await sp.innerText('.cheer'), /對|錯/);
+  await sp.clock.fastForward(1500); await sp.waitForFunction(() => /第 2 題/.test(document.querySelector('.probe')?.innerText || ''));
+  // 第 2 題：只填不確定，90 秒到了自動送出
+  await sp.fill('#in_area', '20');
+  await sp.clock.fastForward(91000); await sp.waitForSelector('.cheer'); await sp.clock.fastForward(1500);
+  await sp.waitForFunction(() => /第 3 題/.test(document.querySelector('.probe')?.innerText || ''));
+  await sp.click('#stopBtn'); await sp.waitForFunction(() => /小測驗做完了/.test(document.querySelector('.probe')?.innerText || ''));
+  const runs = await page.evaluate(async () => (await (await fetch('/api/study/export?type=probes')).json()).rows);
+  const r = runs.find(x => x.student === 'T01-S02');
+  assert.equal(r.status, 'stopped'); assert.equal(r.sessionNo, 4); assert.equal(r.summary.items, 10); assert.equal(r.summary.correct, 1); assert.equal(r.summary.timedOut, 8, '第 2 題逾時加上沒做到的 7 題'); assert.equal(r.summary.unanswered, 9);
+  const items = await page.evaluate(async () => (await (await fetch('/api/study/export?type=probeItems')).json()).rows.filter(x => x.student === 'T01-S02'));
+  assert.equal(items.length, 3); assert.equal(items[1].result.answered, false, '沒按確定就不算作答'); assert.equal(items[1].result.timedOut, true);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('第 26 版第四階段：BC 階段有小老師小方（示範階段先點選小方下一步）、關閉問 AI 與小幫手、教師提示按鈕；A 階段只做小測驗', { skip: skip || !distReady }, async () => {
+  const p = await student('rectangle', { buddyVoice: false, ai: true, buddy: true, __research: { url: '', key: '', teachers: 4, students: 6, server: true } });
+  await p.page.evaluate(async () => {
+    for (const [participant, phase] of [['T04-S01', 'BC'], ['T04-S02', 'A']]) await fetch('/api/study/phases', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'student', participant, phase }) });
+  });
+  await pickWho(p.page, { teacher: 'T04', num: '01' });
+  await p.page.waitForFunction(() => /小老師小方・示範/.test(document.querySelector('#tutor')?.innerText || ''));
+  assert.equal(await p.page.evaluate(() => window.areaResearch.phasePatch('rectangle').mode), 'demo');
+  await p.start();
+  // 示範階段：「看老師做」先鎖住，學生點選小方下一步要做什麼
+  await p.page.waitForSelector('#tutorBubble [data-tutor]');
+  assert.equal(await p.page.$eval('[data-demo]', b => b.disabled), true);
+  const title = await p.page.evaluate(() => { const b = document.querySelector('[data-demo]'); return document.querySelector(`.activity[data-stage="${b.dataset.demo}"] h2, .activity[data-stage="${b.dataset.demo}"] h3`)?.innerText || ''; });
+  const options = await p.page.$$eval('#tutorBubble [data-tutor]', bs => bs.map(b => b.innerText));
+  assert.ok(options.length >= 2);
+  const right = options.find(o => title.includes(o)) || options[0];
+  await p.page.click(`#tutorBubble [data-tutor]:text-is("${right}")`);
+  assert.equal(await p.page.$eval('[data-demo]', b => b.disabled), false);
+  // 示範階段的題末對照：學生猜的下一步和小方做的並列
+  await p.page.evaluate(() => { window.__after = 0; window.areaTutor.done([], () => { window.__after++; }); });
+  await p.page.waitForSelector('#tutorCompare[open]');
+  assert.equal(await p.page.evaluate(() => window.__after), 0, '對照做完以前不離開（例如回學習地圖）');
+  assert.match(await p.text('#tutorCompare'), /小方做的[\s\S]*你猜的/);
+  assert.match(await p.text('#tutorCompare'), new RegExp(right));
+  await p.page.click('#tutorCompareDone');
+  assert.equal(await p.page.evaluate(() => window.__after), 1);
+  assert.equal(await p.page.$('#buddy'), null, 'BC 階段小方（小幫手）由小老師小方取代');
+  assert.equal(await p.page.$('[id^="aiHint"]'), null, '關閉問 AI');
+  await p.page.click('[data-tp="gesture"]');
+  await p.page.click('#researchFlush'); await p.page.waitForTimeout(500);
+  const ev = await p.page.evaluate(async () => (await (await fetch('/api/teacher/research?student=T04-S01')).json()).events);
+  const pick = ev.find(r => r.event === '小方示範選擇');
+  assert.ok(pick, '記下學生點選小方下一步'); assert.equal(pick.phase, 'BC'); assert.equal(JSON.parse(pick.detail).tutorStage, 'demo');
+  assert.ok(ev.some(r => r.event === '教師提示' && JSON.parse(r.detail).level === 'gesture'));
+  // 換到 A 階段的學生：只做小測驗
+  await p.page.click('#researchNext'); await p.page.click('#researchEndSkip');
+  await pickWho(p.page, { teacher: 'T04', num: '02' });
+  await p.page.waitForSelector('#researchPhaseOnly[open]');
+  assert.match(await p.text('#researchPhaseOnly'), /只做小測驗/);
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 26 版：平板與手機寬度下，小老師小方不擋按鈕、按鈕夠大、沒有橫向捲動', { skip: skip || !distReady }, async () => {
+  const shots = process.env.LAYOUT_SHOTS || '';
+  const overlap = (a, b) => a && b && a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  for (const [name, viewport, num] of [['tablet', { width: 820, height: 1180 }, '07'], ['phone', { width: 390, height: 844 }, '08']]) {
+    const p = await student('rectangle', { buddyVoice: false, ai: true, buddy: true, __research: { url: '', key: '', teachers: 4, students: 10, server: true } }, viewport);
+    await p.page.evaluate(async n => { await fetch('/api/study/phases', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'student', participant: 'T04-S' + n, phase: 'BC' }) }); }, num);
+    await pickWho(p.page, { teacher: 'T04', num });
+    await p.page.waitForFunction(() => /小老師小方/.test(document.querySelector('#tutor')?.innerText || ''));
+    await p.start(); await p.page.waitForSelector('#tutorBubble [data-tutor]');
+    const m = await p.page.evaluate(() => {
+      const box = el => { if (!el || !el.offsetParent) return null; const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
+      const tutor = box(document.querySelector('#tutor .tutor-face')), bubble = box(document.querySelector('#tutorBubble'));
+      const targets = [...document.querySelectorAll('#check, #next, [data-demo], .teacher-prompts button, #researchBar button')].filter(b => b.offsetParent).map(b => ({ id: b.id || b.dataset.demo || b.dataset.tp || b.innerText.slice(0, 8), ...box(b) }));
+      const small = [...document.querySelectorAll('#tutorBubble button, .teacher-prompts button, [data-demo], #check')].filter(b => b.offsetParent && b.getBoundingClientRect().height < 40).map(b => b.innerText.slice(0, 10));
+      return { tutor, bubble, targets, small, scroll: document.documentElement.scrollWidth - innerWidth };
+    });
+    if (shots) await p.page.screenshot({ path: `${shots}/v26-${name}-bc.png`, fullPage: false });
+    assert.ok(m.scroll <= 1, `${name}：沒有橫向捲動（多了 ${m.scroll}px）`);
+    assert.deepEqual(m.small, [], `${name}：按鈕高度至少 40px`);
+    for (const t of m.targets) { assert.ok(!overlap(m.tutor, t), `${name}：小方的頭像擋到 ${t.id}`); }
+    // 捲到「看老師做」按鈕時，小方的對話框不能蓋住它
+    await p.page.$eval('[data-demo]', b => b.scrollIntoView({ block: 'center' }));
+    const demo = await p.page.$eval('[data-demo]', b => { const r = b.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
+    const bub = await p.page.$eval('#tutorBubble', b => { const r = b.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
+    assert.ok(!overlap(bub, demo), `${name}：小方的對話框蓋住「看老師做」`);
+    // 點小方的頭像可以收起對話框，再點一次打開
+    await p.page.click('#tutorFace'); assert.equal(await p.page.$eval('#tutorBubble', b => b.hidden), true);
+    await p.page.click('#tutorFace'); assert.equal(await p.page.$eval('#tutorBubble', b => b.hidden), false);
+    assert.deepEqual(p.errors, []);
+    // 小測驗
+    const sp = await p.page.context().newPage();
+    await sp.goto(base + '/study.html'); await sp.waitForSelector('#probeFile');
+    await sp.setInputFiles('#probeFile', fileURLToPath(new URL('../scenarios/demo-probe.json', import.meta.url)));
+    await sp.waitForFunction(() => /已匯入 demoProbe@1|匯入過/.test(document.querySelector('#probeMsg')?.textContent || ''));
+    await sp.addInitScript(n => sessionStorage.setItem('area-research-who-v22', JSON.stringify({ teacher: 'T04', student: 'T04-S' + n, sessionNo: 1, sessionId: 'x' })), num);
+    await sp.goto(base + '/probe.html'); await sp.waitForSelector('#probeStart'); await sp.click('#probeStart'); await sp.waitForSelector('[data-step]');
+    const pm = await sp.evaluate(() => ({ scroll: document.documentElement.scrollWidth - innerWidth, small: [...document.querySelectorAll('.probe button')].filter(b => b.offsetParent && b.getBoundingClientRect().height < 40).map(b => b.innerText.slice(0, 10)) }));
+    if (shots) await sp.screenshot({ path: `${shots}/v26-${name}-probe.png`, fullPage: true });
+    assert.ok(pm.scroll <= 1, `${name}：小測驗沒有橫向捲動（多了 ${pm.scroll}px）`);
+    assert.deepEqual(pm.small, [], `${name}：小測驗按鈕高度至少 40px`);
+    await sp.click('#stopBtn').catch(() => {});
+    await p.page.context().close();
+  }
+});
+
+test('第 26 版：小測驗斷線後重新整理，技術缺測與老師結束都會接著送出', { skip: skip || !distReady }, async () => {
+  await setup();
+  const ctx = await browser.newContext(), page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('dialog', d => d.accept());
+  await page.goto(base + '/study.html'); await page.waitForSelector('#probeFile');
+  await page.setInputFiles('#probeFile', fileURLToPath(new URL('../scenarios/demo-probe.json', import.meta.url)));
+  await page.waitForFunction(() => /已匯入 demoProbe@1|匯入過/.test(document.querySelector('#probeMsg')?.textContent || ''));
+  await page.addInitScript(() => { if (!sessionStorage.getItem('area-research-who-v22')) sessionStorage.setItem('area-research-who-v22', JSON.stringify({ teacher: 'T01', student: 'T01-S09', sessionNo: 2, sessionId: 'y' })); });
+  await page.goto(base + '/probe.html'); await page.waitForSelector('#probeStart'); await page.click('#probeStart'); await page.waitForSelector('[data-step]');
+  const down = r => r.abort();
+  // 技術問題：送不出去 → 重新整理 → 自動補送，仍然記成技術缺測
+  await page.route('**/api/probe/*/item', down);
+  await page.click('#techBtn'); await page.waitForSelector('#probeRetry', { timeout: 10000 });
+  assert.equal(await page.$eval('#submit', b => b.disabled), true, '交出去之後答案鎖住');
+  await page.unroute('**/api/probe/*/item', down);
+  await page.reload(); await page.waitForFunction(() => /第 2 題/.test(document.querySelector('.probe')?.innerText || ''), null, { timeout: 10000 });
+  // 老師結束：送不出去 → 重新整理 → 接著送出結束
+  await page.route('**/api/probe/*/finish', down);
+  await page.click('#stopBtn'); await page.waitForSelector('#probeRetry', { timeout: 10000 });
+  await page.unroute('**/api/probe/*/finish', down);
+  await page.reload(); await page.waitForFunction(() => /小測驗做完了/.test(document.querySelector('.probe')?.innerText || ''), null, { timeout: 10000 });
+  const run = (await page.evaluate(async () => (await (await fetch('/api/study/export?type=probes')).json()).rows)).find(x => x.student === 'T01-S09');
+  assert.equal(run.status, 'stopped');
+  const items = await page.evaluate(async () => (await (await fetch('/api/study/export?type=probeItems')).json()).rows.filter(x => x.student === 'T01-S09'));
+  assert.equal(items[0].result.tech, true, '重新整理後仍是技術缺測');
+  assert.equal(items.length, 2);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('第 26 版：用教師代號或他的班級代碼登入時，只能選這位老師；伺服器拒絕時不開始', { skip: skip || !distReady }, async () => {
+  const p = await student('rectangle', { buddyVoice: false, __research: { url: '', key: '', teachers: 4, students: 6, server: true } });
+  await p.page.route('**/api/session', async r => { const res = await r.fetch(); r.fulfill({ response: res, json: { ...(await res.json()), workspace: 'T03' } }); });
+  await p.page.route('**/api/sessions/start', r => r.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ error: 'not_your_student' }) }));
+  await p.page.reload(); await p.page.waitForSelector('#researchWho[open]');
+  assert.deepEqual(await p.page.$$eval('#researchWho [data-pick="teacher"] [data-v]', bs => bs.map(b => b.dataset.v)), ['T03']);
+  for (const [g, v] of [['num', '01'], ['camera', 'no']]) await p.page.click(`#researchWho [data-pick="${g}"] [data-v="${v}"]`);
+  await p.page.click('#researchStart');
+  await p.page.waitForFunction(() => /不是這個班級的學生/.test(document.querySelector('#researchWhyNot')?.textContent || ''));
+  assert.equal(await p.page.$eval('#researchWho', d => d.open), true, '沒有開始');
+  assert.deepEqual(p.errors, []);
+  await p.page.context().close();
+});
+
+test('第 26 版：上一位學生沒送出去的答案不影響下一位；這台電腦存不了暫存資料時也送得出去', { skip: skip || !distReady }, async () => {
+  await setup();
+  const ctx = await browser.newContext(), page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('dialog', d => d.accept());
+  await page.goto(base + '/study.html'); await page.waitForSelector('#probeFile');
+  await page.setInputFiles('#probeFile', fileURLToPath(new URL('../scenarios/demo-probe.json', import.meta.url)));
+  await page.waitForFunction(() => /已匯入 demoProbe@1|匯入過/.test(document.querySelector('#probeMsg')?.textContent || ''));
+  const as = async student => { await page.evaluate(s => sessionStorage.setItem('area-research-who-v22', JSON.stringify({ teacher: 'T01', student: s, sessionNo: 1, sessionId: 'z' + s })), student); await page.goto(base + '/probe.html'); };
+  await as('T01-S11'); await page.waitForSelector('#probeStart'); await page.click('#probeStart'); await page.waitForSelector('[data-step]');
+  const down = r => r.abort(); await page.route('**/api/probe/*/item', down);
+  await page.click('#submit'); await page.waitForSelector('#probeRetry', { timeout: 10000 });
+  await page.unroute('**/api/probe/*/item', down);
+  // 換下一位：先補送上一位的，再開始這一位的第 1 題
+  await as('T01-S12'); await page.waitForSelector('#probeStart'); await page.waitForTimeout(500); await page.click('#probeStart'); await page.waitForSelector('[data-step]');
+  await page.reload(); await page.waitForSelector('[data-step]');
+  assert.match(await page.innerText('.probe'), /第 1 題/, '下一位從第 1 題開始');
+  const rows = async s => page.evaluate(async st => (await (await fetch('/api/study/export?type=probeItems')).json()).rows.filter(x => x.student === st), s);
+  assert.equal((await rows('T01-S11')).length, 1, '上一位的答案補送了');
+  assert.equal((await rows('T01-S12')).length, 0);
+  // 存不了暫存資料：記在記憶體裡照樣送出，技術缺測不會不見
+  await page.addInitScript(() => { const set = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (String(k).includes(':pending')) throw new DOMException('full', 'QuotaExceededError'); return set.call(this, k, v); }; });
+  await page.reload(); await page.waitForSelector('[data-step]');
+  await page.click('#techBtn'); await page.waitForFunction(() => /第 2 題/.test(document.querySelector('.probe')?.innerText || ''), null, { timeout: 10000 });
+  assert.equal((await rows('T01-S12'))[0].result.tech, true);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('第 26 版：上一位學生的補送回應很慢，也不會讓下一位跳題', { skip: skip || !distReady }, async () => {
+  await setup();
+  const ctx = await browser.newContext(), page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto(base + '/study.html'); await page.waitForSelector('#probeFile');
+  await page.setInputFiles('#probeFile', fileURLToPath(new URL('../scenarios/demo-probe.json', import.meta.url)));
+  await page.waitForFunction(() => /已匯入 demoProbe@1|匯入過/.test(document.querySelector('#probeMsg')?.textContent || ''));
+  const as = async student => { await page.evaluate(s => sessionStorage.setItem('area-research-who-v22', JSON.stringify({ teacher: 'T01', student: s, sessionNo: 1, sessionId: 'w' + s })), student); await page.goto(base + '/probe.html'); };
+  await as('T01-S21'); await page.waitForSelector('#probeStart'); await page.click('#probeStart'); await page.waitForSelector('[data-step]');
+  const old = await page.evaluate(() => JSON.parse(sessionStorage.getItem('area-probe-run-v26')).run);
+  const down = r => r.abort(); await page.route('**/api/probe/*/item', down);
+  await page.click('#submit'); await page.waitForSelector('#probeRetry', { timeout: 10000 });
+  await page.unroute('**/api/probe/*/item', down);
+  // 上一位的補送故意慢 3 秒才回來
+  await page.route(`**/api/probe/${old}/item`, async r => { await new Promise(x => setTimeout(x, 3000)); await r.continue(); });
+  await as('T01-S22'); await page.waitForSelector('#probeStart'); await page.click('#probeStart'); await page.waitForSelector('[data-step]');
+  await page.waitForTimeout(4000);
+  assert.match(await page.innerText('.probe'), /第 1 題/, '舊的回應回來後，下一位還在第 1 題');
+  await page.click('#submit'); await page.waitForFunction(() => /第 2 題/.test(document.querySelector('.probe')?.innerText || ''), null, { timeout: 10000 });
+  const rows = async s => page.evaluate(async st => (await (await fetch('/api/study/export?type=probeItems')).json()).rows.filter(x => x.student === st), s);
+  assert.equal((await rows('T01-S21')).length, 1); assert.equal((await rows('T01-S22')).length, 1);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('第 26 版：換好學生、還沒按開始時，上一位的補送回來也不會接回上一位的施測', { skip: skip || !distReady }, async () => {
+  await setup();
+  const ctx = await browser.newContext(), page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto(base + '/study.html'); await page.waitForSelector('#probeFile');
+  await page.setInputFiles('#probeFile', fileURLToPath(new URL('../scenarios/demo-probe.json', import.meta.url)));
+  await page.waitForFunction(() => /已匯入 demoProbe@1|匯入過/.test(document.querySelector('#probeMsg')?.textContent || ''));
+  const as = async student => { await page.evaluate(s => sessionStorage.setItem('area-research-who-v22', JSON.stringify({ teacher: 'T01', student: s, sessionNo: 1, sessionId: 'w' + s })), student); await page.goto(base + '/probe.html'); };
+  await as('T01-S31'); await page.waitForSelector('#probeStart'); await page.click('#probeStart'); await page.waitForSelector('[data-step]');
+  const old = await page.evaluate(() => JSON.parse(sessionStorage.getItem('area-probe-run-v26')).run);
+  const down = r => r.abort(); await page.route('**/api/probe/*/item', down);
+  await page.click('#submit'); await page.waitForSelector('#probeRetry', { timeout: 10000 });
+  await page.unroute('**/api/probe/*/item', down);
+  await page.route(`**/api/probe/${old}/item`, async r => { await new Promise(x => setTimeout(x, 1500)); await r.continue(); });
+  await as('T01-S32'); await page.waitForSelector('#probeStart');
+  await page.waitForTimeout(3000);
+  assert.ok(await page.$('#probeStart'), '還停在選題組畫面');
+  assert.doesNotMatch(await page.innerText('.probe'), /第 \d 題/);
+  await page.click('#probeStart'); await page.waitForSelector('[data-step]');
+  await page.click('#submit'); await page.waitForFunction(() => /第 2 題/.test(document.querySelector('.probe')?.innerText || ''), null, { timeout: 10000 });
+  const rows = async s => page.evaluate(async st => (await (await fetch('/api/study/export?type=probeItems')).json()).rows.filter(x => x.student === st), s);
+  assert.equal((await rows('T01-S31')).length, 1); assert.equal((await rows('T01-S32')).length, 1);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('第 26 版：一題確定滿 300 次就鎖住；重新整理後仍鎖住；每一步都確定過就照常交卷', { skip: skip || !distReady }, async () => {
+  await setup();
+  const ctx = await browser.newContext(), page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto(base + '/study.html'); await page.waitForSelector('#probeFile');
+  await page.setInputFiles('#probeFile', fileURLToPath(new URL('../scenarios/demo-probe.json', import.meta.url)));
+  await page.waitForFunction(() => /已匯入 demoProbe@1|匯入過/.test(document.querySelector('#probeMsg')?.textContent || ''));
+  await page.evaluate(() => sessionStorage.setItem('area-research-who-v22', JSON.stringify({ teacher: 'T01', student: 'T01-S41', sessionNo: 1, sessionId: 'wS41' })));
+  await page.goto(base + '/probe.html'); await page.waitForSelector('#probeStart'); await page.click('#probeStart'); await page.waitForSelector('[data-step]');
+  // 第 1 題：第一步已確定 299 次，其他步驟沒確定；再按一次確定（第 300 次）就鎖住
+  const seed = async plan => page.evaluate(plan => {
+    const st = JSON.parse(sessionStorage.getItem('area-probe-run-v26')), it = st.items[st.index], saved = JSON.parse(sessionStorage.getItem('area-probe-run-v26:item'));
+    const answers = {}; let n = 0;
+    it.steps.forEach((s, i) => { const k = plan[i] || 0; if (k) answers[s.key] = { confirms: Array.from({ length: k }, () => ({ v: s.input === 'number' ? 12 : s.options[0], t: 1, n: ++n })) }; });
+    sessionStorage.setItem('area-probe-run-v26:item', JSON.stringify({ ...saved, answers }));
+    return it.steps.length;
+  }, plan);
+  await seed([299]); await page.reload(); await page.waitForSelector('[data-step]');
+  assert.equal(await page.$('#probeMax'), null, '299 次還沒鎖');
+  await page.click('[data-ok]');
+  await page.waitForSelector('#probeMax button');
+  assert.ok(await page.$eval('#submit', b => b.disabled), '還有步驟沒確定：不能直接交卷');
+  await page.reload(); await page.waitForSelector('#probeMax button');
+  assert.ok(await page.$eval('[data-ok]', b => b.disabled), '重新整理後仍鎖住');
+  await page.click('#probeMax button'); await page.waitForFunction(() => /第 2 題/.test(document.querySelector('.probe')?.innerText || ''), null, { timeout: 10000 });
+  // 第 2 題：每一步都確定過、合計 300 次：鎖住輸入，但可以照常交卷
+  const k = await page.evaluate(() => { const st = JSON.parse(sessionStorage.getItem('area-probe-run-v26')); return st.items[st.index].steps.length; });
+  await seed([300 - (k - 1), ...Array(k - 1).fill(1)]); await page.reload(); await page.waitForSelector('#probeMax');
+  assert.match(await page.innerText('#probeMax'), /記滿/);
+  assert.equal(await page.$eval('#submit', b => b.disabled), false);
+  await page.click('#submit'); await page.waitForFunction(() => /第 3 題/.test(document.querySelector('.probe')?.innerText || ''), null, { timeout: 10000 });
+  const rows = await page.evaluate(async () => (await (await fetch('/api/study/export?type=probeItems')).json()).rows.filter(x => x.student === 'T01-S41'));
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows.sort((a, b) => a.idx - b.idx).map(r => !!r.result.tech), [true, false], '第 1 題記技術問題，第 2 題照常計分');
+  assert.deepEqual(errors, []);
   await ctx.close();
 });
