@@ -168,8 +168,12 @@
         check: ctx => { const p = ctx.problem, v = num(ctx.answers.val); if (v === null) return { code: 'val', msg: '把讀到的數填進去。' }; if (v === valueOf(p, p.ti)) return null; const obs = readObs(p, v, p.ti); return { code: 'val', obs, msg: readMsg(obs, p) }; },
         solve: ctx => { ctx.answers.val = String(valueOf(ctx.problem, ctx.problem.ti)); }, say: ex => `${ex.problem.full[ex.problem.ti]}是 ${valueOf(ex.problem, ex.problem.ti)}。` }
     ],
-    reasons, done: ctx => `${ctx.problem.full[ctx.problem.ti]}是 ${valueOf(ctx.problem, ctx.problem.ti)} ${ctx.problem.unit}。`, chant: '點在兩條線中間：下面的數加半格。', transfer: '看溫度計：刻度中間的位置是多少？'
+    reasons, done: ctx => `${ctx.problem.full[ctx.problem.ti]}是 ${valueOf(ctx.problem, ctx.problem.ti)} ${ctx.problem.unit}。`, chant: '點在兩條線中間：下面的數加半格。', transfer: '看溫度計：刻度中間的位置是多少？',
+    // 波浪線題（挑戰）：點在沒寫數的格線上，不是半格；從省略後的起點一格一格數
+    forProblem: p => { if (!p.brk) return betweenPl; return brkPl || (brkPl = { ...betweenPl, chant: '有波浪線：從省略後的數開始，一格一格往上數。', transfer: '看身高表：為什麼要從 130 開始畫？',
+      steps: betweenPl.steps.map(st => st.title !== '讀數值' ? st : { ...st, hints: ['從點往左，對到縱軸。', '找點下面最近、寫了數的那條線。', '從那條線往上數幾格；一格是多少，就加幾次。'], think: '老師從點往左對到縱軸，找下面寫了數的線，再一格一格往上數。', together: '一起數：從寫了數的線往上幾格？' }) }); }
   });
+  let brkPl = null; const betweenPl = A.get('lnBetween');
 
   // =============== 3-1 變多、變少、一樣 ===============
   const dir = (p, j) => { const d = valueOf(p, j + 1) - valueOf(p, j); return d > 0 ? 'up' : d < 0 ? 'down' : 'same'; };

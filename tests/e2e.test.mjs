@@ -1865,3 +1865,22 @@ test('第 28 版第 1 輪複測：6-1 奇數點得上去；答對後改錯要重
   const ask = await p.text('.step-ask'); assert.match(ask, /哪個時間/); assert.doesNotMatch(ask, /圖形裡面/);
   assert.deepEqual(p.errors, []);
 });
+
+test('第 28 版第 2 輪複測：重新整理後還是同一題（題號、答錯次數接著算）；波浪線題的提示不說半格', { skip: skip || !distReady }, async () => {
+  const p = await act('lnChoose', { difficulty: 'standard', ...LINE_MAP });
+  const no = async () => (await p.text('.eyebrow')).match(/第 (\d+) 題/)[1];
+  const before = await no();
+  await p.choose('c0', 'line'); await p.check(); assert.match(await p.text('#feedback0'), /沒有時間的順序/);
+  await p.page.reload(); await p.page.waitForSelector('#check');
+  assert.equal(await no(), before, '重新整理後題號不變');
+  await p.choose('c0', 'bar'); await p.check(); await p.next();
+  await p.choose('c1', 'line'); await p.check(); await p.next();
+  await p.choose('meaning', 'none'); await p.check(); await p.next();
+  const recs = JSON.parse(await p.page.evaluate(() => sessionStorage.getItem('area-records-v16')));
+  const wrong = recs.filter(r => r.event === '步驟檢核' && r.actId === 'lnChoose' && !r.correct);
+  assert.equal(wrong.length, 1); assert.equal(String(wrong[0].cycle), before, '答錯記在同一題');
+  assert.doesNotMatch(await p.text('#app'), /每一步都一次就答對/);
+  const h = await p.page.evaluate(() => { const pl = window.areaActs.get('lnBetween'), s = x => pl.forProblem(x).steps.find(t => t.title === '讀數值'); return [s({ brk: true }).hints.join(), s({ brk: false }).hints.join(), pl.forProblem({ brk: true }).chant]; });
+  assert.doesNotMatch(h[0] + h[2], /半格/); assert.match(h[1], /半格/);
+  assert.deepEqual(p.errors, []);
+});

@@ -11,7 +11,8 @@
   let lessons, type = params.get('a') || params.get('shape');
   if (!(names[type] || (ACT && ACT.get(type)))) type = null;
   // 新活動（外掛）；原本的圖形解題時為 null。有些步驟只在老師開啟時出現（例如平方公尺換算）
-  const P = () => { const pl = ACT && type && ACT.get(type); if (!pl) return null; return pl.steps.some(x => x.when) ? { ...pl, steps: pl.steps.filter(x => !x.when || x.when(settings)) } : pl; };
+  // 第 28 版：外掛可以依這一題換文字（forProblem，例如波浪線題不說「半格」）
+  const P = () => { let pl = ACT && type && ACT.get(type); if (!pl) return null; if (pl.forProblem && pProblem) pl = pl.forProblem(pProblem); return pl.steps.some(x => x.when) ? { ...pl, steps: pl.steps.filter(x => !x.when || x.when(settings)) } : pl; };
   const nameOf = (k = type) => names[k] || ((ACT && ACT.info(k)) || {}).title || '';
   const draftQ = params.get('draft') === '1' ? '&draft=1' : '';
   const mapUrl = () => 'seven.html' + (draftQ ? '?' + draftQ.slice(1) : '');
@@ -118,14 +119,16 @@
   const draftable = () => !!(P() && ACT?.pkgOf(type)?.id === 'line' && mode() !== 'probe' && mode() !== 'demo');
   function saveDraft() {
     if (!draftable()) return;
-    try { if (phase === 'solve') sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ type, index, cycle, problem: pProblem, state: pState, answers, checked: [...checked], page, hintLevel, goal, method })); else sessionStorage.removeItem(DRAFT_KEY); } catch { /* 無法暫存就算了 */ }
+    try { if (phase === 'solve') sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ type, index, cycle, problem: pProblem, state: pState, answers, checked: [...checked], page, hintLevel, goal, method, errors, hintsUsed, tried2: [...tried2], nudged: [...nudged], startedAt })); else sessionStorage.removeItem(DRAFT_KEY); } catch { /* 無法暫存就算了 */ }
   }
   function loadDraft() {
     if (!draftable()) return false;
     let d; try { d = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || 'null'); } catch { d = null; }
     if (!d || d.type !== type || !d.problem) return false;
     pProblem = d.problem; pState = d.state || {}; answers = d.answers || {}; checked = new Set(d.checked || []); index = d.index || 0;
-    hintLevel = Array.isArray(d.hintLevel) ? d.hintLevel : hintLevel; goal = d.goal || goal; method = d.method || method; startedAt = Date.now();
+    hintLevel = Array.isArray(d.hintLevel) ? d.hintLevel : hintLevel; goal = d.goal || goal; method = d.method || method; startedAt = d.startedAt || Date.now();
+    // 同一題：題號、答錯和提示的次數都接著算（題號不要因為重新整理加 1）
+    if (d.cycle) cycle = d.cycle; errors = d.errors || 0; hintsUsed = d.hintsUsed || 0; tried2 = new Set(d.tried2 || []); nudged = new Set(d.nudged || []);
     page = Math.min(d.page || 0, pages().length - 1); for (let n = 0; n < page; n++) for (const x of pages()[n]) entered.add(x);
     phase = 'solve';
     return true;
