@@ -1929,5 +1929,7 @@ test('第 28 版第 6 輪複測：5-3 波浪線描點、表面積長方體有自
   const ask = await p.text('.step-ask'); assert.match(ask, /盒子外面/); assert.doesNotMatch(ask, /圖形裡面/);
   const a = await p.page.evaluate(() => [window.areaActs.get('lnBreak').steps.find(s => s.title === '描點').ask, window.areaActs.get('prism').steps[0].ask]);
   assert.doesNotMatch(a[0], /0 也/); assert.match(a[1], /柱體/);
+  const unitAsk = await p.page.evaluate(() => window.lessonPackages.surface.activities.flatMap(x => (window.areaActs.get(x.id)?.steps || []).filter(s => s.title === '選單位').map(s => s.ask)));
+  assert.ok(unitAsk.length && unitAsk.every(t => /平方還是立方/.test(t)));
   assert.deepEqual(p.errors, []);
 });
