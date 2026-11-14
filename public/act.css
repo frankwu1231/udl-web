@@ -127,10 +127,13 @@ html.contrast .map-card{border-color:#000}html.contrast .ac-outline{stroke:#000}
 .ln-guide{stroke:#c2410c;stroke-width:2.5;stroke-dasharray:7 5;fill:none}
 .ln-line{pointer-events:none}.ln-legend-t{font-size:14px;fill:#1d2b44}
 .ac-pulse-text{animation:ln-text 1s ease-in-out infinite}@keyframes ln-text{50%{fill:#c2410c;font-weight:700}}
-.ln-table{border-collapse:collapse;margin:.5rem auto;font-size:1.05rem}.ln-table caption{font-weight:700;margin-bottom:.3rem}
+.ln-table{border-collapse:collapse;margin:.5rem auto;font-size:1.05rem;display:block;width:fit-content;max-width:min(100%,calc(100vw - 64px));overflow-x:auto}   /* 第 28 版：手機上表格太寬時在表格裡左右捲，不撐破版面 */
+.ln-vtable{display:none;border-collapse:collapse;margin:.5rem auto;font-size:1rem}.ln-vtable caption{font-weight:700;margin-bottom:.3rem}.ln-vtable th,.ln-vtable td{border:1px solid #b8c7de;padding:.3rem .7rem;text-align:center}.ln-vtable thead th{background:#eef4fc}.ln-vtable .on{background:#fff3b0;font-weight:700}
+@media(max-width:480px){.ln-table:has(+ .ln-vtable){display:none}.ln-vtable{display:table}}
 .ln-table th,.ln-table td{border:1px solid #b8c7de;padding:.35rem .6rem;text-align:center;min-width:2.4rem}.ln-table thead th{background:#eef4fc}
 .ln-table .on{background:#fff3b0;font-weight:700}
 .ln-slots{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;border-top:3px solid #1d2b44;padding-top:8px}.ln-slot{min-width:3rem;padding:.3rem;border:2px dashed #b8c7de;border-radius:8px;text-align:center}.ln-slot.on{border-style:solid;border-color:#1f6fd1;background:#eef4fc;font-weight:700}
 .ln-chips button{min-width:3rem}
 .ln-pair{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}.ln-pair figure{margin:0;flex:1 1 260px;text-align:center}.ln-pair figcaption{font-weight:700}
 @media(prefers-reduced-motion:reduce){.ac-pulse-text{animation:none}}
+@media(max-width:760px){.task-grid{grid-template-columns:minmax(0,1fr)}}   /* 第 28 版：手機上一欄不被寬的圖表撐開 */

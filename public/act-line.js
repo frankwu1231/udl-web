@@ -135,7 +135,12 @@
   function tableHtml(p, o = {}) {
     const rows = o.series || p.series;
     return `<table class="ln-table"><caption>${esc(p.title)}</caption><thead><tr><th scope="row">${esc(p.xName)}</th>${p.xs.map((x, i) => `<th scope="col" class="${o.hl === i ? 'on' : ''}">${esc(x)}</th>`).join('')}</tr></thead>
-      <tbody>${rows.map(s => `<tr><th scope="row">${esc(rows.length > 1 ? s.name : p.yName)}（${esc(p.unit)}）</th>${s.v.map((y, i) => `<td class="${o.hl === i ? 'on' : ''}">${y}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+      <tbody>${rows.map(s => `<tr><th scope="row">${esc(rows.length > 1 ? s.name : p.yName)}（${esc(p.unit)}）</th>${s.v.map((y, i) => `<td class="${o.hl === i ? 'on' : ''}">${y}</td>`).join('')}</tr>`).join('')}</tbody></table>${p.xs.length > 4 ? vTable(p, rows, o) : ''}`;
+  }
+  // 第 28 版：手機上欄位多時改用直式表格（一列一個時間），不用左右捲；寬螢幕不顯示
+  function vTable(p, rows, o) {
+    return `<table class="ln-vtable"><caption>${esc(p.title)}</caption><thead><tr><th scope="col">${esc(p.xName)}</th>${rows.map(s => `<th scope="col">${esc(rows.length > 1 ? s.name : p.yName)}（${esc(p.unit)}）</th>`).join('')}</tr></thead>
+      <tbody>${p.xs.map((x, i) => `<tr class="${o.hl === i ? 'on' : ''}"><th scope="row">${esc(x)}</th>${rows.map(s => `<td>${s.v[i]}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
   }
   // 數線（0-2）：0 到 end，每一格是 step，只標 0 和每 every 格；o.arrow 箭頭指的數
   function numberLineSVG(o) {

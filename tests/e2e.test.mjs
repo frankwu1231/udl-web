@@ -1885,3 +1885,18 @@ test('第 28 版第 2 輪複測：重新整理後還是同一題（題號、答�
   assert.doesNotMatch(h[0] + h[2], /半格/); assert.match(h[1], /半格/);
   assert.deepEqual(p.errors, []);
 });
+
+test('第 28 版第 4 輪複測：手機 375px 時 5-3 的表格改直式、描點圖不超出畫面；注音「數都很大」讀ㄕㄨˋ', { skip: skip || !distReady }, async () => {
+  const p = await act('lnBreak', { difficulty: 'standard', ...LINE_MAP });
+  await p.page.setViewportSize({ width: 375, height: 800 });
+  const over = () => p.page.evaluate(() => [...document.querySelectorAll('#app *')].filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > innerWidth + 1; }).length);
+  await p.choose('way', 'brk'); await p.check(); await p.next();
+  assert.equal(await over(), 0, '從幾開始：沒有東西超出畫面');
+  assert.ok(await p.page.isVisible('.ln-vtable') && !(await p.page.isVisible('.ln-table')), '手機上用直式表格');
+  for (const v of await p.page.$$eval('[data-choice="start"]', l => l.map(e => e.dataset.value))) { await p.choose('start', v); await p.check(); if (await p.page.$('#next:not(.locked)')) break; }
+  await p.next();
+  assert.equal(await over(), 0, '描點：圖和表格都在畫面裡');
+  const z = await p.page.evaluate(() => window.zhuyin.readings('數都很大，讀的時候不從 0 數').filter(x => x[0] === '數').map(x => x[1]));
+  assert.deepEqual(z, ['ㄕㄨˋ', 'ㄕㄨˇ']);
+  assert.deepEqual(p.errors, []);
+});
