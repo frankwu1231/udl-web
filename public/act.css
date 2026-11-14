@@ -112,3 +112,25 @@ html.contrast .map-card{border-color:#000}html.contrast .ac-outline{stroke:#000}
 .ac-stepper{flex-wrap:wrap;max-width:100%}.ac-stepper button{flex:0 0 auto}
 @media (max-width:600px){.ac-stepper span{min-width:0;flex-basis:100%}}
 .sf-nets{display:flex;flex-wrap:wrap;gap:16px;justify-content:center}.sf-nets figure{margin:0;text-align:center}.sf-nets figcaption{font-weight:700;font-size:1.2rem}.ac-svg.sf-mini{max-width:180px;height:auto}
+/* 第 28 版：折線圖 */
+.ln-svg{max-height:420px}
+.ln-title{font-size:18px;font-weight:700;fill:#1d2b44}
+.ln-grid{stroke:#e3eaf5;stroke-width:1}.ln-grid-major{stroke:#c3d1e6}.ln-grid-v{stroke:#eef2f8}
+.ln-axis{stroke:#1d2b44;stroke-width:2.2;fill:none}
+.ln-ytick,.ln-xtick{font-size:15px;fill:#1d2b44}.ln-xtick.on{font-weight:700;fill:#c2410c}
+.ln-name{font-size:15px;fill:#1d2b44;font-weight:600}
+.ln-hit{fill:transparent;stroke:#9fb3d1;stroke-dasharray:3 3;cursor:pointer}.ln-hit.on{fill:#fff3b0;fill-opacity:.6;stroke:#c2410c;stroke-dasharray:none}
+.ln-hit:hover,.ln-hit:focus{fill:#e8f1ff;outline:none}
+.ln-hit-pt{fill:transparent;cursor:pointer}.ln-hit-pt:hover,.ln-hit-pt:focus{fill:#1f6fd1;fill-opacity:.15;outline:none}
+.ln-cell{fill:#fff;fill-opacity:.01;stroke:#b8c7de;stroke-width:1;cursor:pointer}.ln-cell:hover,.ln-cell:focus{fill:#ffe8a3;fill-opacity:.9;stroke:#c2410c;outline:none}
+.ln-mine{pointer-events:none}.ln-mine.on{stroke:#c2410c;stroke-width:3}
+.ln-guide{stroke:#c2410c;stroke-width:2.5;stroke-dasharray:7 5;fill:none}
+.ln-line{pointer-events:none}.ln-legend-t{font-size:14px;fill:#1d2b44}
+.ac-pulse-text{animation:ln-text 1s ease-in-out infinite}@keyframes ln-text{50%{fill:#c2410c;font-weight:700}}
+.ln-table{border-collapse:collapse;margin:.5rem auto;font-size:1.05rem}.ln-table caption{font-weight:700;margin-bottom:.3rem}
+.ln-table th,.ln-table td{border:1px solid #b8c7de;padding:.35rem .6rem;text-align:center;min-width:2.4rem}.ln-table thead th{background:#eef4fc}
+.ln-table .on{background:#fff3b0;font-weight:700}
+.ln-slots{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;border-top:3px solid #1d2b44;padding-top:8px}.ln-slot{min-width:3rem;padding:.3rem;border:2px dashed #b8c7de;border-radius:8px;text-align:center}.ln-slot.on{border-style:solid;border-color:#1f6fd1;background:#eef4fc;font-weight:700}
+.ln-chips button{min-width:3rem}
+.ln-pair{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}.ln-pair figure{margin:0;flex:1 1 260px;text-align:center}.ln-pair figcaption{font-weight:700}
+@media(prefers-reduced-motion:reduce){.ac-pulse-text{animation:none}}

@@ -62,7 +62,7 @@
 
   // 第 26 版：班級設定，再套上這位學生的個別設定（老師在「教師觀察」調整、存在網站資料庫）
   function ownSettings() { return { ...F.settings(L()), ...(window.areaResearch?.overrides?.(type) || {}), ...(window.areaResearch?.phasePatch?.(type) || {}) }; }   // 第 26 版第四階段：研究階段（B、BC 關閉 AI；BC 由小老師小方取代小幫手；示範階段用老師示範模式）
-  const SITE_VERSION = 'v27';
+  const SITE_VERSION = 'v28';
   function log(event, extra = {}) {
     const st = extra.activity && phase !== 'plan' ? (titles()[extra.activity - 1] || '') : '';
     const r = { time: new Date().toISOString(), siteVersion: SITE_VERSION, shape: nameOf(), shapeKey: type, actId: type, stepTitle: st, cycle, activity: extra.activity ?? null, event, support: settings.support, response, method, flow: settings.flow, difficulty: settings.difficulty, mode: mode(), studyPhase, ...(window.areaTutor?.stage?.() ? { tutorStage: window.areaTutor.stage() } : {}), ...extra };
@@ -1353,10 +1353,13 @@
     const m = lessons.map || {}, avail = ACT ? ACT.available() : Object.keys(names).map(id => ({ id, title: names[id], unit: 'u3', no: '' }));
     const assigned = Array.isArray(m.assigned) ? m.assigned : avail.map(a => a.id);
     const done = id => records.filter(r => r.event === '整題完成' && (r.actId || r.shapeKey) === id).length;
+    // 第 28 版：先測活動（例如折線圖單元 0）：有一題沒有答錯、沒有看提示、沒有看示範就算通過；照順序時，通過才打開後面的活動
+    const passed = id => records.some(r => r.event === '整題完成' && (r.actId || r.shapeKey) === id && !r.errors && !r.hints && !r.watched);
+    const ok = a => a.pretest ? passed(a.id) : done(a.id) > 0;
     const order = avail.filter(a => assigned.includes(a.id));
     const lockedSet = new Set();
-    if (m.sequential) order.forEach((a, i) => { if (i > 0 && !order.slice(0, i).every(b => done(b.id) > 0)) lockedSet.add(a.id); });
-    return { m, avail, assigned, done, lockedSet };
+    if (m.sequential) order.forEach((a, i) => { if (i > 0 && !order.slice(0, i).every(ok)) lockedSet.add(a.id); });
+    return { m, avail, assigned, done, passed, lockedSet };
   }
   // 第 25 版：學生直接改網址也不能跳過還沒打開的活動，或老師沒指派的活動
   function blockedByMap(id) {
@@ -1366,13 +1369,13 @@
     return lockedSet.has(id) || !assigned.includes(id);
   }
   function mapView() {
-    const { m, avail, assigned, done, lockedSet } = mapState();
+    const { m, avail, assigned, done, passed, lockedSet } = mapState();
     const units = (ACT ? ACT.UNITS : [{ id: 'u3', title: '圖形', icon: '' }]).map(u => {
       const acts = avail.filter(a => a.unit === u.id && (assigned.includes(a.id) || isTeacher));
       if (!acts.length) return '';
       return `<section class="map-unit"><h2 data-read><span aria-hidden="true">${u.icon}</span> ${esc(u.title)}</h2><div class="map-cards">${acts.map(a => {
         const n = done(a.id), locked = lockedSet.has(a.id), off = !assigned.includes(a.id);
-        const status = off ? '老師還沒有指派' : locked ? '🔒 先完成前面的活動' : n ? `完成 ${n} 題` : '還沒開始';
+        const status = off ? '老師還沒有指派' : locked ? '🔒 先完成前面的活動' : a.pretest ? (passed(a.id) ? '✅ 先測全對，可以往下' : n ? `完成 ${n} 題，再練到全對` : '先測：全對就可以往下') : n ? `完成 ${n} 題` : '還沒開始';
         return `<a class="map-card${locked ? ' locked' : ''}${off ? ' off' : ''}" ${locked ? 'aria-disabled="true" tabindex="-1"' : ''} href="seven.html?a=${a.id}${draftQ}" data-map="${a.id}">
           <span class="map-icon" aria-hidden="true">${a.icon || ''}</span><span class="map-no">${a.no}</span><span class="map-title" data-read>${esc(a.title)}</span>
           <span class="map-stars" aria-label="完成 ${n} 題">${'⭐'.repeat(Math.min(3, n))}${'☆'.repeat(Math.max(0, 3 - n))}</span><span class="map-status">${status}</span></a>`;
