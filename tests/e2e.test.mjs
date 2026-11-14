@@ -1847,6 +1847,7 @@ test('第 28 版第 1 輪複測：6-1 奇數點得上去；答對後改錯要重
   await p.choose('item', 'water'); await p.check(); await p.next();
   const v = [11, 12, 13, 15, 14]; for (let j = 0; j < 5; j++) await p.page.fill('#d' + j, String(v[j]));
   await p.check(); await p.next();
+  assert.deepEqual(JSON.parse(await p.page.evaluate(() => sessionStorage.getItem('act-draft-v28'))).problem.dims, [5, 1, 15], '紀錄尺寸用自己的資料');
   for (let j = 0; j < 5; j++) assert.ok(await p.page.$(`#figure2 [data-cell="${j}:${v[j]}"]`), `${v[j]} 點得上去`);
   for (let j = 0; j < 5; j++) await p.page.locator(`#figure2 [data-cell="${j}:${v[j]}"]`).dispatchEvent('click');
   // 重新整理：題目、填的數、描的點都還在，接著在第 3 步

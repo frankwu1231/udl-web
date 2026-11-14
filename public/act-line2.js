@@ -336,7 +336,7 @@
         answer: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>${ctx.choice('way', '哪一種比較看得出變化？', [['brk', `用波浪線，省略 0 到 ${ctx.problem.min}`], ['zero', '從 0 開始畫']], true)}`,
         check: ctx => !ctx.answers.way ? { code: 'way', msg: '先選一個答案。' } : ctx.answers.way === 'brk' ? null : { code: 'way', obs: 'wrongChoice', msg: '從 0 畫起，點都擠在一起，看不出變化。' },
         solve: ctx => { ctx.answers.way = 'brk'; }, say: ex => `用波浪線，省略 0 到 ${ex.problem.min}。` },
-      { title: '從幾開始', ids: ['start'], hints: ['波浪線上面的第一條格線，寫多少？', '要比最小的數小一點。', '選比最小的數小、又最接近的那個整數。'], think: '老師看最小的數，波浪線上面從比它小一點的數開始。', together: '一起想：從幾開始？',
+      { title: '從幾開始', ids: ['start'], hints: ['波浪線上面的第一條格線，寫多少？', '先找表格裡最小的數，起點要比它小一點。', '看下面的選項：選比最小的數小，又最接近它的那一個。'], think: '老師看最小的數，波浪線上面從比它小一點的數開始。', together: '一起想：從幾開始？',
         figure: ctx => tableHtml(ctx.problem),
         answer: ctx => { const p = ctx.problem; return ctx.choice('start', '波浪線上面第一條格線寫多少？', [...new Set([p.min, 0, Math.min(...p.series[0].v) + 2])].map(x => [String(x), String(x)])); },
         check: ctx => { const p = ctx.problem, v = Number(ctx.answers.start); if (!ctx.answers.start) return { code: 'start', msg: '先選一個答案。' }; return v === p.min ? null : { code: 'start', obs: v === 0 ? 'ignoreBreak' : 'other', msg: v === 0 ? '用了波浪線，上面就不是從 0 開始。' : `要比最小的數 ${Math.min(...p.series[0].v)} 還小，最小的點才畫得到。` }; },
@@ -411,7 +411,7 @@
       { title: '填數字', ids: ['d0', 'd1', 'd2', 'd3', 'd4'], hints: ['每一天填一個數。', '只填 0 到 20 的整數。', '沒有記錄的話，可以按「用老師給的資料」。'], think: '老師把每一天的數填進表格。', together: '一起填。',
         answer: ctx => `${DAY5.map((d, j) => fieldHtml(ctx, 'd' + j, `星期${d}`, 1)).join('')}<div class="actions"><button type="button" id="lnSample" class="secondary">用老師給的資料</button></div>`,
         bind: ctx => { const b = document.getElementById('lnSample'); if (b) b.onclick = () => { ctx.problem.sample.forEach((y, j) => { ctx.answers['d' + j] = String(y); }); ctx.log('用老師給的資料'); ctx.invalidate(1); ctx.rerender(); }; },
-        check: ctx => ownData(ctx) ? null : { code: 'data', obs: 'unfinished', msg: '每一天都要填 0 到 20 的整數。' },
+        check: ctx => { const v = ownData(ctx); if (!v) return { code: 'data', obs: 'unfinished', msg: '每一天都要填 0 到 20 的整數。' }; ctx.problem.sampleDims = ctx.problem.sampleDims || ctx.problem.dims; ctx.problem.dims = [5, 1, Math.max(...v)]; return null; },   // 紀錄的尺寸改用學生自己的資料（範例的另存 sampleDims）
         solve: ctx => { ctx.problem.sample.forEach((y, j) => { ctx.answers['d' + j] = String(y); }); }, say: () => '五天都填好了。' },
       { title: '畫成折線圖', ids: ['pts0'], hints: ['照你填的數，一天描一個點。', '看縱軸一格是多少。', '五天都要描。'], think: '老師照自己填的數描點。', together: '一起描。',
         figure: ctx => { const p = ownChart(ctx); return chartSVG({ ...p, series: [{ ...p.series[0], v: [] }] }, { plot: { pts: ctx.state.pts || {}, cells: true } }); },
