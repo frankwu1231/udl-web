@@ -341,7 +341,7 @@
         answer: ctx => { const p = ctx.problem; return ctx.choice('start', '波浪線上面第一條格線寫多少？', [...new Set([p.min, 0, Math.min(...p.series[0].v) + 2])].map(x => [String(x), String(x)])); },
         check: ctx => { const p = ctx.problem, v = Number(ctx.answers.start); if (!ctx.answers.start) return { code: 'start', msg: '先選一個答案。' }; return v === p.min ? null : { code: 'start', obs: v === 0 ? 'ignoreBreak' : 'other', msg: v === 0 ? '用了波浪線，上面就不是從 0 開始。' : `要比最小的數 ${Math.min(...p.series[0].v)} 還小，最小的點才畫得到。` }; },
         solve: ctx => { ctx.answers.start = String(ctx.problem.min); }, say: ex => `從 ${ex.problem.min} 開始。` },
-      { title: '描點', ids: ['pts0'], hints: ['從波浪線上面的數開始往上數。', '一格是 1，數一數要幾格。', '每個時間都要描。'], think: `老師從波浪線上面的數開始，往上數格子描點。`, together: '一起描。',
+      { title: '描點', ask: '每個時間都描了嗎？我有從波浪線上面的起點看刻度嗎？', ids: ['pts0'], hints: ['從波浪線上面的數開始往上數。', '一格是 1，數一數要幾格。', '每個時間都要描。'], think: `老師從波浪線上面的數開始，往上數格子描點。`, together: '一起描。',
         figure: ctx => chartSVG({ ...ctx.problem, series: [{ ...ctx.problem.series[0], v: [] }] }, { plot: { pts: ctx.state.pts || {}, cells: true }, noTitle: true }),
         answer: ctx => `${tableHtml(ctx.problem)}<p class="notice" data-read data-say>描了 ${Object.keys(ctx.state.pts || {}).length} 個點，共 ${ctx.problem.xs.length} 個。</p>`,
         bind: bindCells(2), check: ctx => plotCheck(ctx.problem, ctx.state.pts || {}),

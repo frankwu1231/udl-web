@@ -1923,3 +1923,11 @@ test('第 28 版第 5 輪複測：換學生後還沒開始就重新整理，還�
   assert.deepEqual(z, ['ㄓㄨㄥˋ']);
   assert.deepEqual(p.errors, []); assert.deepEqual(q.errors, []);
 });
+
+test('第 28 版第 6 輪複測：5-3 波浪線描點、表面積長方體有自己的「問問自己」', { skip: skip || !distReady }, async () => {
+  const p = await act('cuboid', { difficulty: 'standard', selfAsk: true });
+  const ask = await p.text('.step-ask'); assert.match(ask, /盒子外面/); assert.doesNotMatch(ask, /圖形裡面/);
+  const a = await p.page.evaluate(() => [window.areaActs.get('lnBreak').steps.find(s => s.title === '描點').ask, window.areaActs.get('prism').steps[0].ask]);
+  assert.doesNotMatch(a[0], /0 也/); assert.match(a[1], /柱體/);
+  assert.deepEqual(p.errors, []);
+});
