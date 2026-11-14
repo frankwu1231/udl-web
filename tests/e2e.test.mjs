@@ -893,7 +893,7 @@ test('現場試用：開始前老師點選代號（不用打字）；沒選齊�
   assert.match(await p.text('#researchBar .who'), /T02-S05/);
   await p.page.click('#researchFlush'); await p.page.waitForTimeout(300);
   const start = p.rows('場次')[0];
-  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v27'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
+  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v28'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
   assert.ok(p.rows('教師設定').some(r => r.actId === 'rectangle' && r.buddy === '開'), '記下老師這次的設定');
   assert.ok(!JSON.stringify(p.posts).match(/姓名/), '不傳姓名欄位');
 
@@ -1197,7 +1197,7 @@ test('第 26 版：研究紀錄存網站資料庫：開始本節編節次、錯�
   const ev = await events();
   const wrong = ev.find(r => r.event === '步驟檢核' && r.correct === '否');
   assert.ok(wrong, '錯誤存進網站資料庫');
-  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v27');
+  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v28');
   const d = JSON.parse(wrong.detail); assert.equal(d.obs, 'chosePerimeter'); assert.equal(d.outcome, 'wrong'); assert.equal(d.firstTry, true);
   assert.ok(ev.some(r => r.event === '無法判定'), '老師按「這題無法判定」');
   // 老師調整支持：沒選理由不能存；減少支持存成這位學生的設定，記下方向
@@ -1678,7 +1678,7 @@ test('第 27 版第 1 輪修正：換教材再換回保留指派；2-1 依實際
     return { k322: k({ l: 3, w: 2, h: 2 }), k432: k({ l: 4, w: 3, h: 2 }), k222: k({ l: 2, w: 2, h: 2 }), faces: (net.match(/class="sf-net/g) || []).length, none: /沒有上面/.test(net), front: />前面</.test(label) && !/>上面</.test(label) }; });
   assert.deepEqual(r, { k322: '2', k432: '3', k222: '1', faces: 5, none: true, front: true });
   const rec = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16') || '[]').find(x => x.event === '整題定標'));
-  assert.equal(rec.siteVersion, 'v27'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
+  assert.equal(rec.siteVersion, 'v28'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
   assert.match(await p.page.title(), /表面積/); assert.match(await p.text('header .brand'), /表面積/);
   assert.deepEqual(p.errors, []);
   await publish({});
@@ -1728,4 +1728,208 @@ test('第 27 版（柱體）：5-2 三角柱打開數面、底面忘了除以 2 
   await r.page.fill('#len', String(L3)); await r.page.fill('#wid', String(W3)); await r.page.fill('#hei', String(H3)); await r.check(); await r.next();
   assert.match(await r.text('[data-stage="4"] .choice'), /× 2/, '第 3 題起算式有 × 2');
   assert.deepEqual(r.errors, []);
+});
+
+// ---------- 第 28 版：折線圖教材包 ----------
+const LINE_IDS = ['lnTable', 'lnScale', 'lnParts', 'lnMatch', 'lnRead', 'lnFind', 'lnBetween', 'lnTrend', 'lnMost', 'lnTwo', 'lnChoose', 'lnThree', 'lnDraw', 'lnSetScale', 'lnBreak', 'lnDrawTwo', 'lnRecord', 'lnTell'];
+const LINE_MAP = { __map: { pkg: 'line', assigned: LINE_IDS, path: 'all' } };
+test('第 28 版：折線圖 18 個活動都能出題、畫圖，照示範做完每一步都對；空白的不會過', { skip: skip || !distReady }, async () => {
+  const p = await act('lnRead', { difficulty: 'standard', ...LINE_MAP });
+  const out = await p.page.evaluate(() => {
+    const A = window.areaActs, bad = [];
+    const ids = A.packages.line.activities.map(a => a.id);
+    for (const id of ids) {
+      const pl = A.get(id); if (!pl) { bad.push(id + ' 沒有註冊'); continue; }
+      for (const level of ['easy', 'standard', 'challenge']) for (let i = 0; i < 6; i++) {
+        const problem = pl.makeProblem(level, i, Math.random), answers = {}, state = {};
+        const ctx = { answers, state, problem, plugin: pl, settings: {}, method: 'mark', level, hint: () => 2, checked: () => false, invalidate() {}, refreshFigure() {}, rerender() {}, log() {}, choice: (k, t, items) => items.map(x => x[1]).join('|') };
+        try { pl.planFigure && pl.planFigure(ctx); } catch (e) { bad.push(`${id} planFigure ${e.message}`); }
+        pl.steps.forEach((st, s) => {
+          try { const html = (st.figure ? st.figure(ctx) : '') + st.answer(ctx); if (/undefined|NaN/.test(html)) bad.push(`${id} 第${s + 1}步畫面有 undefined/NaN`); } catch (e) { bad.push(`${id} 第${s + 1}步畫面 ${e.message}`); }
+          try { if (!st.check(ctx)) bad.push(`${id} 第${s + 1}步沒作答也過`); st.solve(ctx); const r = st.check(ctx); if (r) bad.push(`${id} ${level} ${i} 第${s + 1}步照示範做卻沒過：${r.msg}`); } catch (e) { bad.push(`${id} 第${s + 1}步 ${e.message}`); }
+        });
+        try { pl.done(ctx); } catch (e) { bad.push(`${id} done ${e.message}`); }
+      }
+    }
+    return { bad, n: ids.length, paths: Object.keys(A.packages.line.paths) };
+  });
+  assert.equal(out.n, 18); assert.deepEqual(out.bad, []); assert.deepEqual(out.paths, ['grade4', 'grade5', 'all']);
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 28 版：2-1 讀圖七步：找零件、一格是多少、點橫軸、讀數值（一格當 1 會記 scaleAsOne）、比較、說根據', { skip: skip || !distReady }, async () => {
+  const p = await act('lnRead', { difficulty: 'standard', ...LINE_MAP });
+  await p.choose('ask', 'max'); await p.check(); assert.match(await p.text('#feedback0'), /再讀一次題目/);
+  await p.choose('ask', 'value'); await p.check(); await p.next();
+  await p.choose('xax', 'y'); await p.choose('yax', 'x'); await p.check(); assert.match(await p.text('#feedback1'), /對調/);
+  await p.choose('xax', 'x'); await p.choose('yax', 'y'); await p.check(); await p.next();
+  // 縱軸每 2 格才寫一個數：讀出一格
+  const ticks = await p.page.$$eval('#figure2 .ln-ytick', l => l.map(e => Number(e.textContent)));
+  const step = (ticks[1] - ticks[0]) / 2, unit = (await p.page.$$eval('#figure2 .ln-name', l => l.map(e => e.textContent).join(' '))).match(/（(.+?)）/)[1];
+  await p.page.fill('#scale', '1'); await p.check(); assert.match(await p.text('#feedback2'), /一格不是 1/);
+  await p.page.fill('#scale', String(step)); await p.check(); await p.next();
+  const day = (await p.text('[data-stage="3"] .answer')).match(/問的是(.+?)。/)[1];
+  const xs = await p.page.$$eval('#figure3 [data-x]', l => l.map(e => e.getAttribute('aria-label')));
+  const ti = xs.indexOf(day); assert.ok(ti > 0);
+  await p.page.locator(`#figure3 [data-x="${ti - 1}"]`).dispatchEvent('click'); await p.check(); assert.match(await p.text('#feedback3'), /題目問的是/);
+  await p.page.locator(`#figure3 [data-x="${ti}"]`).dispatchEvent('click'); await p.check(); await p.next();
+  const label = await p.page.$eval('#figure4 svg', s => s.getAttribute('aria-label'));
+  const v = Number(label.match(new RegExp('[：、]' + day + ' (\\d+)'))[1]);
+  await p.page.fill('#val', String(v / step)); await p.check();
+  if (step !== 1) assert.match(await p.text('#feedback4'), /一格不是 1|再看一次|隔壁/);
+  await p.page.fill('#val', String(v)); await p.check(); await p.next();
+  const prev = Number(label.match(new RegExp('[：、]' + xs[ti - 1] + ' (\\d+)'))[1]);
+  await p.choose('cmp', v > prev ? 'more' : v < prev ? 'less' : 'same'); await p.check(); await p.next();
+  await p.choose('why', 'guess'); await p.page.click('[data-choice="unit"]'); await p.check(); assert.match(await p.text('#feedback6'), /單位|根據/);
+  await p.choose('unit', unit); await p.choose('why', 'see'); await p.check(); await p.next();
+  assert.match(await p.text('.done-banner'), new RegExp(`${v} ${unit}`));
+  assert.match(await p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || ''), /scaleAsOne|swapped/);
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 28 版：5-1 畫圖七步：排橫軸、描點（漏描、位置不對會擋）、照順序連線、寫標示', { skip: skip || !distReady }, async () => {
+  const p = await act('lnDraw', { difficulty: 'easy', ...LINE_MAP });
+  await p.choose('title', 'a'); await p.check(); assert.match(await p.text('#feedback0'), /標題/);
+  await p.choose('title', 'ok'); await p.check(); await p.next();
+  const n = await p.page.$$eval('[data-chip]', l => l.length);
+  await p.page.click('[data-chip="1"]'); for (let i = 0; i < n; i++) if (i !== 1) await p.page.click(`[data-chip="${i}"]`);
+  await p.check(); assert.match(await p.text('#feedback1'), /順序不對/);
+  await p.page.click('#lnUnorder'); for (let i = 0; i < n; i++) await p.page.click(`[data-chip="${i}"]`);
+  await p.check(); await p.next();
+  const t2 = await p.page.$$eval('#figure2 .ln-ytick', l => l.map(e => Number(e.textContent))), step = t2[1] - t2[0];
+  await p.choose('scale', String(step === 1 ? 2 : 1)); await p.check(); assert.match(await p.text('#feedback2'), new RegExp(`差 ${step}`));
+  await p.choose('scale', String(step)); await p.check(); await p.next();
+  const vals = await p.page.$$eval('#figure3 .ln-table tbody td', l => l.map(e => Number(e.textContent)));
+  await p.page.locator(`#figure3 [data-cell="0:${vals[0]}"]`).dispatchEvent('click');
+  await p.check(); assert.match(await p.text('#feedback3'), /還有|0 的也要描/);
+  const off = vals[1] === Math.max(...vals) ? vals[1] - step : vals[1] + step;
+  await p.page.locator(`#figure3 [data-cell="1:${off}"]`).dispatchEvent('click');
+  for (let i = 2; i < n; i++) await p.page.locator(`#figure3 [data-cell="${i}:${vals[i]}"]`).dispatchEvent('click');
+  await p.check(); assert.match(await p.text('#feedback3'), /位置不對/);
+  await p.page.locator(`#figure3 [data-cell="1:${off}"]`).dispatchEvent('click');
+  await p.page.locator(`#figure3 [data-cell="1:${vals[1]}"]`).dispatchEvent('click');
+  await p.check(); await p.next();
+  await p.page.locator('#figure4 [data-link="0"]').dispatchEvent('click'); await p.page.locator('#figure4 [data-link="2"]').dispatchEvent('click');
+  await p.check(); assert.match(await p.text('#feedback4'), /順序/);
+  await p.page.click('#lnUnlink');
+  for (let i = 0; i < n; i++) await p.page.locator(`#figure4 [data-link="${i}"]`).dispatchEvent('click');
+  assert.equal(await p.page.$$eval('#figure4 path.ln-line', l => l.length), n - 1, '連了 n-1 段');
+  await p.check(); await p.next();
+  const unit = (await p.text('#figure5')).match(/（(.+?)）/)[1];
+  await p.choose('yname', 'y'); await p.choose('unit', unit); await p.check(); await p.next();
+  const mx = vals.indexOf(Math.max(...vals));
+  await p.choose('same', 'yes'); await p.choose('max', String(mx)); await p.check(); await p.next();
+  assert.match(await p.text('.done-banner'), /折線圖畫好了/);
+  assert.match(await p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || ''), /orderJump/);
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 28 版：學習地圖換成折線圖；單元 0 是先測，照順序時全對才打開後面', { skip: skip || !distReady }, async () => {
+  await setup(); await publish({ __map: { pkg: 'line', assigned: ['lnTable', 'lnScale', 'lnParts'], sequential: true } });
+  const ctx = await browser.newContext(); const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
+  // 0-1 做過一題但有答錯：還沒通過，0-2 打開（0-1 已完成一題）但 1-1 要等 0-1、0-2 都全對
+  await page.addInitScript(() => { if (!sessionStorage.getItem('area-records-v16')) sessionStorage.setItem('area-records-v16', JSON.stringify([{ event: '整題完成', actId: 'lnTable', cycle: 1, errors: 2, hints: 1, t: Date.now() }])); });
+  await page.goto(base + '/seven.html'); await page.waitForSelector('.map-card');
+  const units = await page.$$eval('.map-unit h2', h => h.map(x => x.innerText.trim()).join('|'));
+  assert.match(units, /準備好了嗎/); assert.doesNotMatch(units, /周長和面積/);
+  assert.match(await page.innerText('[data-map="lnTable"]'), /再練到全對/);
+  assert.ok(await page.$('.map-card.locked[data-map="lnScale"]'), '0-1 還沒全對，0-2 鎖住');
+  await page.evaluate(() => { const r = JSON.parse(sessionStorage.getItem('area-records-v16')); r.push({ event: '整題完成', actId: 'lnTable', cycle: 2, errors: 0, hints: 0, t: Date.now() }); sessionStorage.setItem('area-records-v16', JSON.stringify(r)); });
+  await page.reload(); await page.waitForSelector('.map-card');
+  assert.match(await page.innerText('[data-map="lnTable"]'), /先測全對/);
+  assert.equal(await page.$('.map-card.locked[data-map="lnScale"]'), null, '0-1 全對，0-2 打開');
+  assert.deepEqual(errs, []); await ctx.close();
+  await publish({});
+});
+
+test('第 28 版第 1 輪複測：6-1 奇數點得上去；答對後改錯要重新檢查；重新整理接著做；6-2 用自己的圖；折線圖有自己的自問句', { skip: skip || !distReady }, async () => {
+  const p = await act('lnRecord', { difficulty: 'standard', selfAsk: true, ...LINE_MAP });
+  await p.choose('item', 'water'); await p.check(); await p.next();
+  const v = [11, 12, 13, 15, 14]; for (let j = 0; j < 5; j++) await p.page.fill('#d' + j, String(v[j]));
+  await p.check(); await p.next();
+  assert.deepEqual(JSON.parse(await p.page.evaluate(() => sessionStorage.getItem('act-draft-v28'))).problem.dims, [5, 1, 15], '紀錄尺寸用自己的資料');
+  for (let j = 0; j < 5; j++) assert.ok(await p.page.$(`#figure2 [data-cell="${j}:${v[j]}"]`), `${v[j]} 點得上去`);
+  for (let j = 0; j < 5; j++) await p.page.locator(`#figure2 [data-cell="${j}:${v[j]}"]`).dispatchEvent('click');
+  // 重新整理：題目、填的數、描的點都還在，接著在第 3 步
+  await p.page.reload(); await p.page.waitForSelector('#figure2 [data-cell]');
+  assert.match(await p.text('.ln-table'), /11/, '填的數還在');
+  await p.check(); assert.ok(await p.page.$('#next:not(.locked)'), '答對可以往下');
+  await p.page.locator('#figure2 [data-cell="0:11"]').dispatchEvent('click'); await p.page.locator('#figure2 [data-cell="0:10"]').dispatchEvent('click');
+  assert.ok(await p.page.$('#next.locked'), '改錯後要重新檢查');
+  await p.page.locator('#figure2 [data-cell="0:10"]').dispatchEvent('click'); await p.page.locator('#figure2 [data-cell="0:11"]').dispatchEvent('click');
+  await p.check(); await p.next();
+  assert.match(await p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || ''), /重新整理後接著做/);
+  await p.page.goto(`${base}/seven.html?a=lnTell`); await p.page.waitForSelector('#start');
+  await begin(p);
+  assert.match(await p.text('#app'), /記錄一週/); assert.match(await p.text('#app'), /我每天喝水的杯數/);
+  await p.page.goto(`${base}/seven.html?a=lnRead`); await p.page.waitForSelector('#start'); await begin(p);
+  const ask = await p.text('.step-ask'); assert.match(ask, /哪個時間/); assert.doesNotMatch(ask, /圖形裡面/);
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 28 版第 2 輪複測：重新整理後還是同一題（題號、答錯次數接著算）；波浪線題的提示不說半格', { skip: skip || !distReady }, async () => {
+  const p = await act('lnChoose', { difficulty: 'standard', ...LINE_MAP });
+  const no = async () => (await p.text('.eyebrow')).match(/第 (\d+) 題/)[1];
+  const before = await no();
+  await p.choose('c0', 'line'); await p.check(); assert.match(await p.text('#feedback0'), /沒有時間的順序/);
+  await p.page.reload(); await p.page.waitForSelector('#check');
+  assert.equal(await no(), before, '重新整理後題號不變');
+  await p.choose('c0', 'bar'); await p.check(); await p.next();
+  await p.choose('c1', 'line'); await p.check(); await p.next();
+  await p.choose('meaning', 'none'); await p.check(); await p.next();
+  const recs = JSON.parse(await p.page.evaluate(() => sessionStorage.getItem('area-records-v16')));
+  const wrong = recs.filter(r => r.event === '步驟檢核' && r.actId === 'lnChoose' && !r.correct);
+  assert.equal(wrong.length, 1); assert.equal(String(wrong[0].cycle), before, '答錯記在同一題');
+  assert.doesNotMatch(await p.text('#app'), /每一步都一次就答對/);
+  const h = await p.page.evaluate(() => { const pl = window.areaActs.get('lnBetween'), s = x => pl.forProblem(x).steps.find(t => t.title === '讀數值'); return [s({ brk: true }).hints.join(), s({ brk: false }).hints.join(), pl.forProblem({ brk: true }).chant]; });
+  assert.doesNotMatch(h[0] + h[2], /半格/); assert.match(h[1], /半格/);
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 28 版第 4 輪複測：手機 375px 時 5-3 的表格改直式、描點圖不超出畫面；注音「數都很大」讀ㄕㄨˋ', { skip: skip || !distReady }, async () => {
+  const p = await act('lnBreak', { difficulty: 'standard', ...LINE_MAP });
+  await p.page.setViewportSize({ width: 375, height: 800 });
+  const over = () => p.page.evaluate(() => [...document.querySelectorAll('#app *')].filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > innerWidth + 1; }).length);
+  await p.choose('way', 'brk'); await p.check(); await p.next();
+  assert.equal(await over(), 0, '從幾開始：沒有東西超出畫面');
+  assert.ok(await p.page.isVisible('.ln-vtable') && !(await p.page.isVisible('.ln-table')), '手機上用直式表格');
+  for (const v of await p.page.$$eval('[data-choice="start"]', l => l.map(e => e.dataset.value))) { await p.choose('start', v); await p.check(); if (await p.page.$('#next:not(.locked)')) break; }
+  await p.next();
+  assert.equal(await over(), 0, '描點：圖和表格都在畫面裡');
+  const z = await p.page.evaluate(() => window.zhuyin.readings('數都很大，讀的時候不從 0 數').filter(x => x[0] === '數').map(x => x[1]));
+  assert.deepEqual(z, ['ㄕㄨˋ', 'ㄕㄨˇ']);
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 28 版第 5 輪複測：換學生後還沒開始就重新整理，還是第 1 題；寬螢幕作答區放不下橫式表格就改直式；注音「體重」', { skip: skip || !distReady }, async () => {
+  const p = await act('lnRecord', { difficulty: 'standard', ...LINE_MAP });
+  await p.choose('item', 'water'); await p.check(); await p.next();
+  await p.page.click('#teacher'); await p.page.click('#clearRecords'); await p.page.click('#clearRecords'); await p.page.click('#closeTools');
+  await p.page.waitForSelector('#start');
+  assert.match(await p.text('.eyebrow'), /第 1 題/);
+  await p.page.reload(); await p.page.waitForSelector('#start');
+  assert.match(await p.text('.eyebrow'), /第 1 題/, '重新整理後還是第 1 題');
+  const recs = JSON.parse(await p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || '[]'));
+  assert.equal(recs.filter(r => r.event === '中途離開').length, 0);
+  // 768px：5-3 描點頁的表格不用左右捲
+  const q = await act('lnBreak', { difficulty: 'standard', ...LINE_MAP });
+  await q.page.setViewportSize({ width: 768, height: 1000 });
+  await q.choose('way', 'brk'); await q.check(); await q.next();
+  for (const v of await q.page.$$eval('[data-choice="start"]', l => l.map(e => e.dataset.value))) { await q.choose('start', v); await q.check(); if (await q.page.$('#next:not(.locked)')) break; }
+  await q.next(); await q.page.waitForTimeout(100);
+  const fit = await q.page.evaluate(() => [...document.querySelectorAll('.ln-tw')].map(w => { const t = [...w.querySelectorAll('table')].find(x => x.offsetWidth > 0); return t && t.scrollWidth <= w.clientWidth + 1; }));
+  assert.ok(fit.length && fit.every(Boolean), '看得到的表格都放得下：' + JSON.stringify(fit));
+  const z = await q.page.evaluate(() => window.zhuyin.readings('小狗每個月的體重').filter(x => x[0] === '重').map(x => x[1]));
+  assert.deepEqual(z, ['ㄓㄨㄥˋ']);
+  assert.deepEqual(p.errors, []); assert.deepEqual(q.errors, []);
+});
+
+test('第 28 版第 6 輪複測：5-3 波浪線描點、表面積長方體有自己的「問問自己」', { skip: skip || !distReady }, async () => {
+  const p = await act('cuboid', { difficulty: 'standard', selfAsk: true });
+  const ask = await p.text('.step-ask'); assert.match(ask, /盒子外面/); assert.doesNotMatch(ask, /圖形裡面/);
+  const a = await p.page.evaluate(() => [window.areaActs.get('lnBreak').steps.find(s => s.title === '描點').ask, window.areaActs.get('prism').steps[0].ask]);
+  assert.doesNotMatch(a[0], /0 也/); assert.match(a[1], /柱體/);
+  const unitAsk = await p.page.evaluate(() => window.lessonPackages.surface.activities.flatMap(x => (window.areaActs.get(x.id)?.steps || []).filter(s => s.title === '選單位').map(s => s.ask)));
+  assert.ok(unitAsk.length && unitAsk.every(t => /平方還是立方/.test(t)));
+  assert.deepEqual(p.errors, []);
 });

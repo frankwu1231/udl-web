@@ -11,7 +11,8 @@
   let lessons, type = params.get('a') || params.get('shape');
   if (!(names[type] || (ACT && ACT.get(type)))) type = null;
   // 新活動（外掛）；原本的圖形解題時為 null。有些步驟只在老師開啟時出現（例如平方公尺換算）
-  const P = () => { const pl = ACT && type && ACT.get(type); if (!pl) return null; return pl.steps.some(x => x.when) ? { ...pl, steps: pl.steps.filter(x => !x.when || x.when(settings)) } : pl; };
+  // 第 28 版：外掛可以依這一題換文字（forProblem，例如波浪線題不說「半格」）
+  const P = () => { let pl = ACT && type && ACT.get(type); if (!pl) return null; if (pl.forProblem && pProblem) pl = pl.forProblem(pProblem); return pl.steps.some(x => x.when) ? { ...pl, steps: pl.steps.filter(x => !x.when || x.when(settings)) } : pl; };
   const nameOf = (k = type) => names[k] || ((ACT && ACT.info(k)) || {}).title || '';
   const draftQ = params.get('draft') === '1' ? '&draft=1' : '';
   const mapUrl = () => 'seven.html' + (draftQ ? '?' + draftQ.slice(1) : '');
@@ -62,13 +63,13 @@
 
   // 第 26 版：班級設定，再套上這位學生的個別設定（老師在「教師觀察」調整、存在網站資料庫）
   function ownSettings() { return { ...F.settings(L()), ...(window.areaResearch?.overrides?.(type) || {}), ...(window.areaResearch?.phasePatch?.(type) || {}) }; }   // 第 26 版第四階段：研究階段（B、BC 關閉 AI；BC 由小老師小方取代小幫手；示範階段用老師示範模式）
-  const SITE_VERSION = 'v27';
+  const SITE_VERSION = 'v28';
   function log(event, extra = {}) {
     const st = extra.activity && phase !== 'plan' ? (titles()[extra.activity - 1] || '') : '';
     const r = { time: new Date().toISOString(), siteVersion: SITE_VERSION, shape: nameOf(), shapeKey: type, actId: type, stepTitle: st, cycle, activity: extra.activity ?? null, event, support: settings.support, response, method, flow: settings.flow, difficulty: settings.difficulty, mode: mode(), studyPhase, ...(window.areaTutor?.stage?.() ? { tutorStage: window.areaTutor.stage() } : {}), ...extra };
     window.areaResearch?.record(r);   // 第 22 版：現場試用時加上代號並上傳到試算表
     records.push(r);
-    saveRecords();
+    saveRecords(); saveDraft();
   }
 
   // multi：可以複選，答案存成「a,b」
@@ -99,6 +100,7 @@
 
   function startQuestion() {
     answers = carry ? { method: carry.method } : {};
+    startedAt = 0;   // 還沒按「開始」：離開或重新整理不記「中途離開」，也不用掉題號
     checked = new Set(); orders = {}; frame = 0; tiles = []; revealed = {}; lineOk = false; dragFrom = null; aiMsg = {}; videoOpen = new Set(); stuckOpen = null; stuckNote = {};
     hintLevel = [0, 0, 0, 0, 0, 0, 0]; tried2 = new Set(); nudged = new Set(); hintPending = false; errors = 0; hintsUsed = 0; page = 0; entered = new Set(); returnTo = null;
     settings = ownSettings(); applyReading();
@@ -111,7 +113,30 @@
     phase = 'plan'; render();
   }
 
+  // 第 28 版：折線圖活動做到一半重新整理，接著做（題目、作答、做到第幾步存在這個分頁；換學生時清掉）
+  const DRAFT_KEY = 'act-draft-v28', OWN_KEY = 'line-record-v28';
+  let resumed = false;
+  addEventListener('pagehide', () => saveDraft());   // 打字還沒按檢查就重新整理，也存起來
+  const draftable = () => !!(P() && ACT?.pkgOf(type)?.id === 'line' && mode() !== 'probe' && mode() !== 'demo');
+  function saveDraft() {
+    if (!draftable()) return;
+    try { if (phase === 'solve') sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ type, index, cycle, problem: pProblem, state: pState, answers, checked: [...checked], page, hintLevel, goal, method, errors, hintsUsed, tried2: [...tried2], nudged: [...nudged], startedAt })); else sessionStorage.removeItem(DRAFT_KEY); } catch { /* 無法暫存就算了 */ }
+  }
+  function loadDraft() {
+    if (!draftable()) return false;
+    let d; try { d = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || 'null'); } catch { d = null; }
+    if (!d || d.type !== type || !d.problem) return false;
+    pProblem = d.problem; pState = d.state || {}; answers = d.answers || {}; checked = new Set(d.checked || []); index = d.index || 0;
+    hintLevel = Array.isArray(d.hintLevel) ? d.hintLevel : hintLevel; goal = d.goal || goal; method = d.method || method; startedAt = d.startedAt || Date.now();
+    // 同一題：題號、答錯和提示的次數都接著算（題號不要因為重新整理加 1）
+    if (d.cycle) cycle = d.cycle; errors = d.errors || 0; hintsUsed = d.hintsUsed || 0; tried2 = new Set(d.tried2 || []); nudged = new Set(d.nudged || []);
+    page = Math.min(d.page || 0, pages().length - 1); for (let n = 0; n < page; n++) for (const x of pages()[n]) entered.add(x);
+    phase = 'solve';
+    return true;
+  }
+
   function render() {
+    saveDraft();
     if (!type) mapView();
     else if (phase === 'reflect') reflect(); else if (phase === 'plan') plan(); else solve();
     window.areaBuddy?.update(); window.areaTutor?.update();
@@ -1325,8 +1350,8 @@
   // ---------- 閱讀輔助：注音、字級、高對比（學生自己切換的會蓋過老師的預設） ----------
   // 換下一位學生：清掉上一位的紀錄、題號、逐步留空進度和閱讀輔助，從第 1 題重新開始
   function resetStudent() {
-    records = []; saveRecords(); doneBase = 0; cycle = 1; index = 0; keepProblem = false; pProblem = null; voices = {}; fadeFull = false; retryQ = false; carry = null;
-    try { sessionStorage.removeItem(FADE_KEY); sessionStorage.removeItem(AID_KEY); } catch { /* 略過 */ }
+    records = []; saveRecords(); doneBase = 0; cycle = 1; index = 0; startedAt = 0;   // 第 28 版：新學生還沒按「開始」，重新整理不算一題 keepProblem = false; pProblem = null; voices = {}; fadeFull = false; retryQ = false; carry = null;
+    try { sessionStorage.removeItem(FADE_KEY); sessionStorage.removeItem(AID_KEY); sessionStorage.removeItem(DRAFT_KEY); sessionStorage.removeItem(OWN_KEY); } catch { /* 略過 */ }
     applyReading();
     if (type) startQuestion(); else render();
   }
@@ -1353,10 +1378,13 @@
     const m = lessons.map || {}, avail = ACT ? ACT.available() : Object.keys(names).map(id => ({ id, title: names[id], unit: 'u3', no: '' }));
     const assigned = Array.isArray(m.assigned) ? m.assigned : avail.map(a => a.id);
     const done = id => records.filter(r => r.event === '整題完成' && (r.actId || r.shapeKey) === id).length;
+    // 第 28 版：先測活動（例如折線圖單元 0）：有一題沒有答錯、沒有看提示、沒有看示範就算通過；照順序時，通過才打開後面的活動
+    const passed = id => records.some(r => r.event === '整題完成' && (r.actId || r.shapeKey) === id && !r.errors && !r.hints && !r.watched);
+    const ok = a => a.pretest ? passed(a.id) : done(a.id) > 0;
     const order = avail.filter(a => assigned.includes(a.id));
     const lockedSet = new Set();
-    if (m.sequential) order.forEach((a, i) => { if (i > 0 && !order.slice(0, i).every(b => done(b.id) > 0)) lockedSet.add(a.id); });
-    return { m, avail, assigned, done, lockedSet };
+    if (m.sequential) order.forEach((a, i) => { if (i > 0 && !order.slice(0, i).every(ok)) lockedSet.add(a.id); });
+    return { m, avail, assigned, done, passed, lockedSet };
   }
   // 第 25 版：學生直接改網址也不能跳過還沒打開的活動，或老師沒指派的活動
   function blockedByMap(id) {
@@ -1366,13 +1394,13 @@
     return lockedSet.has(id) || !assigned.includes(id);
   }
   function mapView() {
-    const { m, avail, assigned, done, lockedSet } = mapState();
+    const { m, avail, assigned, done, passed, lockedSet } = mapState();
     const units = (ACT ? ACT.UNITS : [{ id: 'u3', title: '圖形', icon: '' }]).map(u => {
       const acts = avail.filter(a => a.unit === u.id && (assigned.includes(a.id) || isTeacher));
       if (!acts.length) return '';
       return `<section class="map-unit"><h2 data-read><span aria-hidden="true">${u.icon}</span> ${esc(u.title)}</h2><div class="map-cards">${acts.map(a => {
         const n = done(a.id), locked = lockedSet.has(a.id), off = !assigned.includes(a.id);
-        const status = off ? '老師還沒有指派' : locked ? '🔒 先完成前面的活動' : n ? `完成 ${n} 題` : '還沒開始';
+        const status = off ? '老師還沒有指派' : locked ? '🔒 先完成前面的活動' : a.pretest ? (passed(a.id) ? '✅ 先測全對，可以往下' : n ? `完成 ${n} 題，再練到全對` : '先測：全對就可以往下') : n ? `完成 ${n} 題` : '還沒開始';
         return `<a class="map-card${locked ? ' locked' : ''}${off ? ' off' : ''}" ${locked ? 'aria-disabled="true" tabindex="-1"' : ''} href="seven.html?a=${a.id}${draftQ}" data-map="${a.id}">
           <span class="map-icon" aria-hidden="true">${a.icon || ''}</span><span class="map-no">${a.no}</span><span class="map-title" data-read>${esc(a.title)}</span>
           <span class="map-stars" aria-label="完成 ${n} 題">${'⭐'.repeat(Math.min(3, n))}${'☆'.repeat(Math.max(0, 3 - n))}</span><span class="map-status">${status}</span></a>`;
@@ -1427,10 +1455,11 @@
       if (P() && !lessons.activities[type]) lessons.activities[type] = {};
       loadRecords(); doneBase = doneAll();
       if (type && blockedByMap(type)) { location.replace(mapUrl()); return; }
-      if (P()) { settings = ownSettings(); if (!settings.ai) $('apiSettings').hidden = true; pProblem = P().makeProblem(level(), index, Math.random, { done: doneAll() }); }
+      if (P()) { settings = ownSettings(); if (!settings.ai) $('apiSettings').hidden = true; pProblem = P().makeProblem(level(), index, Math.random, { done: doneAll() }); resumed = loadDraft(); }
       else if (type) { settings = ownSettings(); orders.lines = F.shuffle(['A', 'B', 'C']); if (!settings.ai) $('apiSettings').hidden = true; if (settings.mode === 'probe') probeDims = F.randomProblem(type, settings.difficulty === 'custom' ? 'standard' : settings.difficulty); }
       attachBuddy(); applyReading();
       window.areaResearch?.init(lessons.research, { records: () => records, settings: () => settings, activity: () => ({ id: type || '', name: type ? nameOf() : '' }), step, log, changed: () => render(), reset: resetStudent, refresh: () => { if (type) settings = ownSettings(); }, classCode: session.classCode || '', workspace: session.workspace || '', scope: (session.workspace || '') + '/' + (session.className || '') });
+      if (resumed) log('重新整理後接著做', { activity: page + 1 });
       render();
     } catch (error) { shell('教材暫時無法載入', `<p>${esc(error.message)}</p><a href="/">返回入口</a>`); }
   }

@@ -54,8 +54,31 @@
   }
 
   // ---------- 一題 ----------
+  // 第 28 版：折線圖的題目圖（和 act-line.js 的畫法一樣，只是精簡版）
+  function chartFig(c) {
+    const n = c.xs.length, every = c.every || 1, colW = Math.max(42, Math.min(66, 430 / n)), rowH = Math.max(15, Math.min(30, 240 / c.rows));
+    const L = 70, T = c.title ? 56 : 34, G = c.brk ? 22 : 0, y0 = T + c.rows * rowH, W = L + colW * n + 24, H = y0 + G + 52;
+    const X = i => L + colW * (i + 0.5), Y = v => y0 - (v - c.min) / c.step * rowH, col = ['#1f6fd1', '#d9480f'], p = [];
+    if (c.title) p.push(`<text x="${W / 2}" y="24" font-size="18" font-weight="700" text-anchor="middle" fill="#1d2b44">${esc(c.title)}</text>`);
+    for (let k = 0; k <= c.rows; k++) p.push(`<line x1="${L}" y1="${y0 - k * rowH}" x2="${L + colW * n}" y2="${y0 - k * rowH}" stroke="${k % every ? '#e3eaf5' : '#c9d6ea'}"/>`);
+    if (!c.hideY) for (let k = 0; k <= c.rows; k += every) p.push(`<text x="${L - 8}" y="${y0 - k * rowH + 5}" font-size="15" text-anchor="end" fill="#1d2b44">${c.min + k * c.step}</text>`);
+    p.push(`<line x1="${L}" y1="${T - 6}" x2="${L}" y2="${y0}" stroke="#1d2b44" stroke-width="2"/>`);
+    if (c.brk) p.push(`<path d="M${L} ${y0}l-7 4l14 5l-14 5l7 4V${y0 + G}" fill="none" stroke="#1d2b44" stroke-width="2"/><text x="${L - 8}" y="${y0 + G + 5}" font-size="15" text-anchor="end">0</text>`);
+    p.push(`<line x1="${L}" y1="${y0 + G}" x2="${L + colW * n + 10}" y2="${y0 + G}" stroke="#1d2b44" stroke-width="2"/>`);
+    if (c.yName) p.push(`<text x="${L - 6}" y="${T - 12}" font-size="15" text-anchor="middle" fill="#1d2b44">${esc(c.yName)}</text>`);
+    c.xs.forEach((x, i) => p.push(`<text x="${X(i)}" y="${y0 + G + 22}" font-size="15" text-anchor="middle" fill="#1d2b44">${esc(x)}</text>`));
+    if (c.xName) p.push(`<text x="${L + colW * n + 12}" y="${y0 + G + 40}" font-size="14" text-anchor="end" fill="#1d2b44">${esc(c.xName)}</text>`);
+    c.series.forEach((s, j) => {
+      const pts = s.v.map((v, i) => v === null ? null : [X(i), Y(v)]).filter(Boolean);
+      if (pts.length > 1) p.push(`<polyline points="${pts.map(q => q.join(',')).join(' ')}" fill="none" stroke="${col[j]}" stroke-width="3"/>`);
+      pts.forEach(([x, y]) => p.push(j ? `<rect x="${x - 6}" y="${y - 6}" width="12" height="12" fill="${col[j]}"/>` : `<circle cx="${x}" cy="${y}" r="6" fill="${col[j]}"/>`));
+    });
+    if (c.series.length > 1) c.series.forEach((s, j) => p.push((j ? `<rect x="${L + 10}" y="${T + 6 + j * 22}" width="12" height="12" fill="${col[j]}"/>` : `<circle cx="${L + 16}" cy="${T + 12}" r="6" fill="${col[j]}"/>`) + `<text x="${L + 30}" y="${T + 17 + j * 22}" font-size="14">${esc(s.name)}</text>`));
+    return `<figure><svg viewBox="0 0 ${W} ${H}" width="${Math.min(W, 600)}" role="img" aria-label="題目的折線圖">${p.join('')}</svg></figure>`;
+  }
   function figure(f) {
     if (!f) return '';
+    if (f.chart) return chartFig(f.chart);
     const c = 32, w = f.cols * c, h = f.rows * c, parts = [];
     if (f.grid) for (let x = 0; x <= f.cols; x++) parts.push(`<line x1="${x * c}" y1="0" x2="${x * c}" y2="${h}" stroke="#c9d6ea"/>`);
     if (f.grid) for (let y = 0; y <= f.rows; y++) parts.push(`<line x1="0" y1="${y * c}" x2="${w}" y2="${y * c}" stroke="#c9d6ea"/>`);
