@@ -1,4 +1,5 @@
 # 表面積前測：產生 20 份 HTML（一般版）與 answers.csv。版面沿用面積前測（docs/pretest-area/pretest-01.html）。
+# 2026-11-14 依現場老師建議把數字調小：一個面的面積都在九九乘法內，表面積大多在 100 以內。
 # 用法：python3 docs/pretest-surface/make_pretest.py  →  docs/pretest-surface/pretest-versions/pretest-01～20.html、answers.csv
 # 轉 PDF：node docs/pretest-surface/make-pdfs.mjs（學生卷隱藏教師區，答案卷隱藏題目）
 import csv, html, os, random
@@ -35,7 +36,7 @@ def svg(w, h, label, body):
 
 def cuboid(l, w, h, s=None, labels=True, names=False, lid=True, grid=False, aria=''):
     """斜投影長方體：前面是長 × 高，往右上方退後的是寬。"""
-    s = s or min(26, 230 / (l + w * 0.6), 150 / (h + w * 0.4))
+    s = s or min(34, 230 / (l + w * 0.6), 150 / (h + w * 0.4))
     dx, dy = w * s * 0.6, w * s * 0.4
     L, H = l * s, h * s
     x0, y0 = 62, (30 if not lid else 14) + dy
@@ -74,7 +75,7 @@ def cuboid(l, w, h, s=None, labels=True, names=False, lid=True, grid=False, aria
 
 def prism(k, h):
     """直角三角形底面的三角柱：兩股 3k、4k，斜邊 5k，柱高 h。三角形在前面，往右上方退後的是柱高。"""
-    s = min(22, 150 / (4 * k + h * 0.6))
+    s = min(30, 150 / (4 * k + h * 0.6))
     a, b = 3 * k * s, 4 * k * s
     dx, dy = h * s * 0.6, h * s * 0.4
     x0, y0 = 62, 14 + dy
@@ -97,7 +98,7 @@ CIRCLED = '①②③④⑤⑥'
 
 def net_svg(l, w, h, names):
     """方格紙上的長方體展開圖（十字形）。names：每個面的編號。"""
-    c = 18
+    c = 24
     faces = {'top': (w, 0, l, w), 'front': (w, w, l, h), 'left': (0, w, w, h), 'right': (w + l, w, w, h),
              'bottom': (w, w + h, l, w), 'back': (w, 2 * w + h, l, h)}
     cols, rows = 2 * w + l + 2, 2 * w + 2 * h + 2
@@ -170,7 +171,7 @@ def make(n):
           ('1(3)', '3 組', '1', '每一組是兩個對面')]
 
     # 2 包住外面：表面積是什麼（單元 1）
-    a2 = r.randint(2, 4)
+    a2 = r.randint(2, 3)
     items.append(item(2, '計', '單元 1', f'用小方塊堆成一個大正方體，每一邊有 {a2} 個小方塊。小方塊的一個面是 1 平方公分。把大正方體外面的每一個面都塗上顏色。',
                       cuboid(a2, a2, a2, s=min(40, 130 / a2), labels=False, grid=True, aria=f'小方塊堆成的大正方體，每一邊 {a2} 個'),
                       ['大正方體的一個面，塗到顏色的部分是多少平方公分？', '大正方體外面全部塗到顏色的部分，一共是多少平方公分？']))
@@ -178,8 +179,8 @@ def make(n):
           ('2(2)', f'{6 * a2 * a2} {CM2}', '1', f'表面積是 6 個面合起來；寫 {3 * a2 * a2} 表示只算看得到的 3 個面' + (f'，寫 {a2 ** 3} 表示算成小方塊個數（體積）' if a2 ** 3 != 3 * a2 * a2 else '（也可能是算成小方塊個數）'))]
 
     # 3 展開圖與對面（單元 2）
-    l3 = r.randint(4, 6)
-    w3, h3 = r.sample([2, 3], 2)
+    l3 = r.randint(3, 4)
+    w3, h3 = r.sample([1, 2], 2)
     keys = ['top', 'front', 'left', 'right', 'bottom', 'back']
     nums = list(CIRCLED)
     r.shuffle(nums)
@@ -204,8 +205,8 @@ def make(n):
 
     # 5 長方體的表面積（單元 3）
     while True:
-        l5, w5, h5 = distinct(r, [(5, 9), (2, 4), (3, 6)])
-        if 2 * (l5 * w5 + l5 * h5 + w5 * h5) != l5 * w5 * h5: break
+        l5, w5, h5 = distinct(r, [(3, 5), (2, 3), (2, 4)])
+        if 2 * (l5 * w5 + l5 * h5 + w5 * h5) != l5 * w5 * h5 and l5 > h5 and l5 * w5 + l5 * h5 + w5 * h5 <= 40: break
     s5 = 2 * (l5 * w5 + l5 * h5 + w5 * h5)
     items.append(item(5, '計', '單元 3', f'長方體的長 {l5} 公分、寬 {w5} 公分、高 {h5} 公分。', cuboid(l5, w5, h5, aria=f'長方體，長 {l5}、寬 {w5}、高 {h5} 公分'),
                       ['上面的面積是多少？', '前面的面積是多少？', '右邊的面積是多少？', '這個長方體的表面積是多少？']))
@@ -214,21 +215,23 @@ def make(n):
           ('5(4)', f'{s5} {CM2}', '3', f'三種面各 2 個；寫 {s5 // 2} 表示忘了 × 2，寫 {l5 * w5 * h5} 表示算成體積')]
 
     # 6 正方體的表面積（單元 3）
-    a6 = r.choice([x for x in range(3, 10) if x not in (a2, 6)])
-    items.append(item(6, '計', '單元 3', f'正方體的邊長是 {a6} 公分。', cuboid(a6, a6, a6, s=min(22, 120 / a6), aria=f'正方體，邊長 {a6} 公分'),
+    a6 = r.choice([x for x in (2, 3, 4) if x != a2])
+    items.append(item(6, '計', '單元 3', f'正方體的邊長是 {a6} 公分。', cuboid(a6, a6, a6, s=min(34, 120 / a6), aria=f'正方體，邊長 {a6} 公分'),
                       ['一個面的面積是多少？', '這個正方體的表面積是多少？']))
     A += [('6(1)', f'{a6 * a6} {CM2}', '3', '邊長 × 邊長'),
-          ('6(2)', f'{6 * a6 * a6} {CM2}', '3', f'6 個面一樣大；寫 {4 * a6 * a6} 表示只算 4 個面，寫 {a6 ** 3} 表示算成體積')]
+          ('6(2)', f'{6 * a6 * a6} {CM2}', '3', f'6 個面一樣大；寫 {4 * a6 * a6} 表示只算 4 個面' + (f'，寫 {a6 ** 3} 表示算成體積' if a6 != 4 else '（也可能是算成體積）'))]
 
     # 7 知道表面積，找一個面（單元 3）
-    a7 = r.choice([x for x in range(2, 7) if x not in (a6, a2)])
+    a7 = r.choice([x for x in (2, 3) if x != a6])  # 表面積 24 或 54，÷ 6 在九九乘法內
     items.append(item(7, '計', '單元 3', f'一個正方體的表面積是 {6 * a7 * a7} 平方公分。', '',
                       ['一個面的面積是多少？', '正方體的邊長是多少？']))
     A += [('7(1)', f'{a7 * a7} {CM2}', '3', '表面積 ÷ 6；除以 4 表示以為正方體只有 4 個面'),
           ('7(2)', f'{a7} 公分', '3', '哪個數乘自己等於一個面的面積；單位是公分')]
 
     # 8 沒有蓋子的盒子（單元 4）
-    l8, w8, h8 = distinct(r, [(4, 8), (2, 5), (2, 5)])
+    while True:  # 不和第 5 題一樣大
+        l8, w8, h8 = distinct(r, [(3, 5), (2, 3), (1, 2)])
+        if (l8, w8, h8) != (l5, w5, h5): break
     s8 = l8 * w8 + 2 * (l8 * h8 + w8 * h8)
     items.append(item(8, '應', '單元 4', f'用紙板做一個沒有蓋子的長方體盒子，長 {l8} 公分、寬 {w8} 公分、高 {h8} 公分。',
                       cuboid(l8, w8, h8, lid=False, aria=f'沒有蓋子的長方體盒子，長 {l8}、寬 {w8}、高 {h8} 公分'),
@@ -238,8 +241,8 @@ def make(n):
 
     # 9 包裝紙還是小方塊：表面積或體積（單元 3、4）
     while True:
-        l9, w9, h9 = distinct(r, [(4, 6), (2, 3), (2, 5)])
-        if 2 * (l9 * w9 + l9 * h9 + w9 * h9) != l9 * w9 * h9: break
+        l9, w9, h9 = distinct(r, [(3, 4), (2, 3), (1, 2)])
+        if 2 * (l9 * w9 + l9 * h9 + w9 * h9) != l9 * w9 * h9 and (l9, w9, h9) not in ((l5, w5, h5), (l8, w8, h8)): break
     s9 = 2 * (l9 * w9 + l9 * h9 + w9 * h9)
     v9 = l9 * w9 * h9
     items.append(item(9, '應', '單元 3、4', f'一個長方體禮物盒，長 {l9} 公分、寬 {w9} 公分、高 {h9} 公分。', '',
@@ -248,8 +251,8 @@ def make(n):
           ('9(2)', f'{v9} 個（或 {v9} 立方公分）', '3', f'放進裡面要算體積；寫 {s9} 表示算成表面積')]
 
     # 10 三角柱（單元 5，六年級）
-    k10 = r.choice([1, 2])
-    h10 = r.randint(3, 8) if k10 == 1 else r.randint(2, 5)
+    k10 = 1  # 底面固定 3、4、5 公分，計算比較簡單
+    h10 = r.randint(2, 4)
     base = 6 * k10 * k10
     side = 12 * k10 * h10
     items.append(item(10, '計', '單元 5（六年級）', f'三角柱的底面是直角三角形，三條邊是 {3 * k10} 公分、{4 * k10} 公分、{5 * k10} 公分。柱高 {h10} 公分。', prism(k10, h10),
