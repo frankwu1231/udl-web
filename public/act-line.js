@@ -187,7 +187,7 @@
   // 點選橫軸的時間（ctx.state.xi），want(ctx) 是要點的時間
   function bindX(n, key = 'xi', after) {
     return ctx => document.querySelectorAll(`#figure${n} [data-x]`).forEach(el => {
-      const go = () => { ctx.state[key] = Number(el.dataset.x); ctx.answers[key] = el.dataset.x; ctx.log('點橫軸', { x: Number(el.dataset.x) }); after ? after(ctx) : ctx.refreshFigure(n); };
+      const go = () => { ctx.state[key] = Number(el.dataset.x); ctx.answers[key] = el.dataset.x; ctx.log('點橫軸', { x: Number(el.dataset.x) }); ctx.invalidate(n); after ? after(ctx) : ctx.refreshFigure(n); };
       el.onclick = go; el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
     });
   }
@@ -195,7 +195,7 @@
   function bindCells(n, s = 0) {
     return ctx => document.querySelectorAll(`#figure${n} [data-cell]`).forEach(el => {
       const go = () => { const [i, v] = el.dataset.cell.split(':').map(Number), st = ctx.state; st.pts = st.pts || {}; st.pts[i] = st.pts[i] === v ? null : v; if (st.pts[i] == null) delete st.pts[i];
-        ctx.answers['pts' + s] = String(Object.keys(st.pts).length); ctx.log('描點', { i, v }); ctx.refreshFigure(n); };
+        ctx.answers['pts' + s] = String(Object.keys(st.pts).length); ctx.log('描點', { i, v }); ctx.invalidate(n); ctx.refreshFigure(n); };
       el.onclick = go; el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
     });
   }
@@ -203,10 +203,10 @@
   function bindLink(n) {
     return ctx => {
       document.querySelectorAll(`#figure${n} [data-link]`).forEach(el => {
-        const go = () => { const i = Number(el.dataset.link), st = ctx.state; st.path = st.path || []; if (st.path.at(-1) === i) return; st.path.push(i); ctx.answers.path = st.path.join(','); ctx.log('連線', { to: i }); ctx.refreshFigure(n); };
+        const go = () => { const i = Number(el.dataset.link), st = ctx.state; st.path = st.path || []; if (st.path.at(-1) === i) return; st.path.push(i); ctx.answers.path = st.path.join(','); ctx.log('連線', { to: i }); ctx.invalidate(n); ctx.refreshFigure(n); };
         el.onclick = go; el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
       });
-      const b = document.getElementById('lnUnlink'); if (b) b.onclick = () => { ctx.state.path = []; delete ctx.answers.path; ctx.log('重新連線'); ctx.rerender(); };
+      const b = document.getElementById('lnUnlink'); if (b) b.onclick = () => { ctx.state.path = []; delete ctx.answers.path; ctx.log('重新連線'); ctx.invalidate(n); ctx.rerender(); };
     };
   }
   // 描點的檢查：每個點都要和表格一樣
@@ -280,9 +280,9 @@
 
   // ---------- 核心活動 5-1：畫圖七步 ----------
   function makeDraw(level, i, rand = Math.random) {
-    const lv = { easy: LEVELS.easy, standard: LEVELS.standard.map(([k, c]) => [k, { ...c, every: 1 }]), challenge: LEVELS.standard.map(([k, c]) => [k, { ...c, every: 1, n: 7 }]) };
-    // 5-1 有一天是 0 的資料（下雨量）：入門的第 4 種情境
-    const p = makeChart(level, i, rand, { levels: lv, room: true, test: v => level !== 'easy' || pick(LEVELS.easy, i)[0] !== 'rain' || v.includes(0) });
+    const lv = { easy: [LEVELS.easy[0], LEVELS.easy[3], LEVELS.easy[1], LEVELS.easy[2]], standard: LEVELS.standard.map(([k, c]) => [k, { ...c, every: 1 }]), challenge: LEVELS.standard.map(([k, c]) => [k, { ...c, every: 1, n: 7 }]) };
+    // 5-1 有一天是 0 的資料（下雨量）：入門排在第 2 種情境（題號每 3 題輪一次），一定碰得到
+    const p = makeChart(level, i, rand, { levels: lv, room: true, test: v => level !== 'easy' || pick(lv.easy, i)[0] !== 'rain' || v.includes(0) });
     const mx = maxAt(p);
     return { ...p, mx, prompt: `把表格「${p.title}」畫成折線圖。縱軸一格是 ${p.step} ${p.unit}。` };
   }
@@ -299,8 +299,8 @@
       figure: ctx => { const p = ctx.problem, o = ctx.state.order || []; return `<div class="ln-slots" aria-label="橫軸">${p.xs.map((x, i) => `<span class="ln-slot${o[i] != null ? ' on' : ''}">${o[i] != null ? esc(p.xs[o[i]]) : '　'}</span>`).join('')}</div><p class="subtle" data-read>${esc(p.xName)}</p>`; },
       answer: ctx => { const p = ctx.problem, o = ctx.state.order || [], mix = shuffled(p.xs.length, p.xs.length + p.step);
         return `<p data-read data-say>照時間的順序，一個一個點，放到橫軸上。</p><div class="actions ln-chips">${mix.map(i => `<button type="button" data-chip="${i}" ${o.includes(i) ? 'disabled' : ''}>${esc(p.xs[i])}</button>`).join('')}<button type="button" id="lnUnorder" class="secondary">重新排</button></div>`; },
-      bind: ctx => { document.querySelectorAll('[data-chip]').forEach(b => b.onclick = () => { const o = ctx.state.order = ctx.state.order || []; o.push(Number(b.dataset.chip)); ctx.answers.order = o.join(','); ctx.log('排橫軸', { x: Number(b.dataset.chip) }); ctx.rerender(); });
-        const r = document.getElementById('lnUnorder'); if (r) r.onclick = () => { ctx.state.order = []; delete ctx.answers.order; ctx.rerender(); }; },
+      bind: ctx => { document.querySelectorAll('[data-chip]').forEach(b => b.onclick = () => { const o = ctx.state.order = ctx.state.order || []; o.push(Number(b.dataset.chip)); ctx.answers.order = o.join(','); ctx.log('排橫軸', { x: Number(b.dataset.chip) }); ctx.invalidate(1); ctx.rerender(); });
+        const r = document.getElementById('lnUnorder'); if (r) r.onclick = () => { ctx.state.order = []; delete ctx.answers.order; ctx.invalidate(1); ctx.rerender(); }; },
       check: ctx => { const o = ctx.state.order || [], n = ctx.problem.xs.length; if (o.length < n) return { code: 'order', obs: 'unfinished', msg: `還有 ${n - o.length} 個沒有排。` };
         return o.every((x, i) => x === i) ? null : { code: 'order', obs: 'orderJump', msg: '順序不對。橫軸要從最早的時間排到最晚的。按「重新排」再試一次。' }; },
       solve: ctx => { ctx.state.order = ctx.problem.xs.map((_, i) => i); ctx.answers.order = ctx.state.order.join(','); }, say: ex => `從${ex.problem.full[0]}排到${ex.problem.full.at(-1)}。` },

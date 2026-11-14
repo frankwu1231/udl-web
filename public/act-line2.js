@@ -108,7 +108,7 @@
       { title: '表格 → 點', ids: ['pt'], hints: ['先看亮起來的是哪一個時間。', '在橫軸找到那個時間，往上找點。', '點那個時間上面的點。'], think: '老師看亮起來的時間，在圖上那個時間往上找點。', together: '一起找：這筆資料是哪一個點？',
         figure: ctx => `${tableHtml(ctx.problem, { hl: ctx.problem.j })}${chartSVG(ctx.problem, { clickPts: true, noTitle: true, mark: ctx.state.pt != null ? [[ctx.state.pt, 0]] : ctx.hint(0) >= 2 ? [[ctx.problem.j, 0]] : [] })}`,
         answer: ctx => { const p = ctx.problem; return `<p class="lesson-prompt" data-read data-say>${esc(p.prompt)}表格亮起來的是${esc(p.full[p.j])}，${p.series[0].v[p.j]} ${esc(p.unit)}。在圖上點它的點。</p>`; },
-        bind: ctx => document.querySelectorAll('#figure0 [data-pt]').forEach(el => pressKey(el, () => { ctx.state.pt = Number(el.dataset.pt.split(':')[1]); ctx.answers.pt = String(ctx.state.pt); ctx.log('點圖上的點', { i: ctx.state.pt }); ctx.refreshFigure(0); })),
+        bind: ctx => document.querySelectorAll('#figure0 [data-pt]').forEach(el => pressKey(el, () => { ctx.state.pt = Number(el.dataset.pt.split(':')[1]); ctx.answers.pt = String(ctx.state.pt); ctx.log('點圖上的點', { i: ctx.state.pt }); ctx.invalidate(0); ctx.refreshFigure(0); })),
         check: ctx => { const p = ctx.problem, x = ctx.state.pt; if (x == null) return { code: 'pt', obs: 'unfinished', msg: '在圖上點一個點。' }; return x === p.j ? null : { code: 'pt', obs: Math.abs(x - p.j) === 1 ? 'misalign' : 'wrongChoice', msg: `你點的是${p.full[x]}的點。找${p.full[p.j]}。` }; },
         solve: ctx => { ctx.state.pt = ctx.problem.j; ctx.answers.pt = String(ctx.problem.j); }, say: ex => `${ex.problem.full[ex.problem.j]}的點。` },
       { title: '點 → 表格', ids: ['row'], hints: ['圈起來的點，在哪一個時間的上面？', '從點往下看，對到橫軸。', '對到的時間，就是表格的那一筆。'], think: '老師從點往下看，對到橫軸的時間。', together: '一起看：這個點是哪一筆？',
@@ -148,7 +148,7 @@
     challenge: [['height', { step: 1, lo: 131, hi: 145, n: 6, every: 5, up: true, brk: 130 }], ['temp', { step: 1, lo: 21, hi: 31, n: 7, every: 2, brk: 20 }]] };
   A.register('lnBetween', {
     methods, makeProblem: (level, i, rand = Math.random) => {
-      const brk = level === 'challenge', p = makeChart(level, i, rand, { levels: BETWEEN, test: v => brk || v.some(y => y % (pick(BETWEEN[level] || BETWEEN.standard, i)[1].step) !== 0) });
+      const brk = level === 'challenge', p = makeChart(level, i, rand, { levels: BETWEEN, test: v => { const c = pick(BETWEEN[level] || BETWEEN.standard, i)[1]; return brk ? v.some(y => (y - c.brk) % (c.step * c.every) !== 0) : v.some(y => y % c.step !== 0); } });
       const v = p.series[0].v, cand = v.map((y, j) => j).filter(j => brk ? (v[j] - p.min) % (p.step * p.every) !== 0 : (v[j] - p.min) % p.step !== 0), ti = cand.length ? cand[rnd(rand, 0, cand.length - 1)] : 0;
       return { ...p, ti, prompt: `看「${p.title}」。${p.full[ti]}是多少${p.unit}？` }; },
     planFigure: ctx => chartSVG(ctx.problem, {}),
@@ -258,7 +258,7 @@
   const ORD = ['一週每天的最高氣溫', '豆芽每天的高度', '小華每個月存的錢', '小明每天睡覺的時數'];
   const PART = ['小美的零用錢，花在哪些地方各占多少', '全班最喜歡的顏色，各占全班的幾分之幾', '一天的時間，睡覺、上學、玩各占多少'];
   const chartName = { bar: '長條圖', line: '折線圖', pie: '圓形圖' };
-  const pickStep = (n, kind, id) => ({ title: kind === 'bar' ? '一樣一樣比' : kind === 'line' ? '隨時間改變' : '部分和全部', ids: [id], hints: ['想一想：資料有沒有時間的順序？', kind === 'line' ? '有時間順序、要看變化，用折線圖。' : kind === 'bar' ? '一樣一樣比多少、沒有順序，用長條圖。' : '要看每一部分占全部多少，用圓形圖。', `這一題用${chartName[kind]}。`],
+  const pickStep = (n, kind, id) => ({ title: kind === 'bar' ? '一樣一樣比' : kind === 'line' ? '隨時間改變' : '部分和全部', ids: [id], hints: ['想一想：資料有沒有時間的順序？', '問自己：這是一天一天（一個月一個月）記下來的嗎？還是好幾樣不同的東西？', '有時間順序、要看變化，用折線圖；沒有順序、一樣一樣比多少，用長條圖。先判斷這一題是哪一種。'],
     think: '老師想：有時間順序看變化用折線圖；一樣一樣比用長條圖；看部分占全部用圓形圖。', together: '一起想：用哪一種圖？',
     answer: ctx => { const p = ctx.problem, t = p.cases[n]; return `<p class="lesson-prompt" data-read data-say>要畫「${esc(t)}」。</p>${ctx.choice(id, '用哪一種圖比較好？', (p.three ? ['bar', 'line', 'pie'] : ['bar', 'line']).map(k => [k, chartName[k]]))}`; },
     check: ctx => { const a = ctx.answers[id]; if (!a) return { code: id, msg: '先選一個答案。' }; if (a === kind) return null;
@@ -388,8 +388,13 @@
   const ITEMS = [['water', '每天喝水的杯數', '杯'], ['jump', '每天跳繩的次數（十下為單位）', '十下'], ['read', '每天看書的頁數', '頁'], ['sleep', '每天睡覺的時數', '小時']];
   const DAY5 = ['一', '二', '三', '四', '五'];
   const ownData = ctx => { const v = [0, 1, 2, 3, 4].map(j => num(ctx.answers['d' + j])); return v.every(x => x !== null && Number.isInteger(x) && x >= 0 && x <= 20) ? v : null; };
-  const ownChart = ctx => { const it = ITEMS.find(x => x[0] === ctx.answers.item) || ITEMS[0], v = ownData(ctx) || ctx.problem.sample, m = Math.max(...v, 1), step = m > 10 ? 2 : 1;
-    return { title: `我${it[1]}`, xName: '星期', yName: it[1].replace(/^每天/, '').replace(/（.*）/, ''), unit: it[2], what: it[1], xs: DAY5, full: DAY5.map(x => '星期' + x), series: [{ name: '我', v }], min: 0, step, rows: Math.ceil(m / step / 2) * 2, every: 2, brk: false }; };
+  const ownChart = ctx => chartOf(ctx.answers.item, ownData(ctx) || ctx.problem.sample);
+  const chartOf = (item, v) => { const it = ITEMS.find(x => x[0] === item) || ITEMS[0], m = Math.max(...v, 1), every = m > 10 ? 5 : 2;
+    return { title: `我${it[1]}`, xName: '星期', yName: it[1].replace(/^每天/, '').replace(/（.*）/, ''), unit: it[2], what: it[1], xs: DAY5, full: DAY5.map(x => '星期' + x), series: [{ name: '我', v }], min: 0, step: 1, rows: Math.max(4, Math.ceil(m / every) * every), every, brk: false }; };   // 一格是 1，每個整數都點得到；刻度數字每 2（或 5）格寫一次
+  // 6-1 畫好的資料留給 6-2 用（只存在這個分頁，換學生時清掉）
+  const OWN_KEY = 'line-record-v28';
+  const saveOwn = ctx => { try { sessionStorage.setItem(OWN_KEY, JSON.stringify({ item: ctx.answers.item || 'water', v: ownData(ctx) || ctx.problem.sample })); } catch { /* 略過 */ } };
+  const loadOwn = () => { try { const d = JSON.parse(sessionStorage.getItem(OWN_KEY) || 'null'); return d && Array.isArray(d.v) && d.v.length === 5 && d.v.every(x => Number.isInteger(x) && x >= 0 && x <= 20) ? d : null; } catch { return null; } };
   A.register('lnRecord', {
     methods: [['mark', '🗓️ 先選要記錄什麼'], ['self', '🧠 自己來']],
     makeProblem: (level, i, rand = Math.random) => { const sample = Array.from({ length: 5 }, () => rnd(rand, 2, level === 'easy' ? 8 : 16)); return { sample, dims: [5, 1, Math.max(...sample)], prompt: '記錄你自己一週（星期一到五）的資料，畫成折線圖。只填數字。' }; },
@@ -401,13 +406,13 @@
         solve: ctx => { ctx.answers.item = ctx.answers.item || 'water'; }, say: () => '選好要記錄的事了。' },
       { title: '填數字', ids: ['d0', 'd1', 'd2', 'd3', 'd4'], hints: ['每一天填一個數。', '只填 0 到 20 的整數。', '沒有記錄的話，可以按「用老師給的資料」。'], think: '老師把每一天的數填進表格。', together: '一起填。',
         answer: ctx => `${DAY5.map((d, j) => fieldHtml(ctx, 'd' + j, `星期${d}`, 1)).join('')}<div class="actions"><button type="button" id="lnSample" class="secondary">用老師給的資料</button></div>`,
-        bind: ctx => { const b = document.getElementById('lnSample'); if (b) b.onclick = () => { ctx.problem.sample.forEach((y, j) => { ctx.answers['d' + j] = String(y); }); ctx.log('用老師給的資料'); ctx.rerender(); }; },
+        bind: ctx => { const b = document.getElementById('lnSample'); if (b) b.onclick = () => { ctx.problem.sample.forEach((y, j) => { ctx.answers['d' + j] = String(y); }); ctx.log('用老師給的資料'); ctx.invalidate(1); ctx.rerender(); }; },
         check: ctx => ownData(ctx) ? null : { code: 'data', obs: 'unfinished', msg: '每一天都要填 0 到 20 的整數。' },
         solve: ctx => { ctx.problem.sample.forEach((y, j) => { ctx.answers['d' + j] = String(y); }); }, say: () => '五天都填好了。' },
       { title: '畫成折線圖', ids: ['pts0'], hints: ['照你填的數，一天描一個點。', '看縱軸一格是多少。', '五天都要描。'], think: '老師照自己填的數描點。', together: '一起描。',
         figure: ctx => { const p = ownChart(ctx); return chartSVG({ ...p, series: [{ ...p.series[0], v: [] }] }, { plot: { pts: ctx.state.pts || {}, cells: true } }); },
         answer: ctx => { const p = ownChart(ctx); return `${tableHtml(p)}<p class="notice" data-read data-say>縱軸一格是 ${p.step}。描了 ${Object.keys(ctx.state.pts || {}).length} 個點，共 5 個。</p>`; },
-        bind: bindCells(2), check: ctx => plotCheck(ownChart(ctx), ctx.state.pts || {}),
+        bind: bindCells(2), check: ctx => { const r = plotCheck(ownChart(ctx), ctx.state.pts || {}); if (!r) saveOwn(ctx); return r; },
         solve: ctx => { const p = ownChart(ctx); ctx.state.pts = Object.fromEntries(p.series[0].v.map((y, i) => [i, y])); ctx.answers.pts0 = '5'; }, say: () => '五天都描好了。' }
     ],
     reasons, done: ctx => `用自己的資料畫好折線圖了。`, chant: '自己的資料，也可以畫成折線圖。', transfer: '下一週再記一次，比一比有沒有不一樣。'
@@ -415,8 +420,12 @@
 
   // =============== 6-2 用圖說話 ===============
   A.register('lnTell', {
-    methods, makeProblem: (level, i, rand = Math.random) => { const p = makeChart(level === 'challenge' ? 'standard' : level, i, rand, { key: pick(['water', 'jump', 'book'], i), test: v => v[0] !== v.at(-1) });
-      return { ...p, mx: maxAt(p), end: p.series[0].v.at(-1) > p.series[0].v[0] ? 'more' : 'less', prompt: `看「${p.title}」，用圖說話。` }; },
+    methods, makeProblem: (level, i, rand = Math.random) => {
+      // 先用 6-1 自己記錄的圖；最多的只有一天、頭尾不一樣才能回答這三題，不然用老師的圖
+      const own = loadOwn(), ok = own && own.v.filter(x => x === Math.max(...own.v)).length === 1 && own.v[0] !== own.v[4];
+      const p = ok ? { ...chartOf(own.item, own.v), dims: [5, 1, Math.max(...own.v)] } : makeChart(level === 'challenge' ? 'standard' : level, i, rand, { key: pick(['water', 'jump', 'book'], i), test: v => v[0] !== v.at(-1) });
+      const note = ok ? '這是你在「記錄一週」畫的圖。' : own ? '你記錄的圖，最多的不只一天，或第一天和最後一天一樣。這次先看老師的圖。' : '';
+      return { ...p, mine: !!ok, mx: maxAt(p), end: p.series[0].v.at(-1) > p.series[0].v[0] ? 'more' : 'less', prompt: `${note}看「${p.title}」，用圖說話。` }; },
     planFigure: ctx => chartSVG(ctx.problem, {}),
     steps: [
       { title: '什麼時候最多', ids: ['max'], hints: ['找最高的點。', '往下看是哪一個時間。', '最高的點就是最多。'], think: '老師找最高的點。', together: '一起找。',
@@ -436,4 +445,17 @@
     ],
     reasons, done: ctx => `${ctx.problem.full[ctx.problem.mx]}最多；說話要有圖上的根據。`, chant: '用圖說話：說看到的，不說一定會。', transfer: '用自己畫的圖，跟同學說一句有根據的話。'
   });
+
+  // 「問問自己」：折線圖用自己的自問句（不沿用面積的同名步驟，例如「看題目」）
+  const ASK = {
+    '看題目': '題目要我找哪個時間、哪個數值？', '找零件': '我分得出橫軸和縱軸嗎？', '一格是多少': '兩個寫了數的刻度中間有幾格？', '一格多少': '兩個寫了數的刻度中間有幾格？',
+    '找時間': '我找到的是題目說的那個時間嗎？', '讀數值': '我是從點直直往左對到縱軸的嗎？', '回答問題': '我比的是題目說的兩個時間嗎？', '說說看': '我的答案有單位、有圖上的根據嗎？',
+    '看表格': '這張表記錄的是什麼？', '排橫軸': '我是照時間的先後排的嗎？', '定刻度': '相鄰兩條格線差多少？', '描點': '每個點都和表格的數一樣嗎？0 也描了嗎？',
+    '連線': '我是照時間的順序一個一個連的嗎？', '寫標示': '縱軸寫了名稱和單位嗎？', '檢查與說明': '我有對照表格一點一點檢查嗎？', '比一比': '我比的是同一個時間的兩個點嗎？',
+    '相差多少': '我是用大的數減小的數嗎？', '看圖例': '這個顏色、這種點代表誰？', '描第二條線': '我描的是第二條線的數嗎？', '填數字': '每一天都填了 0 到 20 的整數嗎？',
+    '畫成折線圖': '我描的是自己填的數嗎？', '選題目': '這件事每天都數得出來嗎？', '頭和尾比一比': '我比的是第一個點和最後一個點嗎？', '哪一句是根據': '這句話是圖上看得到的嗎？',
+    '什麼時候最多': '我找的是最高的點嗎？', '連起來的線': '這些資料有時間的先後嗎？'
+  };
+  const lineIds = (window.lessonPackages?.line?.activities || []).map(a => a.id);
+  lineIds.forEach(id => { const pl = A.get(id); if (pl) pl.steps.forEach(st => { if (!st.ask) st.ask = ASK[st.title.trim()] || '我看的是圖上的哪裡？我再看一次了嗎？'; }); });
 })();

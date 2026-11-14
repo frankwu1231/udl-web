@@ -68,7 +68,7 @@
     const r = { time: new Date().toISOString(), siteVersion: SITE_VERSION, shape: nameOf(), shapeKey: type, actId: type, stepTitle: st, cycle, activity: extra.activity ?? null, event, support: settings.support, response, method, flow: settings.flow, difficulty: settings.difficulty, mode: mode(), studyPhase, ...(window.areaTutor?.stage?.() ? { tutorStage: window.areaTutor.stage() } : {}), ...extra };
     window.areaResearch?.record(r);   // 第 22 版：現場試用時加上代號並上傳到試算表
     records.push(r);
-    saveRecords();
+    saveRecords(); saveDraft();
   }
 
   // multi：可以複選，答案存成「a,b」
@@ -111,7 +111,28 @@
     phase = 'plan'; render();
   }
 
+  // 第 28 版：折線圖活動做到一半重新整理，接著做（題目、作答、做到第幾步存在這個分頁；換學生時清掉）
+  const DRAFT_KEY = 'act-draft-v28', OWN_KEY = 'line-record-v28';
+  let resumed = false;
+  addEventListener('pagehide', () => saveDraft());   // 打字還沒按檢查就重新整理，也存起來
+  const draftable = () => !!(P() && ACT?.pkgOf(type)?.id === 'line' && mode() !== 'probe' && mode() !== 'demo');
+  function saveDraft() {
+    if (!draftable()) return;
+    try { if (phase === 'solve') sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ type, index, cycle, problem: pProblem, state: pState, answers, checked: [...checked], page, hintLevel, goal, method })); else sessionStorage.removeItem(DRAFT_KEY); } catch { /* 無法暫存就算了 */ }
+  }
+  function loadDraft() {
+    if (!draftable()) return false;
+    let d; try { d = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || 'null'); } catch { d = null; }
+    if (!d || d.type !== type || !d.problem) return false;
+    pProblem = d.problem; pState = d.state || {}; answers = d.answers || {}; checked = new Set(d.checked || []); index = d.index || 0;
+    hintLevel = Array.isArray(d.hintLevel) ? d.hintLevel : hintLevel; goal = d.goal || goal; method = d.method || method; startedAt = Date.now();
+    page = Math.min(d.page || 0, pages().length - 1); for (let n = 0; n < page; n++) for (const x of pages()[n]) entered.add(x);
+    phase = 'solve';
+    return true;
+  }
+
   function render() {
+    saveDraft();
     if (!type) mapView();
     else if (phase === 'reflect') reflect(); else if (phase === 'plan') plan(); else solve();
     window.areaBuddy?.update(); window.areaTutor?.update();
@@ -1326,7 +1347,7 @@
   // 換下一位學生：清掉上一位的紀錄、題號、逐步留空進度和閱讀輔助，從第 1 題重新開始
   function resetStudent() {
     records = []; saveRecords(); doneBase = 0; cycle = 1; index = 0; keepProblem = false; pProblem = null; voices = {}; fadeFull = false; retryQ = false; carry = null;
-    try { sessionStorage.removeItem(FADE_KEY); sessionStorage.removeItem(AID_KEY); } catch { /* 略過 */ }
+    try { sessionStorage.removeItem(FADE_KEY); sessionStorage.removeItem(AID_KEY); sessionStorage.removeItem(DRAFT_KEY); sessionStorage.removeItem(OWN_KEY); } catch { /* 略過 */ }
     applyReading();
     if (type) startQuestion(); else render();
   }
@@ -1430,10 +1451,11 @@
       if (P() && !lessons.activities[type]) lessons.activities[type] = {};
       loadRecords(); doneBase = doneAll();
       if (type && blockedByMap(type)) { location.replace(mapUrl()); return; }
-      if (P()) { settings = ownSettings(); if (!settings.ai) $('apiSettings').hidden = true; pProblem = P().makeProblem(level(), index, Math.random, { done: doneAll() }); }
+      if (P()) { settings = ownSettings(); if (!settings.ai) $('apiSettings').hidden = true; pProblem = P().makeProblem(level(), index, Math.random, { done: doneAll() }); resumed = loadDraft(); }
       else if (type) { settings = ownSettings(); orders.lines = F.shuffle(['A', 'B', 'C']); if (!settings.ai) $('apiSettings').hidden = true; if (settings.mode === 'probe') probeDims = F.randomProblem(type, settings.difficulty === 'custom' ? 'standard' : settings.difficulty); }
       attachBuddy(); applyReading();
       window.areaResearch?.init(lessons.research, { records: () => records, settings: () => settings, activity: () => ({ id: type || '', name: type ? nameOf() : '' }), step, log, changed: () => render(), reset: resetStudent, refresh: () => { if (type) settings = ownSettings(); }, classCode: session.classCode || '', workspace: session.workspace || '', scope: (session.workspace || '') + '/' + (session.className || '') });
+      if (resumed) log('重新整理後接著做', { activity: page + 1 });
       render();
     } catch (error) { shell('教材暫時無法載入', `<p>${esc(error.message)}</p><a href="/">返回入口</a>`); }
   }

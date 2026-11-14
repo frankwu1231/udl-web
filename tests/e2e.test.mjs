@@ -1841,3 +1841,27 @@ test('第 28 版：學習地圖換成折線圖；單元 0 是先測，照順序�
   assert.deepEqual(errs, []); await ctx.close();
   await publish({});
 });
+
+test('第 28 版第 1 輪複測：6-1 奇數點得上去；答對後改錯要重新檢查；重新整理接著做；6-2 用自己的圖；折線圖有自己的自問句', { skip: skip || !distReady }, async () => {
+  const p = await act('lnRecord', { difficulty: 'standard', selfAsk: true, ...LINE_MAP });
+  await p.choose('item', 'water'); await p.check(); await p.next();
+  const v = [11, 12, 13, 15, 14]; for (let j = 0; j < 5; j++) await p.page.fill('#d' + j, String(v[j]));
+  await p.check(); await p.next();
+  for (let j = 0; j < 5; j++) assert.ok(await p.page.$(`#figure2 [data-cell="${j}:${v[j]}"]`), `${v[j]} 點得上去`);
+  for (let j = 0; j < 5; j++) await p.page.locator(`#figure2 [data-cell="${j}:${v[j]}"]`).dispatchEvent('click');
+  // 重新整理：題目、填的數、描的點都還在，接著在第 3 步
+  await p.page.reload(); await p.page.waitForSelector('#figure2 [data-cell]');
+  assert.match(await p.text('.ln-table'), /11/, '填的數還在');
+  await p.check(); assert.ok(await p.page.$('#next:not(.locked)'), '答對可以往下');
+  await p.page.locator('#figure2 [data-cell="0:11"]').dispatchEvent('click'); await p.page.locator('#figure2 [data-cell="0:10"]').dispatchEvent('click');
+  assert.ok(await p.page.$('#next.locked'), '改錯後要重新檢查');
+  await p.page.locator('#figure2 [data-cell="0:10"]').dispatchEvent('click'); await p.page.locator('#figure2 [data-cell="0:11"]').dispatchEvent('click');
+  await p.check(); await p.next();
+  assert.match(await p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || ''), /重新整理後接著做/);
+  await p.page.goto(`${base}/seven.html?a=lnTell`); await p.page.waitForSelector('#start');
+  await begin(p);
+  assert.match(await p.text('#app'), /記錄一週/); assert.match(await p.text('#app'), /我每天喝水的杯數/);
+  await p.page.goto(`${base}/seven.html?a=lnRead`); await p.page.waitForSelector('#start'); await begin(p);
+  const ask = await p.text('.step-ask'); assert.match(ask, /哪個時間/); assert.doesNotMatch(ask, /圖形裡面/);
+  assert.deepEqual(p.errors, []);
+});
