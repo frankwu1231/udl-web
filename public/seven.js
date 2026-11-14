@@ -100,6 +100,7 @@
 
   function startQuestion() {
     answers = carry ? { method: carry.method } : {};
+    startedAt = 0;   // 還沒按「開始」：離開或重新整理不記「中途離開」，也不用掉題號
     checked = new Set(); orders = {}; frame = 0; tiles = []; revealed = {}; lineOk = false; dragFrom = null; aiMsg = {}; videoOpen = new Set(); stuckOpen = null; stuckNote = {};
     hintLevel = [0, 0, 0, 0, 0, 0, 0]; tried2 = new Set(); nudged = new Set(); hintPending = false; errors = 0; hintsUsed = 0; page = 0; entered = new Set(); returnTo = null;
     settings = ownSettings(); applyReading();
@@ -1349,7 +1350,7 @@
   // ---------- 閱讀輔助：注音、字級、高對比（學生自己切換的會蓋過老師的預設） ----------
   // 換下一位學生：清掉上一位的紀錄、題號、逐步留空進度和閱讀輔助，從第 1 題重新開始
   function resetStudent() {
-    records = []; saveRecords(); doneBase = 0; cycle = 1; index = 0; keepProblem = false; pProblem = null; voices = {}; fadeFull = false; retryQ = false; carry = null;
+    records = []; saveRecords(); doneBase = 0; cycle = 1; index = 0; startedAt = 0;   // 第 28 版：新學生還沒按「開始」，重新整理不算一題 keepProblem = false; pProblem = null; voices = {}; fadeFull = false; retryQ = false; carry = null;
     try { sessionStorage.removeItem(FADE_KEY); sessionStorage.removeItem(AID_KEY); sessionStorage.removeItem(DRAFT_KEY); sessionStorage.removeItem(OWN_KEY); } catch { /* 略過 */ }
     applyReading();
     if (type) startQuestion(); else render();

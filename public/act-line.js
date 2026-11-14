@@ -134,10 +134,17 @@
   // 表格（一維）：第一列是橫軸的時間，第二列是數值；o.hl 要亮的欄；o.rows 多列（兩條線）
   function tableHtml(p, o = {}) {
     const rows = o.series || p.series;
-    return `<table class="ln-table"><caption>${esc(p.title)}</caption><thead><tr><th scope="row">${esc(p.xName)}</th>${p.xs.map((x, i) => `<th scope="col" class="${o.hl === i ? 'on' : ''}">${esc(x)}</th>`).join('')}</tr></thead>
-      <tbody>${rows.map(s => `<tr><th scope="row">${esc(rows.length > 1 ? s.name : p.yName)}（${esc(p.unit)}）</th>${s.v.map((y, i) => `<td class="${o.hl === i ? 'on' : ''}">${y}</td>`).join('')}</tr>`).join('')}</tbody></table>${p.xs.length > 4 ? vTable(p, rows, o) : ''}`;
+    return `<div class="ln-tw"><table class="ln-table"><caption>${esc(p.title)}</caption><thead><tr><th scope="row">${esc(p.xName)}</th>${p.xs.map((x, i) => `<th scope="col" class="${o.hl === i ? 'on' : ''}">${esc(x)}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(s => `<tr><th scope="row">${esc(rows.length > 1 ? s.name : p.yName)}（${esc(p.unit)}）</th>${s.v.map((y, i) => `<td class="${o.hl === i ? 'on' : ''}">${y}</td>`).join('')}</tr>`).join('')}</tbody></table>${p.xs.length > 4 ? vTable(p, rows, o) : ''}</div>`;
   }
-  // 第 28 版：手機上欄位多時改用直式表格（一列一個時間），不用左右捲；寬螢幕不顯示
+  // 第 28 版：橫式表格放不下作答區時（手機，或寬螢幕但作答區窄），改用直式表格（一列一個時間），不用左右捲
+  function fitTables() {
+    document.querySelectorAll('.ln-tw').forEach(w => { if (!w.querySelector('.ln-vtable')) return; w.classList.remove('narrow'); const t = w.querySelector('.ln-table'); if (t && t.scrollWidth > w.clientWidth + 1) w.classList.add('narrow'); });
+  }
+  let fitQueued = false;
+  const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitTables(); }); };
+  if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined' && document.documentElement) new MutationObserver(queueFit).observe(document.documentElement, { childList: true, subtree: true });
+  if (typeof addEventListener === 'function') addEventListener('resize', queueFit);
   function vTable(p, rows, o) {
     return `<table class="ln-vtable"><caption>${esc(p.title)}</caption><thead><tr><th scope="col">${esc(p.xName)}</th>${rows.map(s => `<th scope="col">${esc(rows.length > 1 ? s.name : p.yName)}（${esc(p.unit)}）</th>`).join('')}</tr></thead>
       <tbody>${p.xs.map((x, i) => `<tr class="${o.hl === i ? 'on' : ''}"><th scope="row">${esc(x)}</th>${rows.map(s => `<td>${s.v[i]}</td>`).join('')}</tr>`).join('')}</tbody></table>`;

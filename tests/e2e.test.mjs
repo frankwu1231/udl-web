@@ -1900,3 +1900,26 @@ test('第 28 版第 4 輪複測：手機 375px 時 5-3 的表格改直式、描�
   assert.deepEqual(z, ['ㄕㄨˋ', 'ㄕㄨˇ']);
   assert.deepEqual(p.errors, []);
 });
+
+test('第 28 版第 5 輪複測：換學生後還沒開始就重新整理，還是第 1 題；寬螢幕作答區放不下橫式表格就改直式；注音「體重」', { skip: skip || !distReady }, async () => {
+  const p = await act('lnRecord', { difficulty: 'standard', ...LINE_MAP });
+  await p.choose('item', 'water'); await p.check(); await p.next();
+  await p.page.click('#teacher'); await p.page.click('#clearRecords'); await p.page.click('#clearRecords'); await p.page.click('#closeTools');
+  await p.page.waitForSelector('#start');
+  assert.match(await p.text('.eyebrow'), /第 1 題/);
+  await p.page.reload(); await p.page.waitForSelector('#start');
+  assert.match(await p.text('.eyebrow'), /第 1 題/, '重新整理後還是第 1 題');
+  const recs = JSON.parse(await p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || '[]'));
+  assert.equal(recs.filter(r => r.event === '中途離開').length, 0);
+  // 768px：5-3 描點頁的表格不用左右捲
+  const q = await act('lnBreak', { difficulty: 'standard', ...LINE_MAP });
+  await q.page.setViewportSize({ width: 768, height: 1000 });
+  await q.choose('way', 'brk'); await q.check(); await q.next();
+  for (const v of await q.page.$$eval('[data-choice="start"]', l => l.map(e => e.dataset.value))) { await q.choose('start', v); await q.check(); if (await q.page.$('#next:not(.locked)')) break; }
+  await q.next(); await q.page.waitForTimeout(100);
+  const fit = await q.page.evaluate(() => [...document.querySelectorAll('.ln-tw')].map(w => { const t = [...w.querySelectorAll('table')].find(x => x.offsetWidth > 0); return t && t.scrollWidth <= w.clientWidth + 1; }));
+  assert.ok(fit.length && fit.every(Boolean), '看得到的表格都放得下：' + JSON.stringify(fit));
+  const z = await q.page.evaluate(() => window.zhuyin.readings('小狗每個月的體重').filter(x => x[0] === '重').map(x => x[1]));
+  assert.deepEqual(z, ['ㄓㄨㄥˋ']);
+  assert.deepEqual(p.errors, []); assert.deepEqual(q.errors, []);
+});
