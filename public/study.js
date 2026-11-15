@@ -123,7 +123,7 @@
     const box = $('exportSection');
     box.innerHTML = `<h2>⬇ 研究匯出（CSV）</h2><p class="subtle">文字欄位開頭是 = + - @ 時會加上 '，避免 Excel 當成公式。只有代號，沒有姓名。</p>
       <div class="actions"><button type="button" id="expDecisions">情境探試：每節決策</button><button type="button" id="expScenario">情境探試：每個情境的反應延遲與決策時間</button><button type="button" id="expProbes">探試：每次施測</button><button type="button" id="expProbeItems">探試：每題每步</button><button type="button" id="expTutor">小老師小方：支持階段變更</button><button type="button" id="expAi">AI 輸出全文</button><button type="button" id="expChanges">真實學生的設定變更（所有教師）</button></div><h3>研究紀錄篩選匯出</h3><div class="study-grid"><label>學生代號（空白＝全部）<input id="evStudent" placeholder="T01-S01" maxlength="7"></label><label>研究階段<select id="evPhase"><option value="">全部</option>${['A', 'B', 'BC', 'maintain', 'baseline', 'intervention', 'followup'].map(p => `<option value="${p}">${S.PHASE[p]}</option>`).join('')}</select></label><label>從第幾節<input id="evFrom" type="number" min="1" value="1"></label><label>到第幾節<input id="evTo" type="number" min="1" placeholder="最後"></label></div>
-      <button type="button" id="expSessions">每一節（含作廢）</button> <button type="button" id="expEvents">匯出篩選後的研究紀錄</button><p id="expMsg" class="msg" role="status"></p>`;
+      <button type="button" id="expSessions">每一節（含作廢）</button> <button type="button" id="expEvents">匯出篩選後的研究紀錄</button> <button type="button" id="expMonitor">自我監控指標（每題）</button><p id="expMsg" class="msg" role="status"></p>`;
     const get = async type => { try { return (await S.api('/api/study/export?type=' + type)).rows; } catch { $('expMsg').textContent = '匯出失敗。'; return null; } };
     const consistent = r => ['increase', 'decrease', 'advance', 'maintain'].includes(r.expected) ? (r.direction === r.expected ? '是' : '否') : '不計';
     $('expDecisions').onclick = async () => {
@@ -174,6 +174,32 @@
     $('expSessions').onclick = async () => {
       const rows = await get('sessions'); if (!rows) return;
       S.download(`sessions_${today()}.csv`, S.toCsv([['工作區', '學生', '節次', '開始', '班級代碼', '裝置', '作廢', '作廢原因', '補充', '作廢時間', '操作者'], ...rows.map(r => [r.workspace, r.student, r.sessionNo, new Date(r.startedAt).toLocaleString('zh-TW'), r.classCode, r.device, r.invalidAt ? '是' : '否', INVALID[r.invalidReason] || '', r.invalidNote, r.invalidAt ? new Date(r.invalidAt).toLocaleString('zh-TW') : '', r.invalidBy])]));
+    };
+    // 第 29 版：自我監控的兩個指標分開算（依 Gemini 審查建議）
+    // 作答中自行修正：某一步第一次檢核答錯，之後自己改對，中間沒有求助（請求提示、問 AI、看示範、我卡住了）；答錯後網站自動升一層提示不算求助
+    // 題末錯誤覺察：小老師小方題末對照時，學生指出的步驟和實際不同的步驟完全一樣
+    const HELP = new Set(['請求提示', '請求AI提示', '看示範', '看示範影片', '我卡住了', '卡住時選擇']);
+    $('expMonitor').onclick = async () => {
+      const student = $('evStudent').value, phase = $('evPhase').value, from = Number($('evFrom').value || 1), to = Number($('evTo').value || 9999);
+      let rows; try { rows = (await S.api(`/api/study/export?type=events&student=${encodeURIComponent(student.trim().toUpperCase())}&phase=${encodeURIComponent(phase.trim())}&from=${from}&to=${to}`)).rows; } catch { $('expMsg').textContent = '匯出失敗，請檢查代號。'; return; }
+      const groups = new Map();
+      for (const e of rows) {
+        if (e.sheet && e.sheet !== '操作紀錄') continue;
+        if (e.cycle === '' || e.cycle == null || !e.actId) continue;
+        const k = [e.student, e.sessionNo ?? '', e.actId, e.cycle].join('|');
+        if (!groups.has(k)) groups.set(k, { student: e.student, sessionNo: e.sessionNo ?? '', actId: e.actId, cycle: e.cycle, invalid: e.sessionInvalid || '', steps: new Map(), compare: null });
+        const g = groups.get(k), step = String(e.step ?? ''), st = g.steps.get(step);
+        if (e.event === '步驟檢核') {
+          const ok = e.correct === '是' || e.correct === true;
+          if (!st) g.steps.set(step, { first: ok, fixed: false, help: false, fixedNoHelp: false });
+          else if (ok && st.first === false && !st.fixed) { st.fixed = true; st.fixedNoHelp = !st.help; }
+        } else if (HELP.has(e.event) && st && st.first === false && !st.fixed) st.help = true;
+        else if (e.event === '題末對照') { let d = {}; try { d = JSON.parse(e.detail || '{}'); } catch { /* 略過 */ } if (Array.isArray(d.different)) g.compare = d; }
+      }
+      const list = [...groups.values()].filter(g => g.steps.size || g.compare), yn = v => v === undefined || v === null ? '' : v ? '是' : '否';
+      S.download(`self_monitoring_${today()}.csv`, S.toCsv([['學生', '節次', '本節作廢', '活動', '第幾題', '有檢核的步驟數', '第一次就錯的步驟數', '作答中自行修正（沒有求助）', '作答中改對（有求助）', '題末對照：不同的步驟', '題末對照：學生指出的步驟', '題末錯誤覺察（指認全對）'],
+        ...list.map(g => { const s = [...g.steps.values()], wrong = s.filter(x => x.first === false); return [g.student, g.sessionNo, g.invalid ? '是' : '', g.actId, g.cycle, s.length, wrong.length, wrong.filter(x => x.fixedNoHelp).length, wrong.filter(x => x.fixed && !x.fixedNoHelp).length, g.compare ? g.compare.different.join('、') : '', g.compare && Array.isArray(g.compare.studentMarked) ? g.compare.studentMarked.join('、') : '', g.compare ? yn(g.compare.correct) : '']; })]));
+      $('expMsg').textContent = `已匯出 ${list.length} 題。`;
     };
     $('expAi').onclick = async () => {
       const rows = await get('ai'); if (!rows) return;

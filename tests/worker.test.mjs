@@ -316,13 +316,16 @@ test('第 26 版：研究紀錄存進網站資料庫、開始本節、學生個�
   // 白名單：學生自己打的文字、不認得的欄位都不存
   assert.equal((await call('/api/records',{method:'POST',cookie:sc,body:{rows:[{...row,rid:'abc123-x3',studentInput:'虛構姓名甲：我不會',detail:JSON.stringify({obs:'blank',studentInput:'虛構姓名甲：我不會',dimensions:{w:3,h:4,studentInput:'虛構姓名甲'}})}]}})).status,200);
   assert.equal((await call('/api/records',{method:'POST',cookie:sc,body:{rows:[{...row,rid:'abc123-x4',student:'T06-S01'}]}})).status,403,'不能寫別班的學生');
+  // 第 29 版：題末對照學生指出的步驟要留下來（算題末錯誤覺察）
+  assert.equal((await call('/api/records',{method:'POST',cookie:sc,body:{rows:[{...row,rid:'abc123-x5',sessionNo:2,event:'題末對照',detail:JSON.stringify({different:[2,5],studentMarked:[2],correct:false})}]}})).status,200);
   // 開始本節：同一位學生接著往上加；另一位從 1 開始
   const start=async(cookie,student)=>(await call('/api/sessions/start',{method:'POST',cookie,body:{student,device:'平板'}})).data.no;
   assert.equal(await start(sc,'T05-S01'),1);assert.equal(await start(sc,'T05-S01'),2);assert.equal(await start(sc,'T05-S02'),1);
   assert.equal((await call('/api/sessions/start',{method:'POST',cookie:sc,body:{student:'S01'}})).status,400);
   // 教師端：只看得到自己工作區
   const ov=(await call('/api/teacher/research',{cookie:t5})).data;
-  assert.deepEqual(ov.students.map(s=>[s.student,s.events,s.sessions]),[['T05-S01',3,2],['T05-S02',0,1]]);
+  assert.deepEqual(ov.students.map(s=>[s.student,s.events,s.sessions]),[['T05-S01',4,2],['T05-S02',0,1]]);
+  assert.deepEqual(JSON.parse((await call('/api/teacher/research?student=T05-S01',{cookie:t5})).data.events.find(e=>e.rid==='abc123-x5').detail),{different:[2,5],studentMarked:[2],correct:false});
   const x3=(await call('/api/teacher/research?student=T05-S01',{cookie:t5})).data.events.find(e=>e.rid==='abc123-x3');
   assert.equal(JSON.stringify(x3).includes('虛構姓名甲'),false,'自由文字沒有存下來');assert.deepEqual(JSON.parse(x3.detail),{obs:'blank',dimensions:{w:3,h:4}});
   assert.deepEqual((await call('/api/teacher/research',{cookie:t6})).data.students,[],'別的老師看不到');
