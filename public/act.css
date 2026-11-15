@@ -137,3 +137,15 @@ html.contrast .map-card{border-color:#000}html.contrast .ac-outline{stroke:#000}
 .ln-pair{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}.ln-pair figure{margin:0;flex:1 1 260px;text-align:center}.ln-pair figcaption{font-weight:700}
 @media(prefers-reduced-motion:reduce){.ac-pulse-text{animation:none}}
 @media(max-width:760px){.task-grid{grid-template-columns:minmax(0,1fr)}}   /* 第 28 版：手機上一欄不被寬的圖表撐開 */
+
+/* 第 30 版：展開圖摺合動畫 */
+.fold { margin: 12px 0; }
+.fold-scene { perspective: 900px; min-height: calc(var(--fh) + 40px); padding: 20px 0; overflow: hidden; display: flex; justify-content: center; }
+.fold-box { position: relative; transform-style: preserve-3d; flex: none; }
+.fold-box .ff { position: absolute; transform-style: preserve-3d; border: 2px solid #2b4a7a; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #1d2b44; opacity: .92; }
+.fold-box .ff > span { pointer-events: none; }
+.fold-box .ff-front { z-index: 1; }
+.fold-ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.fold-ctl label { display: flex; align-items: center; gap: 6px; margin: 0; white-space: nowrap; }
+.fold-ctl input[type=range] { width: 160px; }
+.fold-wrap > summary { cursor: pointer; font-weight: 700; padding: 8px 0; }

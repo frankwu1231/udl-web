@@ -2025,3 +2025,14 @@ test('第 30 版：備課頁快速上課：建議設定一鍵套用到全部活�
   assert.ok(await page.$('#advanced')); assert.ok(await page.$('#sec-aids .help'), '設定旁有「？」連到手冊');
   assert.deepEqual(errors, []); await page.close();
 });
+
+test('第 30 版：表面積展開圖可以慢慢摺成盒子，也可以拉回打開', { skip: skip || !distReady }, async () => {
+  const p = await act('sNet', { difficulty: 'easy', ...SURFACE_MAP });
+  await p.page.click('#sfOpen'); await p.page.click('.fold-wrap summary');
+  await p.page.fill('[data-fold-range]', '100'); await p.page.dispatchEvent('[data-fold-range]', 'input');
+  assert.equal(await p.page.$eval('.fold', e => e.dataset.fold), '1');
+  assert.match(await p.page.$eval('.ff-right', e => e.style.transform), /rotateY\(90deg\)/);
+  await p.page.emulateMedia({ reducedMotion: 'reduce' }); await p.page.click('[data-fold-go="0"]');
+  assert.equal(await p.page.$eval('.fold', e => e.dataset.fold), '0');
+  assert.deepEqual(p.errors, []);
+});
