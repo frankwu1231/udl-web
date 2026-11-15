@@ -142,9 +142,41 @@
   function render() {
     saveDraft();
     if (!type) mapView();
+    else if (phase === 'plan' && needPractice()) practiceView();
     else if (phase === 'reflect') reflect(); else if (phase === 'plan') plan(); else solve();
     window.areaBuddy?.update(); window.areaTutor?.update();
     window.areaResearch?.page();
+  }
+
+  // ---------- 第 30 版：第一次的操作練習（不碰數學，只練點選、檢查、我卡住了、下一步；每位學生一次） ----------
+  const PRACTICE_KEY = 'udl-practice-v30';
+  let practice = null;
+  function needPractice() {
+    if (practice) return true;
+    if (settings.practice === false || ['demo', 'probe'].includes(mode())) return false;
+    try { return !(JSON.parse(localStorage.getItem(PRACTICE_KEY) || '[]') || []).includes(tourWho()); } catch { return false; }
+  }
+  function practiceDone(skipped) {
+    try { const a = JSON.parse(localStorage.getItem(PRACTICE_KEY) || '[]') || []; if (!a.includes(tourWho())) a.push(tourWho()); localStorage.setItem(PRACTICE_KEY, JSON.stringify(a.slice(-200))); } catch { /* 略過 */ }
+    log('操作練習', { choice: skipped ? '略過' : '完成', secs: Math.round((Date.now() - practice.at) / 1000), deadClicks: practice.dead });
+    practice = null; render(); focus();
+  }
+  function practiceView() {
+    if (!practice) { practice = { at: Date.now(), stage: 'pick', pick: '', dead: 0, wrong: 0 }; log('操作練習', { choice: '開始' }); }
+    const P0 = practice, items = [['apple', '🍎 蘋果'], ['star', '⭐ 星星'], ['car', '🚗 汽車']];
+    const say = { pick: '先練習怎麼用。請點一下「⭐ 星星」。', check: '選好了，按「✔ 檢查」。', stuck: '答對了！不會的時候，可以按「😣 我卡住了」。現在按一次看看。', next: '很好！最後按「下一步 →」，就可以開始上課了。' }[P0.stage];
+    const wrong = P0.wrong && P0.stage === 'pick' ? '<p class="feedback needs-work" role="status" data-read data-say>這個不是星星，再找一找。</p>' : P0.stage !== 'pick' && P0.stage !== 'check' ? '<p class="feedback correct" role="status"><span class="star" aria-hidden="true">⭐</span><span data-read data-say>答對了！</span></p>' : '';
+    const panel = P0.stage === 'next' ? '<div class="stuck-panel"><p data-read data-say>卡住的時候，這裡可以看提示、看示範、請老師來，或先休息一下。</p></div>' : '';
+    shell('先練習怎麼用', `<section class="activity practice"><p class="notice" data-read data-say>${say}</p>
+      <div class="options" role="group" aria-label="練習">${items.map(([k, t]) => `<button type="button" data-practice="${k}" aria-pressed="${P0.pick === k}"${P0.stage === 'pick' ? '' : ''}>${t}</button>`).join('')}</div>
+      ${wrong}<div class="hint-actions"><button type="button" id="pStuck" class="hint-btn stuck-btn${P0.stage === 'stuck' ? ' glow-next' : ''}">😣 我卡住了</button></div>${panel}
+      <div class="lesson-controls"><button type="button" id="pSkip">跳過練習</button><button type="button" id="pCheck"${P0.stage === 'check' ? ' class="glow-next"' : ''}>✔ 檢查</button><button type="button" id="pNext" class="primary${P0.stage === 'next' ? ' glow-next' : ' locked'}">下一步 →</button></div></section>`);
+    if (P0.stage === 'pick') document.querySelector('.practice .options')?.classList.add('glow-next');
+    document.querySelectorAll('[data-practice]').forEach(b => b.onclick = () => { if (P0.stage === 'pick' || P0.stage === 'check') { P0.pick = b.dataset.practice; P0.stage = 'check'; P0.wrong = 0; practiceView(); $('pCheck').focus(); } });
+    $('pCheck').onclick = () => { if (P0.stage !== 'check') return; if (P0.pick === 'star') P0.stage = 'stuck'; else { P0.stage = 'pick'; P0.wrong = 1; P0.pick = ''; } practiceView(); };
+    $('pStuck').onclick = () => { if (P0.stage === 'stuck') { P0.stage = 'next'; practiceView(); $('pNext').focus(); } };
+    $('pNext').onclick = () => { if (P0.stage === 'next') practiceDone(false); };
+    $('pSkip').onclick = () => practiceDone(true);
   }
 
   // ---------- ① 看題與選方法 ----------
@@ -1361,7 +1393,7 @@
   }
   function updateGlow() {
     document.querySelectorAll('.glow-next').forEach(e => e.classList.remove('glow-next'));
-    if (!type || settings.guide === false || tourOn || mode() === 'demo') return;
+    if (!type || settings.guide === false || tourOn || mode() === 'demo' || practice) return;
     let el = null;
     if (phase === 'solve') {
       const n = $('next'), act = [...document.querySelectorAll('.activity')].find(a => !checked.has(Number(a.dataset.stage)));
@@ -1374,7 +1406,7 @@
     if (!type || !e.target.closest || !e.target.closest('#app')) return;
     const hit = e.target.closest(ACTIVE);
     if (hit && firstAction === null) firstAction = Math.round((Date.now() - shownAt) / 100) / 10;
-    if (!hit) deadClicks++;
+    if (!hit) { deadClicks++; if (practice) practice.dead++; }
     setTimeout(updateGlow, 0);
   }, true);
   document.addEventListener('input', () => { if (type && firstAction === null) firstAction = Math.round((Date.now() - shownAt) / 100) / 10; setTimeout(updateGlow, 0); }, true);

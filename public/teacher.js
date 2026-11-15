@@ -264,6 +264,7 @@
       <p class="subtle">精簡畫面：學生解題時只看到題目、作答區、「檢查」和「😣 我卡住了」（提示、示範、休息、請老師都在「我卡住了」裡面）。學生熟悉以後，再一項一項打開。</p>
       <label class="check"><input id="simple" type="checkbox" ${s.simple !== false ? 'checked' : ''}>使用精簡畫面（建議第一次使用時開著）</label>
       <fieldset id="simpleShow"><legend>精簡畫面也要顯示</legend>${[['aids', '閱讀輔助列（注音、字的大小、高對比、休息）和「全部唸給我聽」'], ['say', '每一句旁邊的 🔊 朗讀鍵'], ['progress', '學習階段和解題步驟的進度點'], ['selfAsk', '我的自問卡和「問問自己」'], ['hint', '「💡 給我提示」按鈕（不打開時，提示放在「我卡住了」裡）']].map(([k, t]) => `<label><input type="checkbox" data-simple-show="${k}" ${(s.simpleShow || []).includes(k) ? 'checked' : ''}>${t}</label>`).join('')}</fieldset>
+      <label class="check"><input id="practice" type="checkbox" ${s.practice !== false ? 'checked' : ''}>第一次上課先做 1 分鐘操作練習（點選、檢查、我卡住了、下一步，不碰數學；每位學生一次，可以跳過）</label>
       <label class="check"><input id="guide" type="checkbox" ${s.guide !== false ? 'checked' : ''}>現在該按的地方發光（作答區 → 檢查 → 下一步，一次只亮一個）</label>
       <label class="check"><input id="tour" type="checkbox" ${s.tour !== false ? 'checked' : ''}>第一次使用時，小方帶學生認識畫面（每位學生一次，大約 30 秒；學生可以在「我卡住了」裡再看一次）</label>
 
@@ -420,7 +421,7 @@
       methods: (() => { const m = [...document.querySelectorAll('[data-method]:checked')].map(e => e.dataset.method); return plugin && old.methods.includes('row') ? [...m, 'row'] : m; })(),
       zhuyin: $('zhuyin').checked, textSize: $('textSize').value, contrast: $('contrast').checked, convert: val('convert', e => e.checked),
       buddy: $('buddy').checked, buddyWait: Number($('buddyWait').value), buddyVoice: $('buddyVoice').checked, attention: $('attention').checked, attentionSec: Number($('attentionSec').value),
-      simple: $('simple').checked, simpleShow: [...document.querySelectorAll('[data-simple-show]:checked')].map(e => e.dataset.simpleShow), tour: $('tour').checked, guide: $('guide').checked
+      simple: $('simple').checked, simpleShow: [...document.querySelectorAll('[data-simple-show]:checked')].map(e => e.dataset.simpleShow), tour: $('tour').checked, guide: $('guide').checked, practice: $('practice').checked
     };
     if (!d.settings.methods.length) d.settings.methods = ['mark', 'row', 'self'];
     return config;

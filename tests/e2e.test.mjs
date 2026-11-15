@@ -30,7 +30,7 @@ async function setup() {
   browser = await chromium.launch();
   // 第 29 版：小方的第一次導覽在其他測試裡先當作看過（只有導覽的測試傳 tour: true）
   const newContext = browser.newContext.bind(browser);
-  browser.newContext = async (o = {}) => { const { tour, ...rest } = o; const c = await newContext(rest); if (!tour) await c.addInitScript(() => { try { if (!localStorage.getItem('udl-tour-v29')) localStorage.setItem('udl-tour-v29', '["device"]'); } catch { /* 略過 */ } }); return c; };
+  browser.newContext = async (o = {}) => { const { tour, ...rest } = o; const c = await newContext(rest); if (!tour) await c.addInitScript(() => { try { for (const k of ['udl-tour-v29', 'udl-practice-v30']) if (!localStorage.getItem(k)) localStorage.setItem(k, '["device"]'); } catch { /* 略過 */ } }); return c; };
 }
 test.after(async () => { await browser?.close(); server?.close(); });
 
@@ -44,7 +44,7 @@ async function publish(settings) {
     for (const k of Object.keys(c.activities || {})) c.activities[k].settings = { ...c.activities[k].settings, ...s };
     c.map = { assigned: window.areaActs.packages[map.pkg || 'area'].activities.map(a => a.id), sequential: false, path: 'all', ...map };
     return (await fetch('/api/teacher/lessons', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'published', config: c }) })).status;
-  }, { flow: 'seven', keep: [0, 1, 2, 3], support: 'full', labels: 'reveal', ai: true, reward: false, sound: false, hintGate: false, mode: 'self', goalKind: 'hints', confidence: true, selfAsk: true, badges: true, voice: false, rest: 0, handsOn: false, methods: ['mark', 'row', 'self'], zhuyin: false, textSize: 'normal', contrast: false, video: 'hint', difficulty: 'standard', convert: false, srlAsk: 'first', lessonGoal: 0, stepNames: {}, attention: false, simple: false, tour: false, ...settings });
+  }, { flow: 'seven', keep: [0, 1, 2, 3], support: 'full', labels: 'reveal', ai: true, reward: false, sound: false, hintGate: false, mode: 'self', goalKind: 'hints', confidence: true, selfAsk: true, badges: true, voice: false, rest: 0, handsOn: false, methods: ['mark', 'row', 'self'], zhuyin: false, textSize: 'normal', contrast: false, video: 'hint', difficulty: 'standard', convert: false, srlAsk: 'first', lessonGoal: 0, stepNames: {}, attention: false, simple: false, tour: false, practice: false, ...settings });
   await page.close(); assert.equal(status, 200);
 }
 async function student(shape, settings = {}, viewport = { width: 820, height: 1180 }, opts = {}) {
@@ -53,7 +53,7 @@ async function student(shape, settings = {}, viewport = { width: 820, height: 11
   const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(e.message));
   if (opts.clock) await page.clock.install();   // 第 22 版：小幫手要等幾十秒，用假時鐘快轉
   if (opts.init) await page.addInitScript(opts.init);
-  await page.goto(`${base}/seven.html?shape=${shape}`); await page.waitForSelector('#start');
+  await page.goto(`${base}/seven.html?shape=${shape}`); await page.waitForSelector('#start, [data-practice]');
   const p = {
     page, errors,
     choose: (k, v) => page.click(`[data-choice="${k}"][data-value="${v}"]`),
@@ -1987,4 +1987,20 @@ test('第 30 版：現在該按的地方發光（作答區 → 檢查 → 下一
   const q = await student('rectangle', { guide: false }); await q.start();
   assert.deepEqual(await q.page.$$eval('.glow-next', l => l.length), 0, '老師關掉就不亮');
   assert.deepEqual([...p.errors, ...q.errors], []);
+});
+
+test('第 30 版：第一次先做操作練習（點星星、檢查、我卡住了、下一步），做完或跳過就不再出現', { skip: skip || !distReady }, async () => {
+  const p = await student('rectangle', { practice: true, tour: false }, undefined, { tour: true });
+  await p.page.waitForSelector('[data-practice]');
+  assert.match(await p.text('h1'), /先練習/);
+  await p.page.click('[data-practice="car"]'); await p.page.click('#pCheck');
+  assert.match(await p.text('.practice'), /不是星星/);
+  await p.page.click('[data-practice="star"]'); await p.page.click('#pCheck');
+  assert.ok(await p.page.$eval('#pStuck', b => b.classList.contains('glow-next')));
+  await p.page.click('#pStuck'); await p.page.click('#pNext');
+  await p.page.waitForSelector('#start'); assert.equal(await p.page.$('[data-practice]'), null);
+  const recs = JSON.parse(await p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || '[]'));
+  assert.ok(recs.some(r => r.event === '操作練習' && /完成/.test(r.choice || '')));
+  await p.page.reload(); await p.page.waitForSelector('#start'); assert.equal(await p.page.$('[data-practice]'), null, '做過就不再出現');
+  assert.deepEqual(p.errors, []);
 });

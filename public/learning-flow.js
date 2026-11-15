@@ -48,6 +48,7 @@
     simple: true,
     simpleShow: [],         // 精簡畫面也顯示：aids 閱讀輔助列｜say 每句的🔊｜progress 學習階段與步驟點｜selfAsk 自問卡｜hint 給我提示按鈕
     tour: true,             // 第一次使用時小方帶著認識畫面（每位學生一次）
+    practice: true,         // 第 30 版：第一次先做 1 分鐘的操作練習（不碰數學；每位學生一次）
     guide: true             // 第 30 版：現在該按的地方發光（作答區 → 檢查 → 下一步），其他照常可以按
   };
   const SIMPLE_ITEMS = ['aids', 'say', 'progress', 'selfAsk', 'hint'];
@@ -91,7 +92,7 @@
       && ['easy', 'standard', 'challenge', 'custom'].includes(s.difficulty)
       && ['slow', 'normal', undefined].includes(s.rate)
       && (s.keep === undefined || (Array.isArray(s.keep) && s.keep.every(v => OPTIONAL.includes(v))))
-      && ['confidence', 'selfAsk', 'badges', 'voice', 'handsOn', 'zhuyin', 'contrast', 'convert', 'fading', 'buddy', 'buddyVoice', 'attention', 'tryFirst', 'simple', 'tour', 'guide'].every(k => s[k] === undefined || typeof s[k] === 'boolean')
+      && ['confidence', 'selfAsk', 'badges', 'voice', 'handsOn', 'zhuyin', 'contrast', 'convert', 'fading', 'buddy', 'buddyVoice', 'attention', 'tryFirst', 'simple', 'tour', 'guide', 'practice'].every(k => s[k] === undefined || typeof s[k] === 'boolean')
       && (s.simpleShow === undefined || (Array.isArray(s.simpleShow) && s.simpleShow.length <= SIMPLE_ITEMS.length && s.simpleShow.every(v => SIMPLE_ITEMS.includes(v))))
       && [undefined, 30, 60, 90].includes(s.buddyWait) && [undefined, 3, 5, 8].includes(s.attentionSec)
       && [undefined, ...MODES].includes(s.mode) && [undefined, 'hints', 'firstTry'].includes(s.goalKind)
