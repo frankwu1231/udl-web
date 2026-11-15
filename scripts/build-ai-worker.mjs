@@ -10,7 +10,7 @@ const obs=Object.fromEntries(Object.entries(obsBox.window.areaObs.OBS).map(([k,v
 // 第 27 版：教材包（活動代號、探試題型比例）也只寫在 public/content-*.js，伺服器用同一份
 // 好幾個教材包時依檔名順序載入；content-area.js（面積）是第一個，也是沒有指定時的預設
 const pkgBox={window:{}};for(const f of fs.readdirSync(publicDir).filter(n=>/^content-[a-z]+\.js$/.test(n)).sort((a,b)=>(a!=='content-area.js')-(b!=='content-area.js')||a.localeCompare(b)))vm.runInNewContext(fs.readFileSync(path.join(publicDir,f),'utf8'),pkgBox);
-const pkgInfo=Object.values(pkgBox.window.lessonPackages).map(p=>({id:p.id,actIds:p.activities.map(a=>a.id),paths:Object.keys(p.paths),probeTypes:p.probeTypes}));
+const pkgInfo=Object.values(pkgBox.window.lessonPackages).map(p=>({id:p.id,actIds:p.activities.map(a=>a.id),paths:Object.keys(p.paths),probeTypes:p.probeTypes,probeVariants:p.probeVariants||null}));
 if(new Set(pkgInfo.flatMap(p=>p.actIds)).size!==pkgInfo.flatMap(p=>p.actIds).length)throw new Error('Activity ids repeat across lesson packages');
 const source=fs.readFileSync(path.join(root,'worker/index.js'),'utf8').replace('__ASSET_MAP__',JSON.stringify(map)).replace('__LESSON_DEFAULTS__',JSON.stringify(defaults)).replace('__OBS_LABELS__',JSON.stringify(obs)).replace('__LESSON_PACKAGE__',JSON.stringify(pkgInfo));
 if(source.includes('__ASSET_MAP__')||source.includes('__LESSON_DEFAULTS__')||source.includes('__OBS_LABELS__')||source.includes('__LESSON_PACKAGE__'))throw new Error('Asset map or lesson defaults replacement failed');

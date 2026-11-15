@@ -577,3 +577,39 @@ test('第 27 版：表面積題組依教材包驗證題型；連帶錯誤依學�
   assert.equal(st('A06','base').finalCorrect,false);assert.equal(st('A06','area').finalCorrect,true,'柱體總和依學生自己的底面積判定');assert.equal(r('A06').correct,false);
   assert.equal(r('A09').answerCorrect,true);assert.equal(r('A09').unitCorrect,false);
 });
+
+test('第 28 版：折線圖讀圖、畫圖兩份題組依 variant 驗證題型；折線圖的圖收得下；連帶錯誤依學生自己讀的一格判定',async()=>{
+  const login=async teacher=>(await call('/api/test-login',{method:'POST',body:{username:'test',password:'test-pass',teacher}})).headers.get('set-cookie').split(';')[0];
+  const t11=await login('T11');
+  const read=JSON.parse(fs.readFileSync(new URL('../scenarios/line-read-probe.json',import.meta.url),'utf8'));
+  const draw=JSON.parse(fs.readFileSync(new URL('../scenarios/line-draw-probe.json',import.meta.url),'utf8'));
+  const swapped=structuredClone(read);swapped.variant='draw';
+  assert.equal((await call('/api/study/probe-sets',{method:'POST',user:owner,body:swapped})).status,400,'讀圖的題目不能當畫圖題組');
+  const noVar=structuredClone(draw);delete noVar.variant;
+  assert.equal((await call('/api/study/probe-sets',{method:'POST',user:owner,body:noVar})).status,400,'沒寫 variant 就照讀圖的比例，畫圖題組不收');
+  const badVar=structuredClone(read);badVar.variant='both';
+  assert.equal((await call('/api/study/probe-sets',{method:'POST',user:owner,body:badVar})).status,400);
+  const badChart=structuredClone(read);badChart.forms[0].items[0].figure.chart.rows=99;
+  assert.equal((await call('/api/study/probe-sets',{method:'POST',user:owner,body:badChart})).status,400,'圖的格數超過範圍');
+  assert.equal((await call('/api/study/probe-sets',{method:'POST',user:owner,body:read})).data.id,'lineReadProbe@1');
+  assert.equal((await call('/api/study/probe-sets',{method:'POST',user:owner,body:draw})).data.id,'lineDrawProbe@1');
+  const start=await call('/api/probe/start',{method:'POST',cookie:t11,body:{student:'T11-S01',set:'lineReadProbe@1',sessionNo:1}});
+  assert.equal(start.status,200);assert.doesNotMatch(JSON.stringify(start.data.items),/"answer":/);
+  assert.ok(start.data.items.some(i=>i.figure&&i.figure.chart),'折線圖的圖有送給學生');
+  const form=read.forms.find(f=>f.items.every((it,k)=>it.id===start.data.items[k].id));
+  const run=start.data.run,item=(id,steps)=>call(`/api/probe/${run}/item`,{method:'POST',cookie:t11,body:{itemId:id,steps,secs:30}});
+  const c=(...v)=>({confirms:v.map((x,i)=>({v:x,t:i,n:i+1}))});
+  const it=id=>form.items.find(x=>x.id===id),ans=(id,k)=>it(id).steps.find(s=>s.key===k).answer;
+  const rd=form.items.find(x=>x.type==='read'&&ans(x.id,'scale')!==1),br=form.items.find(x=>x.type==='breakRead'),ch=form.items.find(x=>x.type==='change');
+  // 一格讀錯成 1：數值照自己的一格算（格數 × 1）→ 數值這一步算對（連帶），整題答錯
+  await item(rd.id,{scale:c(1),cells:c(ans(rd.id,'cells')),val:c(ans(rd.id,'cells')),unit:c(ans(rd.id,'unit'))});
+  // 波浪線：起點寫成 0，數值照自己的起點算 → 連帶算對、整題錯
+  await item(br.id,{start:c(0),scale:c(1),cells:c(ans(br.id,'cells')),val:c(ans(br.id,'cells')),unit:c('公分')});
+  // 變化：先填加起來，再改成相差 → 自行修正
+  await item(ch.id,{a:c(ans(ch.id,'a')),b:c(ans(ch.id,'b')),diff:c(ans(ch.id,'a')+ans(ch.id,'b'),ans(ch.id,'diff'))});
+  await call(`/api/probe/${run}/finish`,{method:'POST',cookie:t11,body:{reason:'done'}});
+  const rows=(await call('/api/study/export?type=probeItems',{user:owner})).data.rows.filter(x=>x.run===run),r=id=>rows.find(x=>x.itemId===id).result,st=(id,k)=>r(id).steps.find(s=>s.key===k);
+  assert.equal(st(rd.id,'scale').finalCorrect,false);assert.equal(st(rd.id,'val').finalCorrect,true,'數值依學生自己的一格判定');assert.equal(r(rd.id).correct,false);
+  assert.equal(st(br.id,'val').finalCorrect,true);assert.equal(r(br.id).correct,false);
+  assert.equal(r(ch.id).correct,true);assert.equal(st(ch.id,'diff').selfCorrected,true);
+});

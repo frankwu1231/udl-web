@@ -148,7 +148,7 @@ async function teacherGet(request,env,who){const role=who.role;if(role==='none')
 async function teacherSave(request,env,who){const role=who.role;if(role==='none')return json({error:'signin_required'},401);if(role==='student')return json({error:'forbidden'},403);if(!env.DB)return json({error:'lesson_storage_unavailable'},503);const origin=request.headers.get('origin');if(origin&&origin!==new URL(request.url).origin)return json({error:'origin'},403);if(Number(request.headers.get('content-length')||0)>60000)return json({error:'too_large'},413);let body;try{body=await request.json();}catch{return json({error:'invalid_json'},400);}if(!body||!['draft','published'].includes(body.kind)||!validLesson(body.config,true))return json({error:'invalid_input'},400);const config=JSON.stringify(body.config);if(config.length>60000)return json({error:'too_large'},413);const kind=lessonKind(who.ws,body.kind);
 try{const existing=await lessonRow(env,kind),revision=(existing?.revision||0)+1;await env.DB.prepare('INSERT INTO lesson_documents (kind,config_json,revision,updated_at) VALUES (?,?,?,?) ON CONFLICT(kind) DO UPDATE SET config_json=excluded.config_json,revision=excluded.revision,updated_at=excluded.updated_at').bind(kind,config,revision,new Date().toISOString()).run();return json({ok:true,revision});}catch{return json({error:'lesson_storage_unavailable'},503);}}
 const publicAssets=new Set(['/portal.html','/portal.css','/portal.js','/shapes.css','/favicon.svg']);
-const studentAssets=new Set(['/content-area.js','/content-surface.js','/act-surface.js','/act-surface2.js','/act-prism.js','/tutor.js','/tutor.css','/probe.html','/probe.js','/probe.css','/seven.html','/seven.js','/seven.css','/seven-geometry.js','/learning-flow.js','/lesson-content.js','/zhuyin.js','/hands-on.html','/hands-on.pdf','/step-demo.js','/step-demo.css','/seven-guide.html','/act-core.js','/act-unit12.js','/act-unit3.js','/act-unit45.js','/act.css','/buddy.js','/buddy.css','/research.js','/research.css','/observations.js']);
+const studentAssets=new Set(['/content-area.js','/content-surface.js','/act-surface.js','/act-surface2.js','/act-prism.js','/content-line.js','/act-line.js','/act-line2.js','/tutor.js','/tutor.css','/probe.html','/probe.js','/probe.css','/seven.html','/seven.js','/seven.css','/seven-geometry.js','/learning-flow.js','/lesson-content.js','/zhuyin.js','/hands-on.html','/hands-on.pdf','/step-demo.js','/step-demo.css','/seven-guide.html','/act-core.js','/act-unit12.js','/act-unit3.js','/act-unit45.js','/act.css','/buddy.js','/buddy.css','/research.js','/research.css','/observations.js']);
 const teacherPages=new Set(['/teacher.html','/teacher.js','/teacher.css','/qrcode.js','/observations.js','/scenario.html','/scenario.js','/study.css','/study-common.js']);
 export default {async fetch(request,env){const url=new URL(request.url);if(url.pathname==='/api/test-login')return request.method==='POST'?testLogin(request,env):json({error:'method'},405);
 if(url.pathname==='/api/test-logout'){if(request.method!=='POST')return json({error:'method'},405);const origin=request.headers.get('origin');if(origin&&origin!==url.origin)return json({error:'origin'},403);return jsonCookie({ok:true},200,sessionCookie('',0));}
@@ -491,16 +491,21 @@ return json({error:'not_found'},404);}catch{return json({error:'research_storage
 // 題組由研究團隊編製（每份 10 題：數格子 2、長方形 3、正方形 2、知道面積找邊長 1、複合圖形 2），匯入後鎖定版本。
 // 學生端只拿到題目，拿不到答案；每題送出後由伺服器依固定規則計分，學生只看到和對錯無關的鼓勵。
 // 題組用哪一個教材包（package，沒寫就是面積）就照那個教材包的題型
-const probeTypesOf=s=>(PKG[s&&s.package]||PKG[DEFAULT_PKG]).probeTypes,PROBE_KINDS=new Set(['probe','generalization','practice']),STEP_ROLES=new Set(['measure','formula','part','answer','unit']);
+// 第 28 版：一個教材包可以有好幾種探試題組（折線圖：讀圖 read、畫圖 draw），題組寫 variant
+const probeTypesOf=s=>{const p=PKG[s&&s.package]||PKG[DEFAULT_PKG];return s&&s.variant&&p.probeVariants&&Object.hasOwn(p.probeVariants,s.variant)?p.probeVariants[s.variant]:p.probeTypes;},PROBE_KINDS=new Set(['probe','generalization','practice']),STEP_ROLES=new Set(['measure','formula','part','answer','unit']);
 const KEY=/^[a-z][a-zA-Z0-9]{0,11}$/,intIn=(v,a,b)=>Number.isInteger(v)&&v>=a&&v<=b;
-function validFigure(f){if(f===undefined)return true;if(!f||typeof f!=='object'||Array.isArray(f)||!intIn(f.cols,1,20)||!intIn(f.rows,1,20)||typeof (f.grid??false)!=='boolean')return false;
+// 第 28 版：折線圖的圖 {chart:{title, xs, series:[{name, v}], min, step, rows, every, brk, hideY}}
+function validChart(c){if(!c||typeof c!=='object'||Array.isArray(c)||c.title!==undefined&&!safeText(c.title,30)||!Array.isArray(c.xs)||c.xs.length<2||c.xs.length>12||!c.xs.every(x=>safeText(x,6)))return false;
+if(!Number.isInteger(c.min)||Math.abs(c.min)>1000||!(typeof c.step==='number'&&c.step>0&&c.step<=1000)||!intIn(c.rows,2,20)||!intIn(c.every??1,1,5)||typeof (c.brk??false)!=='boolean'||typeof (c.hideY??false)!=='boolean'||c.yName!==undefined&&!safeText(c.yName,12)||c.xName!==undefined&&!safeText(c.xName,6))return false;
+return Array.isArray(c.series)&&c.series.length<=2&&c.series.every(s=>s&&safeText(s.name,10)&&Array.isArray(s.v)&&s.v.length<=c.xs.length&&s.v.every(v=>v===null||typeof v==='number'&&Number.isFinite(v)&&Math.abs(v)<=1000));}
+function validFigure(f){if(f===undefined)return true;if(f&&typeof f==='object'&&!Array.isArray(f)&&f.chart!==undefined)return Object.keys(f).length===1&&validChart(f.chart);if(!f||typeof f!=='object'||Array.isArray(f)||!intIn(f.cols,1,20)||!intIn(f.rows,1,20)||typeof (f.grid??false)!=='boolean')return false;
 if(!Array.isArray(f.rects||[])||(f.rects||[]).length>6||!(f.rects||[]).every(r=>Array.isArray(r)&&r.length===4&&r.every(n=>intIn(n,0,20))))return false;
 return Array.isArray(f.labels||[])&&(f.labels||[]).length<=8&&(f.labels||[]).every(l=>l&&typeof l.x==='number'&&typeof l.y==='number'&&Math.abs(l.x)<=21&&Math.abs(l.y)<=21&&safeText(l.text,12));}
 function validProbeItem(it,types){if(!it||typeof it!=='object'||!SET_ID.test(it.id)||!Object.hasOwn(types,it.type)||!safeText(it.prompt,160)||!validFigure(it.figure)||!Array.isArray(it.steps)||it.steps.length<1||it.steps.length>6)return false;
 const keys=new Set();for(const s of it.steps){if(!s||!KEY.test(s.key)||keys.has(s.key)||!safeText(s.label,30)||!STEP_ROLES.has(s.role)||!['number','choice'].includes(s.input))return false;keys.add(s.key);
 if(s.input==='number'&&!(typeof s.answer==='number'&&Number.isFinite(s.answer)))return false;if(s.input==='choice'&&!(Array.isArray(s.options)&&s.options.length>=2&&s.options.length<=5&&s.options.every(o=>safeText(o,20))&&s.options.includes(s.answer)))return false;}
 return it.steps.filter(s=>s.role==='answer').length===1;}
-function validProbeSet(s){if(!s||typeof s!=='object'||Array.isArray(s)||!SET_ID.test(s.id)||typeof s.version!=='string'||!/^[A-Za-z0-9._-]{1,20}$/.test(s.version)||!PROBE_KINDS.has(s.kind)||s.package!==undefined&&!Object.hasOwn(PKG,s.package)||!safeText(s.title,60)||!Array.isArray(s.forms)||s.forms.length<1||s.forms.length>20)return false;
+function validProbeSet(s){if(!s||typeof s!=='object'||Array.isArray(s)||!SET_ID.test(s.id)||typeof s.version!=='string'||!/^[A-Za-z0-9._-]{1,20}$/.test(s.version)||!PROBE_KINDS.has(s.kind)||s.package!==undefined&&!Object.hasOwn(PKG,s.package)||s.variant!==undefined&&!(typeof s.variant==='string'&&PKG[s.package||DEFAULT_PKG].probeVariants&&Object.hasOwn(PKG[s.package||DEFAULT_PKG].probeVariants,s.variant))||!safeText(s.title,60)||!Array.isArray(s.forms)||s.forms.length<1||s.forms.length>20)return false;
 if(s.itemSecs!==undefined&&!intIn(s.itemSecs,30,300)||s.totalSecs!==undefined&&!intIn(s.totalSecs,300,3600))return false;const ids=new Set(),types=probeTypesOf(s);
 for(const f of s.forms){if(!f||!SET_ID.test(f.id)||ids.has(f.id)||!Array.isArray(f.items)||f.items.length<1||f.items.length>20||!f.items.every(it=>validProbeItem(it,types)))return false;ids.add(f.id);
 if(new Set(f.items.map(i=>i.id)).size!==f.items.length)return false;
@@ -534,7 +539,12 @@ if(item.type==='cube')return parts.length===1&&x===6*parts[0];
 if(item.type==='inverse')return meas.length===1&&x===meas[0]/6;
 if(item.type==='openBox')return parts.length===3&&x===parts[0]+2*parts[1]+2*parts[2];
 // 柱體：底面積 × 2 ＋ 側面積
-if(item.type==='prism')return parts.length===2&&x===2*parts[0]+parts[1];return false;}
+if(item.type==='prism')return parts.length===2&&x===2*parts[0]+parts[1];
+// 第 28 版：折線圖。讀數值：一格 × 格數；波浪線：起點 ＋ 一格 × 格數；相差：兩個數相減；描點：數 ÷ 一格 ＝ 往上幾格
+if(item.type==='read')return meas.length===2&&x===meas[0]*meas[1];
+if(item.type==='breakRead')return meas.length===3&&x===meas[0]+meas[1]*meas[2];
+if(item.type==='change'||item.type==='twoLine')return parts.length===2&&x===Math.abs(parts[0]-parts[1]);
+if(item.type==='plot')return meas.length===2&&meas[1]!==0&&x===meas[0]/meas[1];return false;}
 const ok=(s,c)=>!!c&&(sameAnswer(c.v,s.answer)||carried(s,c.v,tOf(c)));
 const steps=item.steps.map(s=>{const c=confirmsOf(s.key),fin=c.length?c.at(-1).v:null,hadError=c.some(x=>!ok(s,x));
 return {key:s.key,role:s.role,answered:c.length>0,firstCorrect:ok(s,c[0]),finalCorrect:ok(s,c.at(-1)),hadError,selfCorrected:hadError&&ok(s,c.at(-1)),final:fin};});
