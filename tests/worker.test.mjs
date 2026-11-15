@@ -394,7 +394,7 @@ test('第 26 版第二階段：研究階段、標準化情境探試、應有方�
   globalThis.fetch=async(_u,o)=>{sent=JSON.parse(o.body);return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({message:reply})}}]}));};
   try{
     const ok=await call('/api/scenario/'+id+'/summary',{method:'POST',cookie:t7,body:{scenario:'S1'}});
-    assert.equal(ok.data.source,'ai');assert.deepEqual(ok.data.sessions,[1,2,3,4]);assert.equal(ok.data.promptVersion,'summary-v26.1');
+    assert.equal(ok.data.source,'ai');assert.deepEqual(ok.data.sessions,[1,2,3,4]);assert.equal(ok.data.promptVersion,'summary-v29');
     assert.match(sent.messages[0].content,/不提出任何調整方向/);assert.doesNotMatch(sent.messages[1].content,/T07|expected/);
     reply='第1節：完成 99 題。第2節。第3節。第4節。';
     const bad=await call('/api/scenario/'+id+'/summary',{method:'POST',cookie:t7,body:{scenario:'S1'}});
@@ -539,7 +539,10 @@ test('第 26 版第四階段：學生研究階段、小老師小方支持階段�
   try{
     const body={event:'wrong',stage:'guided',act:'rectangle',stepTitle:'數一數',obs:'countShort'};
     const a=await call('/api/tutor/line',{method:'POST',cookie:t10,body});assert.equal(a.data.source,'fallback');assert.equal(a.data.text,'再看一次圖，慢慢想。');
+    for(const r of ['我數到十二格。','我數到１２格。','兩排要再看看。'])
+      {reply=r;assert.equal((await call('/api/tutor/line',{method:'POST',cookie:t10,body})).data.source,'fallback',`全形或中文數字：${r}`);}
     reply='再一格一格點過去看看。';assert.equal((await call('/api/tutor/line',{method:'POST',cookie:t10,body})).data.text,reply);
+    reply='一個一個點過去看看。';assert.equal((await call('/api/tutor/line',{method:'POST',cookie:t10,body})).data.source,'ai','「一個」不算數字');
     assert.equal((await call('/api/tutor/line',{method:'POST',cookie:t10,body:{...body,event:'answer'}})).status,400);
   }finally{globalThis.fetch=originalFetch;}
   // 第三年：教師端 AI 摘要關閉

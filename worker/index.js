@@ -62,7 +62,7 @@ if(data.kind==='hint')return {system:base+`對象是國小三到五年級、可�
 if(data.kind==='reflection')return {system:base+`對象是國小三到五年級、可能有學習困難的學生。問一個很簡單、具體的問題，不超過20個字，學生可以用「是／不是」、選一個或指一指圖來回答，例如「你是數格子找到答案的嗎？」「你看了圖上哪一條線？」。不要問抽象的感想，不要拐彎抹角。不要用這些詞：${words}。只問一件事，不替學生回答。`,user:context};
 return {system:base+'面向教師，請用不超過180字整理：觀察事實、待教師確認的可能困難、下一次可觀察什麼。事實與推測須分清；統計只代表點擊與檢核，不代表學生已具備SRL能力。',user:context+`各步檢核未通過次數=${data.steps.join(',')}；返回修正=${data.backtracks}次；整題完成=${data.completed}輪；主動求助=${data.helpRequests}次。`};}
 // 第 26 版：學生端與試用老師的 AI 也走統一紀錄（輸入、輸出、模型、提示詞版本）；設定 LOCAL_LLM_URL 就改用本地模型
-const HINT_PROMPT_VERSION='hint-v25';
+const HINT_PROMPT_VERSION='hint-v29';
 async function ai(request,env,who){const log={},started=Date.now(),res=await aiCore(request,env,who,log);
 if(log.input&&env.DB){let text='',error='';try{const out=await res.clone().json();text=out.message||'';error=out.error||'';}catch{}await logAi(env,{task:'student-'+log.input.kind,workspace:who.ws,subject:'',provider:log.provider,model:log.model,promptVersion:HINT_PROMPT_VERSION,input:log.input,text,source:text?'ai':'fallback',error,ms:Date.now()-started});}
 return res;}
@@ -78,7 +78,7 @@ let provider;try{provider=await fetch(local?env.LOCAL_LLM_URL:deepseek?'https://
 if(!provider.ok){let error;try{error=(await provider.json()).error;}catch{}return json({error:provider.status===401?'invalid_api_key':provider.status===402||error?.code==='credit_balance_exhausted'||error?.type==='insufficient_quota'?'credit_exhausted':'ai_provider_unavailable'},503);}
 let result;try{result=await provider.json();}catch{return json({error:'ai_invalid_response'},503);}
 const raw=deepseek?String(result.choices?.[0]?.message?.content||''):(result.output||[]).flatMap(item=>item.content||[]).filter(item=>item.type==='output_text').map(item=>item.text).join('');let parsed;try{parsed=JSON.parse(raw);}catch{return json({error:'ai_invalid_response'},503);}
-const message=parsed?.message?.trim();if(!safeText(message,body.kind==='teacher'?200:body.kind==='hint'?40:50)||body.kind==='hint'&&/\d/.test(message))return json({error:'ai_invalid_response'},503);
+const message=parsed?.message?.trim();if(!safeText(message,body.kind==='teacher'?200:body.kind==='hint'?40:50)||body.kind==='hint'&&HAS_NUM(message))return json({error:'ai_invalid_response'},503);
 return json({message,source:'ai',model,promptVersion:HINT_PROMPT_VERSION});}
 function asset(path){const found=assets.get(path);if(!found)return new Response('Not found',{status:404});const [contentType,data]=found;const bin=atob(data),bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));return new Response(bytes,{headers:{'content-type':contentType,'x-content-type-options':'nosniff','cache-control':'private, no-cache'}});}
 const userId=request=>request.headers.get('oai-authenticated-user-id')||'';
@@ -361,11 +361,13 @@ const seq=new Map();for(const q of orders.values()){const k=q.join('→');seq.se
 return {session:no,completed:m.items,supportedRate:m.acc,independentStepRate:m.indepRate,hints,hintOrder:order?order[0]:'',hintOrderQuestions:order?order[1]:0,errors};});}
 function summaryFallback(facts){return facts.map(f=>{const err=Object.entries(f.errors).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} ${v} 次`).join('、')||'沒有答錯的步驟';const hint=Object.entries(f.hints).map(([k,v])=>`${k} ${v} 次`).join('、')||'沒有用提示';
 return `第${f.session}節：完成 ${f.completed} 題，支持下答對率 ${f.supportedRate??'—'}%，無提示步驟比例 ${f.independentStepRate??'—'}%。提示：${hint}${f.hintOrder?`（常見順序：${f.hintOrder}）`:''}。答錯情形：${err}。`;}).join('\n');}
-const SUMMARY_PROMPT_VERSION='summary-v26.1';
+const SUMMARY_PROMPT_VERSION='summary-v29';
+// 第 29 版：AI 的語句也不可以用全形數字或中文數字（「一」只在後面接十百千萬時算數字，避免擋到「一個」「一起」）
+const CN_NUM=/[０-９二三四五六七八九十百千萬兩]|一[十百千萬]/,HAS_NUM=t=>/[0-9]/.test(t)||CN_NUM.test(t);
 const SUMMARY_FORBIDDEN=/增加支持|減少支持|進階|建議|應該|可以考慮|下一步|調整|退回|迷思|障礙|診斷/;
-function summaryPrompt(facts,limit){return {system:`你為特教老師整理學生的面積學習紀錄。只根據給你的 JSON 寫摘要，不可加入 JSON 沒有的事，不可推測原因。用繁體中文，不用 Markdown。依節次寫，每節一行，開頭寫「第N節：」，說明完成題數、支持下答對率、無提示步驟比例、提示使用與常見順序、答錯情形（照 JSON 的文字，例如「答案剛好等於周長的數」）。最後一行以「依據：第…節」列出用到的節次。不提出任何調整方向或建議，不說要增加或減少支持、進階或退回，不用診斷用語。全部不超過${limit}字。只輸出 JSON 物件 {"message":"摘要"}。`,user:JSON.stringify(facts)};}
+function summaryPrompt(facts,limit){return {system:`你為特教老師整理學生的面積學習紀錄。只根據給你的 JSON 寫摘要，不可加入 JSON 沒有的事，不可推測原因。用繁體中文，不用 Markdown。依節次寫，每節一行，開頭寫「第N節：」，說明完成題數、支持下答對率、無提示步驟比例、提示使用與常見順序、答錯情形（照 JSON 的文字，例如「答案剛好等於周長的數」）。最後一行以「依據：第…節」列出用到的節次。不提出任何調整方向或建議，不說要增加或減少支持、進階或退回，不用診斷用語。所有數字都用阿拉伯數字（例如 3、80%），不要寫成國字。全部不超過${limit}字。只輸出 JSON 物件 {"message":"摘要"}。`,user:JSON.stringify(facts)};}
 // 摘要裡的每個數字都要在輸入裡找得到（防止 AI 自己編數字）
-function summaryCheck(text,facts,limit){if(!text||text.length>limit)return 'too_long';if(SUMMARY_FORBIDDEN.test(text))return 'advice';const allowed=new Set(JSON.stringify(facts).match(/\d+/g)||[]);for(const n of text.match(/\d+/g)||[])if(!allowed.has(n))return 'number_not_in_input';
+function summaryCheck(text,facts,limit){if(!text||text.length>limit)return 'too_long';if(SUMMARY_FORBIDDEN.test(text))return 'advice';if(CN_NUM.test(text))return 'number_not_in_input';const allowed=new Set(JSON.stringify(facts).match(/\d+/g)||[]);for(const n of text.match(/\d+/g)||[])if(!allowed.has(n))return 'number_not_in_input';
 for(const f of facts)if(!text.includes('第'+f.session+'節'))return 'missing_session';return '';}
 
 // ---------- AI 統一出入口：模型可抽換（現在 DeepSeek；設定 LOCAL_LLM_URL 就改用本地模型），每次都留紀錄 ----------
@@ -626,7 +628,7 @@ await env.DB.batch(st);if(out.reason==='nextActivity')flags.nextActivity=true;if
 return json({student,act,stage:row.stage,...flags,history});}catch{return json({error:'research_storage_unavailable'},503);}}
 
 // 小方的語句：程式決定要說什麼（事件、步驟），AI 只換說法；不能有數字、不超過字數、只說一個動作；不合格就用固定語句
-const TUTOR_PROMPT_VERSION='tutor-v26.1',TUTOR_EVENTS=new Set(['right','wrong','idle','predict','compare']);
+const TUTOR_PROMPT_VERSION='tutor-v29',TUTOR_EVENTS=new Set(['right','wrong','idle','predict','compare']);
 const TUTOR_FIXED={right:'對了，你做得很仔細。',wrong:'再看一次圖，慢慢想。',idle:'停一下了。想想看：我在找什麼？',predict:'想一想，下一步要做什麼。',compare:'看看我們兩個哪裡一樣。'};
 async function tutorQuota(env,ws){if(!env.DB)return false;try{const day=new Date().toISOString().slice(0,10),row=await env.DB.prepare('INSERT INTO ai_usage (day,scope,calls) VALUES (?,?,1) ON CONFLICT(day,scope) DO UPDATE SET calls=calls+1 WHERE calls<600 RETURNING calls').bind(day,'tutor:'+ws).first();return !!row;}catch{return false;}}
 async function tutorLine(request,env,who){if(!researchRole(who))return noResearch(who);if(!sameOrigin(request))return json({error:'origin'},403);
@@ -635,6 +637,6 @@ const rules=await studyRules(env),limit=rules.tutorChars,fixed=TUTOR_FIXED[b.eve
 const system=`你是國小面積課的小老師「小方」，對象是可能有學習困難的國小學生。程式已經決定這次要說的是：${{right:'肯定學生剛剛這一步做對了',wrong:'學生這一步答錯了，提醒他再看一次，不說答案',idle:'學生停了一陣子，提醒他想一想現在在找什麼',predict:'請學生想一想你下一步要做什麼',compare:'請學生對照你和他的作品'}[b.event]}。只輸出一句話，國小中年級口語，不超過${limit}個字，只說一個動作，不可以有任何數字，不說答案，不用這些詞：${banned}。只輸出 JSON 物件 {"message":"語句"}。`;
 const user=`活動：${actTitles[b.act]||b.act}。步驟：${input.stepTitle||'（無）'}。${input.obs?'看到的情形：'+input.obs+'。':''}`;
 if(!await tutorQuota(env,who.ws)){await logAi(env,{task:'tutor',workspace:who.ws,promptVersion:TUTOR_PROMPT_VERSION,input,text:fixed,source:'fallback',error:'ai_limit'});return json({text:fixed,source:'fallback',promptVersion:TUTOR_PROMPT_VERSION});}
-const out=await aiGateway(env,{task:'tutor',quota:false,ws:who.ws,subject:b.event,input,promptVersion:TUTOR_PROMPT_VERSION,system,user,maxTokens:120,check:t=>!t||t.length>limit?'too_long':/[0-9０-９]/.test(t)?'number':new RegExp(banned.replaceAll('、','|')).test(t)?'banned_word':'',fallback:fixed});
+const out=await aiGateway(env,{task:'tutor',quota:false,ws:who.ws,subject:b.event,input,promptVersion:TUTOR_PROMPT_VERSION,system,user,maxTokens:120,check:t=>!t||t.length>limit?'too_long':HAS_NUM(t)?'number':new RegExp(banned.replaceAll('、','|')).test(t)?'banned_word':'',fallback:fixed});
 return json({text:out.text,source:out.source,model:out.model,promptVersion:out.promptVersion});}
 async function tutorExport(env){const {results}=await env.DB.prepare('SELECT workspace, student, act, from_stage AS fromStage, to_stage AS toStage, session_no AS sessionNo, reason, detail_json AS detail, at FROM tutor_stage_changes ORDER BY at, id LIMIT 20000').all();return results;}
