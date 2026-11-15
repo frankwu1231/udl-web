@@ -174,6 +174,7 @@ if(url.pathname==='/api/study/phases')return request.method==='GET'||request.met
 if(url.pathname==='/api/study/direction')return request.method==='GET'?studyDirection(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/study/export')return request.method==='GET'?studyExport(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/study/scenarios')return request.method==='GET'||request.method==='POST'?studyScenarios(request,env,who):json({error:'method'},405);
+if(url.pathname==='/api/study/scenario-summaries')return studyScenarioSummaries(request,env,who,url);
 if(url.pathname==='/api/study/assignments')return request.method==='POST'?studyAssign(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/scenario'||url.pathname.startsWith('/api/scenario/'))return scenarioRoutes(request,env,who,url.pathname.slice(14));
 if(url.pathname==='/api/probe/sets')return request.method==='GET'?probeSets(request,env,who):json({error:'method'},405);
@@ -483,6 +484,28 @@ if(!sameOrigin(request))return json({error:'origin'},403);const s=await readJson
 // 版本鎖定：同一個 id@version 匯入後不能覆蓋，要改內容就換版本號
 try{await env.DB.prepare('INSERT INTO scenario_sets (id,version,title,set_json,created_at) VALUES (?,?,?,?,?)').bind(setKey(s),s.version,s.title,JSON.stringify(s),Date.now()).run();}catch{return json({error:'version_locked'},409);}
 return json({ok:true,id:setKey(s)});}
+// 第 29 版：情境摘要預先產生 → 主持人審核（可改字，但改後一樣要通過數字與用語檢查）→ 固定。教師端只看固定版本
+function scenarioSlots(set){return set.scenarios.flatMap(c=>c.sessions.map((_,i)=>({scenario:c.id,title:c.title,act:c.act,upTo:i+1})));}
+function scenarioFacts(c,upTo){return summaryFacts(c.sessions.slice(Math.max(0,upTo-7),upTo).map(x=>({no:x.no,rows:x.events})),c.act);}
+async function fixedSummary(env,setId,scenario,upTo){try{return await env.DB.prepare("SELECT text, source, model, prompt_version AS promptVersion FROM scenario_summaries WHERE set_id = ? AND scenario_id = ? AND up_to = ? AND status = 'approved'").bind(setId,scenario,upTo).first();}catch{return null;}}
+async function studyScenarioSummaries(request,env,who,url){if(!isResearcher(who))return notResearcher(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+if(request.method==='GET'){const id=url.searchParams.get('set')||'',row=await setRow(env,id);if(!row)return json({error:'not_found'},404);
+const {results}=await env.DB.prepare('SELECT scenario_id AS scenario, up_to AS upTo, text, source, model, prompt_version AS promptVersion, edited, status, created_at AS createdAt, approved_at AS approvedAt, approved_by AS approvedBy FROM scenario_summaries WHERE set_id = ?').bind(id).all();
+const map=new Map(results.map(r=>[r.scenario+'|'+r.upTo,r]));return json({set:id,slots:scenarioSlots(row.set).map(x=>({...x,summary:map.get(x.scenario+'|'+x.upTo)||null}))});}
+if(request.method!=='POST')return json({error:'method'},405);if(!sameOrigin(request))return json({error:'origin'},403);
+const b=await readJson(request,8192);if(!b||!['generate','approve','reopen'].includes(b.action)||typeof b.set!=='string')return json({error:'invalid_input'},400);
+const row=await setRow(env,b.set),c=row?.set.scenarios.find(x=>x.id===b.scenario);if(!c||!whole(b.upTo,99)||b.upTo<1||b.upTo>c.sessions.length)return json({error:'invalid_input'},400);
+const cur=await env.DB.prepare('SELECT status, text FROM scenario_summaries WHERE set_id = ? AND scenario_id = ? AND up_to = ?').bind(b.set,c.id,b.upTo).first(),now=Date.now();
+if(b.action==='generate'){if(cur?.status==='approved')return json({error:'already_approved'},409);
+const out=await summarize(env,who.ws||who.role,'pre|'+b.set+'|'+c.id+'|'+b.upTo,c.sessions.slice(Math.max(0,b.upTo-7),b.upTo).map(x=>({no:x.no,rows:x.events})),c.act);
+await env.DB.prepare("INSERT INTO scenario_summaries (set_id,scenario_id,up_to,text,source,model,prompt_version,ai_output_id,edited,status,created_at) VALUES (?,?,?,?,?,?,?,?,0,'draft',?) ON CONFLICT(set_id,scenario_id,up_to) DO UPDATE SET text=excluded.text,source=excluded.source,model=excluded.model,prompt_version=excluded.prompt_version,ai_output_id=excluded.ai_output_id,edited=0,created_at=excluded.created_at").bind(b.set,c.id,b.upTo,out.text,out.source,out.model,out.promptVersion,out.id,now).run();
+return json({ok:true,text:out.text,source:out.source,error:out.error});}
+if(b.action==='approve'){if(!cur)return json({error:'not_generated'},409);if(cur.status==='approved')return json({error:'already_approved'},409);
+let text=cur.text,edited=0;if(typeof b.text==='string'&&b.text.trim()&&b.text.trim()!==cur.text){text=b.text.trim();edited=1;if(/[<>]/.test(text))return json({error:'invalid_input'},400);const bad=summaryCheck(text,scenarioFacts(c,b.upTo),(await studyRules(env)).summaryChars);if(bad)return json({error:'check_failed',reason:bad},400);}
+await env.DB.prepare("UPDATE scenario_summaries SET text = ?, edited = ?, status = 'approved', approved_at = ?, approved_by = ? WHERE set_id = ? AND scenario_id = ? AND up_to = ?").bind(text,edited,now,who.ws||who.role,b.set,c.id,b.upTo).run();return json({ok:true});}
+// 重開審核：實驗鎖定中不行（避免正式資料期間換文字）
+if((await studyLock(env)).locked)return json({error:'experiment_locked'},409);if(!cur)return json({error:'not_generated'},409);
+await env.DB.prepare("UPDATE scenario_summaries SET status = 'draft', approved_at = NULL, approved_by = NULL WHERE set_id = ? AND scenario_id = ? AND up_to = ?").bind(b.set,c.id,b.upTo).run();return json({ok:true});}
 async function studyAssign(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!sameOrigin(request))return json({error:'origin'},403);if(!env.DB)return json({error:'research_storage_unavailable'},503);
 const b=await readJson(request,512);if(!b||typeof b.setId!=='string'||!TEACHER_CODE.test(b.teacher)||!safeText(b.probe,20))return json({error:'invalid_input'},400);if(!await setRow(env,b.setId))return json({error:'unknown_set'},404);
 // 平衡輪替：同一位老師不重複使用同一組情境
@@ -506,7 +529,12 @@ if(!action){if(request.method!=='GET')return json({error:'method'},405);return j
 if(request.method!=='POST')return json({error:'method'},405);if(!sameOrigin(request))return json({error:'origin'},403);
 const decisions=await decisionsOf(env,a.id);
 if(action==='summary'){const b=await readJson(request,256),c=a.set.scenarios.find(x=>x.id===b?.scenario);if(!c)return json({error:'invalid_input'},400);if(!aiOn)return json({error:'summary_off'},403);
-const done=decisions.filter(d=>d.scenario===c.id).length,upTo=Math.min(done+1,c.sessions.length);const out=await summarize(env,who.ws,a.id+'|'+c.id+'|'+upTo,c.sessions.slice(Math.max(0,upTo-7),upTo).map(x=>({no:x.no,rows:x.events})),c.act);
+const done=decisions.filter(d=>d.scenario===c.id).length,upTo=Math.min(done+1,c.sessions.length);
+// 第 29 版：有審核過的固定摘要就用固定的；實驗鎖定中又沒有固定摘要時，不叫 AI，改用網站的固定格式
+const fixed=await fixedSummary(env,a.setId,c.id,upTo);let out;
+if(fixed){const facts=scenarioFacts(c,upTo);out={text:fixed.text,source:'fixed',model:fixed.model,promptVersion:fixed.promptVersion};out.id=await logAi(env,{task:'summary',workspace:who.ws,subject:a.id+'|'+c.id+'|'+upTo,provider:'',model:fixed.model,promptVersion:fixed.promptVersion,input:facts,text:fixed.text,source:'fixed',error:'',ms:0});}
+else if((await studyLock(env)).locked){const facts=scenarioFacts(c,upTo),text=summaryFallback(facts);out={text,source:'fallback',model:'',promptVersion:SUMMARY_PROMPT_VERSION};out.id=await logAi(env,{task:'summary',workspace:who.ws,subject:a.id+'|'+c.id+'|'+upTo,promptVersion:SUMMARY_PROMPT_VERSION,input:facts,text,source:'fallback',error:'not_pre_approved',ms:0});}
+else out=await summarize(env,who.ws,a.id+'|'+c.id+'|'+upTo,c.sessions.slice(Math.max(0,upTo-7),upTo).map(x=>({no:x.no,rows:x.events})),c.act);
 return json({text:out.text,source:out.source,model:out.model,promptVersion:out.promptVersion,sessions:Array.from({length:upTo},(_,i)=>i+1).slice(-7),id:out.id});}
 if(action==='decide'){const b=await readJson(request,4096),c=a.set.scenarios.find(x=>x.id===b?.scenario);if(!c||!DECISIONS.has(b.decision)||!REASONS.has(b.reason))return json({error:'invalid_input'},400);
 const mine=decisions.filter(d=>d.scenario===c.id);if(b.sessionNo!==mine.length+1||b.sessionNo>c.sessions.length)return json({error:'wrong_session'},409);

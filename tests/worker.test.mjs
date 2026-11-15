@@ -663,3 +663,33 @@ test('第 29 版：實驗參數鎖定（判準不能改、AI 工具和快照不�
   assert.equal(un.data.lock.locked,false);assert.deepEqual(un.data.lock.history.map(h=>h.action),['lock','unlock']);
   assert.equal((await call('/api/study/config',{method:'POST',user:owner,body:{rules:{lowAcc:60}}})).status,200,'解鎖後可以改');
 });
+
+test('第 29 版：情境摘要先產生、審核後固定，老師看到同一段文字；鎖定中沒有核可就不呼叫 AI',async()=>{
+  const login=async teacher=>(await call('/api/test-login',{method:'POST',body:{username:'test',password:'test-pass',teacher}})).headers.get('set-cookie').split(';')[0];
+  const t12=await login('T12');
+  const set={...JSON.parse(fs.readFileSync(new URL('../scenarios/demo-set.json',import.meta.url),'utf8')),id:'fixsum'};
+  assert.equal((await call('/api/study/scenarios',{method:'POST',user:owner,body:set})).data.id,'fixsum@1');
+  const id=(await call('/api/study/assignments',{method:'POST',user:owner,body:{setId:'fixsum@1',teacher:'T12',probe:'P1'}})).data.id;
+  await call('/api/study/phases',{method:'POST',user:owner,body:{kind:'teacher',participant:'T12',phase:'intervention'}});
+  assert.equal((await call('/api/study/scenario-summaries?set=fixsum@1',{cookie:t12})).status,403,'只有主持人');
+  const list=(await call('/api/study/scenario-summaries?set=fixsum@1',{user:owner})).data;assert.equal(list.slots.length,35);assert.equal(list.slots[0].summary,null);
+  const post=body=>call('/api/study/scenario-summaries',{method:'POST',user:owner,body:{set:'fixsum@1',scenario:'S1',upTo:1,...body}});
+  assert.equal((await post({action:'approve'})).data.error,'not_generated');
+  const originalFetch=globalThis.fetch;let called=0;globalThis.fetch=async()=>{called++;return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({message:'第1節：完成 6 題。\n依據：第1節'})}}]}));};
+  try{
+    const gen=await post({action:'generate'});assert.equal(gen.data.source,'ai');assert.equal(called,1);
+    assert.equal((await post({action:'approve',text:'第1節：完成 6 題，建議增加支持。'})).data.error,'check_failed','改字也要通過檢查');
+    assert.equal((await post({action:'approve',text:'第1節：完成 6 題，沒有用提示。\n依據：第1節'})).status,200);
+    assert.equal((await post({action:'generate'})).data.error,'already_approved');
+    const row=(await call('/api/study/scenario-summaries?set=fixsum@1',{user:owner})).data.slots[0].summary;assert.equal(row.status,'approved');assert.equal(row.edited,1);
+    const seen=await call('/api/scenario/'+id+'/summary',{method:'POST',cookie:t12,body:{scenario:'S1'}});
+    assert.equal(seen.data.source,'fixed');assert.equal(seen.data.text,'第1節：完成 6 題，沒有用提示。\n依據：第1節');assert.equal(called,1,'固定摘要不再呼叫 AI');
+    // 鎖定中：沒有核可的情境用固定格式，不呼叫 AI；也不能重開審核
+    await call('/api/study/lock',{method:'POST',user:owner,body:{action:'lock'}});
+    const s2=await call('/api/scenario/'+id+'/summary',{method:'POST',cookie:t12,body:{scenario:'S2'}});
+    assert.equal(s2.data.source,'fallback');assert.equal(called,1);
+    assert.equal((await post({action:'reopen'})).data.error,'experiment_locked');
+    await call('/api/study/lock',{method:'POST',user:owner,body:{action:'unlock',reason:'測試結束'}});
+    assert.equal((await post({action:'reopen'})).status,200);
+  }finally{globalThis.fetch=originalFetch;}
+});

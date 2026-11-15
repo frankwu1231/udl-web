@@ -86,6 +86,9 @@
       <h3>情境組</h3>${data.sets.length ? `<table class="study-table"><thead><tr><th>代號@版本</th><th>名稱</th><th>匯入時間</th></tr></thead><tbody>${data.sets.map(s => `<tr><td>${esc(s.id)}</td><td>${esc(s.title)}</td><td>${esc(time(s.createdAt))}</td></tr>`).join('')}</tbody></table>` : '<p>還沒有情境組。</p>'}
       <h3>指派給教師</h3><div class="study-grid"><label>情境組<select id="asgSet">${data.sets.map(s => `<option value="${esc(s.id)}">${esc(s.id)}</option>`).join('')}</select></label><label>教師<select id="asgTeacher">${TEACHERS.map(t => `<option>${t}</option>`).join('')}</select></label><label>第幾次探試<input id="asgProbe" maxlength="20" placeholder="例如：P1"></label></div>
       <button type="button" id="asgSave"${data.sets.length ? '' : ' disabled'}>指派</button><p id="asgMsg" class="msg" role="status">${esc(note.asg || '')}</p>
+      <h3>AI 摘要預先產生與審核</h3><p class="subtle">每個情境、每一節的摘要先在這裡產生，主持人讀過、需要時改字，按「核可」後就固定，每位老師看到同一段文字。改字後一樣要通過檢查（數字要在紀錄裡找得到、不寫建議）。實驗鎖定期間，沒有核可的節次不呼叫 AI，老師看到網站的固定格式。</p>
+      <div class="study-grid"><label>情境組<select id="sumSet">${data.sets.map(s => `<option value="${esc(s.id)}">${esc(s.id)}</option>`).join('')}</select></label></div>
+      <button type="button" id="sumLoad"${data.sets.length ? '' : ' disabled'}>開啟審核表</button> <button type="button" id="sumAll"${data.sets.length ? '' : ' disabled'}>產生所有還沒有的摘要</button><p id="sumMsg" class="msg" role="status"></p><div id="sumOut"></div>
       ${data.assignments.length ? `<table class="study-table"><thead><tr><th>教師</th><th>探試</th><th>情境組</th><th>指派時的階段</th><th>已決策節數</th><th>指派時間</th></tr></thead><tbody>${data.assignments.map(a => `<tr><td>${esc(a.teacher)}</td><td>${esc(a.probe)}</td><td>${esc(a.setId)}</td><td>${esc(S.PHASE[a.phase] || '未設定')}</td><td>${a.decided}</td><td>${esc(time(a.createdAt))}</td></tr>`).join('')}</tbody></table>` : ''}`;
     $('setFile').onchange = async () => {
       const f = $('setFile').files[0]; if (!f) return;
@@ -93,10 +96,38 @@
       try { const out = await S.api('/api/study/scenarios', set); drawScenarios({ set: '✓ 已匯入 ' + out.id }); }
       catch (e) { $('setMsg').textContent = e.message === 'version_locked' ? '這個代號和版本已經匯入過，內容鎖定。要修改請換版本號。' : '格式不對，沒有匯入。'; }
     };
+    if ($('sumLoad')) { $('sumLoad').onclick = () => drawSummaries($('sumSet').value); $('sumAll').onclick = () => generateAll($('sumSet').value); }
     $('asgSave').onclick = async () => {
       try { const out = await S.api('/api/study/assignments', { setId: $('asgSet').value, teacher: $('asgTeacher').value, probe: $('asgProbe').value.trim() }); drawScenarios({ asg: `✓ 已指派（教師目前階段：${S.PHASE[out.phase] || '未設定'}）` }); }
       catch (e) { $('asgMsg').textContent = e.message === 'set_already_used' ? '這位老師已經用過這組情境（各次探試要用不重複的情境組）。' : '請填「第幾次探試」。'; }
     };
+  }
+
+  // ---------- 第 29 版：情境摘要審核表 ----------
+  const SUM_ERR = { check_failed: '改過的文字沒有通過檢查（數字要在紀錄裡找得到、不能寫建議、每一節都要寫到、不超過字數）。', already_approved: '這一則已經核可。', experiment_locked: '實驗鎖定中，不能重開審核。', not_generated: '還沒有產生。' };
+  async function drawSummaries(setId, note = '') {
+    const out = $('sumOut'); if (!setId) return;
+    let data; try { data = await S.api('/api/study/scenario-summaries?set=' + encodeURIComponent(setId)); } catch { out.textContent = '讀不到審核表。'; return; }
+    const done = data.slots.filter(x => x.summary?.status === 'approved').length;
+    $('sumMsg').textContent = note || `已核可 ${done}／${data.slots.length} 則`;
+    const src = x => ({ ai: 'AI', fallback: '固定格式（AI 沒有通過或無法使用）' }[x] || x);
+    out.innerHTML = `<div class="table-scroll"><table class="study-table"><thead><tr><th>情境</th><th>老師看到第幾節</th><th>狀態</th><th>摘要</th><th></th></tr></thead><tbody>${data.slots.map((x, i) => {
+      const m = x.summary, ok = m?.status === 'approved';
+      return `<tr><td>${esc(x.title)}</td><td>${x.upTo}</td><td>${!m ? '還沒產生' : ok ? `✓ 已核可${m.edited ? '（改過字）' : ''}<br><small>${esc(time(m.approvedAt))}</small>` : '待審核'}${m ? `<br><small>${esc(src(m.source))}</small>` : ''}</td>
+        <td>${m ? `<textarea data-sum-text="${i}" rows="4" cols="40"${ok ? ' readonly' : ''}>${esc(m.text)}</textarea>` : ''}</td>
+        <td>${ok ? `<button type="button" data-sum-reopen="${i}">重開審核</button>` : `<button type="button" data-sum-gen="${i}">${m ? '重新產生' : '產生'}</button>${m ? ` <button type="button" class="primary" data-sum-ok="${i}">核可</button>` : ''}`}</td></tr>`;
+    }).join('')}</tbody></table></div>`;
+    const slot = i => data.slots[Number(i)], base = x => ({ set: setId, scenario: x.scenario, upTo: x.upTo });
+    const act = async (body, msg) => { try { await S.api('/api/study/scenario-summaries', body); drawSummaries(setId, msg); } catch (e) { $('sumMsg').textContent = SUM_ERR[e.message] || '沒有成功，請重新整理再試。'; } };
+    out.querySelectorAll('[data-sum-gen]').forEach(b => b.onclick = () => { b.disabled = true; b.textContent = '產生中……'; act({ action: 'generate', ...base(slot(b.dataset.sumGen)) }, '✓ 已產生，請讀過再核可'); });
+    out.querySelectorAll('[data-sum-ok]').forEach(b => b.onclick = () => { const i = b.dataset.sumOk; act({ action: 'approve', ...base(slot(i)), text: out.querySelector(`[data-sum-text="${i}"]`).value }, '✓ 已核可'); });
+    out.querySelectorAll('[data-sum-reopen]').forEach(b => b.onclick = () => act({ action: 'reopen', ...base(slot(b.dataset.sumReopen)) }, '已重開，可以重新產生或改字'));
+  }
+  async function generateAll(setId) {
+    let data; try { data = await S.api('/api/study/scenario-summaries?set=' + encodeURIComponent(setId)); } catch { $('sumMsg').textContent = '讀不到審核表。'; return; }
+    const todo = data.slots.filter(x => !x.summary);
+    for (const [k, x] of todo.entries()) { $('sumMsg').textContent = `產生中 ${k + 1}／${todo.length}……`; try { await S.api('/api/study/scenario-summaries', { action: 'generate', set: setId, scenario: x.scenario, upTo: x.upTo }); } catch { /* 單筆失敗就跳過，表上會顯示還沒產生 */ } }
+    drawSummaries(setId, `✓ 產生完畢（${todo.length} 則），請逐則讀過再核可`);
   }
 
   // ---------- 探試題組：匯入（版本鎖定）、施測紀錄與計分 ----------
