@@ -530,6 +530,7 @@ const publicItem=it=>({id:it.id,type:it.type,prompt:it.prompt,figure:it.figure||
 
 // ---------- 計分 ----------
 const sameAnswer=(v,a)=>v!==null&&v!==undefined&&v!==''&&(typeof a==='number'?Number(v)===a:String(v)===String(a));
+const RAPID_SECS=1.5;
 function scoreProbeItem(item,resp){const st=resp&&resp.steps&&typeof resp.steps==='object'?resp.steps:{},tech=resp?.tech===true;
 // 每一次確定都算（前端一題最多記 300 次）
 const confirmsOf=k=>Array.isArray(st[k]?.confirms)?st[k].confirms.filter(c=>c&&(typeof c.v==='number'||typeof c.v==='string')):[];
@@ -559,8 +560,11 @@ if(item.type==='breakRead')return meas.length===3&&x===meas[0]+meas[1]*meas[2];
 if(item.type==='change'||item.type==='twoLine')return parts.length===2&&x===Math.abs(parts[0]-parts[1]);
 if(item.type==='plot')return meas.length===2&&meas[1]!==0&&x===meas[0]/meas[1];return false;}
 const ok=(s,c)=>!!c&&(sameAnswer(c.v,s.answer)||carried(s,c.v,tOf(c)));
-const steps=item.steps.map(s=>{const c=confirmsOf(s.key),fin=c.length?c.at(-1).v:null,hadError=c.some(x=>!ok(s,x));
-return {key:s.key,role:s.role,answered:c.length>0,firstCorrect:ok(s,c[0]),finalCorrect:ok(s,c.at(-1)),hadError,selfCorrected:hadError&&ok(s,c.at(-1)),final:fin};});
+// 第 29 版：疑似快速猜測。每一步第一次確定和「這題前一次確定」（或這題開始）相隔的秒數；不到 RAPID_SECS 秒而且答錯，就標記，供研究人員清理資料（不影響計分）
+const order=item.steps.flatMap(s=>confirmsOf(s.key)).filter(c=>typeof c.t==='number'&&Number.isFinite(c.t)).sort((x,y)=>tOf(x)-tOf(y));
+const gapOf=c=>{if(!c||typeof c.t!=='number'||!Number.isFinite(c.t))return null;const before=order.filter(x=>tOf(x)<tOf(c));return Math.round((c.t-(before.length?before.at(-1).t:0))*10)/10;};
+const steps=item.steps.map(s=>{const c=confirmsOf(s.key),fin=c.length?c.at(-1).v:null,hadError=c.some(x=>!ok(s,x)),firstSecs=gapOf(c[0]),firstCorrect=ok(s,c[0]);
+return {key:s.key,role:s.role,answered:c.length>0,firstCorrect,finalCorrect:ok(s,c.at(-1)),hadError,selfCorrected:hadError&&ok(s,c.at(-1)),final:fin,firstSecs,rapidGuess:c.length>0&&!firstCorrect&&firstSecs!==null&&firstSecs<RAPID_SECS};});
 const ans=item.steps.find(s=>s.role==='answer'),unit=item.steps.find(s=>s.role==='unit'),answerCorrect=sameAnswer(finalOf(ans.key),ans.answer),unitCorrect=unit?sameAnswer(finalOf(unit.key),unit.answer):true,
 firstCorrect=!tech&&sameAnswer(firstOf(ans.key),ans.answer)&&(unit?sameAnswer(firstOf(unit.key),unit.answer):true);
 const group=role=>{const l=steps.filter(s=>s.role===role);return l.length?l.every(s=>s.finalCorrect):null;};
@@ -572,7 +576,7 @@ return {items:all.length,valid:valid.length,correct:valid.filter(r=>r.correct).l
 firstSubmitAccuracy:valid.length?Math.round(valid.filter(r=>r.firstCorrect).length/valid.length*1000)/10:null,finalAccuracy:valid.length?Math.round(valid.filter(r=>r.correct).length/valid.length*1000)/10:null,
 scorableSteps:steps.length,independentSteps:steps.filter(s=>s.firstCorrect).length,independentStepRate:steps.length?Math.round(steps.filter(s=>s.firstCorrect).length/steps.length*1000)/10:null,
 errorSteps:withErr.length,selfCorrected:withErr.filter(s=>s.selfCorrected).length,selfCorrectionRate:withErr.length?Math.round(withErr.filter(s=>s.selfCorrected).length/withErr.length*1000)/10:null,
-timedOut:all.filter(r=>r.timedOut).length,unanswered:all.filter(r=>!r.answered).length,tech:all.length-valid.length,dataPoint:valid.length>=minValid};}
+rapidGuessSteps:steps.filter(s=>s.rapidGuess).length,timedOut:all.filter(r=>r.timedOut).length,unanswered:all.filter(r=>!r.answered).length,tech:all.length-valid.length,dataPoint:valid.length>=minValid};}
 
 // ---------- 路由 ----------
 async function probeSets(request,env,who){if(!researchRole(who))return noResearch(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);

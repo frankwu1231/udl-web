@@ -474,6 +474,8 @@ test('第 26 版第三階段：探試題組匯入鎖版、學生拿不到答案�
   assert.equal(r('B04').correct,true);assert.deepEqual(r('B04').steps.filter(s=>s.selfCorrected).map(s=>s.key),['formula','area']);
   assert.equal(r('B02').unitCorrect,false);assert.equal(r('B07').tech,true);
   assert.equal(sum.errorSteps,4);assert.equal(sum.selfCorrected,2);assert.equal(sum.selfCorrectionRate,50);
+  // 第 29 版：第一次確定和前一次確定相隔不到 1.5 秒而且答錯，標成疑似快速猜測（這裡每一步的時間都從 0 起算，所以錯的 4 步都算）
+  assert.deepEqual(r('B03').steps.map(s=>[s.key,s.firstSecs,s.rapidGuess]).slice(0,2),[['len',0,true],['wid',0,false]]);assert.equal(sum.rapidGuessSteps,4);
   // 連帶錯誤依「當時」已確定的取量判定：長 5、寬 6、面積 30 之後，把長改成 4、面積改成 24，第一次的 30 仍然算對
   const run2=(await call('/api/probe/start',{method:'POST',cookie:t8,body:{student:'T08-S02',set:'demoProbe@1',sessionNo:1}})).data;
   const form2=set.forms.find(f=>f.id===run2.formId),rect=form2.items.find(i=>i.type==='rectangle'&&i.steps.filter(x=>x.role==='measure').length===2);
