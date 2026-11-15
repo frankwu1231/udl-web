@@ -161,7 +161,7 @@
   function settingsRow() {
     const s = api.settings(), act = api.activity();
     if (!act.id) return;
-    const pick = ['mode', 'support', 'flow', 'difficulty', 'buddy', 'buddyWait', 'buddyVoice', 'attention', 'attentionSec', 'zhuyin', 'textSize', 'contrast', 'video', 'ai', 'fading', 'selfAsk', 'rest'];
+    const pick = ['mode', 'support', 'flow', 'difficulty', 'buddy', 'buddyWait', 'buddyVoice', 'attention', 'attentionSec', 'zhuyin', 'textSize', 'contrast', 'video', 'ai', 'fading', 'selfAsk', 'rest', 'simple', 'simpleShow', 'tour'];
     const snap = Object.fromEntries(pick.map(k => [k, s[k]])), key = act.id + JSON.stringify(snap);
     if (key === lastActivity) return; lastActivity = key;
     enqueue('教師設定', { activity: act.name, actId: act.id, ...Object.fromEntries(pick.map(k => [k, typeof snap[k] === 'boolean' ? (snap[k] ? '開' : '關') : snap[k] ?? ''])), cameraConsent: who.camera ? '是' : '否' });

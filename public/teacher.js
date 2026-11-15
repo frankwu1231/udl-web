@@ -260,6 +260,12 @@
       <label>轉頭或離開幾秒才提醒<select id="attentionSec"><option value="3">3 秒</option><option value="5">5 秒（建議）</option><option value="8">8 秒</option></select></label>
       <p class="subtle">鏡頭影像只在學生的電腦上判斷，不錄影、不存檔、不上傳；紀錄只有「提醒了幾次」。學生會先看到說明並按「好」才開鏡頭，隨時可以按「關掉」。低頭寫字不算分心。使用前請先取得家長同意。第一次使用時會從網路下載約 4 MB 的臉部模型。</p>
 
+      <h2 id="sec-simple">🧹 精簡畫面與第一次導覽</h2>
+      <p class="subtle">精簡畫面：學生解題時只看到題目、作答區、「檢查」和「😣 我卡住了」（提示、示範、休息、請老師都在「我卡住了」裡面）。學生熟悉以後，再一項一項打開。</p>
+      <label class="check"><input id="simple" type="checkbox" ${s.simple !== false ? 'checked' : ''}>使用精簡畫面（建議第一次使用時開著）</label>
+      <fieldset id="simpleShow"><legend>精簡畫面也要顯示</legend>${[['aids', '閱讀輔助列（注音、字的大小、高對比、休息）和「全部唸給我聽」'], ['say', '每一句旁邊的 🔊 朗讀鍵'], ['progress', '學習階段和解題步驟的進度點'], ['selfAsk', '我的自問卡和「問問自己」'], ['hint', '「💡 給我提示」按鈕（不打開時，提示放在「我卡住了」裡）']].map(([k, t]) => `<label><input type="checkbox" data-simple-show="${k}" ${(s.simpleShow || []).includes(k) ? 'checked' : ''}>${t}</label>`).join('')}</fieldset>
+      <label class="check"><input id="tour" type="checkbox" ${s.tour !== false ? 'checked' : ''}>第一次使用時，小方帶學生認識畫面（每位學生一次，大約 30 秒；學生可以在「我卡住了」裡再看一次）</label>
+
       <h2 id="sec-aids">閱讀輔助（預設值，學生上課時也可以自己切換）</h2>
       <label class="check"><input id="zhuyin" type="checkbox" ${s.zhuyin ? 'checked' : ''}>國字加注音</label>
       <label>字的大小<select id="textSize"><option value="normal">一般</option><option value="large">大</option><option value="xlarge">特大</option></select></label>
@@ -320,7 +326,7 @@
       collect(); const src = sec(id).settings;
       const copy = target => { const keepOwn = { difficulty: target.settings?.difficulty || 'standard', stepNames: target.settings?.stepNames || {} }; if (isP(id) && target.problems) Object.assign(keepOwn, { flow: target.settings.flow, keep: target.settings.keep, labels: target.settings.labels, grid: target.settings.grid, ai: target.settings.ai, methods: target.settings.methods }); target.settings = { ...src, ...keepOwn }; };
       SHAPES.forEach(k => copy(config[k])); A.available().filter(a => isP(a.id)).forEach(a => copy(sec(a.id)));
-      $('status').textContent = '已把支持程度、教學階段、自我調整、學習小幫手與閱讀輔助設定套用到全部活動（難度不變）。記得儲存或發布。';
+      $('status').textContent = '已把支持程度、教學階段、自我調整、學習小幫手、精簡畫面與閱讀輔助設定套用到全部活動（難度不變）。記得儲存或發布。';
     };
   }
 
@@ -412,7 +418,8 @@
       stepNames: Object.fromEntries([...document.querySelectorAll('[data-stepname]')].map(e => [e.dataset.stepname, e.value.replace(/[<>&"'`]/g, '').trim()]).filter(x => x[1])), video: $('video').value, handsOn: $('handsOn').checked, fading: val('fading', e => e.checked),
       methods: (() => { const m = [...document.querySelectorAll('[data-method]:checked')].map(e => e.dataset.method); return plugin && old.methods.includes('row') ? [...m, 'row'] : m; })(),
       zhuyin: $('zhuyin').checked, textSize: $('textSize').value, contrast: $('contrast').checked, convert: val('convert', e => e.checked),
-      buddy: $('buddy').checked, buddyWait: Number($('buddyWait').value), buddyVoice: $('buddyVoice').checked, attention: $('attention').checked, attentionSec: Number($('attentionSec').value)
+      buddy: $('buddy').checked, buddyWait: Number($('buddyWait').value), buddyVoice: $('buddyVoice').checked, attention: $('attention').checked, attentionSec: Number($('attentionSec').value),
+      simple: $('simple').checked, simpleShow: [...document.querySelectorAll('[data-simple-show]:checked')].map(e => e.dataset.simpleShow), tour: $('tour').checked
     };
     if (!d.settings.methods.length) d.settings.methods = ['mark', 'row', 'self'];
     return config;

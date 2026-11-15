@@ -63,7 +63,7 @@
 
   // 第 26 版：班級設定，再套上這位學生的個別設定（老師在「教師觀察」調整、存在網站資料庫）
   function ownSettings() { return { ...F.settings(L()), ...(window.areaResearch?.overrides?.(type) || {}), ...(window.areaResearch?.phasePatch?.(type) || {}) }; }   // 第 26 版第四階段：研究階段（B、BC 關閉 AI；BC 由小老師小方取代小幫手；示範階段用老師示範模式）
-  const SITE_VERSION = 'v28';
+  const SITE_VERSION = 'v29';
   function log(event, extra = {}) {
     const st = extra.activity && phase !== 'plan' ? (titles()[extra.activity - 1] || '') : '';
     const r = { time: new Date().toISOString(), siteVersion: SITE_VERSION, shape: nameOf(), shapeKey: type, actId: type, stepTitle: st, cycle, activity: extra.activity ?? null, event, support: settings.support, response, method, flow: settings.flow, difficulty: settings.difficulty, mode: mode(), studyPhase, ...(window.areaTutor?.stage?.() ? { tutorStage: window.areaTutor.stage() } : {}), ...extra };
@@ -89,6 +89,7 @@
     const banner = type ? { together: '一起做：老師和你一起想、一起做。', demo: '老師示範：先看老師怎麼做，聽老師說出想法。', probe: '小測驗：這次沒有提示，自己試試看就好。' }[mode()] : '';
     $('app').innerHTML = `<section class="surface"><div class="head"><p class="eyebrow">${type ? `<a class="map-link" href="${mapUrl()}">🗺️ 學習地圖</a>　${(ACT && ACT.info(type) || {}).no || ''} ${nameOf()} · 第 ${cycle} 題${settings.lessonGoal ? `<span class="lesson-goal">　這次：第 ${Math.min(doneHere() + 1, settings.lessonGoal)}／${settings.lessonGoal} 題</span>` : ''}` : esc(ACT ? ACT.pkg.title : '四種圖形面積')}</p><h1 tabindex="-1" data-read>${title}</h1></div>${steps}${banner ? `<p class="mode-banner mode-${mode()}" data-read data-say>${banner}</p>` : ''}<div class="body">${body}</div></section>`;
     addSayButtons($('app'));
+    if (phase === 'solve') setTimeout(() => maybeTour(), 0);
   }
   function focus() { document.querySelector('h1')?.focus({ preventScroll: true }); window.scrollTo({ top: 0 }); }
   function showStatus(target, text, ok = false) {
@@ -311,7 +312,7 @@
     const askText = stepAskText(s);
     const stepAsk = askText && settings.selfAsk && !passed && mode() !== 'demo' && !probe ? `<p class="step-ask" data-read data-say>問問自己：${esc(askText)}</p>` : '';
     const stuckBtn = passed || probe || mode() === 'demo' ? '' : button('stuck' + s, '😣 我卡住了', 'hint-btn stuck-btn', `data-stuck="${s}" aria-expanded="${stuckOpen === s}" aria-controls="stuckPanel${s}"`);
-    const stuckItems = C.stuckOptions.filter(([k]) => (k !== 'hint' || level < 3) && (k !== 'video' || (canVideo && !videoOpen.has(s))));
+    const stuckItems = [...C.stuckOptions, ...(settings.tour !== false ? [['tour', '👀 再看一次怎麼用']] : [])].filter(([k]) => (k !== 'hint' || level < 3) && (k !== 'video' || (canVideo && !videoOpen.has(s))));
     const stuckPanel = stuckOpen === s && !passed ? `<div class="stuck-panel" id="stuckPanel${s}" role="group" aria-labelledby="stuckLead${s}"><p id="stuckLead${s}" data-read data-say>沒關係，卡住的時候，選一個幫自己的方法：</p><div class="options">${stuckItems.map(([k, t]) => `<button type="button" data-stuck-pick="${k}" data-step="${s}">${t}</button>`).join('')}</div>${stuckNote[s] ? `<p class="notice" role="status" data-read data-say>${esc(stuckNote[s])}</p>` : ''}</div>` : '';
     const thinkText = P() ? P().steps[s].think : C.think[type][s], togetherText = P() ? P().steps[s].together : C.together(type)[s];
     const coach = mode() === 'demo' && !passed ? `<div class="think-aloud"><p data-read data-say>${esc(thinkText)}</p>${button('demo' + s, '▶ 看老師做這一步', 'primary-soft', `data-demo="${s}"`)}</div>`
@@ -335,10 +336,11 @@
   }
   // 學生選了卡住時的下一步：提示、示範、請老師、休息
   function stuckPick(s, k) {
-    log('卡住時選擇', { activity: s + 1, choice: (C.stuckOptions.find(x => x[0] === k) || [])[1] || k });
+    log('卡住時選擇', { activity: s + 1, choice: k === 'tour' ? '再看一次怎麼用' : (C.stuckOptions.find(x => x[0] === k) || [])[1] || k });
     const back = () => $('stuck' + s)?.focus({ preventScroll: true });
     if (k === 'hint') { stuckOpen = null; showHint(s, true); const m = $('ackHint') || $('hintMessage' + s); if (m) { if (!m.matches('button')) m.setAttribute('tabindex', '-1'); m.focus({ preventScroll: true }); } return; }
     if (k === 'video') { stuckOpen = null; videoOpen.add(s); rerenderKeep(); mountVideo(s, true); const v = $('videoSlot' + s); v?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); (v?.querySelector('video, button') || $('stuck' + s))?.focus({ preventScroll: true }); return; }
+    if (k === 'tour') { stuckOpen = null; rerenderKeep(); return startTour(true); }
     if (k === 'rest') { stuckOpen = null; rerenderKeep(); back(); $('restDialog')?.addEventListener('close', back, { once: true }); return openRest('self'); }
     stuckNote[s] = '請舉手，或把這個畫面給老師看。等老師的時候，可以先看看圖。';
     rerenderKeep();
@@ -1347,6 +1349,53 @@
   $('saveKey').onclick = () => { const key = $('personalKey').value.trim(); if (!/^sk-[^\s]{20,400}$/.test(key)) { $('keyError').textContent = '請輸入完整 API key。'; $('keyError').hidden = false; return; } sessionApiKey = key; sessionProvider = $('keyProvider').value; $('keyDialog').close(); };
   $('clearKey').onclick = () => { sessionApiKey = ''; sessionProvider = 'openai'; $('keyDialog').close(); };
 
+  // ---------- 第 29 版：第一次使用的導覽（小方帶著看四個地方；每位學生一次，可以從「我卡住了」再看） ----------
+  const TOUR_KEY = 'udl-tour-v29';
+  const tourWho = () => window.areaResearch?.student?.() || 'device';
+  function tourSeen() { try { return (JSON.parse(localStorage.getItem(TOUR_KEY) || '[]') || []).includes(tourWho()); } catch { return true; } }
+  function tourMark() { try { const a = JSON.parse(localStorage.getItem(TOUR_KEY) || '[]') || []; if (!a.includes(tourWho())) a.push(tourWho()); localStorage.setItem(TOUR_KEY, JSON.stringify(a.slice(-200))); } catch { /* 略過 */ } }
+  let tourOn = false;
+  function maybeTour() {
+    if (tourOn || !type || settings.tour === false || ['demo', 'probe'].includes(mode())) return;
+    if (document.querySelector('dialog[open]') || !document.querySelector('#check') || !document.querySelector('.stuck-btn') || tourSeen()) return;
+    startTour(false);
+  }
+  function startTour(again) {
+    const work = document.querySelector('.answer .options, .answer input, .answer .field, .answer [data-choice], .figure svg');
+    const stops = [
+      [document.querySelector('.task-grid') || document.querySelector('h1'), '先看這裡：題目和圖都在這一塊。'],
+      [work, '在這裡作答：點一點、選一選，或填數字。'],
+      [$('check'), '做好了，就按「檢查」。答對了才會到下一步。'],
+      [document.querySelector('.stuck-btn'), '不會的時候，按「我卡住了」。我會幫你，也可以請老師來。']
+    ].filter(x => x[0]);
+    if (!stops.length) return;
+    tourOn = true; let i = 0;
+    const box = document.createElement('div'); box.className = 'tour-box'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'false'); box.setAttribute('aria-labelledby', 'tourText');
+    const spot = document.createElement('div'); spot.className = 'tour-spot'; spot.setAttribute('aria-hidden', 'true');
+    document.body.append(spot, box);
+    // 聚光框蓋在最上層（不改被圈的元素本身，避免黏在底部的按鈕列被遮暗）
+    const place = () => { const el = stops[i][0], r = el.getBoundingClientRect(), pad = 6; Object.assign(spot.style, { left: r.left - pad + 'px', top: r.top - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px' }); };
+    window.addEventListener('scroll', place, { passive: true }); window.addEventListener('resize', place);
+    log('首次導覽', { activity: step(), choice: again ? '再看一次' : '開始' });
+    const end = done => {
+      box.remove(); spot.remove(); window.removeEventListener('scroll', place); window.removeEventListener('resize', place); tourOn = false; tourMark(); document.removeEventListener('keydown', key);
+      log('首次導覽', { activity: step(), choice: done ? '看完' : `略過（看到第 ${i + 1} 個）` });
+      document.querySelector('h1')?.focus({ preventScroll: true });
+    };
+    const key = e => { if (e.key === 'Escape') end(false); };
+    document.addEventListener('keydown', key);
+    const show = () => {
+      const [el, text] = stops[i]; el.scrollIntoView({ block: 'center' }); place();
+      const last = i === stops.length - 1;
+      box.innerHTML = `<div class="tour-face" aria-hidden="true">🤖</div><div><p class="tour-count">小方帶你看 ${i + 1}／${stops.length}</p><p id="tourText" data-read data-say>${esc(text)}</p><div class="tour-actions"><button type="button" class="primary" id="tourNext">${last ? '我知道了' : '下一個 →'}</button>${last ? '' : '<button type="button" id="tourSkip">跳過</button>'}</div></div>`;
+      addSayButtons(box); if (window.zhuyin && reading().zhuyin) window.zhuyin.enable(box, true);
+      $('tourNext').onclick = () => { if (last) end(true); else { i++; show(); } };
+      if ($('tourSkip')) $('tourSkip').onclick = () => end(false);
+      $('tourNext').focus({ preventScroll: true });
+      if (settings.buddyVoice !== false && settings.sound !== false && window.speechSynthesis) { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-TW'; speechSynthesis.speak(u); } catch { /* 略過 */ } }
+    };
+    show();
+  }
   // ---------- 閱讀輔助：注音、字級、高對比（學生自己切換的會蓋過老師的預設） ----------
   // 換下一位學生：清掉上一位的紀錄、題號、逐步留空進度和閱讀輔助，從第 1 題重新開始
   function resetStudent() {
@@ -1360,9 +1409,15 @@
   function reading() { const p = aidPrefs(); return { zhuyin: p.zhuyin ?? !!settings.zhuyin, textSize: p.textSize ?? settings.textSize ?? 'normal', contrast: p.contrast ?? !!settings.contrast }; }
   function applyReading() {
     const r = reading(), root = document.documentElement;
-    root.dataset.size = r.textSize; root.classList.toggle('contrast', r.contrast); root.classList.toggle('zhuyin-on', r.zhuyin);
+    root.dataset.size = r.textSize; root.classList.toggle('contrast', r.contrast); root.classList.toggle('zhuyin-on', r.zhuyin); applySimple();
     if ($('aidZhuyin')) { $('aidZhuyin').setAttribute('aria-pressed', String(r.zhuyin)); $('aidSize').textContent = { normal: '字：一般', large: '字：大', xlarge: '字：特大' }[r.textSize]; $('aidContrast').setAttribute('aria-pressed', String(r.contrast)); }
     if (window.zhuyin) window.zhuyin.enable($('app'), r.zhuyin);
+  }
+  // 第 29 版：精簡畫面。只在解題活動裡用（學習地圖照舊）；老師勾的項目才顯示
+  function applySimple() {
+    const root = document.documentElement, on = !!type && settings.simple !== false;
+    root.classList.toggle('simple', on);
+    for (const k of F.SIMPLE_ITEMS) root.classList.toggle('show-' + k, !on || (settings.simpleShow || []).includes(k));
   }
   function setAid(k, v) { const p = aidPrefs(); p[k] = v; try { sessionStorage.setItem(AID_KEY, JSON.stringify(p)); } catch { /* 略過 */ } applyReading(); if (type) log('閱讀輔助', { activity: step(), aid: k, value: String(v) }); }
   if ($('aidZhuyin')) {
