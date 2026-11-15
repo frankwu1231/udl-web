@@ -1804,6 +1804,7 @@ test('第 28 版：5-1 畫圖七步：排橫軸、描點（漏描、位置不對
   await p.choose('scale', String(step)); await p.check(); await p.next();
   const vals = await p.page.$$eval('#figure3 .ln-table tbody td', l => l.map(e => Number(e.textContent)));
   await p.page.locator(`#figure3 [data-cell="0:${vals[0]}"]`).dispatchEvent('click');
+  assert.match(await p.text('#app'), /描了 1 個點/, '第 29 版：點了以後計數馬上更新');
   await p.check(); assert.match(await p.text('#feedback3'), /還有|0 的也要描/);
   const off = vals[1] === Math.max(...vals) ? vals[1] - step : vals[1] + step;
   await p.page.locator(`#figure3 [data-cell="1:${off}"]`).dispatchEvent('click');
