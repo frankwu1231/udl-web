@@ -31,7 +31,7 @@ async function setup() {
   // 第 29 版：小方的第一次導覽在其他測試裡先當作看過（只有導覽的測試傳 tour: true）
   const newContext = browser.newContext.bind(browser);
   // 第 30 版：教師備課頁的「進階設定」在測試裡先打開、第一次使用說明當作看過
-  const teacherInit = () => { try { localStorage.setItem('udl-teacher-advanced-v30', '1'); localStorage.setItem('udl-teacher-wizard-v30', '1'); } catch { /* 略過 */ } };
+  const teacherInit = () => { try { localStorage.setItem('udl-teacher-advanced-v30', '1'); localStorage.setItem('udl-teacher-wizard-v30', '1'); sessionStorage.setItem('research-more-v30', '1'); } catch { /* 略過 */ } };
   const newPage = browser.newPage.bind(browser);
   browser.newPage = async (o = {}) => { const pg = await newPage(o); await pg.context().addInitScript(teacherInit); return pg; };
   browser.newContext = async (o = {}) => { const { tour, ...rest } = o; const c = await newContext(rest); await c.addInitScript(teacherInit); if (!tour) await c.addInitScript(() => { try { for (const k of ['udl-tour-v29', 'udl-practice-v30']) if (!localStorage.getItem(k)) localStorage.setItem(k, '["device"]'); } catch { /* 略過 */ } }); return c; };

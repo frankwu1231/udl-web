@@ -25,3 +25,6 @@ html.contrast .research-bar{background:#fff;border-color:#000}
 /* 第 26 版：節次 */
 .research-bar .session-no{font-weight:700;margin:0 .4rem}
 .research-bar .cue{background:#fff3cd;border:2px solid #d77900;border-radius:8px;padding:2px 8px;font-weight:bold}.research-bar .teacher-prompts{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px}.research-bar .teacher-prompts button{min-height:40px;font-size:15px}
+/* 第 30 版：上課中的小工具列，其他收進「更多」 */
+.research-bar details.more { margin-top: 6px; }
+.research-bar details.more > summary { cursor: pointer; font-size: 15px; color: #526b89; padding: 4px 0; }
