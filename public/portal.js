@@ -31,7 +31,11 @@
     catch (error) { status.textContent = error.message === 'too_many_attempts' ? '嘗試次數過多，請 15 分鐘後再試。' : error.message === 'invalid_credentials' ? '帳號或密碼不正確。' : '登入暫時無法使用，請稍後再試。'; $('password').value = ''; }
     finally { $('loginButton').disabled = false; }
   };
-  $('logout').onclick = async () => { await fetch('/api/test-logout', { method: 'POST', cache: 'no-store' }); await refresh(); };
+  // 第 29 版：共用平板。登出或換班級時，清掉這個分頁裡上一位學生的作答、反思文字、做到一半的題目和鏡頭同意。
+  // 研究紀錄還沒上傳的佇列、小測驗還沒送出的答案不清（清了資料會不見），由研究工具列的「換學生」處理。
+  const STUDENT_KEYS = ['area-records-v16', 'area-fading-v21', 'area-reading-v18', 'act-draft-v28', 'line-record-v28', 'area-buddy-camera-v22'];
+  const clearStudent = () => { try { STUDENT_KEYS.forEach(k => sessionStorage.removeItem(k)); } catch { /* 存不了就沒有東西要清 */ } };
+  $('logout').onclick = async () => { clearStudent(); await fetch('/api/test-logout', { method: 'POST', cache: 'no-store' }); await refresh(); };
   // QR code 的網址是 /?class=代碼：掃了就直接進去
   const fromLink = new URLSearchParams(location.search).get('class');
   if (fromLink) { history.replaceState(null, '', '/'); $('classCode').value = fromLink; refresh().then(() => enterClass(fromLink)); } else refresh();
