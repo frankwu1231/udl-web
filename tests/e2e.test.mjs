@@ -229,6 +229,8 @@ test('教師觀察：摘要表與 CSV（中文欄位、英數檔名、學生選�
   const csv = fs.readFileSync(await d.path(), 'utf8');
   assert.match(csv, /"時間","圖形","第幾題","步驟","事件","是否答對","錯在哪裡","提示層級","學生的選擇或內容"/);
   assert.match(csv, /"看題目","步驟檢核","否","要找什麼","0","沿著邊走一圈的長度"/);
+  assert.match(csv, /"課綱代碼","第一次動作秒數","無效點擊次數"\r\n/);
+  assert.match(await p.text('#exportResult'), /已經下載 CSV 檔/);
 });
 
 test('教師備課：選難度立即換題、可套用到四種圖形、平行四邊形位移 0 不能儲存', { skip: skip || !distReady }, async () => {
@@ -2016,7 +2018,9 @@ test('第 30 版：備課頁快速上課：建議設定一鍵套用到全部活�
   await page.click('[data-profile="mid"]');
   assert.match(await page.textContent('#quickSection'), /目前：輕度智能障礙建議（沒有改過）/);
   assert.equal(await page.$eval('#difficulty', e => e.value), 'easy'); assert.equal(await page.$eval('#zhuyin', e => e.checked), true);
-  await page.uncheck('#zhuyin'); await page.selectOption('#shape', await page.$eval('#shape option:nth-child(2)', o => o.value));
+  await page.uncheck('#zhuyin');
+  assert.match(await page.textContent('#quickSection'), /改過 1 項/, '改了就馬上顯示，不必切換活動');
+  await page.selectOption('#shape', await page.$eval('#shape option:nth-child(2)', o => o.value));
   assert.match(await page.textContent('#quickSection'), /改過 1 項/);
   await page.click('#profileReset'); assert.match(await page.textContent('#quickSection'), /沒有改過/);
   await page.click('#quickPublish'); await page.waitForFunction(() => /已發布/.test(document.querySelector('#quickSection').textContent));

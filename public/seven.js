@@ -1264,7 +1264,7 @@
 
   // 第 25 版：學生打的字若以 = + - @ 開頭，Excel 會當成公式；前面加 ' 讓它只是文字（純數字如 -3 不動）
   const csvCell = v => { const t = String(v ?? ''); return /^[=+\-@\t\r]/.test(t) && !/^-?\d+(\.\d+)?$/.test(t) ? "'" + t : t; };
-  const CSV_HEAD = ['時間', '圖形', '第幾題', '步驟', '事件', '是否答對', '錯在哪裡', '提示層級', '學生的選擇或內容', '支持程度', '回應方式', '解題流程', '難度', '教學階段', '研究階段', '目標', '把握', '是否達標', '自己判斷', '本題提示數', '一次答對步數', '作答秒數', '得到的章', '單元', '活動編號', '課綱代碼'];
+  const CSV_HEAD = ['時間', '圖形', '第幾題', '步驟', '事件', '是否答對', '錯在哪裡', '提示層級', '學生的選擇或內容', '支持程度', '回應方式', '解題流程', '難度', '教學階段', '研究階段', '目標', '把握', '是否達標', '自己判斷', '本題提示數', '一次答對步數', '作答秒數', '得到的章', '單元', '活動編號', '課綱代碼', '第一次動作秒數', '無效點擊次數'];
   const issueName = { target: '要找什麼', count: '數格子', relation: '操作後比較', base: '點底', first: '底／第一邊', line: '選高的線', second: '高／第二邊', formula: '選算式', ab: '算式數字', total: '計算', verify: '比一比', unit: '單位', none: '' };
   function exportData() {
     const flowName = { seven: '7 步', three: '3 步', custom: '自訂' };
@@ -1277,12 +1277,12 @@
       r.event === '整題完成' || r.event === '整題定標' ? ({ low: '不太有把握', mid: '有一點把握', high: '很有把握' }[r.confidence] || '') : '',
       r.goalMet === undefined ? '' : r.goalMet ? '是' : '否', r.selfMet ? (r.selfMet === 'yes' ? '有達到' : '還沒有') : '',
       r.event === '整題完成' ? r.hints ?? '' : '', r.firstTry ?? '', r.secs ?? '', (r.badges || []).map(b => C.badges[b][1]).join('、'),
-      ...(() => { const a = ACT && ACT.info(r.actId || r.shapeKey); const u = a && ACT.UNITS.find(x => x.id === a.unit); return a ? [u ? u.title : '', a.no, a.code] : ['', '', '']; })()]);
+      ...(() => { const a = ACT && ACT.info(r.actId || r.shapeKey); const u = a && ACT.UNITS.find(x => x.id === a.unit); return a ? [u ? u.title : '', a.no, a.code] : ['', '', '']; })(), r.firstActionSecs ?? '', r.deadClicks ?? '']);
     const csv = '﻿' + [CSV_HEAD, ...rows].map(row => row.map(v => '"' + csvCell(v).replaceAll('"', '""') + '"').join(',')).join('\r\n');
     const name = `area-record_${new Date().toISOString().slice(0, 10)}_${String(Date.now()).slice(-4)}.csv`;   // 英數檔名：中文檔名在部分瀏覽器會變成沒有副檔名的 download
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })), a = document.createElement('a');
     a.href = url; a.download = name; document.body.append(a); a.click(); a.remove();
-    $('exportResult').innerHTML = '試用版不能下載檔案。下面是 CSV 內容，可以全選複製後貼到 Excel。<textarea id="csvText" readonly style="width:100%;min-height:160px;font-size:13px"></textarea>';
+    $('exportResult').innerHTML = '已經下載 CSV 檔。如果沒有看到檔案（有些平板或試用版不能下載），可以全選複製下面的內容，貼到 Excel。<textarea id="csvText" readonly style="width:100%;min-height:160px;font-size:13px"></textarea>';
     $('csvText').value = csv.replace(/^\uFEFF/, ''); $('csvText').focus(); $('csvText').select();
     setTimeout(() => URL.revokeObjectURL(url), 120000);
   }

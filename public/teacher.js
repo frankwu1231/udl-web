@@ -532,6 +532,8 @@
       if (session.test) { let inStudy = false; try { const me = await (await fetch('/api/study/me', { cache: 'no-store' })).json(); inStudy = !!me.phase; } catch { /* 略過 */ }
         if (!inStudy) { for (const id of ['researchSection', 'studyDataSection']) $(id).hidden = true; document.querySelectorAll('a[href="scenario.html"], .tnav a[href="#researchSection"], .tnav a[href="#studyDataSection"]').forEach(a => a.hidden = true); } }
       $('shape').onchange = () => { collect(); draw(); drawQuick(); };
+      // 第 30 版複測：在進階設定改了任何一項，上面的「改過 N 項／回到建議設定」馬上更新（不重畫設定區，焦點不跑掉）
+      $('fields').addEventListener('change', () => { collect(); drawQuick(); });
       $('saveDraft').onclick = () => save('draft'); $('publish').onclick = () => save('published');
       $('preview').onclick = async e => { e.preventDefault(); if (await save('draft')) location.href = $('preview').href; };   // 試用版：在同一個畫面預覽
     } catch (error) { $('status').textContent = `無法載入教材：${error.message}`; }

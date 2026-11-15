@@ -22,7 +22,7 @@ const SHEETS = {
   '操作紀錄': [...COMMON, ...ACT, ['cycle', '第幾題'], ['step', '步驟'], ['stepTitle', '步驟名稱'], ['event', '事件'], ['correct', '答對'], ['hintLevel', '提示層級'], ['action', '小方動作'], ['mode', '教學階段'], ['studyPhase', '研究階段'], ['detail', '詳細']],
   '每題摘要': [...COMMON, ...ACT, ['cycle', '第幾題'], ['mode', '教學階段'], ['studyPhase', '研究階段'], ['secs', '秒數'], ['errors', '答錯次數'], ['hints', '提示數'], ['firstTry', '一次答對步數'], ['steps', '步數'],
     ['goal', '目標'], ['goalMet', '達到目標'], ['selfMet', '自己判斷'], ['confidence', '把握'], ['badges', '集章'], ['buddyOffers', '小方主動問'], ['buddyAccepted', '接受小方'], ['buddyStuck', '小方打開我卡住了'],
-    ['attentionReminds', '專心提醒'], ['teacherHelp', '老師幫忙'], ['buddyWrong', '小方不準'], ['stuckPressed', '自己按我卡住了']],
+    ['attentionReminds', '專心提醒'], ['teacherHelp', '老師幫忙'], ['buddyWrong', '小方不準'], ['stuckPressed', '自己按我卡住了'], ['firstActionSecs', '第一次動作秒數'], ['deadClicks', '無效點擊次數']],
   '教師設定': [...COMMON, ...ACT, ['mode', '教學階段'], ['support', '提示程度'], ['flow', '流程'], ['difficulty', '難度'], ['buddy', '小方'], ['buddyWait', '小方等待秒數'], ['buddyVoice', '小方說話'],
     ['attention', '專心提醒'], ['attentionSec', '專心提醒秒數'], ['cameraConsent', '家長同意鏡頭'], ['zhuyin', '注音'], ['textSize', '字級'], ['contrast', '高對比'], ['video', '示範影片'], ['ai', 'AI'], ['fading', '例題逐步留空'], ['selfAsk', '自問卡'], ['rest', '休息提醒']],
   '教師觀察': [...COMMON, ...ACT, ['cycle', '第幾題'], ['step', '步驟'], ['stepTitle', '步驟名稱'], ['mode', '教學階段'], ['studyPhase', '研究階段'], ['kind', '類型'], ['tag', '快速紀錄'], ['phase', '觀察階段'], ['level', '支持程度'], ['buddyReact', '對小方的反應'], ['note', '實際行為']],

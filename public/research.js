@@ -152,7 +152,7 @@
   function summary(r) {
     const all = api.records().filter(x => x.cycle === r.cycle && (x.actId || x.shapeKey) === (r.actId || r.shapeKey) && x.sessionId === who.sessionId);
     const count = (ev, actions) => all.filter(x => x.event === ev && (!actions || actions.includes(x.action || x.tag))).length;
-    enqueue('每題摘要', { activity: r.shape || '', actId: r.actId || '', cycle: r.cycle, mode: r.mode || '', studyPhase: r.studyPhase || '', secs: r.secs ?? '', errors: r.errors ?? '', hints: r.hints ?? '', firstTry: r.firstTry ?? '', steps: r.steps ?? '',
+    enqueue('每題摘要', { activity: r.shape || '', actId: r.actId || '', cycle: r.cycle, mode: r.mode || '', studyPhase: r.studyPhase || '', secs: r.secs ?? '', errors: r.errors ?? '', hints: r.hints ?? '', firstTry: r.firstTry ?? '', steps: r.steps ?? '', firstActionSecs: r.firstActionSecs ?? '', deadClicks: r.deadClicks ?? '',
       goal: r.goal || '', goalMet: r.goalMet === undefined ? '' : r.goalMet ? '是' : '否', selfMet: r.selfMet || '', confidence: r.confidence || '', badges: (r.badges || []).join('、'),
       buddyOffers: count('小幫手', ['主動問要不要幫忙', '同一步做很久']), buddyAccepted: count('小幫手', ['接受提示', '小幫手：接受']), buddyStuck: count('小幫手', ['主動打開我卡住了', '連續答錯，打開我卡住了']),
       attentionReminds: count('小幫手', ['專心提醒']), teacherHelp: count('教師即時紀錄', ['help']), buddyWrong: count('教師即時紀錄', ['wrongBuddy']), stuckPressed: count('我卡住了') });
