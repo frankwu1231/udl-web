@@ -90,6 +90,7 @@
     $('app').innerHTML = `<section class="surface"><div class="head"><p class="eyebrow">${type ? `<a class="map-link" href="${mapUrl()}">🗺️ 學習地圖</a>　${(ACT && ACT.info(type) || {}).no || ''} ${nameOf()} · 第 ${cycle} 題${settings.lessonGoal ? `<span class="lesson-goal">　這次：第 ${Math.min(doneHere() + 1, settings.lessonGoal)}／${settings.lessonGoal} 題</span>` : ''}` : esc(ACT ? ACT.pkg.title : '四種圖形面積')}</p><h1 tabindex="-1" data-read>${title}</h1></div>${steps}${banner ? `<p class="mode-banner mode-${mode()}" data-read data-say>${banner}</p>` : ''}<div class="body">${body}</div></section>`;
     addSayButtons($('app'));
     if (phase === 'solve') setTimeout(() => maybeTour(), 0);
+    setTimeout(updateGlow, 0);
   }
   function focus() { document.querySelector('h1')?.focus({ preventScroll: true }); window.scrollTo({ top: 0 }); }
   function showStatus(target, text, ok = false) {
@@ -99,11 +100,13 @@
     addSayButtons(target);
   }
 
+  let shownAt = Date.now(), firstAction = null, deadClicks = 0;
   function startQuestion() {
     answers = carry ? { method: carry.method } : {};
     startedAt = 0;   // 還沒按「開始」：離開或重新整理不記「中途離開」，也不用掉題號
     checked = new Set(); orders = {}; frame = 0; tiles = []; revealed = {}; lineOk = false; dragFrom = null; aiMsg = {}; videoOpen = new Set(); stuckOpen = null; stuckNote = {};
     hintLevel = [0, 0, 0, 0, 0, 0, 0]; tried2 = new Set(); nudged = new Set(); hintPending = false; errors = 0; hintsUsed = 0; page = 0; entered = new Set(); returnTo = null;
+    shownAt = Date.now(); firstAction = null; deadClicks = 0;   // 第 30 版：第一次操作前停幾秒、按到沒作用的地方幾次
     settings = ownSettings(); applyReading();
     if (P()) { pState = {}; if (!keepProblem || !pProblem) pProblem = P().makeProblem(level(), index, Math.random, { done: doneAll() }); keepProblem = false; }
     probeDims = !P() && mode() === 'probe' ? F.randomProblem(type, settings.difficulty === 'custom' ? 'standard' : settings.difficulty) : null;
@@ -1037,7 +1040,7 @@
         ['retry', 'new', 'toMap'].forEach(id => { if ($(id)) $(id).disabled = true; });
         if (recorder) toggleRecord();
         const badges = earned(r), secs = startedAt ? Math.round((Date.now() - startedAt) / 1000) : null;
-        log('整題完成', { activity: 7, maxHintLevel: Math.max(...hintLevel), hints: r.hints, errors, goal: r.goal, goalKind: settings.goalKind, goalMet: r.watched ? false : r.met, watched: !!r.watched, selfMet: answers.selfMet || '', confidence: answers.confidence || '', firstTry: r.firstTry, steps: r.steps, secs, badges, dimensions: dims() });
+        log('整題完成', { activity: 7, maxHintLevel: Math.max(...hintLevel), hints: r.hints, errors, goal: r.goal, goalKind: settings.goalKind, goalMet: r.watched ? false : r.met, watched: !!r.watched, selfMet: answers.selfMet || '', confidence: answers.confidence || '', firstTry: r.firstTry, steps: r.steps, secs, badges, dimensions: dims(), firstActionSecs: firstAction, deadClicks });
         // 第 26 版第四階段：題末對照用的快照（小方的正確作品＝這一題每一步最後的答案；學生第一次的作答從紀錄找）
         if (window.areaTutor?.stage?.()) { const snap = titles().map((t, s) => { const first = records.find(x => x.cycle === cycle && x.actId === type && x.event === '步驟檢核' && x.activity === s + 1); return { step: s + 1, title: t, answer: first ? answerText(s) : '', first: first && !first.correct ? first.choice || '' : '' }; }); snap.cycle = cycle; tutorWait = true; window.areaTutor.done(snap, () => { tutorWait = false; if (tutorThen) { const t = tutorThen; tutorThen = null; t(); } }); }
         carry = { cycle, reason: chosenText('reason'), method: answers.nextMethod, cause: !r.met ? answers.cause : '', badges, fadeMsg: adjustFade(!retryQ) };
@@ -1349,6 +1352,33 @@
   $('saveKey').onclick = () => { const key = $('personalKey').value.trim(); if (!/^sk-[^\s]{20,400}$/.test(key)) { $('keyError').textContent = '請輸入完整 API key。'; $('keyError').hidden = false; return; } sessionApiKey = key; sessionProvider = $('keyProvider').value; $('keyDialog').close(); };
   $('clearKey').onclick = () => { sessionApiKey = ''; sessionProvider = 'openai'; $('keyDialog').close(); };
 
+  // ---------- 第 30 版：現在該按的地方發光（只亮一個；其他按鈕照常可以按） ----------
+  const ACTIVE = 'button, a, input, select, textarea, label, summary, [role="button"], [data-cell], [data-tile], [data-chip], [data-x], [data-link], [tabindex]';
+  function hasAnswer(root) {
+    if (!root) return false;
+    return [...root.querySelectorAll('input, select, textarea')].some(e => e.type === 'checkbox' || e.type === 'radio' ? e.checked : String(e.value || '').trim() !== '')
+      || !!root.querySelector('[aria-pressed="true"], .filled, .ac-mark, .ln-pt, .picked, .on');
+  }
+  function updateGlow() {
+    document.querySelectorAll('.glow-next').forEach(e => e.classList.remove('glow-next'));
+    if (!type || settings.guide === false || tourOn || mode() === 'demo') return;
+    let el = null;
+    if (phase === 'solve') {
+      const n = $('next'), act = [...document.querySelectorAll('.activity')].find(a => !checked.has(Number(a.dataset.stage)));
+      if (n && !n.classList.contains('locked')) el = n;
+      else if (act) el = hasAnswer(act.querySelector('.answer')) || hasAnswer(act.querySelector('.figure')) ? $('check') : ['.answer .options', '.answer .equation', '.answer .field', '.answer input', '.answer select', '.figure'].map(q => act.querySelector(q)).find(Boolean);
+    } else el = $('start') || $('check');
+    if (el) el.classList.add('glow-next');
+  }
+  document.addEventListener('click', e => {
+    if (!type || !e.target.closest || !e.target.closest('#app')) return;
+    const hit = e.target.closest(ACTIVE);
+    if (hit && firstAction === null) firstAction = Math.round((Date.now() - shownAt) / 100) / 10;
+    if (!hit) deadClicks++;
+    setTimeout(updateGlow, 0);
+  }, true);
+  document.addEventListener('input', () => { if (type && firstAction === null) firstAction = Math.round((Date.now() - shownAt) / 100) / 10; setTimeout(updateGlow, 0); }, true);
+
   // ---------- 第 29 版：第一次使用的導覽（小方帶著看四個地方；每位學生一次，可以從「我卡住了」再看） ----------
   const TOUR_KEY = 'udl-tour-v29';
   const tourWho = () => window.areaResearch?.student?.() || 'device';
@@ -1378,7 +1408,7 @@
     window.addEventListener('scroll', place, { passive: true }); window.addEventListener('resize', place);
     log('首次導覽', { activity: step(), choice: again ? '再看一次' : '開始' });
     const end = done => {
-      box.remove(); spot.remove(); window.removeEventListener('scroll', place); window.removeEventListener('resize', place); tourOn = false; tourMark(); document.removeEventListener('keydown', key);
+      box.remove(); spot.remove(); window.removeEventListener('scroll', place); window.removeEventListener('resize', place); tourOn = false; setTimeout(updateGlow, 0); tourMark(); document.removeEventListener('keydown', key);
       log('首次導覽', { activity: step(), choice: done ? '看完' : `略過（看到第 ${i + 1} 個）` });
       document.querySelector('h1')?.focus({ preventScroll: true });
     };

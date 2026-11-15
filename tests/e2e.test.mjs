@@ -1975,3 +1975,16 @@ test('第 29 版：第一次使用小方帶著看四個地方，看過就不再�
   assert.equal(await q.page.$('[data-stuck-pick="tour"]'), null);
   assert.deepEqual([...p.errors, ...q.errors], []);
 });
+
+test('第 30 版：現在該按的地方發光（作答區 → 檢查 → 下一步）；記下第一次操作前幾秒、按到沒作用的地方幾次', { skip: skip || !distReady }, async () => {
+  const p = await student('rectangle', { guide: true }); await p.start();
+  const glow = () => p.page.$$eval('.glow-next', l => l.map(e => e.id || e.className));
+  assert.equal((await glow()).length, 1); assert.match((await glow())[0], /options/);
+  await p.page.click('h1'); await p.page.click('h1');   // 按到沒作用的地方
+  await p.choose('target', 'inside'); await p.page.waitForTimeout(50);
+  assert.deepEqual(await glow(), ['check']);
+  await p.check(); assert.deepEqual(await glow(), ['next']);
+  const q = await student('rectangle', { guide: false }); await q.start();
+  assert.deepEqual(await q.page.$$eval('.glow-next', l => l.length), 0, '老師關掉就不亮');
+  assert.deepEqual([...p.errors, ...q.errors], []);
+});

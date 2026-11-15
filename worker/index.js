@@ -104,7 +104,7 @@ if(s.breaks!==undefined&&!(Array.isArray(s.breaks)&&s.breaks.length<=6&&s.breaks
 if(s.keep!==undefined&&!(Array.isArray(s.keep)&&s.keep.length<=4&&s.keep.every(v=>[0,1,2,3].includes(v))))return false;
 if(s.labels!==undefined&&!['reveal','always'].includes(s.labels))return false;
 if(s.rate!==undefined&&!['slow','normal'].includes(s.rate))return false;
-for(const k of ['ai','reward','sound','grid','confidence','selfAsk','badges','voice','handsOn','zhuyin','contrast','convert','fading','buddy','buddyVoice','attention','tryFirst','simple','tour'])if(s[k]!==undefined&&typeof s[k]!=='boolean')return false;
+for(const k of ['ai','reward','sound','grid','confidence','selfAsk','badges','voice','handsOn','zhuyin','contrast','convert','fading','buddy','buddyVoice','attention','tryFirst','simple','tour','guide'])if(s[k]!==undefined&&typeof s[k]!=='boolean')return false;
 if(s.simpleShow!==undefined&&!(Array.isArray(s.simpleShow)&&s.simpleShow.length<=5&&new Set(s.simpleShow).size===s.simpleShow.length&&s.simpleShow.every(v=>['aids','say','progress','selfAsk','hint'].includes(v))))return false;
 if(s.buddyWait!==undefined&&![30,60,90].includes(s.buddyWait))return false;
 if(s.attentionSec!==undefined&&![3,5,8].includes(s.attentionSec))return false;
@@ -257,7 +257,7 @@ const RECORDS_PER_DAY=20000;
 const RECORD_KEYS=new Set(('rid sheet time version sessionId teacher student sessionNo classCode phase activity actId cycle step stepTitle event mode studyPhase correct hintLevel action detail '+
 'siteVersion shape shapeKey support response method flow difficulty tutorStage teacherId studentId '+
 'aid answer attempt attentionReminds badges browser buddyAccepted buddyHelp buddyHelpText buddyOffers buddyReact buddyStuck buddyWrong by camFeel camFeelText cameraConsent carriedFrom cause changes checkGoal checked choice completed confidence corrected decision device different dimensions error errors evidence example fadeLevel fallback finding firstTry frame from fullExample fun funText goal goalKind goalMet group hasCamera helped hints idle index issue judgment kind learnerJudgment level levelText maxHintLevel message minutes model monitors mood moodText nextAction nextMethod nextStep note obs on online operation outcome page part presentation promptVersion provider reason result score screen seconds secs selfMet selfReportedCheck skipped source stage start steps streak stuckPressed studentMarked tag tagText teacherHelp text times to value watched where why wrong cue '+
-'studentMarked wroteWords engage timing buddyUseful camAccurate assists fix buddy buddyWait buddyVoice attention attentionSec zhuyin textSize contrast video ai fading selfAsk rest simple simpleShow tour').split(' '));
+'studentMarked wroteWords engage timing buddyUseful camAccurate assists fix buddy buddyWait buddyVoice attention attentionSec zhuyin textSize contrast video ai fading selfAsk rest simple simpleShow tour guide firstActionSecs deadClicks').split(' '));
 // 巢狀物件（例如 dimensions、answer）也只收已知欄位；字串一律截短
 const NESTED_KEYS=new Set('w h a b total unit divisor complete correct skipped field before after direction x y'.split(' '));
 const LONG_TEXT=new Set(['message','note','evidence','fix','browser']);
