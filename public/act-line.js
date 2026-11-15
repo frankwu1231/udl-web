@@ -112,7 +112,8 @@
       const P = o.plot, s = P.s || 0, pts = P.pts || {};
       if (P.cells) for (let i = 0; i < n; i++) for (let k = 0; k <= rows; k++) {
         const v = p.min + k * p.step;
-        g += `<circle cx="${X(i)}" cy="${Y(v)}" r="${Math.min(9, rowH / 2 - 1)}" class="ln-cell" data-cell="${i}:${v}" role="button" tabindex="0" aria-label="${esc(p.full[i])}，${v}"/>`;
+        // 第 29 版：整格都是觸控範圍（寬一欄、高一列），點在附近就對到這個交叉點，平板上比較不會點偏
+        g += `<g class="ln-cell-g" data-cell="${i}:${v}" role="button" tabindex="0" aria-label="${esc(p.full[i])}，${v}"><rect x="${r1(X(i) - colW / 2)}" y="${r1(Y(v) - rowH / 2)}" width="${r1(colW)}" height="${r1(rowH)}" class="ln-cell-hit"/><circle cx="${X(i)}" cy="${Y(v)}" r="${Math.min(9, rowH / 2 - 1)}" class="ln-cell"/></g>`;
       }
       const path = P.path || [];
       for (let j = 1; j < path.length; j++) { const a = path[j - 1], b = path[j]; if (pts[a] != null && pts[b] != null) g += `<path d="M${X(a)} ${Y(pts[a])}L${X(b)} ${Y(pts[b])}" stroke="${COLOR[s]}" stroke-width="3.5" fill="none" class="ln-line"/>`; }
@@ -207,7 +208,8 @@
   function bindCells(n, s = 0) {
     return ctx => document.querySelectorAll(`#figure${n} [data-cell]`).forEach(el => {
       const go = () => { const [i, v] = el.dataset.cell.split(':').map(Number), st = ctx.state; st.pts = st.pts || {}; st.pts[i] = st.pts[i] === v ? null : v; if (st.pts[i] == null) delete st.pts[i];
-        ctx.answers['pts' + s] = String(Object.keys(st.pts).length); ctx.log('描點', { i, v }); ctx.invalidate(n); ctx.refreshFigure(n); };
+        ctx.answers['pts' + s] = String(Object.keys(st.pts).length); ctx.log('描點', { i, v }); ctx.invalidate(n); ctx.refreshFigure(n);
+        document.querySelectorAll('[data-pts-count]').forEach(e => { e.textContent = String(Object.keys(st.pts).length); }); };   // 第 29 版：點了以後計數馬上更新
       el.onclick = go; el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
     });
   }
@@ -325,7 +327,7 @@
     { title: '描點', ids: ['pts0'], hints: ['看表格的數，在那個時間的上面點。', '從 0 往上數：一格是多少，要幾格？', '每個時間都要描一個點，0 也要描。'],
       think: '老師看表格，在每個時間的上面，找到那個數的位置點下去。', together: '一起描：這個時間的數在哪裡？',
       figure: ctx => `${tableHtml(ctx.problem)}${chartSVG({ ...ctx.problem, series: [{ ...ctx.problem.series[0], v: [] }] }, { plot: { pts: ctx.state.pts || {}, cells: true }, noTitle: true })}`,
-      answer: ctx => `<p data-read data-say>在方格上點，把表格的每一個數描成點。點錯了，再點一次就會拿掉。</p><p class="notice" data-read data-say>描了 ${Object.keys(ctx.state.pts || {}).length} 個點，共 ${ctx.problem.xs.length} 個。</p>`,
+      answer: ctx => `<p data-read data-say>在方格上點，把表格的每一個數描成點。點錯了，再點一次就會拿掉。</p><p class="notice" data-read data-say>描了 <span data-pts-count>${Object.keys(ctx.state.pts || {}).length}</span> 個點，共 ${ctx.problem.xs.length} 個。</p>`,
       bind: bindCells(3),
       check: ctx => plotCheck(ctx.problem, ctx.state.pts || {}),
       solve: ctx => { const st = ctx.state; st.pts = Object.fromEntries(ctx.problem.series[0].v.map((y, i) => [i, y])); ctx.answers.pts0 = String(ctx.problem.xs.length); }, say: ex => `照表格描了 ${ex.problem.xs.length} 個點。` },

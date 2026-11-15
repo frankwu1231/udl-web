@@ -62,7 +62,7 @@ if(data.kind==='hint')return {system:base+`對象是國小三到五年級、可�
 if(data.kind==='reflection')return {system:base+`對象是國小三到五年級、可能有學習困難的學生。問一個很簡單、具體的問題，不超過20個字，學生可以用「是／不是」、選一個或指一指圖來回答，例如「你是數格子找到答案的嗎？」「你看了圖上哪一條線？」。不要問抽象的感想，不要拐彎抹角。不要用這些詞：${words}。只問一件事，不替學生回答。`,user:context};
 return {system:base+'面向教師，請用不超過180字整理：觀察事實、待教師確認的可能困難、下一次可觀察什麼。事實與推測須分清；統計只代表點擊與檢核，不代表學生已具備SRL能力。',user:context+`各步檢核未通過次數=${data.steps.join(',')}；返回修正=${data.backtracks}次；整題完成=${data.completed}輪；主動求助=${data.helpRequests}次。`};}
 // 第 26 版：學生端與試用老師的 AI 也走統一紀錄（輸入、輸出、模型、提示詞版本）；設定 LOCAL_LLM_URL 就改用本地模型
-const HINT_PROMPT_VERSION='hint-v25';
+const HINT_PROMPT_VERSION='hint-v29';
 async function ai(request,env,who){const log={},started=Date.now(),res=await aiCore(request,env,who,log);
 if(log.input&&env.DB){let text='',error='';try{const out=await res.clone().json();text=out.message||'';error=out.error||'';}catch{}await logAi(env,{task:'student-'+log.input.kind,workspace:who.ws,subject:'',provider:log.provider,model:log.model,promptVersion:HINT_PROMPT_VERSION,input:log.input,text,source:text?'ai':'fallback',error,ms:Date.now()-started});}
 return res;}
@@ -71,14 +71,14 @@ const size=Number(request.headers.get('content-length')||0);if(size>4096)return 
 let body;try{body=await request.json();}catch{return json({error:'invalid_json'},400);}if(!validate(body))return json({error:'invalid_input'},400);if(body.kind==='teacher'&&role==='none')return json({error:'forbidden'},403);
 if(body.kind==='teacher'&&role==='student')return json({error:'forbidden'},403);const selected=server?'deepseek':body.provider||'openai',apiKey=server?(env.LOCAL_LLM_URL?'local':env.TEST_DEEPSEEK_API_KEY):body.apiKey||(selected==='openai'?env.OPENAI_API_KEY:null);if(!apiKey)return json({error:selected==='deepseek'?'key_required':'ai_unavailable'},503);if(server&&!await useTestAiQuota(env,who.ws))return json({error:'test_ai_limit'},429);
 const prompt=instruction(body),local=server&&!!env.LOCAL_LLM_URL,deepseek=selected==='deepseek'||local,model=local?env.LOCAL_LLM_MODEL||'local-model':deepseek?env.DEEPSEEK_MODEL||'deepseek-flash':env.OPENAI_MODEL||'gpt-5-mini';
-if(server){const {apiKey:_k,...input}=body;Object.assign(log,{input,provider:local?'local':selected,model});}
+if(server){const {apiKey:_k,...input}=body;Object.assign(log,{input,provider:local?'local':selected,model});const bad=await lockMismatch(env,'hint',local?'local':selected,model,HINT_PROMPT_VERSION);if(bad)return json({error:bad},503);}
 // DeepSeek 用 OpenAI 相容的 Chat Completions（https://api-docs.deepseek.com）；OpenAI 用 Responses API
 const requestBody=deepseek?{model,messages:[{role:'system',content:prompt.system+'只輸出 JSON 物件，格式為 {"message":"你的訊息"}。'},{role:'user',content:prompt.user}],response_format:{type:'json_object'},...(local?{}:{thinking:{type:'disabled'}}),max_tokens:body.kind==='teacher'?400:200,stream:false}:{model,max_output_tokens:body.kind==='teacher'?280:160,input:[{role:'system',content:prompt.system},{role:'user',content:prompt.user}],text:{format:{type:'json_schema',name:'teaching_support',strict:true,schema}},store:false};
 let provider;try{provider=await fetch(local?env.LOCAL_LLM_URL:deepseek?'https://api.deepseek.com/chat/completions':'https://api.openai.com/v1/responses',{method:'POST',headers:{authorization:`Bearer ${local?env.LOCAL_LLM_KEY||'local':apiKey}`,'content-type':'application/json'},body:JSON.stringify(requestBody),signal:AbortSignal.timeout(12000)});}catch{return json({error:'ai_timeout'},503);}
 if(!provider.ok){let error;try{error=(await provider.json()).error;}catch{}return json({error:provider.status===401?'invalid_api_key':provider.status===402||error?.code==='credit_balance_exhausted'||error?.type==='insufficient_quota'?'credit_exhausted':'ai_provider_unavailable'},503);}
 let result;try{result=await provider.json();}catch{return json({error:'ai_invalid_response'},503);}
 const raw=deepseek?String(result.choices?.[0]?.message?.content||''):(result.output||[]).flatMap(item=>item.content||[]).filter(item=>item.type==='output_text').map(item=>item.text).join('');let parsed;try{parsed=JSON.parse(raw);}catch{return json({error:'ai_invalid_response'},503);}
-const message=parsed?.message?.trim();if(!safeText(message,body.kind==='teacher'?200:body.kind==='hint'?40:50)||body.kind==='hint'&&/\d/.test(message))return json({error:'ai_invalid_response'},503);
+const message=parsed?.message?.trim();if(!safeText(message,body.kind==='teacher'?200:body.kind==='hint'?40:50)||body.kind==='hint'&&HAS_NUM(message))return json({error:'ai_invalid_response'},503);
 return json({message,source:'ai',model,promptVersion:HINT_PROMPT_VERSION});}
 function asset(path){const found=assets.get(path);if(!found)return new Response('Not found',{status:404});const [contentType,data]=found;const bin=atob(data),bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));return new Response(bytes,{headers:{'content-type':contentType,'x-content-type-options':'nosniff','cache-control':'private, no-cache'}});}
 const userId=request=>request.headers.get('oai-authenticated-user-id')||'';
@@ -104,7 +104,8 @@ if(s.breaks!==undefined&&!(Array.isArray(s.breaks)&&s.breaks.length<=6&&s.breaks
 if(s.keep!==undefined&&!(Array.isArray(s.keep)&&s.keep.length<=4&&s.keep.every(v=>[0,1,2,3].includes(v))))return false;
 if(s.labels!==undefined&&!['reveal','always'].includes(s.labels))return false;
 if(s.rate!==undefined&&!['slow','normal'].includes(s.rate))return false;
-for(const k of ['ai','reward','sound','grid','confidence','selfAsk','badges','voice','handsOn','zhuyin','contrast','convert','fading','buddy','buddyVoice','attention','tryFirst'])if(s[k]!==undefined&&typeof s[k]!=='boolean')return false;
+for(const k of ['ai','reward','sound','grid','confidence','selfAsk','badges','voice','handsOn','zhuyin','contrast','convert','fading','buddy','buddyVoice','attention','tryFirst','simple','tour'])if(s[k]!==undefined&&typeof s[k]!=='boolean')return false;
+if(s.simpleShow!==undefined&&!(Array.isArray(s.simpleShow)&&s.simpleShow.length<=5&&new Set(s.simpleShow).size===s.simpleShow.length&&s.simpleShow.every(v=>['aids','say','progress','selfAsk','hint'].includes(v))))return false;
 if(s.buddyWait!==undefined&&![30,60,90].includes(s.buddyWait))return false;
 if(s.attentionSec!==undefined&&![3,5,8].includes(s.attentionSec))return false;
 if(s.mode!==undefined&&!['self','together','demo','probe'].includes(s.mode))return false;
@@ -164,14 +165,17 @@ if(url.pathname.startsWith('/api/teacher/videos/'))return request.method==='DELE
 if(url.pathname.startsWith('/api/videos/'))return request.method==='GET'||request.method==='HEAD'?videoGet(request,env,who,url.pathname.slice(12)):json({error:'method'},405);
 if(url.pathname==='/api/records')return request.method==='POST'?recordsSave(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/sessions/start')return request.method==='POST'?sessionStart(request,env,who):json({error:'method'},405);
+if(url.pathname==='/api/sessions/invalidate')return request.method==='POST'?sessionInvalidate(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/student-settings')return request.method==='GET'?studentSettingsGet(request,env,who):request.method==='POST'?studentSettingsSave(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/teacher/summary')return request.method==='POST'?teacherSummary(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/study/me')return request.method==='GET'?studyMe(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/study/config')return request.method==='GET'||request.method==='POST'?studyConfig(request,env,who):json({error:'method'},405);
+if(url.pathname==='/api/study/lock')return studyLockRoute(request,env,who);
 if(url.pathname==='/api/study/phases')return request.method==='GET'||request.method==='POST'?studyPhases(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/study/direction')return request.method==='GET'?studyDirection(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/study/export')return request.method==='GET'?studyExport(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/study/scenarios')return request.method==='GET'||request.method==='POST'?studyScenarios(request,env,who):json({error:'method'},405);
+if(url.pathname==='/api/study/scenario-summaries')return studyScenarioSummaries(request,env,who,url);
 if(url.pathname==='/api/study/assignments')return request.method==='POST'?studyAssign(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/scenario'||url.pathname.startsWith('/api/scenario/'))return scenarioRoutes(request,env,who,url.pathname.slice(14));
 if(url.pathname==='/api/probe/sets')return request.method==='GET'?probeSets(request,env,who):json({error:'method'},405);
@@ -253,7 +257,7 @@ const RECORDS_PER_DAY=20000;
 const RECORD_KEYS=new Set(('rid sheet time version sessionId teacher student sessionNo classCode phase activity actId cycle step stepTitle event mode studyPhase correct hintLevel action detail '+
 'siteVersion shape shapeKey support response method flow difficulty tutorStage teacherId studentId '+
 'aid answer attempt attentionReminds badges browser buddyAccepted buddyHelp buddyHelpText buddyOffers buddyReact buddyStuck buddyWrong by camFeel camFeelText cameraConsent carriedFrom cause changes checkGoal checked choice completed confidence corrected decision device different dimensions error errors evidence example fadeLevel fallback finding firstTry frame from fullExample fun funText goal goalKind goalMet group hasCamera helped hints idle index issue judgment kind learnerJudgment level levelText maxHintLevel message minutes model monitors mood moodText nextAction nextMethod nextStep note obs on online operation outcome page part presentation promptVersion provider reason result score screen seconds secs selfMet selfReportedCheck skipped source stage start steps streak stuckPressed studentMarked tag tagText teacherHelp text times to value watched where why wrong cue '+
-'wroteWords engage timing buddyUseful camAccurate assists fix buddy buddyWait buddyVoice attention attentionSec zhuyin textSize contrast video ai fading selfAsk rest').split(' '));
+'studentMarked wroteWords engage timing buddyUseful camAccurate assists fix buddy buddyWait buddyVoice attention attentionSec zhuyin textSize contrast video ai fading selfAsk rest simple simpleShow tour').split(' '));
 // 巢狀物件（例如 dimensions、answer）也只收已知欄位；字串一律截短
 const NESTED_KEYS=new Set('w h a b total unit divisor complete correct skipped field before after direction x y'.split(' '));
 const LONG_TEXT=new Set(['message','note','evidence','fix','browser']);
@@ -282,6 +286,14 @@ const body=await readJson(request,512),student=body?.student,device=typeof body?
 try{for(let i=0;i<5;i++){const last=await env.DB.prepare('SELECT MAX(no) AS n FROM research_sessions WHERE workspace = ? AND student = ?').bind(who.ws,student).first(),no=(last?.n||0)+1;
 try{await env.DB.prepare('INSERT INTO research_sessions (workspace,student,no,started_at,class_code,device) VALUES (?,?,?,?,?,?)').bind(who.ws,student,no,Date.now(),who.code||'',device).run();return json({no});}catch{/* 兩台同時開始：再試下一號 */}}
 return json({error:'research_storage_unavailable'},503);}catch{return json({error:'research_storage_unavailable'},503);}}
+
+// 第 29 版：本節作廢。老師選原因（可補 60 字說明）；只能作廢自己學生已經開始的節次，作廢後不能復原（要復原請主持人在資料庫處理）。
+const INVALID_REASONS=new Set(['device','unwell','interrupted','other']);
+async function sessionInvalidate(request,env,who){if(!researchRole(who))return noResearch(who);if(who.role==='student')return json({error:'teacher_required'},403);if(!sameOrigin(request))return json({error:'origin'},403);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+const b=await readJson(request,1024),student=b?.student,note=typeof b?.note==='string'?b.note.trim():'';if(typeof student!=='string'||!STUDENT_CODE.test(student)||!whole(b?.no,9999)||b.no<1||!INVALID_REASONS.has(b?.reason)||note.length>60||/[<>]/.test(note))return json({error:'invalid_input'},400);if(!ownsStudent(who,student))return notYours();
+try{const row=await env.DB.prepare('SELECT invalid_at AS at FROM research_sessions WHERE workspace = ? AND student = ? AND no = ?').bind(who.ws,student,b.no).first();if(!row)return json({error:'not_found'},404);if(row.at!=null)return json({error:'already_invalid'},409);
+await env.DB.prepare('UPDATE research_sessions SET invalid_reason = ?, invalid_note = ?, invalid_at = ?, invalid_by = ? WHERE workspace = ? AND student = ? AND no = ? AND invalid_at IS NULL').bind(b.reason,note,Date.now(),who.ws,who.ws,student,b.no).run();
+return json({ok:true});}catch{return json({error:'research_storage_unavailable'},503);}}
 
 // 學生個別設定：只存「和班級設定不同」的欄位。欄位與方向依計畫書的歸類表。
 const OVERRIDE_KEYS=['support','mode','methods','video','tryFirst','lessonGoal','flow'];
@@ -328,6 +340,15 @@ const PHASES={teacher:['baseline','intervention','followup'],student:['A','B','B
 // 判準依計畫書；正式實驗前依前導資料校準，所以都可以在研究管理頁改
 const DEFAULT_RULES={lowAcc:60,highAcc:80,indep:80,minItems:5,upN:3,downN:2,maintainN:3,summaryChars:300,stageUp:80,stageDown:50,stageN:2,handsOnN:5,teacherWait:10,tutorChars:25,showAdvice:1};
 const RULE_LIMITS={lowAcc:[0,100],highAcc:[0,100],indep:[0,100],minItems:[1,20],upN:[1,10],downN:[1,10],maintainN:[1,10],summaryChars:[100,600],stageUp:[0,100],stageDown:[0,100],stageN:[1,10],handsOnN:[1,20],teacherWait:[3,60],tutorChars:[10,40],showAdvice:[0,1]};
+// 第 29 版：實驗參數鎖定。前導試做後主持人按「鎖定」，把模型、提示詞版本、判準門檻與字數上限存成快照。
+// 鎖定期間：判準不能改；AI 的模型或提示詞版本和快照不同時一律改用固定內容（不讓不同的工具混進正式資料）。解鎖要寫理由，留下歷程。
+const SITE_VERSION='v29';
+const PROMPT_VERSIONS=()=>({hint:HINT_PROMPT_VERSION,summary:SUMMARY_PROMPT_VERSION,tutor:TUTOR_PROMPT_VERSION});
+function aiSnapshot(env){const m=modelConfig(env);return {provider:m?.provider||'',model:m?.model||''};}
+async function studyLock(env){try{const row=await env.DB.prepare('SELECT value_json FROM study_config WHERE key = ?').bind('lock').first();return row?JSON.parse(row.value_json):{locked:false,history:[]};}catch{return {locked:false,history:[]};}}
+// 鎖定中而且工具和快照不同：回傳原因（給 AI 紀錄用），一樣就回傳空字串
+async function lockMismatch(env,task,provider,model,promptVersion){if(!env.DB)return '';const l=await studyLock(env);if(!l.locked)return '';const s=l.snapshot||{};
+if(s.provider!==provider||s.model!==model)return 'locked_model';if((s.promptVersions||{})[task]!==promptVersion)return 'locked_prompt';return '';}
 async function studyRules(env){try{const row=await env.DB.prepare('SELECT value_json FROM study_config WHERE key = ?').bind('rules').first();const v=row?JSON.parse(row.value_json):{};return {...DEFAULT_RULES,...v};}catch{return {...DEFAULT_RULES};}}
 async function currentPhase(env,kind,participant){try{const row=await env.DB.prepare('SELECT phase, at FROM participant_phases WHERE kind = ? AND participant = ? ORDER BY at DESC, id DESC LIMIT 1').bind(kind,participant).first();return row?row.phase:'';}catch{return '';}}
 // AI 摘要的開關依教師個別的研究階段：基線期關、介入期與追蹤期開；還沒設定階段時開著（非研究使用）
@@ -361,11 +382,13 @@ const seq=new Map();for(const q of orders.values()){const k=q.join('→');seq.se
 return {session:no,completed:m.items,supportedRate:m.acc,independentStepRate:m.indepRate,hints,hintOrder:order?order[0]:'',hintOrderQuestions:order?order[1]:0,errors};});}
 function summaryFallback(facts){return facts.map(f=>{const err=Object.entries(f.errors).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} ${v} 次`).join('、')||'沒有答錯的步驟';const hint=Object.entries(f.hints).map(([k,v])=>`${k} ${v} 次`).join('、')||'沒有用提示';
 return `第${f.session}節：完成 ${f.completed} 題，支持下答對率 ${f.supportedRate??'—'}%，無提示步驟比例 ${f.independentStepRate??'—'}%。提示：${hint}${f.hintOrder?`（常見順序：${f.hintOrder}）`:''}。答錯情形：${err}。`;}).join('\n');}
-const SUMMARY_PROMPT_VERSION='summary-v26.1';
+const SUMMARY_PROMPT_VERSION='summary-v29';
+// 第 29 版：AI 的語句也不可以用全形數字或中文數字（「一」只在後面接十百千萬時算數字，避免擋到「一個」「一起」）
+const CN_NUM=/[０-９二三四五六七八九十百千萬兩]|一[十百千萬]/,HAS_NUM=t=>/[0-9]/.test(t)||CN_NUM.test(t);
 const SUMMARY_FORBIDDEN=/增加支持|減少支持|進階|建議|應該|可以考慮|下一步|調整|退回|迷思|障礙|診斷/;
-function summaryPrompt(facts,limit){return {system:`你為特教老師整理學生的面積學習紀錄。只根據給你的 JSON 寫摘要，不可加入 JSON 沒有的事，不可推測原因。用繁體中文，不用 Markdown。依節次寫，每節一行，開頭寫「第N節：」，說明完成題數、支持下答對率、無提示步驟比例、提示使用與常見順序、答錯情形（照 JSON 的文字，例如「答案剛好等於周長的數」）。最後一行以「依據：第…節」列出用到的節次。不提出任何調整方向或建議，不說要增加或減少支持、進階或退回，不用診斷用語。全部不超過${limit}字。只輸出 JSON 物件 {"message":"摘要"}。`,user:JSON.stringify(facts)};}
+function summaryPrompt(facts,limit){return {system:`你為特教老師整理學生的面積學習紀錄。只根據給你的 JSON 寫摘要，不可加入 JSON 沒有的事，不可推測原因。用繁體中文，不用 Markdown。依節次寫，每節一行，開頭寫「第N節：」，說明完成題數、支持下答對率、無提示步驟比例、提示使用與常見順序、答錯情形（照 JSON 的文字，例如「答案剛好等於周長的數」）。最後一行以「依據：第…節」列出用到的節次。不提出任何調整方向或建議，不說要增加或減少支持、進階或退回，不用診斷用語。所有數字都用阿拉伯數字（例如 3、80%），不要寫成國字。全部不超過${limit}字。只輸出 JSON 物件 {"message":"摘要"}。`,user:JSON.stringify(facts)};}
 // 摘要裡的每個數字都要在輸入裡找得到（防止 AI 自己編數字）
-function summaryCheck(text,facts,limit){if(!text||text.length>limit)return 'too_long';if(SUMMARY_FORBIDDEN.test(text))return 'advice';const allowed=new Set(JSON.stringify(facts).match(/\d+/g)||[]);for(const n of text.match(/\d+/g)||[])if(!allowed.has(n))return 'number_not_in_input';
+function summaryCheck(text,facts,limit){if(!text||text.length>limit)return 'too_long';if(SUMMARY_FORBIDDEN.test(text))return 'advice';if(CN_NUM.test(text))return 'number_not_in_input';const allowed=new Set(JSON.stringify(facts).match(/\d+/g)||[]);for(const n of text.match(/\d+/g)||[])if(!allowed.has(n))return 'number_not_in_input';
 for(const f of facts)if(!text.includes('第'+f.session+'節'))return 'missing_session';return '';}
 
 // ---------- AI 統一出入口：模型可抽換（現在 DeepSeek；設定 LOCAL_LLM_URL 就改用本地模型），每次都留紀錄 ----------
@@ -379,12 +402,12 @@ let parsed;try{parsed=JSON.parse(String(out.choices?.[0]?.message?.content||''))
 async function logAi(env,row){try{const r=await env.DB.prepare('INSERT INTO ai_outputs (task,workspace,subject,provider,model,prompt_version,input_json,output_text,source,error,ms,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?) RETURNING id').bind(row.task,row.workspace,row.subject||'',row.provider||'',row.model||'',row.promptVersion,JSON.stringify(row.input).slice(0,20000),row.text,row.source,row.error||'',row.ms||0,Date.now()).first();return r?.id??null;}catch{return null;}}
 // check(text) 回傳空字串表示合格；不合格、逾時、沒有額度時改用 fallback（固定內容），並記下原因
 async function aiGateway(env,{task,ws,subject,input,promptVersion,system,user,maxTokens,check,fallback,quota=true}){const m=modelConfig(env),started=Date.now();let text='',source='fallback',error='';
-if(!m)error='ai_unavailable';else if(quota&&!await useTestAiQuota(env,'gw:'+ws))error='ai_limit';else{try{const t=await chatMessage(m,system,user,maxTokens);const bad=check(t);if(bad)error='rejected:'+bad;else{text=t;source='ai';}}catch(e){error=e.message||'ai_error';}}
+const lockBad=m?await lockMismatch(env,task,m.provider,m.model,promptVersion):'';if(!m)error='ai_unavailable';else if(lockBad)error=lockBad;else if(quota&&!await useTestAiQuota(env,'gw:'+ws))error='ai_limit';else{try{const t=await chatMessage(m,system,user,maxTokens);const bad=check(t);if(bad)error='rejected:'+bad;else{text=t;source='ai';}}catch(e){error=e.message||'ai_error';}}
 if(source!=='ai')text=fallback;const ms=Date.now()-started,id=await logAi(env,{task,workspace:ws,subject,provider:m?.provider,model:m?.model,promptVersion,input,text,source,error,ms});
 return {id,text,source,error,model:m?.model||'',provider:m?.provider||'',promptVersion,ms};}
 async function summarize(env,ws,subject,sessions,act){const rules=await studyRules(env),facts=summaryFacts(sessions,act),limit=rules.summaryChars,p=summaryPrompt(facts,limit);
 return {facts,...await aiGateway(env,{task:'summary',ws,subject,input:facts,promptVersion:SUMMARY_PROMPT_VERSION,system:p.system,user:p.user,maxTokens:900,check:t=>summaryCheck(t,facts,limit),fallback:summaryFallback(facts)})};}
-async function eventsBySession(env,ws,student,upTo){const {results}=await env.DB.prepare('SELECT session_no AS no, data_json FROM research_events WHERE workspace = ? AND student = ? AND session_no IS NOT NULL AND session_no <= ? ORDER BY session_no, time, rid').bind(ws,student,upTo).all();
+async function eventsBySession(env,ws,student,upTo){const {results}=await env.DB.prepare('SELECT session_no AS no, data_json FROM research_events WHERE workspace = ? AND student = ? AND session_no IS NOT NULL AND session_no <= ? AND session_no NOT IN (SELECT no FROM research_sessions WHERE workspace = ? AND student = ? AND invalid_at IS NOT NULL) ORDER BY session_no, time, rid').bind(ws,student,upTo,ws,student).all();
 const map=new Map();for(const r of results){let d;try{d=JSON.parse(r.data_json);}catch{continue;}if(!map.has(r.no))map.set(r.no,[]);map.get(r.no).push(d);}return [...map.entries()].map(([no,rows])=>({no,rows}));}
 
 // 教師端：真實學生的跨節摘要（只讀到老師指定、已經看到的節次）
@@ -398,10 +421,20 @@ return json({text:out.text,source:out.source,model:out.model,promptVersion:out.p
 async function studyMe(request,env,who){if(!canManage(who))return notManager(who);const phase=who.role==='test'&&TEACHER_CODE.test(who.ws)&&env.DB?await currentPhase(env,'teacher',who.ws):'';return json({teacher:who.role==='test'?who.ws:'',phase,summary:summaryAllowed(phase)});}
 
 // ---------- 研究人員：判準設定、研究階段、應有方向 ----------
+// 第 29 版：實驗參數鎖定／解鎖（只有主持人）。GET 回傳目前狀態、快照，以及目前網站實際的模型與提示詞版本（看得出有沒有對上）
+async function studyLockRoute(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+const current={...aiSnapshot(env),promptVersions:PROMPT_VERSIONS(),siteVersion:SITE_VERSION},lock=await studyLock(env);
+if(request.method==='GET')return json({lock,current});if(request.method!=='POST')return json({error:'method'},405);if(!sameOrigin(request))return json({error:'origin'},403);
+const b=await readJson(request,1024),reason=typeof b?.reason==='string'?b.reason.trim():'';if(!['lock','unlock'].includes(b?.action)||reason.length>100||/[<>]/.test(reason))return json({error:'invalid_input'},400);
+const history=Array.isArray(lock.history)?lock.history.slice(-50):[],at=Date.now(),by=who.ws||who.role;let next;
+if(b.action==='lock'){if(lock.locked)return json({error:'already_locked'},409);if(!current.provider)return json({error:'ai_unavailable'},409);
+const id='L'+at.toString(36);next={locked:true,id,at,by,snapshot:{...current,rules:await studyRules(env)},history:[...history,{action:'lock',id,at,by,reason}]};}
+else{if(!lock.locked)return json({error:'not_locked'},409);if(!reason)return json({error:'reason_required'},400);next={...lock,locked:false,history:[...history,{action:'unlock',id:lock.id,at,by,reason}]};}
+await env.DB.prepare('INSERT INTO study_config (key,value_json,updated_at) VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json,updated_at=excluded.updated_at').bind('lock',JSON.stringify(next),at).run();return json({ok:true,lock:next});}
 async function studyConfig(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);
 if(request.method==='GET')return json({rules:await studyRules(env),defaults:DEFAULT_RULES});if(!sameOrigin(request))return json({error:'origin'},403);
 const b=await readJson(request,1024),r=b?.rules;if(!r||typeof r!=='object'||Array.isArray(r)||Object.keys(r).some(k=>!RULE_LIMITS[k])||Object.entries(r).some(([k,v])=>!Number.isInteger(v)||v<RULE_LIMITS[k][0]||v>RULE_LIMITS[k][1]))return json({error:'invalid_input'},400);
-const rules={...(await studyRules(env)),...r};if(rules.lowAcc>=rules.highAcc||rules.stageDown>=rules.stageUp)return json({error:'invalid_input'},400);
+if((await studyLock(env)).locked)return json({error:'experiment_locked'},409);const rules={...(await studyRules(env)),...r};if(rules.lowAcc>=rules.highAcc||rules.stageDown>=rules.stageUp)return json({error:'invalid_input'},400);
 await env.DB.prepare('INSERT INTO study_config (key,value_json,updated_at) VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json,updated_at=excluded.updated_at').bind('rules',JSON.stringify(rules),Date.now()).run();return json({ok:true,rules});}
 async function studyPhases(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);
 if(request.method==='GET'){const {results}=await env.DB.prepare('SELECT kind, participant, phase, actor, at FROM participant_phases ORDER BY at, id').all();const current={};for(const r of results)current[r.kind+'|'+r.participant]=r.phase;
@@ -427,8 +460,10 @@ if(type==='changes'){const {results}=await env.DB.prepare('SELECT workspace, stu
 if(type==='tutor')return json({rows:await tutorExport(env)});
 // 研究紀錄依代號、階段、節次篩選匯出（所有工作區）
 if(type==='events'){const q=new URL(request.url).searchParams,student=q.get('student')||'',phase=q.get('phase')||'',from=Number(q.get('from')||1),to=Number(q.get('to')||9999);if(student&&!STUDENT_CODE.test(student)||phase&&!PHASES.student.includes(phase)&&!PHASES.teacher.includes(phase)||!whole(from,9999)||!whole(to,9999))return json({error:'invalid_input'},400);
-const {results}=await env.DB.prepare(`SELECT data_json FROM research_events WHERE student != '' ${student?'AND student = ?':''} AND (session_no IS NULL OR session_no BETWEEN ? AND ?) ORDER BY student, session_no, time, rid LIMIT 50000`).bind(...(student?[student]:[]),from,to).all();
-return json({rows:results.map(r=>{try{return JSON.parse(r.data_json);}catch{return null;}}).filter(r=>r&&(!phase||r.phase===phase))});}
+const {results}=await env.DB.prepare(`SELECT e.data_json, s.invalid_reason AS invalid FROM research_events e LEFT JOIN research_sessions s ON s.workspace = e.workspace AND s.student = e.student AND s.no = e.session_no AND s.invalid_at IS NOT NULL WHERE e.student != '' ${student?'AND e.student = ?':''} AND (e.session_no IS NULL OR e.session_no BETWEEN ? AND ?) ORDER BY e.student, e.session_no, e.time, e.rid LIMIT 50000`).bind(...(student?[student]:[]),from,to).all();
+return json({rows:results.map(r=>{try{const d=JSON.parse(r.data_json);if(r.invalid)d.sessionInvalid=r.invalid;return d;}catch{return null;}}).filter(r=>r&&(!phase||r.phase===phase))});}
+// 第 29 版：每一節的開始時間與是否作廢
+if(type==='sessions'){const {results}=await env.DB.prepare('SELECT workspace, student, no AS sessionNo, started_at AS startedAt, class_code AS classCode, device, invalid_reason AS invalidReason, invalid_note AS invalidNote, invalid_at AS invalidAt, invalid_by AS invalidBy FROM research_sessions ORDER BY workspace, student, no LIMIT 50000').all();return json({rows:results});}
 if(type==='probes'||type==='probeItems')return json({rows:await probeExport(env,type)});
 if(type==='decisions'){const {results}=await env.DB.prepare('SELECT d.assignment_id AS assignment, a.teacher, a.probe, a.phase, a.set_id AS setId, d.scenario_id AS scenario, d.session_no AS sessionNo, d.decision, d.changes_json AS changes, d.direction, d.expected, d.reason, d.note, d.ai_on AS aiOn, d.ai_used AS aiUsed, d.raw_viewed AS rawViewed, d.shown_at AS shownAt, d.saved_at AS savedAt, d.active_ms AS activeMs, d.total_ms AS totalMs, d.ai_wait_ms AS aiWaitMs FROM scenario_decisions d JOIN scenario_assignments a ON a.id = d.assignment_id ORDER BY a.teacher, d.assignment_id, d.scenario_id, d.session_no').all();return json({rows:results});}
 return json({error:'invalid_input'},400);}catch{return json({error:'research_storage_unavailable'},503);}}
@@ -450,6 +485,28 @@ if(!sameOrigin(request))return json({error:'origin'},403);const s=await readJson
 // 版本鎖定：同一個 id@version 匯入後不能覆蓋，要改內容就換版本號
 try{await env.DB.prepare('INSERT INTO scenario_sets (id,version,title,set_json,created_at) VALUES (?,?,?,?,?)').bind(setKey(s),s.version,s.title,JSON.stringify(s),Date.now()).run();}catch{return json({error:'version_locked'},409);}
 return json({ok:true,id:setKey(s)});}
+// 第 29 版：情境摘要預先產生 → 主持人審核（可改字，但改後一樣要通過數字與用語檢查）→ 固定。教師端只看固定版本
+function scenarioSlots(set){return set.scenarios.flatMap(c=>c.sessions.map((_,i)=>({scenario:c.id,title:c.title,act:c.act,upTo:i+1})));}
+function scenarioFacts(c,upTo){return summaryFacts(c.sessions.slice(Math.max(0,upTo-7),upTo).map(x=>({no:x.no,rows:x.events})),c.act);}
+async function fixedSummary(env,setId,scenario,upTo){try{return await env.DB.prepare("SELECT text, source, model, prompt_version AS promptVersion FROM scenario_summaries WHERE set_id = ? AND scenario_id = ? AND up_to = ? AND status = 'approved'").bind(setId,scenario,upTo).first();}catch{return null;}}
+async function studyScenarioSummaries(request,env,who,url){if(!isResearcher(who))return notResearcher(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+if(request.method==='GET'){const id=url.searchParams.get('set')||'',row=await setRow(env,id);if(!row)return json({error:'not_found'},404);
+const {results}=await env.DB.prepare('SELECT scenario_id AS scenario, up_to AS upTo, text, source, model, prompt_version AS promptVersion, edited, status, created_at AS createdAt, approved_at AS approvedAt, approved_by AS approvedBy FROM scenario_summaries WHERE set_id = ?').bind(id).all();
+const map=new Map(results.map(r=>[r.scenario+'|'+r.upTo,r]));return json({set:id,slots:scenarioSlots(row.set).map(x=>({...x,summary:map.get(x.scenario+'|'+x.upTo)||null}))});}
+if(request.method!=='POST')return json({error:'method'},405);if(!sameOrigin(request))return json({error:'origin'},403);
+const b=await readJson(request,8192);if(!b||!['generate','approve','reopen'].includes(b.action)||typeof b.set!=='string')return json({error:'invalid_input'},400);
+const row=await setRow(env,b.set),c=row?.set.scenarios.find(x=>x.id===b.scenario);if(!c||!whole(b.upTo,99)||b.upTo<1||b.upTo>c.sessions.length)return json({error:'invalid_input'},400);
+const cur=await env.DB.prepare('SELECT status, text FROM scenario_summaries WHERE set_id = ? AND scenario_id = ? AND up_to = ?').bind(b.set,c.id,b.upTo).first(),now=Date.now();
+if(b.action==='generate'){if(cur?.status==='approved')return json({error:'already_approved'},409);
+const out=await summarize(env,who.ws||who.role,'pre|'+b.set+'|'+c.id+'|'+b.upTo,c.sessions.slice(Math.max(0,b.upTo-7),b.upTo).map(x=>({no:x.no,rows:x.events})),c.act);
+await env.DB.prepare("INSERT INTO scenario_summaries (set_id,scenario_id,up_to,text,source,model,prompt_version,ai_output_id,edited,status,created_at) VALUES (?,?,?,?,?,?,?,?,0,'draft',?) ON CONFLICT(set_id,scenario_id,up_to) DO UPDATE SET text=excluded.text,source=excluded.source,model=excluded.model,prompt_version=excluded.prompt_version,ai_output_id=excluded.ai_output_id,edited=0,created_at=excluded.created_at").bind(b.set,c.id,b.upTo,out.text,out.source,out.model,out.promptVersion,out.id,now).run();
+return json({ok:true,text:out.text,source:out.source,error:out.error});}
+if(b.action==='approve'){if(!cur)return json({error:'not_generated'},409);if(cur.status==='approved')return json({error:'already_approved'},409);
+let text=cur.text,edited=0;if(typeof b.text==='string'&&b.text.trim()&&b.text.trim()!==cur.text){text=b.text.trim();edited=1;if(/[<>]/.test(text))return json({error:'invalid_input'},400);const bad=summaryCheck(text,scenarioFacts(c,b.upTo),(await studyRules(env)).summaryChars);if(bad)return json({error:'check_failed',reason:bad},400);}
+await env.DB.prepare("UPDATE scenario_summaries SET text = ?, edited = ?, status = 'approved', approved_at = ?, approved_by = ? WHERE set_id = ? AND scenario_id = ? AND up_to = ?").bind(text,edited,now,who.ws||who.role,b.set,c.id,b.upTo).run();return json({ok:true});}
+// 重開審核：實驗鎖定中不行（避免正式資料期間換文字）
+if((await studyLock(env)).locked)return json({error:'experiment_locked'},409);if(!cur)return json({error:'not_generated'},409);
+await env.DB.prepare("UPDATE scenario_summaries SET status = 'draft', approved_at = NULL, approved_by = NULL WHERE set_id = ? AND scenario_id = ? AND up_to = ?").bind(b.set,c.id,b.upTo).run();return json({ok:true});}
 async function studyAssign(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!sameOrigin(request))return json({error:'origin'},403);if(!env.DB)return json({error:'research_storage_unavailable'},503);
 const b=await readJson(request,512);if(!b||typeof b.setId!=='string'||!TEACHER_CODE.test(b.teacher)||!safeText(b.probe,20))return json({error:'invalid_input'},400);if(!await setRow(env,b.setId))return json({error:'unknown_set'},404);
 // 平衡輪替：同一位老師不重複使用同一組情境
@@ -473,7 +530,12 @@ if(!action){if(request.method!=='GET')return json({error:'method'},405);return j
 if(request.method!=='POST')return json({error:'method'},405);if(!sameOrigin(request))return json({error:'origin'},403);
 const decisions=await decisionsOf(env,a.id);
 if(action==='summary'){const b=await readJson(request,256),c=a.set.scenarios.find(x=>x.id===b?.scenario);if(!c)return json({error:'invalid_input'},400);if(!aiOn)return json({error:'summary_off'},403);
-const done=decisions.filter(d=>d.scenario===c.id).length,upTo=Math.min(done+1,c.sessions.length);const out=await summarize(env,who.ws,a.id+'|'+c.id+'|'+upTo,c.sessions.slice(Math.max(0,upTo-7),upTo).map(x=>({no:x.no,rows:x.events})),c.act);
+const done=decisions.filter(d=>d.scenario===c.id).length,upTo=Math.min(done+1,c.sessions.length);
+// 第 29 版：有審核過的固定摘要就用固定的；實驗鎖定中又沒有固定摘要時，不叫 AI，改用網站的固定格式
+const fixed=await fixedSummary(env,a.setId,c.id,upTo);let out;
+if(fixed){const facts=scenarioFacts(c,upTo);out={text:fixed.text,source:'fixed',model:fixed.model,promptVersion:fixed.promptVersion};out.id=await logAi(env,{task:'summary',workspace:who.ws,subject:a.id+'|'+c.id+'|'+upTo,provider:'',model:fixed.model,promptVersion:fixed.promptVersion,input:facts,text:fixed.text,source:'fixed',error:'',ms:0});}
+else if((await studyLock(env)).locked){const facts=scenarioFacts(c,upTo),text=summaryFallback(facts);out={text,source:'fallback',model:'',promptVersion:SUMMARY_PROMPT_VERSION};out.id=await logAi(env,{task:'summary',workspace:who.ws,subject:a.id+'|'+c.id+'|'+upTo,promptVersion:SUMMARY_PROMPT_VERSION,input:facts,text,source:'fallback',error:'not_pre_approved',ms:0});}
+else out=await summarize(env,who.ws,a.id+'|'+c.id+'|'+upTo,c.sessions.slice(Math.max(0,upTo-7),upTo).map(x=>({no:x.no,rows:x.events})),c.act);
 return json({text:out.text,source:out.source,model:out.model,promptVersion:out.promptVersion,sessions:Array.from({length:upTo},(_,i)=>i+1).slice(-7),id:out.id});}
 if(action==='decide'){const b=await readJson(request,4096),c=a.set.scenarios.find(x=>x.id===b?.scenario);if(!c||!DECISIONS.has(b.decision)||!REASONS.has(b.reason))return json({error:'invalid_input'},400);
 const mine=decisions.filter(d=>d.scenario===c.id);if(b.sessionNo!==mine.length+1||b.sessionNo>c.sessions.length)return json({error:'wrong_session'},409);
@@ -517,6 +579,7 @@ const publicItem=it=>({id:it.id,type:it.type,prompt:it.prompt,figure:it.figure||
 
 // ---------- 計分 ----------
 const sameAnswer=(v,a)=>v!==null&&v!==undefined&&v!==''&&(typeof a==='number'?Number(v)===a:String(v)===String(a));
+const RAPID_SECS=1.5;
 function scoreProbeItem(item,resp){const st=resp&&resp.steps&&typeof resp.steps==='object'?resp.steps:{},tech=resp?.tech===true;
 // 每一次確定都算（前端一題最多記 300 次）
 const confirmsOf=k=>Array.isArray(st[k]?.confirms)?st[k].confirms.filter(c=>c&&(typeof c.v==='number'||typeof c.v==='string')):[];
@@ -546,8 +609,11 @@ if(item.type==='breakRead')return meas.length===3&&x===meas[0]+meas[1]*meas[2];
 if(item.type==='change'||item.type==='twoLine')return parts.length===2&&x===Math.abs(parts[0]-parts[1]);
 if(item.type==='plot')return meas.length===2&&meas[1]!==0&&x===meas[0]/meas[1];return false;}
 const ok=(s,c)=>!!c&&(sameAnswer(c.v,s.answer)||carried(s,c.v,tOf(c)));
-const steps=item.steps.map(s=>{const c=confirmsOf(s.key),fin=c.length?c.at(-1).v:null,hadError=c.some(x=>!ok(s,x));
-return {key:s.key,role:s.role,answered:c.length>0,firstCorrect:ok(s,c[0]),finalCorrect:ok(s,c.at(-1)),hadError,selfCorrected:hadError&&ok(s,c.at(-1)),final:fin};});
+// 第 29 版：疑似快速猜測。每一步第一次確定和「這題前一次確定」（或這題開始）相隔的秒數；不到 RAPID_SECS 秒而且答錯，就標記，供研究人員清理資料（不影響計分）
+const order=item.steps.flatMap(s=>confirmsOf(s.key)).filter(c=>typeof c.t==='number'&&Number.isFinite(c.t)).sort((x,y)=>tOf(x)-tOf(y));
+const gapOf=c=>{if(!c||typeof c.t!=='number'||!Number.isFinite(c.t))return null;const before=order.filter(x=>tOf(x)<tOf(c));return Math.round((c.t-(before.length?before.at(-1).t:0))*10)/10;};
+const steps=item.steps.map(s=>{const c=confirmsOf(s.key),fin=c.length?c.at(-1).v:null,hadError=c.some(x=>!ok(s,x)),firstSecs=gapOf(c[0]),firstCorrect=ok(s,c[0]);
+return {key:s.key,role:s.role,answered:c.length>0,firstCorrect,finalCorrect:ok(s,c.at(-1)),hadError,selfCorrected:hadError&&ok(s,c.at(-1)),final:fin,firstSecs,rapidGuess:c.length>0&&!firstCorrect&&firstSecs!==null&&firstSecs<RAPID_SECS};});
 const ans=item.steps.find(s=>s.role==='answer'),unit=item.steps.find(s=>s.role==='unit'),answerCorrect=sameAnswer(finalOf(ans.key),ans.answer),unitCorrect=unit?sameAnswer(finalOf(unit.key),unit.answer):true,
 firstCorrect=!tech&&sameAnswer(firstOf(ans.key),ans.answer)&&(unit?sameAnswer(firstOf(unit.key),unit.answer):true);
 const group=role=>{const l=steps.filter(s=>s.role===role);return l.length?l.every(s=>s.finalCorrect):null;};
@@ -559,7 +625,7 @@ return {items:all.length,valid:valid.length,correct:valid.filter(r=>r.correct).l
 firstSubmitAccuracy:valid.length?Math.round(valid.filter(r=>r.firstCorrect).length/valid.length*1000)/10:null,finalAccuracy:valid.length?Math.round(valid.filter(r=>r.correct).length/valid.length*1000)/10:null,
 scorableSteps:steps.length,independentSteps:steps.filter(s=>s.firstCorrect).length,independentStepRate:steps.length?Math.round(steps.filter(s=>s.firstCorrect).length/steps.length*1000)/10:null,
 errorSteps:withErr.length,selfCorrected:withErr.filter(s=>s.selfCorrected).length,selfCorrectionRate:withErr.length?Math.round(withErr.filter(s=>s.selfCorrected).length/withErr.length*1000)/10:null,
-timedOut:all.filter(r=>r.timedOut).length,unanswered:all.filter(r=>!r.answered).length,tech:all.length-valid.length,dataPoint:valid.length>=minValid};}
+rapidGuessSteps:steps.filter(s=>s.rapidGuess).length,timedOut:all.filter(r=>r.timedOut).length,unanswered:all.filter(r=>!r.answered).length,tech:all.length-valid.length,dataPoint:valid.length>=minValid};}
 
 // ---------- 路由 ----------
 async function probeSets(request,env,who){if(!researchRole(who))return noResearch(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);
@@ -626,7 +692,7 @@ await env.DB.batch(st);if(out.reason==='nextActivity')flags.nextActivity=true;if
 return json({student,act,stage:row.stage,...flags,history});}catch{return json({error:'research_storage_unavailable'},503);}}
 
 // 小方的語句：程式決定要說什麼（事件、步驟），AI 只換說法；不能有數字、不超過字數、只說一個動作；不合格就用固定語句
-const TUTOR_PROMPT_VERSION='tutor-v26.1',TUTOR_EVENTS=new Set(['right','wrong','idle','predict','compare']);
+const TUTOR_PROMPT_VERSION='tutor-v29',TUTOR_EVENTS=new Set(['right','wrong','idle','predict','compare']);
 const TUTOR_FIXED={right:'對了，你做得很仔細。',wrong:'再看一次圖，慢慢想。',idle:'停一下了。想想看：我在找什麼？',predict:'想一想，下一步要做什麼。',compare:'看看我們兩個哪裡一樣。'};
 async function tutorQuota(env,ws){if(!env.DB)return false;try{const day=new Date().toISOString().slice(0,10),row=await env.DB.prepare('INSERT INTO ai_usage (day,scope,calls) VALUES (?,?,1) ON CONFLICT(day,scope) DO UPDATE SET calls=calls+1 WHERE calls<600 RETURNING calls').bind(day,'tutor:'+ws).first();return !!row;}catch{return false;}}
 async function tutorLine(request,env,who){if(!researchRole(who))return noResearch(who);if(!sameOrigin(request))return json({error:'origin'},403);
@@ -635,6 +701,6 @@ const rules=await studyRules(env),limit=rules.tutorChars,fixed=TUTOR_FIXED[b.eve
 const system=`你是國小面積課的小老師「小方」，對象是可能有學習困難的國小學生。程式已經決定這次要說的是：${{right:'肯定學生剛剛這一步做對了',wrong:'學生這一步答錯了，提醒他再看一次，不說答案',idle:'學生停了一陣子，提醒他想一想現在在找什麼',predict:'請學生想一想你下一步要做什麼',compare:'請學生對照你和他的作品'}[b.event]}。只輸出一句話，國小中年級口語，不超過${limit}個字，只說一個動作，不可以有任何數字，不說答案，不用這些詞：${banned}。只輸出 JSON 物件 {"message":"語句"}。`;
 const user=`活動：${actTitles[b.act]||b.act}。步驟：${input.stepTitle||'（無）'}。${input.obs?'看到的情形：'+input.obs+'。':''}`;
 if(!await tutorQuota(env,who.ws)){await logAi(env,{task:'tutor',workspace:who.ws,promptVersion:TUTOR_PROMPT_VERSION,input,text:fixed,source:'fallback',error:'ai_limit'});return json({text:fixed,source:'fallback',promptVersion:TUTOR_PROMPT_VERSION});}
-const out=await aiGateway(env,{task:'tutor',quota:false,ws:who.ws,subject:b.event,input,promptVersion:TUTOR_PROMPT_VERSION,system,user,maxTokens:120,check:t=>!t||t.length>limit?'too_long':/[0-9０-９]/.test(t)?'number':new RegExp(banned.replaceAll('、','|')).test(t)?'banned_word':'',fallback:fixed});
+const out=await aiGateway(env,{task:'tutor',quota:false,ws:who.ws,subject:b.event,input,promptVersion:TUTOR_PROMPT_VERSION,system,user,maxTokens:120,check:t=>!t||t.length>limit?'too_long':HAS_NUM(t)?'number':new RegExp(banned.replaceAll('、','|')).test(t)?'banned_word':'',fallback:fixed});
 return json({text:out.text,source:out.source,model:out.model,promptVersion:out.promptVersion});}
 async function tutorExport(env){const {results}=await env.DB.prepare('SELECT workspace, student, act, from_stage AS fromStage, to_stage AS toStage, session_no AS sessionNo, reason, detail_json AS detail, at FROM tutor_stage_changes ORDER BY at, id LIMIT 20000').all();return results;}

@@ -77,7 +77,7 @@
     if ($('aiSummary')) $('aiSummary').onclick = async () => {
       const t = timing(c.id, k), began = Date.now();
       aiWaiting = true; $('aiSummary').disabled = true; $('aiText').hidden = false; $('aiText').textContent = 'AI 整理中……';
-      try { const out = await S.api(`/api/scenario/${view.id}/summary`, { scenario: c.id }); $('aiText').textContent = out.text + (out.source === 'ai' ? '' : '\n（AI 暫時無法使用，以上是網站整理的固定格式）'); t.aiUsed = true; }
+      try { const out = await S.api(`/api/scenario/${view.id}/summary`, { scenario: c.id }); $('aiText').textContent = out.text + (out.source === 'ai' || out.source === 'fixed' ? '' : '\n（AI 暫時無法使用，以上是網站整理的固定格式）'); t.aiUsed = true; }
       catch (e) { $('aiText').textContent = S.SAVE_ERR[e.message] || 'AI 摘要暫時無法使用。'; }
       finally { aiWaiting = false; t.aiWaitMs += Date.now() - began; saveT(c.id, k, t); $('aiSummary').disabled = false; }
     };

@@ -28,6 +28,9 @@ async function setup() {
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   base = `http://127.0.0.1:${server.address().port}`;
   browser = await chromium.launch();
+  // 第 29 版：小方的第一次導覽在其他測試裡先當作看過（只有導覽的測試傳 tour: true）
+  const newContext = browser.newContext.bind(browser);
+  browser.newContext = async (o = {}) => { const { tour, ...rest } = o; const c = await newContext(rest); if (!tour) await c.addInitScript(() => { try { if (!localStorage.getItem('udl-tour-v29')) localStorage.setItem('udl-tour-v29', '["device"]'); } catch { /* 略過 */ } }); return c; };
 }
 test.after(async () => { await browser?.close(); server?.close(); });
 
@@ -41,12 +44,12 @@ async function publish(settings) {
     for (const k of Object.keys(c.activities || {})) c.activities[k].settings = { ...c.activities[k].settings, ...s };
     c.map = { assigned: window.areaActs.packages[map.pkg || 'area'].activities.map(a => a.id), sequential: false, path: 'all', ...map };
     return (await fetch('/api/teacher/lessons', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'published', config: c }) })).status;
-  }, { flow: 'seven', keep: [0, 1, 2, 3], support: 'full', labels: 'reveal', ai: true, reward: false, sound: false, hintGate: false, mode: 'self', goalKind: 'hints', confidence: true, selfAsk: true, badges: true, voice: false, rest: 0, handsOn: false, methods: ['mark', 'row', 'self'], zhuyin: false, textSize: 'normal', contrast: false, video: 'hint', difficulty: 'standard', convert: false, srlAsk: 'first', lessonGoal: 0, stepNames: {}, attention: false, ...settings });
+  }, { flow: 'seven', keep: [0, 1, 2, 3], support: 'full', labels: 'reveal', ai: true, reward: false, sound: false, hintGate: false, mode: 'self', goalKind: 'hints', confidence: true, selfAsk: true, badges: true, voice: false, rest: 0, handsOn: false, methods: ['mark', 'row', 'self'], zhuyin: false, textSize: 'normal', contrast: false, video: 'hint', difficulty: 'standard', convert: false, srlAsk: 'first', lessonGoal: 0, stepNames: {}, attention: false, simple: false, tour: false, ...settings });
   await page.close(); assert.equal(status, 200);
 }
 async function student(shape, settings = {}, viewport = { width: 820, height: 1180 }, opts = {}) {
   await setup(); await publish(settings);
-  const ctx = await browser.newContext({ viewport, acceptDownloads: true });
+  const ctx = await browser.newContext({ viewport, acceptDownloads: true, tour: opts.tour });
   const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(e.message));
   if (opts.clock) await page.clock.install();   // 第 22 版：小幫手要等幾十秒，用假時鐘快轉
   if (opts.init) await page.addInitScript(opts.init);
@@ -893,7 +896,7 @@ test('現場試用：開始前老師點選代號（不用打字）；沒選齊�
   assert.match(await p.text('#researchBar .who'), /T02-S05/);
   await p.page.click('#researchFlush'); await p.page.waitForTimeout(300);
   const start = p.rows('場次')[0];
-  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v28'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
+  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v29'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
   assert.ok(p.rows('教師設定').some(r => r.actId === 'rectangle' && r.buddy === '開'), '記下老師這次的設定');
   assert.ok(!JSON.stringify(p.posts).match(/姓名/), '不傳姓名欄位');
 
@@ -1197,7 +1200,7 @@ test('第 26 版：研究紀錄存網站資料庫：開始本節編節次、錯�
   const ev = await events();
   const wrong = ev.find(r => r.event === '步驟檢核' && r.correct === '否');
   assert.ok(wrong, '錯誤存進網站資料庫');
-  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v28');
+  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v29');
   const d = JSON.parse(wrong.detail); assert.equal(d.obs, 'chosePerimeter'); assert.equal(d.outcome, 'wrong'); assert.equal(d.firstTry, true);
   assert.ok(ev.some(r => r.event === '無法判定'), '老師按「這題無法判定」');
   // 老師調整支持：沒選理由不能存；減少支持存成這位學生的設定，記下方向
@@ -1678,7 +1681,7 @@ test('第 27 版第 1 輪修正：換教材再換回保留指派；2-1 依實際
     return { k322: k({ l: 3, w: 2, h: 2 }), k432: k({ l: 4, w: 3, h: 2 }), k222: k({ l: 2, w: 2, h: 2 }), faces: (net.match(/class="sf-net/g) || []).length, none: /沒有上面/.test(net), front: />前面</.test(label) && !/>上面</.test(label) }; });
   assert.deepEqual(r, { k322: '2', k432: '3', k222: '1', faces: 5, none: true, front: true });
   const rec = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16') || '[]').find(x => x.event === '整題定標'));
-  assert.equal(rec.siteVersion, 'v28'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
+  assert.equal(rec.siteVersion, 'v29'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
   assert.match(await p.page.title(), /表面積/); assert.match(await p.text('header .brand'), /表面積/);
   assert.deepEqual(p.errors, []);
   await publish({});
@@ -1801,6 +1804,7 @@ test('第 28 版：5-1 畫圖七步：排橫軸、描點（漏描、位置不對
   await p.choose('scale', String(step)); await p.check(); await p.next();
   const vals = await p.page.$$eval('#figure3 .ln-table tbody td', l => l.map(e => Number(e.textContent)));
   await p.page.locator(`#figure3 [data-cell="0:${vals[0]}"]`).dispatchEvent('click');
+  assert.match(await p.text('#app'), /描了 1 個點/, '第 29 版：點了以後計數馬上更新');
   await p.check(); assert.match(await p.text('#feedback3'), /還有|0 的也要描/);
   const off = vals[1] === Math.max(...vals) ? vals[1] - step : vals[1] + step;
   await p.page.locator(`#figure3 [data-cell="1:${off}"]`).dispatchEvent('click');
@@ -1932,4 +1936,42 @@ test('第 28 版第 6 輪複測：5-3 波浪線描點、表面積長方體有自
   const unitAsk = await p.page.evaluate(() => window.lessonPackages.surface.activities.flatMap(x => (window.areaActs.get(x.id)?.steps || []).filter(s => s.title === '選單位').map(s => s.ask)));
   assert.ok(unitAsk.length && unitAsk.every(t => /平方還是立方/.test(t)));
   assert.deepEqual(p.errors, []);
+});
+
+test('第 29 版：精簡畫面只留題目、作答、檢查、我卡住了；老師可以一項一項打開', { skip: skip || !distReady }, async () => {
+  const shown = (p, sel) => p.page.$$eval(sel, l => l.some(e => e.offsetParent !== null));
+  const p = await student('rectangle', { simple: true }); await p.start();
+  for (const sel of ['nav.aids', '#read', '#apiSettings', '.progress', '.step-meter', '.step-ask', '#hint0', '.say']) assert.equal(await shown(p, sel), false, sel + ' 應該藏起來');
+  for (const sel of ['#check', '#stuck0', '[data-choice="target"]']) assert.equal(await shown(p, sel), true, sel + ' 要看得到');
+  // 提示還是拿得到：在「我卡住了」裡
+  await p.page.click('#stuck0'); await p.page.click('[data-stuck-pick="hint"]');
+  assert.match(await p.text('#hintText0'), /提示 1／3/);
+  await p.page.context().close();
+  const q = await student('rectangle', { simple: true, simpleShow: ['hint', 'progress'] }); await q.start();
+  assert.equal(await shown(q, '#hint0'), true); assert.equal(await shown(q, '.progress'), true); assert.equal(await shown(q, 'nav.aids'), false);
+  await q.page.context().close();
+  const r = await student('rectangle', { simple: false }); await r.start();
+  assert.equal(await shown(r, 'nav.aids'), true); assert.equal(await shown(r, '#hint0'), true);
+  assert.deepEqual([...p.errors, ...q.errors, ...r.errors], []);
+});
+
+test('第 29 版：第一次使用小方帶著看四個地方，看過就不再自動出現，可以從我卡住了再看', { skip: skip || !distReady }, async () => {
+  const p = await student('rectangle', { simple: true, tour: true }, undefined, { tour: true }); await p.start();
+  await p.page.waitForSelector('.tour-box');
+  assert.match(await p.text('.tour-box'), /1／4/);
+  await p.page.click('#tourNext'); await p.page.click('#tourNext');
+  assert.match(await p.text('#tourText'), /檢查/);
+  await p.page.click('#tourNext'); assert.match(await p.text('#tourText'), /我卡住了/);
+  await p.page.click('#tourNext'); assert.equal(await p.page.$('.tour-box'), null);
+  await p.page.reload(); await p.page.waitForSelector('#start'); await p.start(); await p.page.waitForTimeout(150);
+  assert.equal(await p.page.$('.tour-box'), null, '看過就不再自動出現');
+  await p.page.click('#stuck0'); await p.page.click('[data-stuck-pick="tour"]');
+  await p.page.waitForSelector('.tour-box'); await p.page.keyboard.press('Escape'); assert.equal(await p.page.$('.tour-box'), null);
+  const recs = JSON.parse(await p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || '[]'));
+  assert.ok(recs.some(r => r.event === '首次導覽'), '導覽有記錄');
+  await p.page.context().close();
+  const q = await student('rectangle', { tour: false }, undefined, { tour: true }); await q.start(); await q.page.waitForTimeout(150);
+  assert.equal(await q.page.$('.tour-box'), null, '老師關掉就不出現'); await q.page.click('#stuck0');
+  assert.equal(await q.page.$('[data-stuck-pick="tour"]'), null);
+  assert.deepEqual([...p.errors, ...q.errors], []);
 });

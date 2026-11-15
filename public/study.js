@@ -13,7 +13,7 @@
     try { const me = await S.api('/api/session'); if (!me.authenticated) { location.href = '/'; return; } if (!me.teacher || me.test) { $('status').textContent = '這一頁只給研究人員（主持人帳號）使用。'; return; } }
     catch { $('status').textContent = '讀不到登入狀態。'; return; }
     $('status').textContent = ''; $('body').hidden = false;
-    drawPhases(); drawRules(); drawScenarios(); drawProbes(); drawDirection(); drawAi(); drawExport();
+    drawPhases(); drawLock(); drawRules(); drawScenarios(); drawProbes(); drawDirection(); drawAi(); drawExport();
   }
 
   // ---------- 研究階段：第二年依教師、第三年依學生，每次切換都留時間與操作者 ----------
@@ -39,13 +39,39 @@
   }
 
   // ---------- 判準（正式實驗前依前導資料校準） ----------
+  // ---------- 第 29 版：實驗參數鎖定 ----------
+  async function drawLock(note = '') {
+    const box = $('lockSection');
+    let data; try { data = await S.api('/api/study/lock'); } catch { box.textContent = '讀不到鎖定狀態。'; return; }
+    const { lock, current } = data, snap = lock.snapshot || {}, pv = o => Object.entries(o || {}).map(([k, v]) => `${k}：${v}`).join('、');
+    const same = lock.locked && snap.provider === current.provider && snap.model === current.model && JSON.stringify(snap.promptVersions) === JSON.stringify(current.promptVersions);
+    const when = t => new Date(t).toLocaleString('zh-TW');
+    box.innerHTML = `<h2>🔒 實驗參數鎖定</h2><p class="subtle">前導試做結束、正式實驗開始時按「鎖定」：把 AI 模型、提示詞版本、判準門檻與字數上限存成快照。鎖定期間判準不能改；網站的 AI 模型或提示詞和快照不一樣時，AI 一律改用固定內容，避免不同的工具混進正式資料。</p>
+      <p><b>${lock.locked ? `目前：已鎖定（${esc(lock.id)}，${when(lock.at)}）` : '目前：沒有鎖定'}</b></p>
+      ${lock.locked ? `<p class="${same ? '' : 'warn'}">${same ? '✓ 網站現在的 AI 和快照一樣。' : '⚠️ 網站現在的 AI 和快照不一樣，AI 會改用固定內容。'}</p>
+        <table class="study-table"><tr><th></th><th>快照</th><th>網站現在</th></tr><tr><td>AI</td><td>${esc(snap.provider)}／${esc(snap.model)}</td><td>${esc(current.provider)}／${esc(current.model)}</td></tr>
+        <tr><td>提示詞版本</td><td>${esc(pv(snap.promptVersions))}</td><td>${esc(pv(current.promptVersions))}</td></tr><tr><td>網站版本</td><td>${esc(snap.siteVersion)}</td><td>${esc(current.siteVersion)}</td></tr></table>`
+        : `<p>網站現在：AI ${esc(current.provider || '未設定')}／${esc(current.model || '')}；提示詞 ${esc(pv(current.promptVersions))}；網站 ${esc(current.siteVersion)}</p>`}
+      ${lock.locked ? `<label>解鎖理由（必填，100 字以內）<input id="unlockReason" maxlength="100"></label> <button type="button" id="lockUnlock">解鎖</button>`
+        : `<label>鎖定說明（可不填）<input id="lockReason" maxlength="100"></label> <button type="button" id="lockGo" class="primary">鎖定</button> <span id="lockConfirm" hidden>確定要鎖定嗎？<button type="button" id="lockYes">確定鎖定</button><button type="button" id="lockNo">取消</button></span>`}
+      <p id="lockMsg" class="msg" role="status">${esc(note)}</p>
+      ${(lock.history || []).length ? `<details><summary>鎖定歷程</summary><ul>${lock.history.map(h => `<li>${when(h.at)}　${h.action === 'lock' ? '鎖定' : '解鎖'} ${esc(h.id || '')}　${esc(h.by || '')}　${esc(h.reason || '')}</li>`).join('')}</ul></details>` : ''}`;
+    const send = async body => { try { await S.api('/api/study/lock', body); return true; } catch (e) { $('lockMsg').textContent = e.message === 'reason_required' ? '解鎖要寫理由。' : e.message === 'ai_unavailable' ? '網站還沒有設定 AI，不能鎖定。' : '沒有成功，請重新整理再試。'; return false; } };
+    if ($('lockGo')) {
+      $('lockGo').onclick = () => { $('lockConfirm').hidden = false; };
+      $('lockNo').onclick = () => { $('lockConfirm').hidden = true; };
+      $('lockYes').onclick = async () => { if (await send({ action: 'lock', reason: $('lockReason').value.replace(/[<>]/g, '') })) { drawLock('✓ 已鎖定'); drawRules(); } };
+    }
+    if ($('lockUnlock')) $('lockUnlock').onclick = async () => { const reason = $('unlockReason').value.replace(/[<>]/g, '').trim(); if (!reason) { $('lockMsg').textContent = '解鎖要寫理由。'; return; } if (await send({ action: 'unlock', reason })) { drawLock('✓ 已解鎖'); drawRules(); } };
+  }
+
   async function drawRules() {
     const box = $('rulesSection');
     let data; try { data = await S.api('/api/study/config'); } catch { box.textContent = '讀不到判準。'; return; }
     box.innerHTML = `<h2>📐 應有方向的判準</h2><p class="subtle">計算同一活動、同一支持設定下的有效節次。支持設定變更後，從變更後的第一節重新算。預設值依計畫書。</p>
       <div class="study-grid">${Object.keys(RULE_TEXT).map(k => `<label>${RULE_TEXT[k]}<input type="number" data-rule="${k}" value="${data.rules[k]}"></label>`).join('')}</div>
       <button type="button" id="rulesSave">儲存判準</button> <button type="button" id="rulesReset">恢復計畫書預設</button><p id="rulesMsg" class="msg" role="status"></p>`;
-    const save = async rules => { try { await S.api('/api/study/config', { rules }); $('rulesMsg').textContent = '✓ 已儲存'; } catch { $('rulesMsg').textContent = '數值不合理（例如低標高於高標），沒有儲存。'; } };
+    const save = async rules => { try { await S.api('/api/study/config', { rules }); $('rulesMsg').textContent = '✓ 已儲存'; } catch (e) { $('rulesMsg').textContent = e.message === 'experiment_locked' ? '實驗參數已經鎖定，判準不能改。要改請先在上面解鎖（要寫理由）。' : '數值不合理（例如低標高於高標），沒有儲存。'; } };
     $('rulesSave').onclick = () => save(Object.fromEntries([...box.querySelectorAll('[data-rule]')].map(i => [i.dataset.rule, Number(i.value)])));
     $('rulesReset').onclick = async () => { await save(data.defaults); drawRules(); };
   }
@@ -60,6 +86,9 @@
       <h3>情境組</h3>${data.sets.length ? `<table class="study-table"><thead><tr><th>代號@版本</th><th>名稱</th><th>匯入時間</th></tr></thead><tbody>${data.sets.map(s => `<tr><td>${esc(s.id)}</td><td>${esc(s.title)}</td><td>${esc(time(s.createdAt))}</td></tr>`).join('')}</tbody></table>` : '<p>還沒有情境組。</p>'}
       <h3>指派給教師</h3><div class="study-grid"><label>情境組<select id="asgSet">${data.sets.map(s => `<option value="${esc(s.id)}">${esc(s.id)}</option>`).join('')}</select></label><label>教師<select id="asgTeacher">${TEACHERS.map(t => `<option>${t}</option>`).join('')}</select></label><label>第幾次探試<input id="asgProbe" maxlength="20" placeholder="例如：P1"></label></div>
       <button type="button" id="asgSave"${data.sets.length ? '' : ' disabled'}>指派</button><p id="asgMsg" class="msg" role="status">${esc(note.asg || '')}</p>
+      <h3>AI 摘要預先產生與審核</h3><p class="subtle">每個情境、每一節的摘要先在這裡產生，主持人讀過、需要時改字，按「核可」後就固定，每位老師看到同一段文字。改字後一樣要通過檢查（數字要在紀錄裡找得到、不寫建議）。實驗鎖定期間，沒有核可的節次不呼叫 AI，老師看到網站的固定格式。</p>
+      <div class="study-grid"><label>情境組<select id="sumSet">${data.sets.map(s => `<option value="${esc(s.id)}">${esc(s.id)}</option>`).join('')}</select></label></div>
+      <button type="button" id="sumLoad"${data.sets.length ? '' : ' disabled'}>開啟審核表</button> <button type="button" id="sumAll"${data.sets.length ? '' : ' disabled'}>產生所有還沒有的摘要</button><p id="sumMsg" class="msg" role="status"></p><div id="sumOut"></div>
       ${data.assignments.length ? `<table class="study-table"><thead><tr><th>教師</th><th>探試</th><th>情境組</th><th>指派時的階段</th><th>已決策節數</th><th>指派時間</th></tr></thead><tbody>${data.assignments.map(a => `<tr><td>${esc(a.teacher)}</td><td>${esc(a.probe)}</td><td>${esc(a.setId)}</td><td>${esc(S.PHASE[a.phase] || '未設定')}</td><td>${a.decided}</td><td>${esc(time(a.createdAt))}</td></tr>`).join('')}</tbody></table>` : ''}`;
     $('setFile').onchange = async () => {
       const f = $('setFile').files[0]; if (!f) return;
@@ -67,10 +96,38 @@
       try { const out = await S.api('/api/study/scenarios', set); drawScenarios({ set: '✓ 已匯入 ' + out.id }); }
       catch (e) { $('setMsg').textContent = e.message === 'version_locked' ? '這個代號和版本已經匯入過，內容鎖定。要修改請換版本號。' : '格式不對，沒有匯入。'; }
     };
+    if ($('sumLoad')) { $('sumLoad').onclick = () => drawSummaries($('sumSet').value); $('sumAll').onclick = () => generateAll($('sumSet').value); }
     $('asgSave').onclick = async () => {
       try { const out = await S.api('/api/study/assignments', { setId: $('asgSet').value, teacher: $('asgTeacher').value, probe: $('asgProbe').value.trim() }); drawScenarios({ asg: `✓ 已指派（教師目前階段：${S.PHASE[out.phase] || '未設定'}）` }); }
       catch (e) { $('asgMsg').textContent = e.message === 'set_already_used' ? '這位老師已經用過這組情境（各次探試要用不重複的情境組）。' : '請填「第幾次探試」。'; }
     };
+  }
+
+  // ---------- 第 29 版：情境摘要審核表 ----------
+  const SUM_ERR = { check_failed: '改過的文字沒有通過檢查（數字要在紀錄裡找得到、不能寫建議、每一節都要寫到、不超過字數）。', already_approved: '這一則已經核可。', experiment_locked: '實驗鎖定中，不能重開審核。', not_generated: '還沒有產生。' };
+  async function drawSummaries(setId, note = '') {
+    const out = $('sumOut'); if (!setId) return;
+    let data; try { data = await S.api('/api/study/scenario-summaries?set=' + encodeURIComponent(setId)); } catch { out.textContent = '讀不到審核表。'; return; }
+    const done = data.slots.filter(x => x.summary?.status === 'approved').length;
+    $('sumMsg').textContent = note || `已核可 ${done}／${data.slots.length} 則`;
+    const src = x => ({ ai: 'AI', fallback: '固定格式（AI 沒有通過或無法使用）' }[x] || x);
+    out.innerHTML = `<div class="table-scroll"><table class="study-table"><thead><tr><th>情境</th><th>老師看到第幾節</th><th>狀態</th><th>摘要</th><th></th></tr></thead><tbody>${data.slots.map((x, i) => {
+      const m = x.summary, ok = m?.status === 'approved';
+      return `<tr><td>${esc(x.title)}</td><td>${x.upTo}</td><td>${!m ? '還沒產生' : ok ? `✓ 已核可${m.edited ? '（改過字）' : ''}<br><small>${esc(time(m.approvedAt))}</small>` : '待審核'}${m ? `<br><small>${esc(src(m.source))}</small>` : ''}</td>
+        <td>${m ? `<textarea data-sum-text="${i}" rows="4" cols="40"${ok ? ' readonly' : ''}>${esc(m.text)}</textarea>` : ''}</td>
+        <td>${ok ? `<button type="button" data-sum-reopen="${i}">重開審核</button>` : `<button type="button" data-sum-gen="${i}">${m ? '重新產生' : '產生'}</button>${m ? ` <button type="button" class="primary" data-sum-ok="${i}">核可</button>` : ''}`}</td></tr>`;
+    }).join('')}</tbody></table></div>`;
+    const slot = i => data.slots[Number(i)], base = x => ({ set: setId, scenario: x.scenario, upTo: x.upTo });
+    const act = async (body, msg) => { try { await S.api('/api/study/scenario-summaries', body); drawSummaries(setId, msg); } catch (e) { $('sumMsg').textContent = SUM_ERR[e.message] || '沒有成功，請重新整理再試。'; } };
+    out.querySelectorAll('[data-sum-gen]').forEach(b => b.onclick = () => { b.disabled = true; b.textContent = '產生中……'; act({ action: 'generate', ...base(slot(b.dataset.sumGen)) }, '✓ 已產生，請讀過再核可'); });
+    out.querySelectorAll('[data-sum-ok]').forEach(b => b.onclick = () => { const i = b.dataset.sumOk; act({ action: 'approve', ...base(slot(i)), text: out.querySelector(`[data-sum-text="${i}"]`).value }, '✓ 已核可'); });
+    out.querySelectorAll('[data-sum-reopen]').forEach(b => b.onclick = () => act({ action: 'reopen', ...base(slot(b.dataset.sumReopen)) }, '已重開，可以重新產生或改字'));
+  }
+  async function generateAll(setId) {
+    let data; try { data = await S.api('/api/study/scenario-summaries?set=' + encodeURIComponent(setId)); } catch { $('sumMsg').textContent = '讀不到審核表。'; return; }
+    const todo = data.slots.filter(x => !x.summary);
+    for (const [k, x] of todo.entries()) { $('sumMsg').textContent = `產生中 ${k + 1}／${todo.length}……`; try { await S.api('/api/study/scenario-summaries', { action: 'generate', set: setId, scenario: x.scenario, upTo: x.upTo }); } catch { /* 單筆失敗就跳過，表上會顯示還沒產生 */ } }
+    drawSummaries(setId, `✓ 產生完畢（${todo.length} 則），請逐則讀過再核可`);
   }
 
   // ---------- 探試題組：匯入（版本鎖定）、施測紀錄與計分 ----------
@@ -123,7 +180,7 @@
     const box = $('exportSection');
     box.innerHTML = `<h2>⬇ 研究匯出（CSV）</h2><p class="subtle">文字欄位開頭是 = + - @ 時會加上 '，避免 Excel 當成公式。只有代號，沒有姓名。</p>
       <div class="actions"><button type="button" id="expDecisions">情境探試：每節決策</button><button type="button" id="expScenario">情境探試：每個情境的反應延遲與決策時間</button><button type="button" id="expProbes">探試：每次施測</button><button type="button" id="expProbeItems">探試：每題每步</button><button type="button" id="expTutor">小老師小方：支持階段變更</button><button type="button" id="expAi">AI 輸出全文</button><button type="button" id="expChanges">真實學生的設定變更（所有教師）</button></div><h3>研究紀錄篩選匯出</h3><div class="study-grid"><label>學生代號（空白＝全部）<input id="evStudent" placeholder="T01-S01" maxlength="7"></label><label>研究階段<select id="evPhase"><option value="">全部</option>${['A', 'B', 'BC', 'maintain', 'baseline', 'intervention', 'followup'].map(p => `<option value="${p}">${S.PHASE[p]}</option>`).join('')}</select></label><label>從第幾節<input id="evFrom" type="number" min="1" value="1"></label><label>到第幾節<input id="evTo" type="number" min="1" placeholder="最後"></label></div>
-      <button type="button" id="expEvents">匯出篩選後的研究紀錄</button><p id="expMsg" class="msg" role="status"></p>`;
+      <button type="button" id="expSessions">每一節（含作廢）</button> <button type="button" id="expEvents">匯出篩選後的研究紀錄</button> <button type="button" id="expMonitor">自我監控指標（每題）</button><p id="expMsg" class="msg" role="status"></p>`;
     const get = async type => { try { return (await S.api('/api/study/export?type=' + type)).rows; } catch { $('expMsg').textContent = '匯出失敗。'; return null; } };
     const consistent = r => ['increase', 'decrease', 'advance', 'maintain'].includes(r.expected) ? (r.direction === r.expected ? '是' : '否') : '不計';
     $('expDecisions').onclick = async () => {
@@ -148,14 +205,14 @@
     const pct = v => v ?? '';
     $('expProbes').onclick = async () => {
       const rows = await get('probes'); if (!rows) return;
-      S.download(`probe_runs_${today()}.csv`, S.toCsv([['工作區', '學生', '節次', '階段', '題組', '複本', '狀態', '開始', '結束', '分鐘', '題數', '有效題數', '答對題數', '首次提交正確率(%)', '可評分步驟', '獨立完成步驟', '獨立完成步驟比例(%)', '曾出現錯誤的步驟', '自行修正步驟', '自行修正比例(%)', '逾時題數', '沒作答題數', '技術缺測題數', '列為資料點'],
-        ...rows.map(r => { const m = r.summary || {}; return [r.workspace, r.student, r.sessionNo ?? '', S.PHASE[r.phase] || r.phase, r.setId, r.formId, r.status, new Date(r.startedAt).toISOString(), r.endedAt ? new Date(r.endedAt).toISOString() : '', m.minutes ?? '', m.items ?? '', m.valid ?? '', m.correct ?? '', pct(m.firstSubmitAccuracy), m.scorableSteps ?? '', m.independentSteps ?? '', pct(m.independentStepRate), m.errorSteps ?? '', m.selfCorrected ?? '', m.errorSteps === 0 ? '無修正機會' : pct(m.selfCorrectionRate), m.timedOut ?? '', m.unanswered ?? '', m.tech ?? '', m.dataPoint === undefined ? '' : m.dataPoint ? '是' : '否']; })]));
+      S.download(`probe_runs_${today()}.csv`, S.toCsv([['工作區', '學生', '節次', '階段', '題組', '複本', '狀態', '開始', '結束', '分鐘', '題數', '有效題數', '答對題數', '首次提交正確率(%)', '可評分步驟', '獨立完成步驟', '獨立完成步驟比例(%)', '曾出現錯誤的步驟', '自行修正步驟', '自行修正比例(%)', '疑似快速猜測步驟', '逾時題數', '沒作答題數', '技術缺測題數', '列為資料點'],
+        ...rows.map(r => { const m = r.summary || {}; return [r.workspace, r.student, r.sessionNo ?? '', S.PHASE[r.phase] || r.phase, r.setId, r.formId, r.status, new Date(r.startedAt).toISOString(), r.endedAt ? new Date(r.endedAt).toISOString() : '', m.minutes ?? '', m.items ?? '', m.valid ?? '', m.correct ?? '', pct(m.firstSubmitAccuracy), m.scorableSteps ?? '', m.independentSteps ?? '', pct(m.independentStepRate), m.errorSteps ?? '', m.selfCorrected ?? '', m.errorSteps === 0 ? '無修正機會' : pct(m.selfCorrectionRate), m.rapidGuessSteps ?? '', m.timedOut ?? '', m.unanswered ?? '', m.tech ?? '', m.dataPoint === undefined ? '' : m.dataPoint ? '是' : '否']; })]));
     };
     $('expProbeItems').onclick = async () => {
       const rows = await get('probeItems'); if (!rows) return;
       const yn = v => v === null || v === undefined ? '' : v ? '是' : '否';
-      S.download(`probe_items_${today()}.csv`, S.toCsv([['學生', '節次', '階段', '題組', '複本', '第幾題', '題目', '題型', '答對（答案與單位）', '答案對', '單位對', '取量對', '列式對', '逾時', '技術缺測', '秒數', '步驟', '步驟角色', '有作答', '第一次就對', '最後對', '曾出現錯誤', '自行修正', '最後的答案'],
-        ...rows.flatMap(r => r.result.steps.map(s => [r.student, r.sessionNo ?? '', S.PHASE[r.phase] || r.phase, r.setId, r.formId, r.idx + 1, r.itemId, r.result.type, yn(r.result.correct), yn(r.result.answerCorrect), yn(r.result.unitCorrect), yn(r.result.measureCorrect), yn(r.result.formulaCorrect), yn(r.result.timedOut), yn(r.result.tech), r.result.secs ?? '', s.key, s.role, yn(s.answered), yn(s.firstCorrect), yn(s.finalCorrect), yn(s.hadError), yn(s.selfCorrected), s.final ?? '']))]));
+      S.download(`probe_items_${today()}.csv`, S.toCsv([['學生', '節次', '階段', '題組', '複本', '第幾題', '題目', '題型', '答對（答案與單位）', '答案對', '單位對', '取量對', '列式對', '逾時', '技術缺測', '秒數', '步驟', '步驟角色', '有作答', '第一次就對', '最後對', '曾出現錯誤', '自行修正', '最後的答案', '第一次確定秒數', '疑似快速猜測'],
+        ...rows.flatMap(r => r.result.steps.map(s => [r.student, r.sessionNo ?? '', S.PHASE[r.phase] || r.phase, r.setId, r.formId, r.idx + 1, r.itemId, r.result.type, yn(r.result.correct), yn(r.result.answerCorrect), yn(r.result.unitCorrect), yn(r.result.measureCorrect), yn(r.result.formulaCorrect), yn(r.result.timedOut), yn(r.result.tech), r.result.secs ?? '', s.key, s.role, yn(s.answered), yn(s.firstCorrect), yn(s.finalCorrect), yn(s.hadError), yn(s.selfCorrected), s.final ?? '', s.firstSecs ?? '', yn(s.rapidGuess)]))]));
     };
     const STAGE = { demo: '示範', guided: '陪做', faded: '撤除' }, WHY = { up: '連續達標，前進', down: '連續偏低，退回', nextActivity: '撤除階段達標，可進入下一個活動', handsOn: '示範階段持續偏低，加入實物操作' };
     $('expTutor').onclick = async () => {
@@ -168,6 +225,38 @@
       const keys = [...new Set(rows.flatMap(e => Object.keys(e)))], obs = window.areaObs;
       S.download(`research_events_${today()}.csv`, S.toCsv([[...keys, 'obsLabel', 'obsCandidate'], ...rows.map(e => { let o = ''; try { o = JSON.parse(e.detail || '{}').obs || ''; } catch { /* 略過 */ } return [...keys.map(k => typeof e[k] === 'object' ? JSON.stringify(e[k]) : e[k]), o && obs ? obs.label(o) : '', o && obs ? obs.candidate(o) : '']; })]));
       $('expMsg').textContent = `已匯出 ${rows.length} 筆。`;
+    };
+    // 第 29 版：每一節的開始時間與作廢紀錄（作廢的節次不算進應有方向、支持階段和摘要，原始紀錄仍在研究紀錄裡，欄位 sessionInvalid）
+    const INVALID = { device: '設備或網路問題', unwell: '學生身體不適或情緒', interrupted: '課程中斷', other: '其他' };
+    $('expSessions').onclick = async () => {
+      const rows = await get('sessions'); if (!rows) return;
+      S.download(`sessions_${today()}.csv`, S.toCsv([['工作區', '學生', '節次', '開始', '班級代碼', '裝置', '作廢', '作廢原因', '補充', '作廢時間', '操作者'], ...rows.map(r => [r.workspace, r.student, r.sessionNo, new Date(r.startedAt).toLocaleString('zh-TW'), r.classCode, r.device, r.invalidAt ? '是' : '否', INVALID[r.invalidReason] || '', r.invalidNote, r.invalidAt ? new Date(r.invalidAt).toLocaleString('zh-TW') : '', r.invalidBy])]));
+    };
+    // 第 29 版：自我監控的兩個指標分開算（依 Gemini 審查建議）
+    // 作答中自行修正：某一步第一次檢核答錯，之後自己改對，中間沒有求助（請求提示、問 AI、看示範、我卡住了）；答錯後網站自動升一層提示不算求助
+    // 題末錯誤覺察：小老師小方題末對照時，學生指出的步驟和實際不同的步驟完全一樣
+    const HELP = new Set(['請求提示', '請求AI提示', '看示範', '看示範影片', '我卡住了', '卡住時選擇']);
+    $('expMonitor').onclick = async () => {
+      const student = $('evStudent').value, phase = $('evPhase').value, from = Number($('evFrom').value || 1), to = Number($('evTo').value || 9999);
+      let rows; try { rows = (await S.api(`/api/study/export?type=events&student=${encodeURIComponent(student.trim().toUpperCase())}&phase=${encodeURIComponent(phase.trim())}&from=${from}&to=${to}`)).rows; } catch { $('expMsg').textContent = '匯出失敗，請檢查代號。'; return; }
+      const groups = new Map();
+      for (const e of rows) {
+        if (e.sheet && e.sheet !== '操作紀錄') continue;
+        if (e.cycle === '' || e.cycle == null || !e.actId) continue;
+        const k = [e.student, e.sessionNo ?? '', e.actId, e.cycle].join('|');
+        if (!groups.has(k)) groups.set(k, { student: e.student, sessionNo: e.sessionNo ?? '', actId: e.actId, cycle: e.cycle, invalid: e.sessionInvalid || '', steps: new Map(), compare: null });
+        const g = groups.get(k), step = String(e.step ?? ''), st = g.steps.get(step);
+        if (e.event === '步驟檢核') {
+          const ok = e.correct === '是' || e.correct === true;
+          if (!st) g.steps.set(step, { first: ok, fixed: false, help: false, fixedNoHelp: false });
+          else if (ok && st.first === false && !st.fixed) { st.fixed = true; st.fixedNoHelp = !st.help; }
+        } else if (HELP.has(e.event) && st && st.first === false && !st.fixed) st.help = true;
+        else if (e.event === '題末對照') { let d = {}; try { d = JSON.parse(e.detail || '{}'); } catch { /* 略過 */ } if (Array.isArray(d.different)) g.compare = d; }
+      }
+      const list = [...groups.values()].filter(g => g.steps.size || g.compare), yn = v => v === undefined || v === null ? '' : v ? '是' : '否';
+      S.download(`self_monitoring_${today()}.csv`, S.toCsv([['學生', '節次', '本節作廢', '活動', '第幾題', '有檢核的步驟數', '第一次就錯的步驟數', '作答中自行修正（沒有求助）', '作答中改對（有求助）', '題末對照：不同的步驟', '題末對照：學生指出的步驟', '題末錯誤覺察（指認全對）'],
+        ...list.map(g => { const s = [...g.steps.values()], wrong = s.filter(x => x.first === false); return [g.student, g.sessionNo, g.invalid ? '是' : '', g.actId, g.cycle, s.length, wrong.length, wrong.filter(x => x.fixedNoHelp).length, wrong.filter(x => x.fixed && !x.fixedNoHelp).length, g.compare ? g.compare.different.join('、') : '', g.compare && Array.isArray(g.compare.studentMarked) ? g.compare.studentMarked.join('、') : '', g.compare ? yn(g.compare.correct) : '']; })]));
+      $('expMsg').textContent = `已匯出 ${list.length} 題。`;
     };
     $('expAi').onclick = async () => {
       const rows = await get('ai'); if (!rows) return;

@@ -43,8 +43,13 @@
     lessonGoal: 0,          // 這次要做幾題（0＝不限）；畫面顯示「第 2／5 題」，做完提醒休息
     stepNames: {},          // 自訂步驟名稱：{ '0': '看題目', … }，每個最多 12 字
     // 第 25 版：第 3 個提示（會很接近答案）要先自己試一次才開放
-    tryFirst: true
+    tryFirst: true,
+    // 第 29 版：精簡畫面（預設開）：只留題目、作答區、檢查、我卡住了；老師可以一項一項打開
+    simple: true,
+    simpleShow: [],         // 精簡畫面也顯示：aids 閱讀輔助列｜say 每句的🔊｜progress 學習階段與步驟點｜selfAsk 自問卡｜hint 給我提示按鈕
+    tour: true              // 第一次使用時小方帶著認識畫面（每位學生一次）
   };
+  const SIMPLE_ITEMS = ['aids', 'say', 'progress', 'selfAsk', 'hint'];
   const SRL_ASK = ['first', 'every3', 'always', 'off'], LESSON_GOALS = [0, 3, 5, 8, 10];
   const validNames = n => n === undefined || (!!n && typeof n === 'object' && !Array.isArray(n) && Object.entries(n).every(([k, v]) => /^[0-6]$/.test(k) && typeof v === 'string' && v.trim().length <= 12 && !/[<>&"'`]/.test(v)));
   const METHODS = ['mark', 'row', 'self'];
@@ -59,6 +64,7 @@
     if (!MODES.includes(s.mode)) s.mode = 'self';
     if (!SRL_ASK.includes(s.srlAsk)) s.srlAsk = defaults.srlAsk;
     if (!LESSON_GOALS.includes(s.lessonGoal)) s.lessonGoal = 0;
+    s.simpleShow = Array.isArray(s.simpleShow) ? SIMPLE_ITEMS.filter(v => s.simpleShow.includes(v)) : [];
     s.stepNames = validNames(s.stepNames) && s.stepNames ? { ...s.stepNames } : {};
     delete s.breaks;
     return s;
@@ -84,7 +90,8 @@
       && ['easy', 'standard', 'challenge', 'custom'].includes(s.difficulty)
       && ['slow', 'normal', undefined].includes(s.rate)
       && (s.keep === undefined || (Array.isArray(s.keep) && s.keep.every(v => OPTIONAL.includes(v))))
-      && ['confidence', 'selfAsk', 'badges', 'voice', 'handsOn', 'zhuyin', 'contrast', 'convert', 'fading', 'buddy', 'buddyVoice', 'attention', 'tryFirst'].every(k => s[k] === undefined || typeof s[k] === 'boolean')
+      && ['confidence', 'selfAsk', 'badges', 'voice', 'handsOn', 'zhuyin', 'contrast', 'convert', 'fading', 'buddy', 'buddyVoice', 'attention', 'tryFirst', 'simple', 'tour'].every(k => s[k] === undefined || typeof s[k] === 'boolean')
+      && (s.simpleShow === undefined || (Array.isArray(s.simpleShow) && s.simpleShow.length <= SIMPLE_ITEMS.length && s.simpleShow.every(v => SIMPLE_ITEMS.includes(v))))
       && [undefined, 30, 60, 90].includes(s.buddyWait) && [undefined, 3, 5, 8].includes(s.attentionSec)
       && [undefined, ...MODES].includes(s.mode) && [undefined, 'hints', 'firstTry'].includes(s.goalKind)
       && [undefined, 'off', 'hint', 'always'].includes(s.video) && [undefined, 'normal', 'large', 'xlarge'].includes(s.textSize) && [undefined, 0, 2, 3].includes(s.rest)
@@ -125,5 +132,5 @@
     }));
   }
 
-  window.learningFlow = { defaults, OPTIONAL, METHODS, MODES, SRL_ASK, LESSON_GOALS, randomProblem, settings, pages, active, hasActivity, targetInPlan, unitInReflect, valid, shuffle, preset };
+  window.learningFlow = { defaults, SIMPLE_ITEMS, OPTIONAL, METHODS, MODES, SRL_ASK, LESSON_GOALS, randomProblem, settings, pages, active, hasActivity, targetInPlan, unitInReflect, valid, shuffle, preset };
 })();

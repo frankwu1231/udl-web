@@ -315,7 +315,7 @@
         solve: ctx => { ctx.answers.scale = String(ctx.problem.step); }, say: ex => `一格 ${ex.problem.step}，10 格到 ${ex.problem.step * 10}，剛好畫得下。` },
       { title: '描點', ids: ['pts0'], hints: ['一個一個描，從 0 往上數格。', '數 ÷ 一格 ＝ 要往上幾格。', '每個時間都要描。'], think: '老師把每個數除以一格，算要往上幾格再點。', together: '一起描。',
         figure: ctx => chartSVG({ ...ctx.problem, series: [{ ...ctx.problem.series[0], v: [] }] }, { plot: { pts: ctx.state.pts || {}, cells: true }, noTitle: true }),
-        answer: ctx => `${tableHtml(ctx.problem)}<p class="notice" data-read data-say>描了 ${Object.keys(ctx.state.pts || {}).length} 個點，共 ${ctx.problem.xs.length} 個。</p>`,
+        answer: ctx => `${tableHtml(ctx.problem)}<p class="notice" data-read data-say>描了 <span data-pts-count>${Object.keys(ctx.state.pts || {}).length}</span> 個點，共 ${ctx.problem.xs.length} 個。</p>`,
         bind: bindCells(2), check: ctx => plotCheck(ctx.problem, ctx.state.pts || {}),
         solve: ctx => { ctx.state.pts = Object.fromEntries(ctx.problem.series[0].v.map((y, i) => [i, y])); ctx.answers.pts0 = String(ctx.problem.xs.length); }, say: () => '每個點都描好了。' }
     ],
@@ -343,7 +343,7 @@
         solve: ctx => { ctx.answers.start = String(ctx.problem.min); }, say: ex => `從 ${ex.problem.min} 開始。` },
       { title: '描點', ask: '每個時間都描了嗎？我有從波浪線上面的起點看刻度嗎？', ids: ['pts0'], hints: ['從波浪線上面的數開始往上數。', '一格是 1，數一數要幾格。', '每個時間都要描。'], think: `老師從波浪線上面的數開始，往上數格子描點。`, together: '一起描。',
         figure: ctx => chartSVG({ ...ctx.problem, series: [{ ...ctx.problem.series[0], v: [] }] }, { plot: { pts: ctx.state.pts || {}, cells: true }, noTitle: true }),
-        answer: ctx => `${tableHtml(ctx.problem)}<p class="notice" data-read data-say>描了 ${Object.keys(ctx.state.pts || {}).length} 個點，共 ${ctx.problem.xs.length} 個。</p>`,
+        answer: ctx => `${tableHtml(ctx.problem)}<p class="notice" data-read data-say>描了 <span data-pts-count>${Object.keys(ctx.state.pts || {}).length}</span> 個點，共 ${ctx.problem.xs.length} 個。</p>`,
         bind: bindCells(2), check: ctx => plotCheck(ctx.problem, ctx.state.pts || {}),
         solve: ctx => { ctx.state.pts = Object.fromEntries(ctx.problem.series[0].v.map((y, i) => [i, y])); ctx.answers.pts0 = String(ctx.problem.xs.length); }, say: () => '每個點都描好了。' },
       { title: '讀讀看', ids: ['val'], hints: ['從點往左，對到縱軸。', '縱軸從波浪線上面的數開始。', '不是從 0 開始數格子。'], think: '老師從點往左對到縱軸，從波浪線上面的數開始算。', together: '一起讀：是多少？',
@@ -415,7 +415,7 @@
         solve: ctx => { ctx.problem.sample.forEach((y, j) => { ctx.answers['d' + j] = String(y); }); }, say: () => '五天都填好了。' },
       { title: '畫成折線圖', ids: ['pts0'], hints: ['照你填的數，一天描一個點。', '看縱軸一格是多少。', '五天都要描。'], think: '老師照自己填的數描點。', together: '一起描。',
         figure: ctx => { const p = ownChart(ctx); return chartSVG({ ...p, series: [{ ...p.series[0], v: [] }] }, { plot: { pts: ctx.state.pts || {}, cells: true } }); },
-        answer: ctx => { const p = ownChart(ctx); return `${tableHtml(p)}<p class="notice" data-read data-say>縱軸一格是 ${p.step}。描了 ${Object.keys(ctx.state.pts || {}).length} 個點，共 5 個。</p>`; },
+        answer: ctx => { const p = ownChart(ctx); return `${tableHtml(p)}<p class="notice" data-read data-say>縱軸一格是 ${p.step}。描了 <span data-pts-count>${Object.keys(ctx.state.pts || {}).length}</span> 個點，共 5 個。</p>`; },
         bind: bindCells(2), check: ctx => { const r = plotCheck(ownChart(ctx), ctx.state.pts || {}); if (!r) saveOwn(ctx); return r; },
         solve: ctx => { const p = ownChart(ctx); ctx.state.pts = Object.fromEntries(p.series[0].v.map((y, i) => [i, y])); ctx.answers.pts0 = '5'; }, say: () => '五天都描好了。' }
     ],
