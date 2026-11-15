@@ -164,6 +164,7 @@ if(url.pathname.startsWith('/api/teacher/videos/'))return request.method==='DELE
 if(url.pathname.startsWith('/api/videos/'))return request.method==='GET'||request.method==='HEAD'?videoGet(request,env,who,url.pathname.slice(12)):json({error:'method'},405);
 if(url.pathname==='/api/records')return request.method==='POST'?recordsSave(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/sessions/start')return request.method==='POST'?sessionStart(request,env,who):json({error:'method'},405);
+if(url.pathname==='/api/sessions/invalidate')return request.method==='POST'?sessionInvalidate(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/student-settings')return request.method==='GET'?studentSettingsGet(request,env,who):request.method==='POST'?studentSettingsSave(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/teacher/summary')return request.method==='POST'?teacherSummary(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/study/me')return request.method==='GET'?studyMe(request,env,who):json({error:'method'},405);
@@ -283,6 +284,14 @@ try{for(let i=0;i<5;i++){const last=await env.DB.prepare('SELECT MAX(no) AS n FR
 try{await env.DB.prepare('INSERT INTO research_sessions (workspace,student,no,started_at,class_code,device) VALUES (?,?,?,?,?,?)').bind(who.ws,student,no,Date.now(),who.code||'',device).run();return json({no});}catch{/* 兩台同時開始：再試下一號 */}}
 return json({error:'research_storage_unavailable'},503);}catch{return json({error:'research_storage_unavailable'},503);}}
 
+// 第 29 版：本節作廢。老師選原因（可補 60 字說明）；只能作廢自己學生已經開始的節次，作廢後不能復原（要復原請主持人在資料庫處理）。
+const INVALID_REASONS=new Set(['device','unwell','interrupted','other']);
+async function sessionInvalidate(request,env,who){if(!researchRole(who))return noResearch(who);if(who.role==='student')return json({error:'teacher_required'},403);if(!sameOrigin(request))return json({error:'origin'},403);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+const b=await readJson(request,1024),student=b?.student,note=typeof b?.note==='string'?b.note.trim():'';if(typeof student!=='string'||!STUDENT_CODE.test(student)||!whole(b?.no,9999)||b.no<1||!INVALID_REASONS.has(b?.reason)||note.length>60||/[<>]/.test(note))return json({error:'invalid_input'},400);if(!ownsStudent(who,student))return notYours();
+try{const row=await env.DB.prepare('SELECT invalid_at AS at FROM research_sessions WHERE workspace = ? AND student = ? AND no = ?').bind(who.ws,student,b.no).first();if(!row)return json({error:'not_found'},404);if(row.at!=null)return json({error:'already_invalid'},409);
+await env.DB.prepare('UPDATE research_sessions SET invalid_reason = ?, invalid_note = ?, invalid_at = ?, invalid_by = ? WHERE workspace = ? AND student = ? AND no = ? AND invalid_at IS NULL').bind(b.reason,note,Date.now(),who.ws,who.ws,student,b.no).run();
+return json({ok:true});}catch{return json({error:'research_storage_unavailable'},503);}}
+
 // 學生個別設定：只存「和班級設定不同」的欄位。欄位與方向依計畫書的歸類表。
 const OVERRIDE_KEYS=['support','mode','methods','video','tryFirst','lessonGoal','flow'];
 const REASONS=new Set(['lowAccuracy','manyHints','accurateButHints','independent','engagement','taskLoad','other']);
@@ -386,7 +395,7 @@ if(source!=='ai')text=fallback;const ms=Date.now()-started,id=await logAi(env,{t
 return {id,text,source,error,model:m?.model||'',provider:m?.provider||'',promptVersion,ms};}
 async function summarize(env,ws,subject,sessions,act){const rules=await studyRules(env),facts=summaryFacts(sessions,act),limit=rules.summaryChars,p=summaryPrompt(facts,limit);
 return {facts,...await aiGateway(env,{task:'summary',ws,subject,input:facts,promptVersion:SUMMARY_PROMPT_VERSION,system:p.system,user:p.user,maxTokens:900,check:t=>summaryCheck(t,facts,limit),fallback:summaryFallback(facts)})};}
-async function eventsBySession(env,ws,student,upTo){const {results}=await env.DB.prepare('SELECT session_no AS no, data_json FROM research_events WHERE workspace = ? AND student = ? AND session_no IS NOT NULL AND session_no <= ? ORDER BY session_no, time, rid').bind(ws,student,upTo).all();
+async function eventsBySession(env,ws,student,upTo){const {results}=await env.DB.prepare('SELECT session_no AS no, data_json FROM research_events WHERE workspace = ? AND student = ? AND session_no IS NOT NULL AND session_no <= ? AND session_no NOT IN (SELECT no FROM research_sessions WHERE workspace = ? AND student = ? AND invalid_at IS NOT NULL) ORDER BY session_no, time, rid').bind(ws,student,upTo,ws,student).all();
 const map=new Map();for(const r of results){let d;try{d=JSON.parse(r.data_json);}catch{continue;}if(!map.has(r.no))map.set(r.no,[]);map.get(r.no).push(d);}return [...map.entries()].map(([no,rows])=>({no,rows}));}
 
 // 教師端：真實學生的跨節摘要（只讀到老師指定、已經看到的節次）
@@ -429,8 +438,10 @@ if(type==='changes'){const {results}=await env.DB.prepare('SELECT workspace, stu
 if(type==='tutor')return json({rows:await tutorExport(env)});
 // 研究紀錄依代號、階段、節次篩選匯出（所有工作區）
 if(type==='events'){const q=new URL(request.url).searchParams,student=q.get('student')||'',phase=q.get('phase')||'',from=Number(q.get('from')||1),to=Number(q.get('to')||9999);if(student&&!STUDENT_CODE.test(student)||phase&&!PHASES.student.includes(phase)&&!PHASES.teacher.includes(phase)||!whole(from,9999)||!whole(to,9999))return json({error:'invalid_input'},400);
-const {results}=await env.DB.prepare(`SELECT data_json FROM research_events WHERE student != '' ${student?'AND student = ?':''} AND (session_no IS NULL OR session_no BETWEEN ? AND ?) ORDER BY student, session_no, time, rid LIMIT 50000`).bind(...(student?[student]:[]),from,to).all();
-return json({rows:results.map(r=>{try{return JSON.parse(r.data_json);}catch{return null;}}).filter(r=>r&&(!phase||r.phase===phase))});}
+const {results}=await env.DB.prepare(`SELECT e.data_json, s.invalid_reason AS invalid FROM research_events e LEFT JOIN research_sessions s ON s.workspace = e.workspace AND s.student = e.student AND s.no = e.session_no AND s.invalid_at IS NOT NULL WHERE e.student != '' ${student?'AND e.student = ?':''} AND (e.session_no IS NULL OR e.session_no BETWEEN ? AND ?) ORDER BY e.student, e.session_no, e.time, e.rid LIMIT 50000`).bind(...(student?[student]:[]),from,to).all();
+return json({rows:results.map(r=>{try{const d=JSON.parse(r.data_json);if(r.invalid)d.sessionInvalid=r.invalid;return d;}catch{return null;}}).filter(r=>r&&(!phase||r.phase===phase))});}
+// 第 29 版：每一節的開始時間與是否作廢
+if(type==='sessions'){const {results}=await env.DB.prepare('SELECT workspace, student, no AS sessionNo, started_at AS startedAt, class_code AS classCode, device, invalid_reason AS invalidReason, invalid_note AS invalidNote, invalid_at AS invalidAt, invalid_by AS invalidBy FROM research_sessions ORDER BY workspace, student, no LIMIT 50000').all();return json({rows:results});}
 if(type==='probes'||type==='probeItems')return json({rows:await probeExport(env,type)});
 if(type==='decisions'){const {results}=await env.DB.prepare('SELECT d.assignment_id AS assignment, a.teacher, a.probe, a.phase, a.set_id AS setId, d.scenario_id AS scenario, d.session_no AS sessionNo, d.decision, d.changes_json AS changes, d.direction, d.expected, d.reason, d.note, d.ai_on AS aiOn, d.ai_used AS aiUsed, d.raw_viewed AS rawViewed, d.shown_at AS shownAt, d.saved_at AS savedAt, d.active_ms AS activeMs, d.total_ms AS totalMs, d.ai_wait_ms AS aiWaitMs FROM scenario_decisions d JOIN scenario_assignments a ON a.id = d.assignment_id ORDER BY a.teacher, d.assignment_id, d.scenario_id, d.session_no').all();return json({rows:results});}
 return json({error:'invalid_input'},400);}catch{return json({error:'research_storage_unavailable'},503);}}

@@ -122,7 +122,7 @@ html.contrast .map-card{border-color:#000}html.contrast .ac-outline{stroke:#000}
 .ln-hit{fill:transparent;stroke:#9fb3d1;stroke-dasharray:3 3;cursor:pointer}.ln-hit.on{fill:#fff3b0;fill-opacity:.6;stroke:#c2410c;stroke-dasharray:none}
 .ln-hit:hover,.ln-hit:focus{fill:#e8f1ff;outline:none}
 .ln-hit-pt{fill:transparent;cursor:pointer}.ln-hit-pt:hover,.ln-hit-pt:focus{fill:#1f6fd1;fill-opacity:.15;outline:none}
-.ln-cell{fill:#fff;fill-opacity:.01;stroke:#b8c7de;stroke-width:1;cursor:pointer}.ln-cell:hover,.ln-cell:focus{fill:#ffe8a3;fill-opacity:.9;stroke:#c2410c;outline:none}
+.ln-cell{fill:#fff;fill-opacity:.01;stroke:#b8c7de;stroke-width:1;cursor:pointer}.ln-cell-hit{fill:#fff;fill-opacity:.01;cursor:pointer}.ln-cell-g{outline:none}.ln-cell-g:hover .ln-cell,.ln-cell-g:focus .ln-cell{fill:#ffe8a3;fill-opacity:.9;stroke:#c2410c}
 .ln-mine{pointer-events:none}.ln-mine.on{stroke:#c2410c;stroke-width:3}
 .ln-guide{stroke:#c2410c;stroke-width:2.5;stroke-dasharray:7 5;fill:none}
 .ln-line{pointer-events:none}.ln-legend-t{font-size:14px;fill:#1d2b44}

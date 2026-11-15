@@ -186,7 +186,7 @@
     el.innerHTML = `<p class="who"><b>📋 ${esc(who.student)}</b>${who.sessionNo ? `<span class="session-no">第 ${who.sessionNo} 節</span>` : ''}<span>${esc(who.device)}・${esc(who.group)}${who.camera ? '・📷 可用鏡頭' : ''}</span></p>
       <div class="quick">${QUICK.map(([k, t]) => `<button type="button" data-quick="${k}">${t}</button>`).join('')}</div>
       ${['B', 'BC'].includes(who.phase) ? `<div class="teacher-prompts"><span id="researchCue" class="cue" hidden>⏱ 學生停了一陣子</span><span>教師提示：</span>${TEACHER_PROMPTS.map(([k, t]) => `<button type="button" data-tp="${k}">${t}</button>`).join('')}</div>` : ''}
-      <div class="ops"><span id="researchCount" class="count"></span>${serverOn() ? '<button type="button" id="researchProbe">🧪 小測驗</button>' : ''}<button type="button" id="researchFlush">立即上傳</button><button type="button" id="researchNext">換學生</button><button type="button" id="researchClass">📝 這節課結束</button></div>`;
+      <div class="ops"><span id="researchCount" class="count"></span>${serverOn() ? '<button type="button" id="researchProbe">🧪 小測驗</button>' : ''}${serverOn() && who.sessionNo ? '<button type="button" id="researchInvalid">🚫 本節作廢</button>' : ''}<button type="button" id="researchFlush">立即上傳</button><button type="button" id="researchNext">換學生</button><button type="button" id="researchClass">📝 這節課結束</button></div>`;
     el.querySelectorAll('[data-quick]').forEach(b => b.onclick = () => {
       const k = b.dataset.quick, t = QUICK.find(x => x[0] === k)[1];
       api.log('教師即時紀錄', { activity: api.step(), tag: k, tagText: t.replace(/^\S+\s/, '') });
@@ -204,6 +204,7 @@
     });
     // 第 26 版：每節開始時的探試（另一頁，沒有提示與小方；做完回到這裡）
     if ($('researchProbe')) $('researchProbe').onclick = async () => { await flush(); location.href = 'probe.html'; };
+    if ($('researchInvalid')) $('researchInvalid').onclick = () => invalidSession();
     $('researchNext').onclick = () => endStudent();
     $('researchClass').onclick = () => classEnd();
     paintCount();
@@ -217,6 +218,32 @@
     d.querySelectorAll('[data-pick]').forEach(g => g.querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
       state[g.dataset.pick] = b.dataset.v; g.querySelectorAll('[data-v]').forEach(x => x.setAttribute('aria-checked', String(x === b)));
     }));
+  }
+
+  // 第 29 版：本節作廢（設備當機、學生身體不適等）。原始紀錄保留，但不算進應有方向、支持階段和跨節摘要；不能復原
+  const INVALID_REASONS = [['device', '設備或網路問題'], ['unwell', '學生身體不適或情緒'], ['interrupted', '課程中斷'], ['other', '其他']];
+  function invalidSession() {
+    const st = {}, no = who.sessionNo;
+    const d = dialog('researchInvalidDlg', `<h2>🚫 本節作廢（${esc(who.student)} 第 ${no} 節）</h2>
+      <p>作廢後，這一節的紀錄照樣保留，但不算進應有方向、支持階段和跨節摘要。作廢以後不能復原。</p>
+      <h3>原因</h3>${pickRow('reason', INVALID_REASONS, '')}
+      <label for="researchInvalidNote">補充（60 字以內，請勿寫學生姓名）</label><input id="researchInvalidNote" maxlength="60">
+      <p id="researchInvalidMsg" class="msg" role="status"></p>
+      <div class="actions"><button type="button" id="researchInvalidSave" class="primary">確定作廢</button><button type="button" id="researchInvalidBack">取消</button></div>`);
+    bindPicks(d, st);
+    $('researchInvalidBack').onclick = () => d.close();
+    $('researchInvalidSave').onclick = async () => {
+      const msg = $('researchInvalidMsg'), note = $('researchInvalidNote').value.replace(/[<>]/g, '').trim();
+      if (!st.reason) { msg.textContent = '請先選原因。'; return; }
+      let res; try { res = await fetch('/api/sessions/invalidate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ student: who.student, no, reason: st.reason, note }), cache: 'no-store' }); } catch { res = null; }
+      const err = res && !res.ok ? (await res.json().catch(() => ({}))).error : '';
+      if (!res) { msg.textContent = '連不上網站，請稍後再試。'; return; }
+      if (err === 'teacher_required') { msg.textContent = '用班級代碼登入的平板不能作廢，請用教師代號登入，或到教師備課頁處理。'; return; }
+      if (err === 'already_invalid') { msg.textContent = '這一節已經作廢過了。'; return; }
+      if (!res.ok) { msg.textContent = '沒有作廢成功，請稍後再試。'; return; }
+      api.log('本節作廢', { reason: st.reason, note: INVALID_REASONS.find(x => x[0] === st.reason)[1], by: '老師' });
+      d.close(); toast(`已把第 ${no} 節作廢。`);
+    };
   }
 
   // ---------- 第 26 版：節次與學生個別設定（存在網站資料庫） ----------

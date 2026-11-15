@@ -123,7 +123,7 @@
     const box = $('exportSection');
     box.innerHTML = `<h2>⬇ 研究匯出（CSV）</h2><p class="subtle">文字欄位開頭是 = + - @ 時會加上 '，避免 Excel 當成公式。只有代號，沒有姓名。</p>
       <div class="actions"><button type="button" id="expDecisions">情境探試：每節決策</button><button type="button" id="expScenario">情境探試：每個情境的反應延遲與決策時間</button><button type="button" id="expProbes">探試：每次施測</button><button type="button" id="expProbeItems">探試：每題每步</button><button type="button" id="expTutor">小老師小方：支持階段變更</button><button type="button" id="expAi">AI 輸出全文</button><button type="button" id="expChanges">真實學生的設定變更（所有教師）</button></div><h3>研究紀錄篩選匯出</h3><div class="study-grid"><label>學生代號（空白＝全部）<input id="evStudent" placeholder="T01-S01" maxlength="7"></label><label>研究階段<select id="evPhase"><option value="">全部</option>${['A', 'B', 'BC', 'maintain', 'baseline', 'intervention', 'followup'].map(p => `<option value="${p}">${S.PHASE[p]}</option>`).join('')}</select></label><label>從第幾節<input id="evFrom" type="number" min="1" value="1"></label><label>到第幾節<input id="evTo" type="number" min="1" placeholder="最後"></label></div>
-      <button type="button" id="expEvents">匯出篩選後的研究紀錄</button><p id="expMsg" class="msg" role="status"></p>`;
+      <button type="button" id="expSessions">每一節（含作廢）</button> <button type="button" id="expEvents">匯出篩選後的研究紀錄</button><p id="expMsg" class="msg" role="status"></p>`;
     const get = async type => { try { return (await S.api('/api/study/export?type=' + type)).rows; } catch { $('expMsg').textContent = '匯出失敗。'; return null; } };
     const consistent = r => ['increase', 'decrease', 'advance', 'maintain'].includes(r.expected) ? (r.direction === r.expected ? '是' : '否') : '不計';
     $('expDecisions').onclick = async () => {
@@ -168,6 +168,12 @@
       const keys = [...new Set(rows.flatMap(e => Object.keys(e)))], obs = window.areaObs;
       S.download(`research_events_${today()}.csv`, S.toCsv([[...keys, 'obsLabel', 'obsCandidate'], ...rows.map(e => { let o = ''; try { o = JSON.parse(e.detail || '{}').obs || ''; } catch { /* 略過 */ } return [...keys.map(k => typeof e[k] === 'object' ? JSON.stringify(e[k]) : e[k]), o && obs ? obs.label(o) : '', o && obs ? obs.candidate(o) : '']; })]));
       $('expMsg').textContent = `已匯出 ${rows.length} 筆。`;
+    };
+    // 第 29 版：每一節的開始時間與作廢紀錄（作廢的節次不算進應有方向、支持階段和摘要，原始紀錄仍在研究紀錄裡，欄位 sessionInvalid）
+    const INVALID = { device: '設備或網路問題', unwell: '學生身體不適或情緒', interrupted: '課程中斷', other: '其他' };
+    $('expSessions').onclick = async () => {
+      const rows = await get('sessions'); if (!rows) return;
+      S.download(`sessions_${today()}.csv`, S.toCsv([['工作區', '學生', '節次', '開始', '班級代碼', '裝置', '作廢', '作廢原因', '補充', '作廢時間', '操作者'], ...rows.map(r => [r.workspace, r.student, r.sessionNo, new Date(r.startedAt).toLocaleString('zh-TW'), r.classCode, r.device, r.invalidAt ? '是' : '否', INVALID[r.invalidReason] || '', r.invalidNote, r.invalidAt ? new Date(r.invalidAt).toLocaleString('zh-TW') : '', r.invalidBy])]));
     };
     $('expAi').onclick = async () => {
       const rows = await get('ai'); if (!rows) return;

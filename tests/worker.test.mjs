@@ -415,6 +415,20 @@ test('第 26 版第二階段：研究階段、標準化情境探試、應有方�
   const dir=await call('/api/study/direction?student=T07-S01&act=rectangle',{user:owner});
   assert.deepEqual(dir.data.timeline.map(t=>[t.no,t.acc,t.expected]),[[1,67,'insufficient'],[2,67,'insufficient'],[3,100,'maintain'],[4,100,'advance']]);
   assert.equal((await call('/api/study/direction?student=T07-S01&act=rectangle',{cookie:t7})).status,403);
+  // 第 29 版：本節作廢。原始紀錄保留，但應有方向不算這一節
+  const inv=body=>call('/api/sessions/invalidate',{method:'POST',cookie:t7,body});
+  for(let i=1;i<=4;i++)assert.equal((await call('/api/sessions/start',{method:'POST',cookie:t7,body:{student:'T07-S01'}})).data.no,i);
+  assert.equal((await inv({student:'T07-S01',no:3,reason:'亂寫'})).status,400);
+  assert.equal((await inv({student:'T07-S01',no:3,reason:'device',note:'<b>'})).status,400);
+  assert.equal((await inv({student:'T07-S01',no:9,reason:'device'})).status,404);
+  assert.equal((await inv({student:'T08-S01',no:1,reason:'device'})).status,403,'不能作廢別班的學生');
+  assert.equal((await inv({student:'T07-S01',no:3,reason:'device',note:'平板當機'})).status,200);
+  assert.equal((await inv({student:'T07-S01',no:3,reason:'device'})).status,409,'不能重複作廢');
+  assert.deepEqual((await call('/api/study/direction?student=T07-S01&act=rectangle',{user:owner})).data.timeline.map(t=>t.no),[1,2,4]);
+  const sess=(await call('/api/study/export?type=sessions',{user:owner})).data.rows.filter(r=>r.student==='T07-S01');
+  assert.deepEqual(sess.map(r=>[r.sessionNo,r.invalidReason,r.invalidNote]),[[1,'',''],[2,'',''],[3,'device','平板當機'],[4,'','']]);
+  const evs=(await call('/api/study/export?type=events&student=T07-S01&from=3&to=3',{user:owner})).data.rows;
+  assert.ok(evs.length>0&&evs.every(e=>e.sessionInvalid==='device'),'匯出的研究紀錄標上作廢');
   // 主持人工作區（main）存的紀錄也查得到
   for(const x of s3.sessions.slice(0,3))for(let i=0;i<x.events.length;i+=40)assert.equal((await call('/api/records',{method:'POST',user:owner,body:{rows:x.events.slice(i,i+40).map((e,j)=>({...e,rid:`m3-${x.no}-${i+j}`,student:'T09-S01',sessionNo:x.no}))}})).status,200);
   const dm=(await call('/api/study/direction?student=T09-S01&act=rectangle',{user:owner})).data;

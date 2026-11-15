@@ -112,7 +112,8 @@
       const P = o.plot, s = P.s || 0, pts = P.pts || {};
       if (P.cells) for (let i = 0; i < n; i++) for (let k = 0; k <= rows; k++) {
         const v = p.min + k * p.step;
-        g += `<circle cx="${X(i)}" cy="${Y(v)}" r="${Math.min(9, rowH / 2 - 1)}" class="ln-cell" data-cell="${i}:${v}" role="button" tabindex="0" aria-label="${esc(p.full[i])}，${v}"/>`;
+        // 第 29 版：整格都是觸控範圍（寬一欄、高一列），點在附近就對到這個交叉點，平板上比較不會點偏
+        g += `<g class="ln-cell-g" data-cell="${i}:${v}" role="button" tabindex="0" aria-label="${esc(p.full[i])}，${v}"><rect x="${r1(X(i) - colW / 2)}" y="${r1(Y(v) - rowH / 2)}" width="${r1(colW)}" height="${r1(rowH)}" class="ln-cell-hit"/><circle cx="${X(i)}" cy="${Y(v)}" r="${Math.min(9, rowH / 2 - 1)}" class="ln-cell"/></g>`;
       }
       const path = P.path || [];
       for (let j = 1; j < path.length; j++) { const a = path[j - 1], b = path[j]; if (pts[a] != null && pts[b] != null) g += `<path d="M${X(a)} ${Y(pts[a])}L${X(b)} ${Y(pts[b])}" stroke="${COLOR[s]}" stroke-width="3.5" fill="none" class="ln-line"/>`; }
