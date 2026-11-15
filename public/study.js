@@ -13,7 +13,7 @@
     try { const me = await S.api('/api/session'); if (!me.authenticated) { location.href = '/'; return; } if (!me.teacher || me.test) { $('status').textContent = '這一頁只給研究人員（主持人帳號）使用。'; return; } }
     catch { $('status').textContent = '讀不到登入狀態。'; return; }
     $('status').textContent = ''; $('body').hidden = false;
-    drawPhases(); drawRules(); drawScenarios(); drawProbes(); drawDirection(); drawAi(); drawExport();
+    drawPhases(); drawLock(); drawRules(); drawScenarios(); drawProbes(); drawDirection(); drawAi(); drawExport();
   }
 
   // ---------- 研究階段：第二年依教師、第三年依學生，每次切換都留時間與操作者 ----------
@@ -39,13 +39,39 @@
   }
 
   // ---------- 判準（正式實驗前依前導資料校準） ----------
+  // ---------- 第 29 版：實驗參數鎖定 ----------
+  async function drawLock(note = '') {
+    const box = $('lockSection');
+    let data; try { data = await S.api('/api/study/lock'); } catch { box.textContent = '讀不到鎖定狀態。'; return; }
+    const { lock, current } = data, snap = lock.snapshot || {}, pv = o => Object.entries(o || {}).map(([k, v]) => `${k}：${v}`).join('、');
+    const same = lock.locked && snap.provider === current.provider && snap.model === current.model && JSON.stringify(snap.promptVersions) === JSON.stringify(current.promptVersions);
+    const when = t => new Date(t).toLocaleString('zh-TW');
+    box.innerHTML = `<h2>🔒 實驗參數鎖定</h2><p class="subtle">前導試做結束、正式實驗開始時按「鎖定」：把 AI 模型、提示詞版本、判準門檻與字數上限存成快照。鎖定期間判準不能改；網站的 AI 模型或提示詞和快照不一樣時，AI 一律改用固定內容，避免不同的工具混進正式資料。</p>
+      <p><b>${lock.locked ? `目前：已鎖定（${esc(lock.id)}，${when(lock.at)}）` : '目前：沒有鎖定'}</b></p>
+      ${lock.locked ? `<p class="${same ? '' : 'warn'}">${same ? '✓ 網站現在的 AI 和快照一樣。' : '⚠️ 網站現在的 AI 和快照不一樣，AI 會改用固定內容。'}</p>
+        <table class="study-table"><tr><th></th><th>快照</th><th>網站現在</th></tr><tr><td>AI</td><td>${esc(snap.provider)}／${esc(snap.model)}</td><td>${esc(current.provider)}／${esc(current.model)}</td></tr>
+        <tr><td>提示詞版本</td><td>${esc(pv(snap.promptVersions))}</td><td>${esc(pv(current.promptVersions))}</td></tr><tr><td>網站版本</td><td>${esc(snap.siteVersion)}</td><td>${esc(current.siteVersion)}</td></tr></table>`
+        : `<p>網站現在：AI ${esc(current.provider || '未設定')}／${esc(current.model || '')}；提示詞 ${esc(pv(current.promptVersions))}；網站 ${esc(current.siteVersion)}</p>`}
+      ${lock.locked ? `<label>解鎖理由（必填，100 字以內）<input id="unlockReason" maxlength="100"></label> <button type="button" id="lockUnlock">解鎖</button>`
+        : `<label>鎖定說明（可不填）<input id="lockReason" maxlength="100"></label> <button type="button" id="lockGo" class="primary">鎖定</button> <span id="lockConfirm" hidden>確定要鎖定嗎？<button type="button" id="lockYes">確定鎖定</button><button type="button" id="lockNo">取消</button></span>`}
+      <p id="lockMsg" class="msg" role="status">${esc(note)}</p>
+      ${(lock.history || []).length ? `<details><summary>鎖定歷程</summary><ul>${lock.history.map(h => `<li>${when(h.at)}　${h.action === 'lock' ? '鎖定' : '解鎖'} ${esc(h.id || '')}　${esc(h.by || '')}　${esc(h.reason || '')}</li>`).join('')}</ul></details>` : ''}`;
+    const send = async body => { try { await S.api('/api/study/lock', body); return true; } catch (e) { $('lockMsg').textContent = e.message === 'reason_required' ? '解鎖要寫理由。' : e.message === 'ai_unavailable' ? '網站還沒有設定 AI，不能鎖定。' : '沒有成功，請重新整理再試。'; return false; } };
+    if ($('lockGo')) {
+      $('lockGo').onclick = () => { $('lockConfirm').hidden = false; };
+      $('lockNo').onclick = () => { $('lockConfirm').hidden = true; };
+      $('lockYes').onclick = async () => { if (await send({ action: 'lock', reason: $('lockReason').value.replace(/[<>]/g, '') })) { drawLock('✓ 已鎖定'); drawRules(); } };
+    }
+    if ($('lockUnlock')) $('lockUnlock').onclick = async () => { const reason = $('unlockReason').value.replace(/[<>]/g, '').trim(); if (!reason) { $('lockMsg').textContent = '解鎖要寫理由。'; return; } if (await send({ action: 'unlock', reason })) { drawLock('✓ 已解鎖'); drawRules(); } };
+  }
+
   async function drawRules() {
     const box = $('rulesSection');
     let data; try { data = await S.api('/api/study/config'); } catch { box.textContent = '讀不到判準。'; return; }
     box.innerHTML = `<h2>📐 應有方向的判準</h2><p class="subtle">計算同一活動、同一支持設定下的有效節次。支持設定變更後，從變更後的第一節重新算。預設值依計畫書。</p>
       <div class="study-grid">${Object.keys(RULE_TEXT).map(k => `<label>${RULE_TEXT[k]}<input type="number" data-rule="${k}" value="${data.rules[k]}"></label>`).join('')}</div>
       <button type="button" id="rulesSave">儲存判準</button> <button type="button" id="rulesReset">恢復計畫書預設</button><p id="rulesMsg" class="msg" role="status"></p>`;
-    const save = async rules => { try { await S.api('/api/study/config', { rules }); $('rulesMsg').textContent = '✓ 已儲存'; } catch { $('rulesMsg').textContent = '數值不合理（例如低標高於高標），沒有儲存。'; } };
+    const save = async rules => { try { await S.api('/api/study/config', { rules }); $('rulesMsg').textContent = '✓ 已儲存'; } catch (e) { $('rulesMsg').textContent = e.message === 'experiment_locked' ? '實驗參數已經鎖定，判準不能改。要改請先在上面解鎖（要寫理由）。' : '數值不合理（例如低標高於高標），沒有儲存。'; } };
     $('rulesSave').onclick = () => save(Object.fromEntries([...box.querySelectorAll('[data-rule]')].map(i => [i.dataset.rule, Number(i.value)])));
     $('rulesReset').onclick = async () => { await save(data.defaults); drawRules(); };
   }

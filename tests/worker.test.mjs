@@ -635,3 +635,31 @@ test('第 28 版：折線圖讀圖、畫圖兩份題組依 variant 驗證題型�
   assert.equal(st(br.id,'val').finalCorrect,true);assert.equal(r(br.id).correct,false);
   assert.equal(r(ch.id).correct,true);assert.equal(st(ch.id,'diff').selfCorrected,true);
 });
+
+test('第 29 版：實驗參數鎖定（判準不能改、AI 工具和快照不同就用固定內容、解鎖要理由）',async()=>{
+  const login=async teacher=>(await call('/api/test-login',{method:'POST',body:{username:'test',password:'test-pass',teacher}})).headers.get('set-cookie').split(';')[0];
+  const t11=await login('T11');
+  assert.equal((await call('/api/study/lock',{cookie:t11})).status,403,'只有主持人');
+  const g=(await call('/api/study/lock',{user:owner})).data;assert.equal(g.lock.locked,false);assert.equal(g.current.provider,'deepseek');assert.equal(g.current.siteVersion,'v29');
+  const locked=await call('/api/study/lock',{method:'POST',user:owner,body:{action:'lock',reason:'前導試做結束'}});
+  assert.equal(locked.status,200);assert.equal(locked.data.lock.snapshot.model,'deepseek-flash');assert.equal(locked.data.lock.snapshot.rules.lowAcc,60);assert.deepEqual(Object.keys(locked.data.lock.snapshot.promptVersions),['hint','summary','tutor']);
+  assert.equal((await call('/api/study/lock',{method:'POST',user:owner,body:{action:'lock'}})).status,409);
+  assert.equal((await call('/api/study/config',{method:'POST',user:owner,body:{rules:{lowAcc:50}}})).data.error,'experiment_locked');
+  // 模型換了：AI 不呼叫，直接用固定內容並記下原因
+  const originalFetch=globalThis.fetch;let called=0;globalThis.fetch=async()=>{called++;return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({message:'再看一次圖。'})}}]}));};
+  const saved=env.DEEPSEEK_MODEL;env.DEEPSEEK_MODEL='deepseek-new';
+  try{
+    await call('/api/study/phases',{method:'POST',user:owner,body:{kind:'student',participant:'T11-S01',phase:'BC'}});
+    const line=await call('/api/tutor/line',{method:'POST',cookie:t11,body:{event:'wrong',stage:'guided',act:'rectangle',stepTitle:'數一數'}});
+    assert.equal(line.data.source,'fallback');assert.equal(called,0,'模型和快照不同，不呼叫 AI');
+    const hint=await call('/api/ai-support',{method:'POST',cookie:t11,body:{kind:'hint',shape:'rectangle',cycle:1,step:0,method:'mark',goal:'check',hints:0,errors:0,incorrect:false}});
+    assert.equal(hint.status,503);assert.equal(hint.data.error,'locked_model');assert.equal(called,0);
+    const ai=(await call('/api/study/export?type=ai',{user:owner})).data.rows.filter(r=>r.task==='tutor');assert.ok(ai.some(r=>r.error==='locked_model'),'AI 紀錄寫下原因');
+    env.DEEPSEEK_MODEL=saved;
+    assert.equal((await call('/api/tutor/line',{method:'POST',cookie:t11,body:{event:'wrong',stage:'guided',act:'rectangle',stepTitle:'數一數'}})).data.source,'ai','和快照一樣就照常');
+  }finally{globalThis.fetch=originalFetch;if(saved===undefined)delete env.DEEPSEEK_MODEL;else env.DEEPSEEK_MODEL=saved;}
+  assert.equal((await call('/api/study/lock',{method:'POST',user:owner,body:{action:'unlock'}})).data.error,'reason_required');
+  const un=await call('/api/study/lock',{method:'POST',user:owner,body:{action:'unlock',reason:'修正提示詞後重新前導'}});
+  assert.equal(un.data.lock.locked,false);assert.deepEqual(un.data.lock.history.map(h=>h.action),['lock','unlock']);
+  assert.equal((await call('/api/study/config',{method:'POST',user:owner,body:{rules:{lowAcc:60}}})).status,200,'解鎖後可以改');
+});

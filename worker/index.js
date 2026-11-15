@@ -71,7 +71,7 @@ const size=Number(request.headers.get('content-length')||0);if(size>4096)return 
 let body;try{body=await request.json();}catch{return json({error:'invalid_json'},400);}if(!validate(body))return json({error:'invalid_input'},400);if(body.kind==='teacher'&&role==='none')return json({error:'forbidden'},403);
 if(body.kind==='teacher'&&role==='student')return json({error:'forbidden'},403);const selected=server?'deepseek':body.provider||'openai',apiKey=server?(env.LOCAL_LLM_URL?'local':env.TEST_DEEPSEEK_API_KEY):body.apiKey||(selected==='openai'?env.OPENAI_API_KEY:null);if(!apiKey)return json({error:selected==='deepseek'?'key_required':'ai_unavailable'},503);if(server&&!await useTestAiQuota(env,who.ws))return json({error:'test_ai_limit'},429);
 const prompt=instruction(body),local=server&&!!env.LOCAL_LLM_URL,deepseek=selected==='deepseek'||local,model=local?env.LOCAL_LLM_MODEL||'local-model':deepseek?env.DEEPSEEK_MODEL||'deepseek-flash':env.OPENAI_MODEL||'gpt-5-mini';
-if(server){const {apiKey:_k,...input}=body;Object.assign(log,{input,provider:local?'local':selected,model});}
+if(server){const {apiKey:_k,...input}=body;Object.assign(log,{input,provider:local?'local':selected,model});const bad=await lockMismatch(env,'hint',local?'local':selected,model,HINT_PROMPT_VERSION);if(bad)return json({error:bad},503);}
 // DeepSeek 用 OpenAI 相容的 Chat Completions（https://api-docs.deepseek.com）；OpenAI 用 Responses API
 const requestBody=deepseek?{model,messages:[{role:'system',content:prompt.system+'只輸出 JSON 物件，格式為 {"message":"你的訊息"}。'},{role:'user',content:prompt.user}],response_format:{type:'json_object'},...(local?{}:{thinking:{type:'disabled'}}),max_tokens:body.kind==='teacher'?400:200,stream:false}:{model,max_output_tokens:body.kind==='teacher'?280:160,input:[{role:'system',content:prompt.system},{role:'user',content:prompt.user}],text:{format:{type:'json_schema',name:'teaching_support',strict:true,schema}},store:false};
 let provider;try{provider=await fetch(local?env.LOCAL_LLM_URL:deepseek?'https://api.deepseek.com/chat/completions':'https://api.openai.com/v1/responses',{method:'POST',headers:{authorization:`Bearer ${local?env.LOCAL_LLM_KEY||'local':apiKey}`,'content-type':'application/json'},body:JSON.stringify(requestBody),signal:AbortSignal.timeout(12000)});}catch{return json({error:'ai_timeout'},503);}
@@ -169,6 +169,7 @@ if(url.pathname==='/api/student-settings')return request.method==='GET'?studentS
 if(url.pathname==='/api/teacher/summary')return request.method==='POST'?teacherSummary(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/study/me')return request.method==='GET'?studyMe(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/study/config')return request.method==='GET'||request.method==='POST'?studyConfig(request,env,who):json({error:'method'},405);
+if(url.pathname==='/api/study/lock')return studyLockRoute(request,env,who);
 if(url.pathname==='/api/study/phases')return request.method==='GET'||request.method==='POST'?studyPhases(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/study/direction')return request.method==='GET'?studyDirection(request,env,who):json({error:'method'},405);
 if(url.pathname==='/api/study/export')return request.method==='GET'?studyExport(request,env,who):json({error:'method'},405);
@@ -337,6 +338,15 @@ const PHASES={teacher:['baseline','intervention','followup'],student:['A','B','B
 // 判準依計畫書；正式實驗前依前導資料校準，所以都可以在研究管理頁改
 const DEFAULT_RULES={lowAcc:60,highAcc:80,indep:80,minItems:5,upN:3,downN:2,maintainN:3,summaryChars:300,stageUp:80,stageDown:50,stageN:2,handsOnN:5,teacherWait:10,tutorChars:25,showAdvice:1};
 const RULE_LIMITS={lowAcc:[0,100],highAcc:[0,100],indep:[0,100],minItems:[1,20],upN:[1,10],downN:[1,10],maintainN:[1,10],summaryChars:[100,600],stageUp:[0,100],stageDown:[0,100],stageN:[1,10],handsOnN:[1,20],teacherWait:[3,60],tutorChars:[10,40],showAdvice:[0,1]};
+// 第 29 版：實驗參數鎖定。前導試做後主持人按「鎖定」，把模型、提示詞版本、判準門檻與字數上限存成快照。
+// 鎖定期間：判準不能改；AI 的模型或提示詞版本和快照不同時一律改用固定內容（不讓不同的工具混進正式資料）。解鎖要寫理由，留下歷程。
+const SITE_VERSION='v29';
+const PROMPT_VERSIONS=()=>({hint:HINT_PROMPT_VERSION,summary:SUMMARY_PROMPT_VERSION,tutor:TUTOR_PROMPT_VERSION});
+function aiSnapshot(env){const m=modelConfig(env);return {provider:m?.provider||'',model:m?.model||''};}
+async function studyLock(env){try{const row=await env.DB.prepare('SELECT value_json FROM study_config WHERE key = ?').bind('lock').first();return row?JSON.parse(row.value_json):{locked:false,history:[]};}catch{return {locked:false,history:[]};}}
+// 鎖定中而且工具和快照不同：回傳原因（給 AI 紀錄用），一樣就回傳空字串
+async function lockMismatch(env,task,provider,model,promptVersion){if(!env.DB)return '';const l=await studyLock(env);if(!l.locked)return '';const s=l.snapshot||{};
+if(s.provider!==provider||s.model!==model)return 'locked_model';if((s.promptVersions||{})[task]!==promptVersion)return 'locked_prompt';return '';}
 async function studyRules(env){try{const row=await env.DB.prepare('SELECT value_json FROM study_config WHERE key = ?').bind('rules').first();const v=row?JSON.parse(row.value_json):{};return {...DEFAULT_RULES,...v};}catch{return {...DEFAULT_RULES};}}
 async function currentPhase(env,kind,participant){try{const row=await env.DB.prepare('SELECT phase, at FROM participant_phases WHERE kind = ? AND participant = ? ORDER BY at DESC, id DESC LIMIT 1').bind(kind,participant).first();return row?row.phase:'';}catch{return '';}}
 // AI 摘要的開關依教師個別的研究階段：基線期關、介入期與追蹤期開；還沒設定階段時開著（非研究使用）
@@ -390,7 +400,7 @@ let parsed;try{parsed=JSON.parse(String(out.choices?.[0]?.message?.content||''))
 async function logAi(env,row){try{const r=await env.DB.prepare('INSERT INTO ai_outputs (task,workspace,subject,provider,model,prompt_version,input_json,output_text,source,error,ms,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?) RETURNING id').bind(row.task,row.workspace,row.subject||'',row.provider||'',row.model||'',row.promptVersion,JSON.stringify(row.input).slice(0,20000),row.text,row.source,row.error||'',row.ms||0,Date.now()).first();return r?.id??null;}catch{return null;}}
 // check(text) 回傳空字串表示合格；不合格、逾時、沒有額度時改用 fallback（固定內容），並記下原因
 async function aiGateway(env,{task,ws,subject,input,promptVersion,system,user,maxTokens,check,fallback,quota=true}){const m=modelConfig(env),started=Date.now();let text='',source='fallback',error='';
-if(!m)error='ai_unavailable';else if(quota&&!await useTestAiQuota(env,'gw:'+ws))error='ai_limit';else{try{const t=await chatMessage(m,system,user,maxTokens);const bad=check(t);if(bad)error='rejected:'+bad;else{text=t;source='ai';}}catch(e){error=e.message||'ai_error';}}
+const lockBad=m?await lockMismatch(env,task,m.provider,m.model,promptVersion):'';if(!m)error='ai_unavailable';else if(lockBad)error=lockBad;else if(quota&&!await useTestAiQuota(env,'gw:'+ws))error='ai_limit';else{try{const t=await chatMessage(m,system,user,maxTokens);const bad=check(t);if(bad)error='rejected:'+bad;else{text=t;source='ai';}}catch(e){error=e.message||'ai_error';}}
 if(source!=='ai')text=fallback;const ms=Date.now()-started,id=await logAi(env,{task,workspace:ws,subject,provider:m?.provider,model:m?.model,promptVersion,input,text,source,error,ms});
 return {id,text,source,error,model:m?.model||'',provider:m?.provider||'',promptVersion,ms};}
 async function summarize(env,ws,subject,sessions,act){const rules=await studyRules(env),facts=summaryFacts(sessions,act),limit=rules.summaryChars,p=summaryPrompt(facts,limit);
@@ -409,10 +419,20 @@ return json({text:out.text,source:out.source,model:out.model,promptVersion:out.p
 async function studyMe(request,env,who){if(!canManage(who))return notManager(who);const phase=who.role==='test'&&TEACHER_CODE.test(who.ws)&&env.DB?await currentPhase(env,'teacher',who.ws):'';return json({teacher:who.role==='test'?who.ws:'',phase,summary:summaryAllowed(phase)});}
 
 // ---------- 研究人員：判準設定、研究階段、應有方向 ----------
+// 第 29 版：實驗參數鎖定／解鎖（只有主持人）。GET 回傳目前狀態、快照，以及目前網站實際的模型與提示詞版本（看得出有沒有對上）
+async function studyLockRoute(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);
+const current={...aiSnapshot(env),promptVersions:PROMPT_VERSIONS(),siteVersion:SITE_VERSION},lock=await studyLock(env);
+if(request.method==='GET')return json({lock,current});if(request.method!=='POST')return json({error:'method'},405);if(!sameOrigin(request))return json({error:'origin'},403);
+const b=await readJson(request,1024),reason=typeof b?.reason==='string'?b.reason.trim():'';if(!['lock','unlock'].includes(b?.action)||reason.length>100||/[<>]/.test(reason))return json({error:'invalid_input'},400);
+const history=Array.isArray(lock.history)?lock.history.slice(-50):[],at=Date.now(),by=who.ws||who.role;let next;
+if(b.action==='lock'){if(lock.locked)return json({error:'already_locked'},409);if(!current.provider)return json({error:'ai_unavailable'},409);
+const id='L'+at.toString(36);next={locked:true,id,at,by,snapshot:{...current,rules:await studyRules(env)},history:[...history,{action:'lock',id,at,by,reason}]};}
+else{if(!lock.locked)return json({error:'not_locked'},409);if(!reason)return json({error:'reason_required'},400);next={...lock,locked:false,history:[...history,{action:'unlock',id:lock.id,at,by,reason}]};}
+await env.DB.prepare('INSERT INTO study_config (key,value_json,updated_at) VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json,updated_at=excluded.updated_at').bind('lock',JSON.stringify(next),at).run();return json({ok:true,lock:next});}
 async function studyConfig(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);
 if(request.method==='GET')return json({rules:await studyRules(env),defaults:DEFAULT_RULES});if(!sameOrigin(request))return json({error:'origin'},403);
 const b=await readJson(request,1024),r=b?.rules;if(!r||typeof r!=='object'||Array.isArray(r)||Object.keys(r).some(k=>!RULE_LIMITS[k])||Object.entries(r).some(([k,v])=>!Number.isInteger(v)||v<RULE_LIMITS[k][0]||v>RULE_LIMITS[k][1]))return json({error:'invalid_input'},400);
-const rules={...(await studyRules(env)),...r};if(rules.lowAcc>=rules.highAcc||rules.stageDown>=rules.stageUp)return json({error:'invalid_input'},400);
+if((await studyLock(env)).locked)return json({error:'experiment_locked'},409);const rules={...(await studyRules(env)),...r};if(rules.lowAcc>=rules.highAcc||rules.stageDown>=rules.stageUp)return json({error:'invalid_input'},400);
 await env.DB.prepare('INSERT INTO study_config (key,value_json,updated_at) VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json,updated_at=excluded.updated_at').bind('rules',JSON.stringify(rules),Date.now()).run();return json({ok:true,rules});}
 async function studyPhases(request,env,who){if(!isResearcher(who))return notResearcher(who);if(!env.DB)return json({error:'research_storage_unavailable'},503);
 if(request.method==='GET'){const {results}=await env.DB.prepare('SELECT kind, participant, phase, actor, at FROM participant_phases ORDER BY at, id').all();const current={};for(const r of results)current[r.kind+'|'+r.participant]=r.phase;
