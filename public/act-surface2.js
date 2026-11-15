@@ -110,13 +110,15 @@
   // =============== 2-1 打開盒子：展開圖 ===============
   const FACES = ['top', 'bottom', 'front', 'back', 'left', 'right'], FN = S.FACE_NAME;
   const kindsOf = p => new Set([[p.l, p.w], [p.l, p.h], [p.w, p.h]].map(x => x.slice().sort((a, b) => a - b).join('x'))).size;   // 幾種大小（形狀一樣才算同一種）
+  // 第 30 版：展開圖摺合動畫（收在「看盒子慢慢摺起來」裡，需要時再打開）
+  const foldBox = (p, say) => `<details class="fold-wrap"><summary>🎬 看展開圖慢慢摺成盒子</summary>${window.surfaceFig.foldHTML(p, { say })}</details>`;
   A.register('sNet', {
     methods, makeProblem: (level, i) => ({ ...box(level, i), find: pick(['top', 'right', 'bottom', 'back', 'left'], i), prompt: '把盒子打開攤平，就是展開圖。看一看展開圖上的每一個面。' }),
     planFigure: ctx => boxSVG(ctx.problem, {}),
     steps: [
       { title: '打開盒子', ids: ['count'], hints: ['按按鈕，把盒子打開。', '數一數展開圖有幾個長方形。', '展開圖有 6 個面。'], think: '老師把盒子打開，數一數有幾個長方形。', together: '一起做：打開數一數。',
         figure: ctx => ctx.state.open ? netSVG(ctx.problem, { pulse: ctx.hint(0) >= 2 ? FACES : [] }) : boxSVG(ctx.problem, {}),
-        answer: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>${openBtn(ctx)}${ctx.state.open ? ctx.choice('count', '展開圖有幾個面？', [['6', '6 個'], ['4', '4 個'], ['3', '3 個']], true) : ''}`, bind: bindOpen,
+        answer: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>${openBtn(ctx)}${ctx.state.open ? ctx.choice('count', '展開圖有幾個面？', [['6', '6 個'], ['4', '4 個'], ['3', '3 個']], true) + foldBox(ctx.problem) : ''}`, bind: bindOpen,
         check: ctx => !ctx.state.open ? { code: 'open', obs: 'unfinished', msg: '先按「把盒子打開」。' } : !ctx.answers.count ? { code: 'count', msg: '數一數，再選一個答案。' } : ctx.answers.count === '6' ? null : { code: 'count', obs: 'missFace', msg: '再數一次，上面和下面也是面。' },
         solve: ctx => { ctx.state.open = true; ctx.answers.count = '6'; }, say: () => '展開圖有 6 個面。' },
       { title: '找一個面', ids: ['picked'], hints: ['想一想盒子合起來時，這個面在哪裡。', '前面在中間；上面在前面的上方，下面在前面的下方。', '看閃爍的面。'], think: '老師想：前面在中間，其他的面圍在旁邊。', together: '一起找：這個面在展開圖的哪裡？',
@@ -147,7 +149,7 @@
     steps: [
       { title: '數面', ids: ['six'], hints: ['正方體有幾個面？', '上、下、前、後、左、右。', '正方體有 6 個面，展開圖要有 6 個正方形。'], think: '正方體有 6 個面，展開圖要有 6 個正方形。', together: '一起數：正方體有幾個面？',
         figure: () => S.boxSVG({ l: 3, w: 3, h: 3, cube: true }, { colorAll: true }),
-        answer: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>${ctx.choice('six', '正方體的展開圖要有幾個正方形？', [['6', '6 個'], ['5', '5 個'], ['4', '4 個']], true)}`,
+        answer: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>${ctx.choice('six', '正方體的展開圖要有幾個正方形？', [['6', '6 個'], ['5', '5 個'], ['4', '4 個']], true)}${foldBox({ l: 3, w: 3, h: 3, cube: true }, '這個展開圖可以摺成正方體。按「慢慢摺起來」看一看。')}`,
         check: ctx => !ctx.answers.six ? { code: 'six', msg: '先選一個答案。' } : ctx.answers.six === '6' ? null : { code: 'six', obs: 'missFace', msg: '上面和下面也要算。' },
         solve: ctx => { ctx.answers.six = '6'; }, say: () => '要有 6 個正方形。' },
       { title: '選展開圖', ids: ['net'], hints: ['先數一數每個圖有幾個正方形。', '想像摺起來：會不會有兩個面疊在一起？', '中間一排 4 個、上下各 1 個的，能摺成盒子。'], think: '老師先數正方形，再想像摺起來會不會重疊。', together: '一起想：哪一個摺起來剛好是盒子？',
@@ -167,7 +169,7 @@
     steps: [
       { title: '看題目', ids: ['know'], hints: ['對面是盒子合起來時面對面的兩個面。', '在這張展開圖上，對面不會連在一起。', '在這張展開圖上，對面一樣大，中間隔著一個面。'], think: '老師想：在這張展開圖上，對面一樣大，中間隔一個面。', together: '一起想：對面有什麼特別？',
         figure: ctx => netSVG(ctx.problem, {}),
-        answer: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>${ctx.choice('know', '面對面的兩個面怎麼樣？', [['same', '兩個面一樣大'], ['touch', '連在一起'], ['diff', '大小不一樣']])}`,
+        answer: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>${ctx.choice('know', '面對面的兩個面怎麼樣？', [['same', '兩個面一樣大'], ['touch', '連在一起'], ['diff', '大小不一樣']])}${foldBox(ctx.problem, '摺起來看一看：顏色一樣的兩個面，最後會面對面。')}`,
         check: ctx => !ctx.answers.know ? { code: 'know', msg: '先選一個答案。' } : ctx.answers.know === 'same' ? null : { code: 'know', obs: 'wrongChoice', msg: '把盒子合起來想一想：上面和下面有連在一起嗎？' },
         solve: ctx => { ctx.answers.know = 'same'; }, say: () => '對面一樣大，中間隔一個面。' },
       pairStep(1, { labels: false })

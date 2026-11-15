@@ -58,6 +58,43 @@
     return `<svg class="ac-svg" viewBox="0 0 ${r1(cols * u + 12)} ${r1(rows * u + 12)}" role="img" aria-label="盒子的展開圖，有${6 - (o.omit || []).length}個面">${g}</svg>`;
   }
 
+  // 第 30 版：展開圖摺合動畫（十字形展開圖慢慢摺成盒子，也可以倒回去打開）。拉桿可以停在任何一格。
+  function foldHTML(p, o = {}) {
+    const u = Math.max(10, Math.min(26, 300 / (2 * p.l + 2 * p.w), 170 / (p.h + 2 * p.w))), L = p.l * u, H = p.h * u, W = p.w * u;
+    const face = (f, w, h, style, inner = '') => `<div class="ff ff-${f}" style="width:${r1(w)}px;height:${r1(h)}px;${style};background:${COLOR[PAIR[f]]}"><span>${FACE_NAME[f]}</span>${inner}</div>`;
+    const box = face('front', L, H, 'left:0;top:0')
+      + face('top', L, W, `left:0;top:${-r1(W)}px;transform-origin:50% 100%`)
+      + face('bottom', L, W, `left:0;top:${r1(H)}px;transform-origin:50% 0`)
+      + face('left', W, H, `left:${-r1(W)}px;top:0;transform-origin:100% 50%`)
+      + face('right', W, H, `left:${r1(L)}px;top:0;transform-origin:0 50%`, face('back', L, H, `left:${r1(W)}px;top:0;transform-origin:0 50%`));
+    return `<div class="fold" data-fold="0" style="--fw:${r1(L + 2 * W + L)}px;--fh:${r1(H + 2 * W)}px">
+      <div class="fold-scene" aria-hidden="true"><div class="fold-box" style="width:${r1(L)}px;height:${r1(H)}px;margin:${r1(W)}px ${r1(L + W)}px ${r1(W)}px ${r1(W)}px">${box}</div></div>
+      <div class="fold-ctl"><button type="button" data-fold-go="1">📦 慢慢摺起來</button><button type="button" data-fold-go="0">📭 慢慢打開</button>
+      <label>打開<input type="range" min="0" max="100" value="0" data-fold-range aria-label="展開圖摺起來的程度">摺好</label></div>
+      <p class="subtle" role="status" data-fold-say>${esc(o.say || '按「慢慢摺起來」，看展開圖怎麼變回盒子。對面的顏色一樣。')}</p></div>`;
+  }
+  function setFold(root, t) {
+    root.dataset.fold = String(t); const a = r1(90 * t), q = n => `${n}deg`;
+    const T = { top: `rotateX(${q(a)})`, bottom: `rotateX(${q(-a)})`, left: `rotateY(${q(-a)})`, right: `rotateY(${q(a)})`, back: `rotateY(${q(a)})` };
+    for (const [f, tr] of Object.entries(T)) { const el = root.querySelector('.ff-' + f); if (el) el.style.transform = tr; }
+    const box = root.querySelector('.fold-box'); if (box) box.style.transform = `rotateX(${r1(-22 * t)}deg) rotateY(${r1(-28 * t)}deg)`;
+    const r = root.querySelector('[data-fold-range]'); if (r) r.value = String(Math.round(t * 100));
+  }
+  // 事件交給整頁處理，活動不用另外綁定
+  if (!window.__foldBound) {
+    window.__foldBound = true;
+    const reduce = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.addEventListener('click', e => {
+      const b = e.target.closest?.('[data-fold-go]'); if (!b) return; const root = b.closest('.fold'), to = Number(b.dataset.foldGo), from = Number(root.dataset.fold) || 0;
+      cancelAnimationFrame(root._raf); if (reduce()) return setFold(root, to);
+      const start = performance.now(), dur = 3500 * Math.abs(to - from) || 1;
+      const step = now => { const k = Math.min(1, (now - start) / dur); setFold(root, from + (to - from) * k); if (k < 1) root._raf = requestAnimationFrame(step); };
+      root._raf = requestAnimationFrame(step);
+      root.querySelector('[data-fold-say]').textContent = to ? '摺起來了：上面和下面、前面和後面、左面和右面，都是對面。' : '打開了：攤平就是展開圖，6 個面都看得到。';
+    });
+    document.addEventListener('input', e => { const r = e.target.closest?.('[data-fold-range]'); if (!r) return; const root = r.closest('.fold'); cancelAnimationFrame(root._raf); setFold(root, Number(r.value) / 100); });
+  }
+
   // 錯誤的觀察代碼（表面積）：先看答案剛好等於哪一個常見的錯誤數
   function surfObs(v, answer, p, faces) {
     if (v === null || v === undefined || Number.isNaN(v)) return 'blank';
@@ -220,5 +257,5 @@
   A.register('cuboid', core(false));
   A.register('cube', core(true));
 
-  window.surfaceFig = { boxSVG, netSVG, areas, total, surfObs, PAIR, FACE_NAME, COLOR };
+  window.surfaceFig = { boxSVG, netSVG, foldHTML, setFold, areas, total, surfObs, PAIR, FACE_NAME, COLOR };
 })();

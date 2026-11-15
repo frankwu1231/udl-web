@@ -7,7 +7,7 @@
 (() => {
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const VERSION = 'v29';
+  const VERSION = 'v30';
   const WHO_KEY = 'area-research-who-v22', QUEUE_KEY = 'area-research-queue-v22', NAMES_KEY = 'area-research-names-v22', SENT_KEY = 'area-research-sent-v22', LAST_KEY = 'area-research-last-v22';
   const MAX_ROWS = 40;            // 一次最多傳幾筆
   const MAX_BYTES = 30000;        // 一次最多傳多少位元組（離頁時的 keepalive 上限是 64 KB）
@@ -152,7 +152,7 @@
   function summary(r) {
     const all = api.records().filter(x => x.cycle === r.cycle && (x.actId || x.shapeKey) === (r.actId || r.shapeKey) && x.sessionId === who.sessionId);
     const count = (ev, actions) => all.filter(x => x.event === ev && (!actions || actions.includes(x.action || x.tag))).length;
-    enqueue('每題摘要', { activity: r.shape || '', actId: r.actId || '', cycle: r.cycle, mode: r.mode || '', studyPhase: r.studyPhase || '', secs: r.secs ?? '', errors: r.errors ?? '', hints: r.hints ?? '', firstTry: r.firstTry ?? '', steps: r.steps ?? '',
+    enqueue('每題摘要', { activity: r.shape || '', actId: r.actId || '', cycle: r.cycle, mode: r.mode || '', studyPhase: r.studyPhase || '', secs: r.secs ?? '', errors: r.errors ?? '', hints: r.hints ?? '', firstTry: r.firstTry ?? '', steps: r.steps ?? '', firstActionSecs: r.firstActionSecs ?? '', deadClicks: r.deadClicks ?? '',
       goal: r.goal || '', goalMet: r.goalMet === undefined ? '' : r.goalMet ? '是' : '否', selfMet: r.selfMet || '', confidence: r.confidence || '', badges: (r.badges || []).join('、'),
       buddyOffers: count('小幫手', ['主動問要不要幫忙', '同一步做很久']), buddyAccepted: count('小幫手', ['接受提示', '小幫手：接受']), buddyStuck: count('小幫手', ['主動打開我卡住了', '連續答錯，打開我卡住了']),
       attentionReminds: count('小幫手', ['專心提醒']), teacherHelp: count('教師即時紀錄', ['help']), buddyWrong: count('教師即時紀錄', ['wrongBuddy']), stuckPressed: count('我卡住了') });
@@ -161,7 +161,7 @@
   function settingsRow() {
     const s = api.settings(), act = api.activity();
     if (!act.id) return;
-    const pick = ['mode', 'support', 'flow', 'difficulty', 'buddy', 'buddyWait', 'buddyVoice', 'attention', 'attentionSec', 'zhuyin', 'textSize', 'contrast', 'video', 'ai', 'fading', 'selfAsk', 'rest', 'simple', 'simpleShow', 'tour'];
+    const pick = ['mode', 'support', 'flow', 'difficulty', 'buddy', 'buddyWait', 'buddyVoice', 'attention', 'attentionSec', 'zhuyin', 'textSize', 'contrast', 'video', 'ai', 'fading', 'selfAsk', 'rest', 'simple', 'simpleShow', 'tour', 'guide', 'practice'];
     const snap = Object.fromEntries(pick.map(k => [k, s[k]])), key = act.id + JSON.stringify(snap);
     if (key === lastActivity) return; lastActivity = key;
     enqueue('教師設定', { activity: act.name, actId: act.id, ...Object.fromEntries(pick.map(k => [k, typeof snap[k] === 'boolean' ? (snap[k] ? '開' : '關') : snap[k] ?? ''])), cameraConsent: who.camera ? '是' : '否' });
@@ -179,14 +179,20 @@
     el.textContent = note || (n ? `還有 ${n} 筆沒上傳` : '✓ 都上傳了');
     el.classList.toggle('warn', !!note || n > 20);
   }
+  // 第 30 版：上課中只留常用的（老師幫忙了、換學生、這節課結束），其他收進「更多」
+  const MORE_KEY = 'research-more-v30';
+  const moreOpen = () => { try { return sessionStorage.getItem(MORE_KEY) === '1'; } catch { return false; } };
   function bar() {
     let el = $('researchBar');
     if (!on()) { el?.remove(); return; }
     if (!el) { el = document.createElement('section'); el.id = 'researchBar'; el.className = 'research-bar'; el.setAttribute('aria-label', '現場試用紀錄（老師用）'); (document.querySelector('nav.aids') || document.body.firstChild).after(el); }
     el.innerHTML = `<p class="who"><b>📋 ${esc(who.student)}</b>${who.sessionNo ? `<span class="session-no">第 ${who.sessionNo} 節</span>` : ''}<span>${esc(who.device)}・${esc(who.group)}${who.camera ? '・📷 可用鏡頭' : ''}</span></p>
-      <div class="quick">${QUICK.map(([k, t]) => `<button type="button" data-quick="${k}">${t}</button>`).join('')}</div>
+      <div class="quick">${QUICK.filter(([k]) => k === 'help').map(([k, t]) => `<button type="button" data-quick="${k}">${t}</button>`).join('')}</div>
       ${['B', 'BC'].includes(who.phase) ? `<div class="teacher-prompts"><span id="researchCue" class="cue" hidden>⏱ 學生停了一陣子</span><span>教師提示：</span>${TEACHER_PROMPTS.map(([k, t]) => `<button type="button" data-tp="${k}">${t}</button>`).join('')}</div>` : ''}
-      <div class="ops"><span id="researchCount" class="count"></span>${serverOn() ? '<button type="button" id="researchProbe">🧪 小測驗</button>' : ''}${serverOn() && who.sessionNo ? '<button type="button" id="researchInvalid">🚫 本節作廢</button>' : ''}<button type="button" id="researchFlush">立即上傳</button><button type="button" id="researchNext">換學生</button><button type="button" id="researchClass">📝 這節課結束</button></div>`;
+      <div class="ops"><button type="button" id="researchNext">換學生</button><button type="button" id="researchClass">📝 這節課結束</button></div>
+      <details class="more" id="researchMore"${moreOpen() ? ' open' : ''}><summary>更多（其他紀錄、小測驗、本節作廢、上傳）</summary><div class="quick">${QUICK.filter(([k]) => k !== 'help').map(([k, t]) => `<button type="button" data-quick="${k}">${t}</button>`).join('')}</div>
+      <div class="ops"><span id="researchCount" class="count"></span>${serverOn() ? '<button type="button" id="researchProbe">🧪 小測驗</button>' : ''}${serverOn() && who.sessionNo ? '<button type="button" id="researchInvalid">🚫 本節作廢</button>' : ''}<button type="button" id="researchFlush">立即上傳</button></div></details>`;
+    $('researchMore').addEventListener('toggle', () => { try { sessionStorage.setItem(MORE_KEY, $('researchMore').open ? '1' : '0'); } catch { /* 略過 */ } });
     el.querySelectorAll('[data-quick]').forEach(b => b.onclick = () => {
       const k = b.dataset.quick, t = QUICK.find(x => x[0] === k)[1];
       api.log('教師即時紀錄', { activity: api.step(), tag: k, tagText: t.replace(/^\S+\s/, '') });

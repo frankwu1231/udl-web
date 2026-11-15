@@ -1,0 +1,15 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>畫面說明卡｜學生</title><link rel="icon" href="favicon.svg">
+<style>:root{font-family:"Microsoft JhengHei","PingFang TC",sans-serif;color:#172b4d;background:#fff}body{margin:0;padding:16px}main{max-width:760px;margin:auto}h1{font-size:30px;margin:4px 0 10px;text-align:center}
+.no-print{background:#f3f6fc;border:1px solid #ccd9ec;border-radius:12px;padding:10px 14px;margin-bottom:12px}button{font:inherit;min-height:44px;padding:8px 16px;border-radius:10px;border:1px solid #2157da;background:#2157da;color:#fff;cursor:pointer}
+.screen{border:3px solid #172b4d;border-radius:18px;padding:14px;position:relative;background:#f7faff}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.box{border:2px solid #9eafc7;border-radius:12px;background:#fff;padding:14px;font-size:20px;min-height:90px;display:flex;align-items:center;justify-content:center;gap:8px;position:relative}
+.bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}.btn{border:2px solid #9eafc7;border-radius:12px;padding:12px;font-size:22px;text-align:center;background:#fff;position:relative}.btn.check{border:4px solid #22c55e}.btn.stuck{background:#f3ecff;border-color:#7c3aed}
+.n{position:absolute;top:-14px;left:-10px;width:36px;height:36px;border-radius:50%;background:#f59e0b;color:#fff;font-weight:800;font-size:22px;display:flex;align-items:center;justify-content:center;border:3px solid #fff}
+ol.say{font-size:24px;line-height:1.8;padding-left:0;list-style:none}ol.say li{display:flex;gap:12px;align-items:center;margin:8px 0}ol.say .n{position:static;flex:none}
+@media print{.no-print{display:none}body{padding:0}@page{size:A4;margin:12mm}}</style></head><body><main>
+<div class="no-print"><p>印出來放在平板旁邊，學生看圖上的號碼就知道要按哪裡。建議護貝。</p><button onclick="print()">🖨 列印（A4 一張）</button></div>
+<h1>我要按哪裡？</h1>
+<div class="screen"><div class="row"><div class="box"><span class="n">1</span>📄 題目和圖</div><div><div class="box"><span class="n">2</span>✏️ 我的答案</div><div class="btn stuck" style="margin-top:10px"><span class="n">5</span>😣 我卡住了</div></div></div>
+<div class="bar"><div class="btn">← 上一步</div><div class="btn check"><span class="n">3</span>✔ 檢查</div><div class="btn">下一步 → <span class="n" style="left:auto;right:-10px">4</span></div></div></div>
+<ol class="say"><li><span class="n">1</span>先看題目和圖。</li><li><span class="n">2</span>在這裡作答：點一點、選一選、填數字。</li><li><span class="n">3</span>做好了，按「✔ 檢查」。</li><li><span class="n">4</span>答對了，按「下一步」。</li><li><span class="n">5</span>不會的時候，按「😣 我卡住了」。</li></ol>
+<p style="font-size:22px;text-align:center">✨ 綠色發光的地方，就是現在要按的地方。</p>
+</main></body></html>

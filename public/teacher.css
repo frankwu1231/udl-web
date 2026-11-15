@@ -46,3 +46,18 @@ dialog.class-big{text-align:center;padding:24px 32px;border-radius:16px;max-widt
 .csv-copy{width:100%;min-height:140px;font-size:13px}
 label.check{display:flex;gap:.5rem;align-items:flex-start}
 .ai-summary{border:2px dashed #6b3fc0;border-radius:10px;padding:8px 12px;background:#fbf8ff;margin:8px 0}
+
+/* 第 30 版：快速上課、建議設定、進階設定、說明 */
+#quickSection { border: 2px solid #2157da; border-radius: 16px; padding: 4px 20px 16px; margin-bottom: 20px; background: #f5f8ff; }
+.quick-steps { padding-left: 1.4em; line-height: 1.8; }
+.quick-steps li { margin: 10px 0; }
+.profile-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 8px 0; }
+.profile-card { display: flex; flex-direction: column; gap: 4px; text-align: left; align-items: flex-start; }
+.profile-card span { font-size: 14px; color: #526b89; line-height: 1.5; }
+.profile-card.on { background: #e7efff; border-color: #2157da; box-shadow: inset 0 0 0 2px #2157da; }
+details.advanced { margin-top: 24px; border-top: 2px solid #ccd9ec; padding-top: 12px; }
+details.advanced > summary { font-size: 20px; font-weight: 700; cursor: pointer; padding: 10px 0; }
+a.help { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #eaf1ff; border: 1px solid #2157da; font-size: 15px; text-decoration: none; vertical-align: middle; }
+dialog.wizard { position: fixed; bottom: 16px; top: auto; margin: 0 auto; max-width: 520px; border: 3px solid #2157da; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 50; }
+.wiz-hl { outline: 4px solid #f59e0b; outline-offset: 6px; border-radius: 12px; }
+@media (max-width: 760px) { #quickSection { padding: 4px 12px 12px; } }

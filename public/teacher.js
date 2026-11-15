@@ -21,6 +21,53 @@
     <li>建議順序（自我調整策略發展）：「老師示範」→「一起做」→「自己做」→「小測驗」。上課時可在學生頁的「教師觀察」切換。</li>
     <li>完整說明請看 <a href="seven-guide.html" target="_blank" rel="noopener">📘 教師使用手冊</a>。</li></ol></details>`;
 
+  // ---------- 第 30 版：快速上課（三件事）與建議設定 ----------
+  const allSections = () => [...SHAPES.map(k => config[k]), ...A.available().filter(a => isP(a.id)).map(a => sec(a.id))];
+  function currentProfile() { const ids = allSections().map(x => x.settings?.profile || ''); return ids.every(v => v && v === ids[0]) ? ids[0] : ''; }
+  function changedCount(id) { return new Set(allSections().flatMap(x => F.profileDiff(x.settings || {}, id))).size; }
+  function applyProfile(id) {
+    collect(); const P = F.PROFILES[id];
+    for (const k of SHAPES) { const st = config[k].settings; Object.assign(st, P.settings, { profile: id }); if (P.settings.difficulty) F.preset(k, P.settings.difficulty).forEach((v, i) => Object.assign(config[k].problems[i], v)); }
+    for (const a of A.available()) if (isP(a.id)) Object.assign(sec(a.id).settings, P.settings, { profile: id });
+    draw(); drawQuick(`✓ 已套用「${P.name}」到全部活動。記得按「發布給學生」。`);
+  }
+  function drawQuick(note = '') {
+    const box = $('quickSection'), cur = currentProfile(), n = cur ? changedCount(cur) : 0;
+    box.innerHTML = `<h2>🚀 快速上課 <a class="help" href="seven-guide.html#start" target="_blank" rel="noopener" title="看手冊：第一次上課">？</a></h2>
+      <ol class="quick-steps"><li><b>選教材和路徑</b>：在下面的「學習地圖與指派」選一條路徑。</li>
+      <li><b>套用建議設定</b>（按一下就套用到全部活動，之後還可以在進階設定微調）：
+        <div class="profile-cards">${Object.entries(F.PROFILES).map(([k, p]) => `<button type="button" class="profile-card${cur === k ? ' on' : ''}" data-profile="${k}" aria-pressed="${cur === k}"><b>${esc(p.name)}</b><span>${esc(p.note)}</span></button>`).join('')}</div>
+        <p class="subtle" role="status">${cur ? `目前：${esc(F.PROFILES[cur].name)}${n ? `（改過 ${n} 項）　<button type="button" id="profileReset">回到建議設定</button>` : '（沒有改過）'}` : '目前：自訂設定（還沒有套用建議設定，或各活動不一樣）'}</p></li>
+      <li><b>發布，給學生班級代碼</b>：<button type="button" id="quickPublish" class="primary">發布給學生</button>　再到「班級代碼」建立代碼或 QR code。</li></ol>
+      <p class="msg" role="status">${esc(note)}</p><p><button type="button" id="wizardOpen">❓ 第一次使用說明</button>　<a href="quick-start.html" target="_blank" rel="noopener">🖨 教師快速上手卡</a>　<a href="student-card.html" target="_blank" rel="noopener">🖨 學生畫面說明卡</a></p>`;
+    box.querySelectorAll('[data-profile]').forEach(b => b.onclick = () => applyProfile(b.dataset.profile));
+    if ($('profileReset')) $('profileReset').onclick = () => applyProfile(cur);
+    $('quickPublish').onclick = async () => { if (await save('published')) drawQuick('✓ 已發布。學生重新開啟學生頁就會看到。'); };
+    $('wizardOpen').onclick = () => wizard(true);
+  }
+  // 第一次登入的 3 步說明（每個帳號一次，可以再叫出來）
+  const WIZ_KEY = 'udl-teacher-wizard-v30';
+  function wizard(again) {
+    try { if (!again && localStorage.getItem(WIZ_KEY)) return; localStorage.setItem(WIZ_KEY, '1'); } catch { if (!again) return; }
+    const steps = [['mapSection', '第 1 步：選教材和路徑', '在「學習地圖與指派」選一條課綱路徑（或自己勾活動），學生的學習地圖就只會出現這些活動。'],
+      ['quickSection', '第 2 步：套用建議設定', '依學生的需要按一個建議設定，會套用到全部活動。之後想微調，再打開「進階設定」。'],
+      ['classSection', '第 3 步：發布、給班級代碼', '按「發布給學生」，再建立班級代碼，按「放大給學生掃」讓平板掃 QR code。']];
+    let i = 0; const d = document.createElement('dialog'); d.className = 'wizard';
+    const show = () => { const [id, t, b] = steps[i]; document.querySelectorAll('.wiz-hl').forEach(e => e.classList.remove('wiz-hl')); $(id)?.classList.add('wiz-hl'); $(id)?.scrollIntoView({ block: 'center' });
+      d.innerHTML = `<p class="subtle">第一次使用說明 ${i + 1}／3</p><h2>${t}</h2><p>${b}</p><div class="actions"><button type="button" class="primary" id="wizNext">${i < 2 ? '下一步 →' : '開始備課'}</button>${i < 2 ? '<button type="button" id="wizSkip">略過</button>' : ''}</div>`;
+      $('wizNext').onclick = () => { if (i < 2) { i++; show(); } else d.close(); }; if ($('wizSkip')) $('wizSkip').onclick = () => d.close(); $('wizNext').focus(); };
+    d.onclose = () => { document.querySelectorAll('.wiz-hl').forEach(e => e.classList.remove('wiz-hl')); d.remove(); };
+    document.body.append(d); show(); d.show();
+  }
+  // 每個設定區旁邊放「？」，直接連到手冊那一節
+  const HELP = { 'sec-target': 'settings', 'sec-support': 'modes', 'sec-simple': 'lesson', 'sec-buddy': 'lesson', 'sec-aids': 'aids', 'sec-video': 'video', 'sec-hints': 'settings' };
+  function addHelp() { for (const [id, a] of Object.entries(HELP)) { const h = $(id); if (h && !h.querySelector('.help')) h.insertAdjacentHTML('beforeend', ` <a class="help" href="seven-guide.html#${a}" target="_blank" rel="noopener" title="看手冊這一節">？</a>`); } }
+  // 導覽列點到進階設定裡的區塊時，自動打開進階設定
+  // 進階設定打開或摺起來，下次照樣（每台裝置各自記）
+  const ADV_KEY = 'udl-teacher-advanced-v30';
+  function rememberAdvanced() { const d = $('advanced'); if (!d) return; try { d.open = localStorage.getItem(ADV_KEY) === '1'; } catch { /* 略過 */ } d.addEventListener('toggle', () => { try { localStorage.setItem(ADV_KEY, d.open ? '1' : '0'); } catch { /* 略過 */ } }); }
+  document.addEventListener('click', e => { const a = e.target.closest?.('.tnav a'); if (!a) return; const t = document.querySelector(a.getAttribute('href')); if (t && t.closest('#advanced')) $('advanced').open = true; });
+
   // ---------- 學習地圖與指派 ----------
   function drawMap() {
     const m = config.map, avail = A.available();
@@ -191,7 +238,8 @@
   }
 
   // ---------- 個別活動設定 ----------
-  function draw() {
+  function draw() { drawFields(); addHelp(); }
+  function drawFields() {
     const id = $('shape').value; activeShape = id;
     const plugin = isP(id), data = sec(id), s = F.settings(data), titles = stepTitles(id);
     const pl = plugin ? A.get(id) : null;
@@ -264,6 +312,8 @@
       <p class="subtle">精簡畫面：學生解題時只看到題目、作答區、「檢查」和「😣 我卡住了」（提示、示範、休息、請老師都在「我卡住了」裡面）。學生熟悉以後，再一項一項打開。</p>
       <label class="check"><input id="simple" type="checkbox" ${s.simple !== false ? 'checked' : ''}>使用精簡畫面（建議第一次使用時開著）</label>
       <fieldset id="simpleShow"><legend>精簡畫面也要顯示</legend>${[['aids', '閱讀輔助列（注音、字的大小、高對比、休息）和「全部唸給我聽」'], ['say', '每一句旁邊的 🔊 朗讀鍵'], ['progress', '學習階段和解題步驟的進度點'], ['selfAsk', '我的自問卡和「問問自己」'], ['hint', '「💡 給我提示」按鈕（不打開時，提示放在「我卡住了」裡）']].map(([k, t]) => `<label><input type="checkbox" data-simple-show="${k}" ${(s.simpleShow || []).includes(k) ? 'checked' : ''}>${t}</label>`).join('')}</fieldset>
+      <label class="check"><input id="practice" type="checkbox" ${s.practice !== false ? 'checked' : ''}>第一次上課先做 1 分鐘操作練習（點選、檢查、我卡住了、下一步，不碰數學；每位學生一次，可以跳過）</label>
+      <label class="check"><input id="guide" type="checkbox" ${s.guide !== false ? 'checked' : ''}>現在該按的地方發光（作答區 → 檢查 → 下一步，一次只亮一個）</label>
       <label class="check"><input id="tour" type="checkbox" ${s.tour !== false ? 'checked' : ''}>第一次使用時，小方帶學生認識畫面（每位學生一次，大約 30 秒；學生可以在「我卡住了」裡再看一次）</label>
 
       <h2 id="sec-aids">閱讀輔助（預設值，學生上課時也可以自己切換）</h2>
@@ -419,7 +469,7 @@
       methods: (() => { const m = [...document.querySelectorAll('[data-method]:checked')].map(e => e.dataset.method); return plugin && old.methods.includes('row') ? [...m, 'row'] : m; })(),
       zhuyin: $('zhuyin').checked, textSize: $('textSize').value, contrast: $('contrast').checked, convert: val('convert', e => e.checked),
       buddy: $('buddy').checked, buddyWait: Number($('buddyWait').value), buddyVoice: $('buddyVoice').checked, attention: $('attention').checked, attentionSec: Number($('attentionSec').value),
-      simple: $('simple').checked, simpleShow: [...document.querySelectorAll('[data-simple-show]:checked')].map(e => e.dataset.simpleShow), tour: $('tour').checked
+      simple: $('simple').checked, simpleShow: [...document.querySelectorAll('[data-simple-show]:checked')].map(e => e.dataset.simpleShow), tour: $('tour').checked, guide: $('guide').checked, practice: $('practice').checked
     };
     if (!d.settings.methods.length) d.settings.methods = ['mark', 'row', 'self'];
     return config;
@@ -477,8 +527,13 @@
       // 第 26 版：研究人員到「研究管理」，參與教師到「情境探試」
       const nav = document.querySelector('header > div');
       if (nav) nav.insertAdjacentHTML('afterbegin', session.test ? '<a href="scenario.html">🧪 情境探試</a>　' : '<a href="study.html">🔬 研究管理</a>　');
-      drawMap(); drawClasses(); drawResearch(); drawStudyData(); draw();
-      $('shape').onchange = () => { collect(); draw(); };
+      drawMap(); drawClasses(); drawResearch(); drawStudyData(); draw(); drawQuick(); rememberAdvanced(); wizard(false);
+      // 第 30 版：研究功能只給研究參與教師（主持人指派了研究階段）與主持人看
+      if (session.test) { let inStudy = false; try { const me = await (await fetch('/api/study/me', { cache: 'no-store' })).json(); inStudy = !!me.phase; } catch { /* 略過 */ }
+        if (!inStudy) { for (const id of ['researchSection', 'studyDataSection']) $(id).hidden = true; document.querySelectorAll('a[href="scenario.html"], .tnav a[href="#researchSection"], .tnav a[href="#studyDataSection"]').forEach(a => a.hidden = true); } }
+      $('shape').onchange = () => { collect(); draw(); drawQuick(); };
+      // 第 30 版複測：在進階設定改了任何一項，上面的「改過 N 項／回到建議設定」馬上更新（不重畫設定區，焦點不跑掉）
+      $('fields').addEventListener('change', () => { collect(); drawQuick(); });
       $('saveDraft').onclick = () => save('draft'); $('publish').onclick = () => save('published');
       $('preview').onclick = async e => { e.preventDefault(); if (await save('draft')) location.href = $('preview').href; };   // 試用版：在同一個畫面預覽
     } catch (error) { $('status').textContent = `無法載入教材：${error.message}`; }

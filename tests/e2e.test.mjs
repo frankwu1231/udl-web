@@ -30,7 +30,11 @@ async function setup() {
   browser = await chromium.launch();
   // 第 29 版：小方的第一次導覽在其他測試裡先當作看過（只有導覽的測試傳 tour: true）
   const newContext = browser.newContext.bind(browser);
-  browser.newContext = async (o = {}) => { const { tour, ...rest } = o; const c = await newContext(rest); if (!tour) await c.addInitScript(() => { try { if (!localStorage.getItem('udl-tour-v29')) localStorage.setItem('udl-tour-v29', '["device"]'); } catch { /* 略過 */ } }); return c; };
+  // 第 30 版：教師備課頁的「進階設定」在測試裡先打開、第一次使用說明當作看過
+  const teacherInit = () => { try { localStorage.setItem('udl-teacher-advanced-v30', '1'); localStorage.setItem('udl-teacher-wizard-v30', '1'); sessionStorage.setItem('research-more-v30', '1'); } catch { /* 略過 */ } };
+  const newPage = browser.newPage.bind(browser);
+  browser.newPage = async (o = {}) => { const pg = await newPage(o); await pg.context().addInitScript(teacherInit); return pg; };
+  browser.newContext = async (o = {}) => { const { tour, ...rest } = o; const c = await newContext(rest); await c.addInitScript(teacherInit); if (!tour) await c.addInitScript(() => { try { for (const k of ['udl-tour-v29', 'udl-practice-v30']) if (!localStorage.getItem(k)) localStorage.setItem(k, '["device"]'); } catch { /* 略過 */ } }); return c; };
 }
 test.after(async () => { await browser?.close(); server?.close(); });
 
@@ -44,7 +48,7 @@ async function publish(settings) {
     for (const k of Object.keys(c.activities || {})) c.activities[k].settings = { ...c.activities[k].settings, ...s };
     c.map = { assigned: window.areaActs.packages[map.pkg || 'area'].activities.map(a => a.id), sequential: false, path: 'all', ...map };
     return (await fetch('/api/teacher/lessons', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'published', config: c }) })).status;
-  }, { flow: 'seven', keep: [0, 1, 2, 3], support: 'full', labels: 'reveal', ai: true, reward: false, sound: false, hintGate: false, mode: 'self', goalKind: 'hints', confidence: true, selfAsk: true, badges: true, voice: false, rest: 0, handsOn: false, methods: ['mark', 'row', 'self'], zhuyin: false, textSize: 'normal', contrast: false, video: 'hint', difficulty: 'standard', convert: false, srlAsk: 'first', lessonGoal: 0, stepNames: {}, attention: false, simple: false, tour: false, ...settings });
+  }, { flow: 'seven', keep: [0, 1, 2, 3], support: 'full', labels: 'reveal', ai: true, reward: false, sound: false, hintGate: false, mode: 'self', goalKind: 'hints', confidence: true, selfAsk: true, badges: true, voice: false, rest: 0, handsOn: false, methods: ['mark', 'row', 'self'], zhuyin: false, textSize: 'normal', contrast: false, video: 'hint', difficulty: 'standard', convert: false, srlAsk: 'first', lessonGoal: 0, stepNames: {}, attention: false, simple: false, tour: false, practice: false, ...settings });
   await page.close(); assert.equal(status, 200);
 }
 async function student(shape, settings = {}, viewport = { width: 820, height: 1180 }, opts = {}) {
@@ -53,7 +57,7 @@ async function student(shape, settings = {}, viewport = { width: 820, height: 11
   const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(e.message));
   if (opts.clock) await page.clock.install();   // 第 22 版：小幫手要等幾十秒，用假時鐘快轉
   if (opts.init) await page.addInitScript(opts.init);
-  await page.goto(`${base}/seven.html?shape=${shape}`); await page.waitForSelector('#start');
+  await page.goto(`${base}/seven.html?shape=${shape}`); await page.waitForSelector('#start, [data-practice]');
   const p = {
     page, errors,
     choose: (k, v) => page.click(`[data-choice="${k}"][data-value="${v}"]`),
@@ -225,6 +229,8 @@ test('教師觀察：摘要表與 CSV（中文欄位、英數檔名、學生選�
   const csv = fs.readFileSync(await d.path(), 'utf8');
   assert.match(csv, /"時間","圖形","第幾題","步驟","事件","是否答對","錯在哪裡","提示層級","學生的選擇或內容"/);
   assert.match(csv, /"看題目","步驟檢核","否","要找什麼","0","沿著邊走一圈的長度"/);
+  assert.match(csv, /"課綱代碼","第一次動作秒數","無效點擊次數"\r\n/);
+  assert.match(await p.text('#exportResult'), /已經下載 CSV 檔/);
 });
 
 test('教師備課：選難度立即換題、可套用到四種圖形、平行四邊形位移 0 不能儲存', { skip: skip || !distReady }, async () => {
@@ -896,7 +902,7 @@ test('現場試用：開始前老師點選代號（不用打字）；沒選齊�
   assert.match(await p.text('#researchBar .who'), /T02-S05/);
   await p.page.click('#researchFlush'); await p.page.waitForTimeout(300);
   const start = p.rows('場次')[0];
-  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v29'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
+  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v30'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
   assert.ok(p.rows('教師設定').some(r => r.actId === 'rectangle' && r.buddy === '開'), '記下老師這次的設定');
   assert.ok(!JSON.stringify(p.posts).match(/姓名/), '不傳姓名欄位');
 
@@ -1200,7 +1206,7 @@ test('第 26 版：研究紀錄存網站資料庫：開始本節編節次、錯�
   const ev = await events();
   const wrong = ev.find(r => r.event === '步驟檢核' && r.correct === '否');
   assert.ok(wrong, '錯誤存進網站資料庫');
-  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v29');
+  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v30');
   const d = JSON.parse(wrong.detail); assert.equal(d.obs, 'chosePerimeter'); assert.equal(d.outcome, 'wrong'); assert.equal(d.firstTry, true);
   assert.ok(ev.some(r => r.event === '無法判定'), '老師按「這題無法判定」');
   // 老師調整支持：沒選理由不能存；減少支持存成這位學生的設定，記下方向
@@ -1681,7 +1687,7 @@ test('第 27 版第 1 輪修正：換教材再換回保留指派；2-1 依實際
     return { k322: k({ l: 3, w: 2, h: 2 }), k432: k({ l: 4, w: 3, h: 2 }), k222: k({ l: 2, w: 2, h: 2 }), faces: (net.match(/class="sf-net/g) || []).length, none: /沒有上面/.test(net), front: />前面</.test(label) && !/>上面</.test(label) }; });
   assert.deepEqual(r, { k322: '2', k432: '3', k222: '1', faces: 5, none: true, front: true });
   const rec = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16') || '[]').find(x => x.event === '整題定標'));
-  assert.equal(rec.siteVersion, 'v29'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
+  assert.equal(rec.siteVersion, 'v30'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
   assert.match(await p.page.title(), /表面積/); assert.match(await p.text('header .brand'), /表面積/);
   assert.deepEqual(p.errors, []);
   await publish({});
@@ -1974,4 +1980,63 @@ test('第 29 版：第一次使用小方帶著看四個地方，看過就不再�
   assert.equal(await q.page.$('.tour-box'), null, '老師關掉就不出現'); await q.page.click('#stuck0');
   assert.equal(await q.page.$('[data-stuck-pick="tour"]'), null);
   assert.deepEqual([...p.errors, ...q.errors], []);
+});
+
+test('第 30 版：現在該按的地方發光（作答區 → 檢查 → 下一步）；記下第一次操作前幾秒、按到沒作用的地方幾次', { skip: skip || !distReady }, async () => {
+  const p = await student('rectangle', { guide: true }); await p.start();
+  const glow = () => p.page.$$eval('.glow-next', l => l.map(e => e.id || e.className));
+  assert.equal((await glow()).length, 1); assert.match((await glow())[0], /options/);
+  await p.page.click('h1'); await p.page.click('h1');   // 按到沒作用的地方
+  await p.choose('target', 'inside'); await p.page.waitForTimeout(50);
+  assert.deepEqual(await glow(), ['check']);
+  await p.check(); assert.deepEqual(await glow(), ['next']);
+  const q = await student('rectangle', { guide: false }); await q.start();
+  assert.deepEqual(await q.page.$$eval('.glow-next', l => l.length), 0, '老師關掉就不亮');
+  assert.deepEqual([...p.errors, ...q.errors], []);
+});
+
+test('第 30 版：第一次先做操作練習（點星星、檢查、我卡住了、下一步），做完或跳過就不再出現', { skip: skip || !distReady }, async () => {
+  const p = await student('rectangle', { practice: true, tour: false }, undefined, { tour: true });
+  await p.page.waitForSelector('[data-practice]');
+  assert.match(await p.text('h1'), /先練習/);
+  await p.page.click('[data-practice="car"]'); await p.page.click('#pCheck');
+  assert.match(await p.text('.practice'), /不是星星/);
+  await p.page.click('[data-practice="star"]'); await p.page.click('#pCheck');
+  assert.ok(await p.page.$eval('#pStuck', b => b.classList.contains('glow-next')));
+  await p.page.click('#pStuck'); await p.page.click('#pNext');
+  await p.page.waitForSelector('#start'); assert.equal(await p.page.$('[data-practice]'), null);
+  const recs = JSON.parse(await p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || '[]'));
+  assert.ok(recs.some(r => r.event === '操作練習' && /完成/.test(r.choice || '')));
+  await p.page.reload(); await p.page.waitForSelector('#start'); assert.equal(await p.page.$('[data-practice]'), null, '做過就不再出現');
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 30 版：備課頁快速上課：建議設定一鍵套用到全部活動、標出改過幾項、可以回到建議設定', { skip: skip || !distReady }, async () => {
+  await setup(); await publish({});
+  const page = await browser.newPage(); const errors = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto(base + '/teacher.html'); await page.waitForSelector('[data-profile="mid"]');
+  await page.click('[data-profile="mid"]');
+  assert.match(await page.textContent('#quickSection'), /目前：輕度智能障礙建議（沒有改過）/);
+  assert.equal(await page.$eval('#difficulty', e => e.value), 'easy'); assert.equal(await page.$eval('#zhuyin', e => e.checked), true);
+  await page.uncheck('#zhuyin');
+  assert.match(await page.textContent('#quickSection'), /改過 1 項/, '改了就馬上顯示，不必切換活動');
+  await page.selectOption('#shape', await page.$eval('#shape option:nth-child(2)', o => o.value));
+  assert.match(await page.textContent('#quickSection'), /改過 1 項/);
+  await page.click('#profileReset'); assert.match(await page.textContent('#quickSection'), /沒有改過/);
+  await page.click('#quickPublish'); await page.waitForFunction(() => /已發布/.test(document.querySelector('#quickSection').textContent));
+  const pub = await page.evaluate(async () => (await (await fetch('/api/teacher/lessons')).json()).published);
+  assert.equal(pub.rectangle.settings.profile, 'mid'); assert.equal(pub.rectangle.settings.lessonGoal, 5);
+  assert.ok(await page.$('#advanced')); assert.ok(await page.$('#sec-aids .help'), '設定旁有「？」連到手冊');
+  assert.deepEqual(errors, []); await page.close();
+});
+
+test('第 30 版：表面積展開圖可以慢慢摺成盒子，也可以拉回打開', { skip: skip || !distReady }, async () => {
+  const p = await act('sNet', { difficulty: 'easy', ...SURFACE_MAP });
+  await p.page.click('#sfOpen'); await p.page.click('.fold-wrap summary');
+  await p.page.fill('[data-fold-range]', '100'); await p.page.dispatchEvent('[data-fold-range]', 'input');
+  assert.equal(await p.page.$eval('.fold', e => e.dataset.fold), '1');
+  assert.match(await p.page.$eval('.ff-right', e => e.style.transform), /rotateY\(90deg\)/);
+  await p.page.emulateMedia({ reducedMotion: 'reduce' }); await p.page.click('[data-fold-go="0"]');
+  assert.equal(await p.page.$eval('.fold', e => e.dataset.fold), '0');
+  assert.deepEqual(p.errors, []);
 });
