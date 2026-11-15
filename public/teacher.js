@@ -39,7 +39,7 @@
         <div class="profile-cards">${Object.entries(F.PROFILES).map(([k, p]) => `<button type="button" class="profile-card${cur === k ? ' on' : ''}" data-profile="${k}" aria-pressed="${cur === k}"><b>${esc(p.name)}</b><span>${esc(p.note)}</span></button>`).join('')}</div>
         <p class="subtle" role="status">${cur ? `目前：${esc(F.PROFILES[cur].name)}${n ? `（改過 ${n} 項）　<button type="button" id="profileReset">回到建議設定</button>` : '（沒有改過）'}` : '目前：自訂設定（還沒有套用建議設定，或各活動不一樣）'}</p></li>
       <li><b>發布，給學生班級代碼</b>：<button type="button" id="quickPublish" class="primary">發布給學生</button>　再到「班級代碼」建立代碼或 QR code。</li></ol>
-      <p class="msg" role="status">${esc(note)}</p><button type="button" id="wizardOpen">❓ 第一次使用說明</button>`;
+      <p class="msg" role="status">${esc(note)}</p><p><button type="button" id="wizardOpen">❓ 第一次使用說明</button>　<a href="quick-start.html" target="_blank" rel="noopener">🖨 教師快速上手卡</a>　<a href="student-card.html" target="_blank" rel="noopener">🖨 學生畫面說明卡</a></p>`;
     box.querySelectorAll('[data-profile]').forEach(b => b.onclick = () => applyProfile(b.dataset.profile));
     if ($('profileReset')) $('profileReset').onclick = () => applyProfile(cur);
     $('quickPublish').onclick = async () => { if (await save('published')) drawQuick('✓ 已發布。學生重新開啟學生頁就會看到。'); };

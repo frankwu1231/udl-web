@@ -640,7 +640,7 @@ test('第 29 版：實驗參數鎖定（判準不能改、AI 工具和快照不�
   const login=async teacher=>(await call('/api/test-login',{method:'POST',body:{username:'test',password:'test-pass',teacher}})).headers.get('set-cookie').split(';')[0];
   const t11=await login('T11');
   assert.equal((await call('/api/study/lock',{cookie:t11})).status,403,'只有主持人');
-  const g=(await call('/api/study/lock',{user:owner})).data;assert.equal(g.lock.locked,false);assert.equal(g.current.provider,'deepseek');assert.equal(g.current.siteVersion,'v29');
+  const g=(await call('/api/study/lock',{user:owner})).data;assert.equal(g.lock.locked,false);assert.equal(g.current.provider,'deepseek');assert.equal(g.current.siteVersion,'v30');
   const locked=await call('/api/study/lock',{method:'POST',user:owner,body:{action:'lock',reason:'前導試做結束'}});
   assert.equal(locked.status,200);assert.equal(locked.data.lock.snapshot.model,'deepseek-flash');assert.equal(locked.data.lock.snapshot.rules.lowAcc,60);assert.deepEqual(Object.keys(locked.data.lock.snapshot.promptVersions),['hint','summary','tutor']);
   assert.equal((await call('/api/study/lock',{method:'POST',user:owner,body:{action:'lock'}})).status,409);

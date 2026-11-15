@@ -151,7 +151,7 @@ async function teacherSave(request,env,who){const role=who.role;if(role==='none'
 try{const existing=await lessonRow(env,kind),revision=(existing?.revision||0)+1;await env.DB.prepare('INSERT INTO lesson_documents (kind,config_json,revision,updated_at) VALUES (?,?,?,?) ON CONFLICT(kind) DO UPDATE SET config_json=excluded.config_json,revision=excluded.revision,updated_at=excluded.updated_at').bind(kind,config,revision,new Date().toISOString()).run();return json({ok:true,revision});}catch{return json({error:'lesson_storage_unavailable'},503);}}
 const publicAssets=new Set(['/portal.html','/portal.css','/portal.js','/shapes.css','/favicon.svg']);
 const studentAssets=new Set(['/content-area.js','/content-surface.js','/act-surface.js','/act-surface2.js','/act-prism.js','/content-line.js','/act-line.js','/act-line2.js','/tutor.js','/tutor.css','/probe.html','/probe.js','/probe.css','/seven.html','/seven.js','/seven.css','/seven-geometry.js','/learning-flow.js','/lesson-content.js','/zhuyin.js','/hands-on.html','/hands-on.pdf','/step-demo.js','/step-demo.css','/seven-guide.html','/act-core.js','/act-unit12.js','/act-unit3.js','/act-unit45.js','/act.css','/buddy.js','/buddy.css','/research.js','/research.css','/observations.js']);
-const teacherPages=new Set(['/teacher.html','/teacher.js','/teacher.css','/qrcode.js','/observations.js','/scenario.html','/scenario.js','/study.css','/study-common.js']);
+const teacherPages=new Set(['/teacher.html','/quick-start.html','/student-card.html','/teacher.js','/teacher.css','/qrcode.js','/observations.js','/scenario.html','/scenario.js','/study.css','/study-common.js']);
 export default {async fetch(request,env){const url=new URL(request.url);if(url.pathname==='/api/test-login')return request.method==='POST'?testLogin(request,env):json({error:'method'},405);
 if(url.pathname==='/api/test-logout'){if(request.method!=='POST')return json({error:'method'},405);const origin=request.headers.get('origin');if(origin&&origin!==url.origin)return json({error:'origin'},403);return jsonCookie({ok:true},200,sessionCookie('',0));}
 if(url.pathname==='/api/class-login')return request.method==='POST'?classLogin(request,env):json({error:'method'},405);
@@ -343,7 +343,7 @@ const DEFAULT_RULES={lowAcc:60,highAcc:80,indep:80,minItems:5,upN:3,downN:2,main
 const RULE_LIMITS={lowAcc:[0,100],highAcc:[0,100],indep:[0,100],minItems:[1,20],upN:[1,10],downN:[1,10],maintainN:[1,10],summaryChars:[100,600],stageUp:[0,100],stageDown:[0,100],stageN:[1,10],handsOnN:[1,20],teacherWait:[3,60],tutorChars:[10,40],showAdvice:[0,1]};
 // 第 29 版：實驗參數鎖定。前導試做後主持人按「鎖定」，把模型、提示詞版本、判準門檻與字數上限存成快照。
 // 鎖定期間：判準不能改；AI 的模型或提示詞版本和快照不同時一律改用固定內容（不讓不同的工具混進正式資料）。解鎖要寫理由，留下歷程。
-const SITE_VERSION='v29';
+const SITE_VERSION='v30';
 const PROMPT_VERSIONS=()=>({hint:HINT_PROMPT_VERSION,summary:SUMMARY_PROMPT_VERSION,tutor:TUTOR_PROMPT_VERSION});
 function aiSnapshot(env){const m=modelConfig(env);return {provider:m?.provider||'',model:m?.model||''};}
 async function studyLock(env){try{const row=await env.DB.prepare('SELECT value_json FROM study_config WHERE key = ?').bind('lock').first();return row?JSON.parse(row.value_json):{locked:false,history:[]};}catch{return {locked:false,history:[]};}}
