@@ -105,6 +105,7 @@ if(s.keep!==undefined&&!(Array.isArray(s.keep)&&s.keep.length<=4&&s.keep.every(v
 if(s.labels!==undefined&&!['reveal','always'].includes(s.labels))return false;
 if(s.rate!==undefined&&!['slow','normal'].includes(s.rate))return false;
 for(const k of ['ai','reward','sound','grid','confidence','selfAsk','badges','voice','handsOn','zhuyin','contrast','convert','fading','buddy','buddyVoice','attention','tryFirst','simple','tour','guide','practice'])if(s[k]!==undefined&&typeof s[k]!=='boolean')return false;
+if(s.profile!==undefined&&!['mid','ld','general'].includes(s.profile))return false;
 if(s.simpleShow!==undefined&&!(Array.isArray(s.simpleShow)&&s.simpleShow.length<=5&&new Set(s.simpleShow).size===s.simpleShow.length&&s.simpleShow.every(v=>['aids','say','progress','selfAsk','hint'].includes(v))))return false;
 if(s.buddyWait!==undefined&&![30,60,90].includes(s.buddyWait))return false;
 if(s.attentionSec!==undefined&&![3,5,8].includes(s.attentionSec))return false;

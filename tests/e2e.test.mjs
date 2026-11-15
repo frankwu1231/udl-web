@@ -30,7 +30,11 @@ async function setup() {
   browser = await chromium.launch();
   // 第 29 版：小方的第一次導覽在其他測試裡先當作看過（只有導覽的測試傳 tour: true）
   const newContext = browser.newContext.bind(browser);
-  browser.newContext = async (o = {}) => { const { tour, ...rest } = o; const c = await newContext(rest); if (!tour) await c.addInitScript(() => { try { for (const k of ['udl-tour-v29', 'udl-practice-v30']) if (!localStorage.getItem(k)) localStorage.setItem(k, '["device"]'); } catch { /* 略過 */ } }); return c; };
+  // 第 30 版：教師備課頁的「進階設定」在測試裡先打開、第一次使用說明當作看過
+  const teacherInit = () => { try { localStorage.setItem('udl-teacher-advanced-v30', '1'); localStorage.setItem('udl-teacher-wizard-v30', '1'); } catch { /* 略過 */ } };
+  const newPage = browser.newPage.bind(browser);
+  browser.newPage = async (o = {}) => { const pg = await newPage(o); await pg.context().addInitScript(teacherInit); return pg; };
+  browser.newContext = async (o = {}) => { const { tour, ...rest } = o; const c = await newContext(rest); await c.addInitScript(teacherInit); if (!tour) await c.addInitScript(() => { try { for (const k of ['udl-tour-v29', 'udl-practice-v30']) if (!localStorage.getItem(k)) localStorage.setItem(k, '["device"]'); } catch { /* 略過 */ } }); return c; };
 }
 test.after(async () => { await browser?.close(); server?.close(); });
 
@@ -2003,4 +2007,21 @@ test('第 30 版：第一次先做操作練習（點星星、檢查、我卡住�
   assert.ok(recs.some(r => r.event === '操作練習' && /完成/.test(r.choice || '')));
   await p.page.reload(); await p.page.waitForSelector('#start'); assert.equal(await p.page.$('[data-practice]'), null, '做過就不再出現');
   assert.deepEqual(p.errors, []);
+});
+
+test('第 30 版：備課頁快速上課：建議設定一鍵套用到全部活動、標出改過幾項、可以回到建議設定', { skip: skip || !distReady }, async () => {
+  await setup(); await publish({});
+  const page = await browser.newPage(); const errors = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto(base + '/teacher.html'); await page.waitForSelector('[data-profile="mid"]');
+  await page.click('[data-profile="mid"]');
+  assert.match(await page.textContent('#quickSection'), /目前：輕度智能障礙建議（沒有改過）/);
+  assert.equal(await page.$eval('#difficulty', e => e.value), 'easy'); assert.equal(await page.$eval('#zhuyin', e => e.checked), true);
+  await page.uncheck('#zhuyin'); await page.selectOption('#shape', await page.$eval('#shape option:nth-child(2)', o => o.value));
+  assert.match(await page.textContent('#quickSection'), /改過 1 項/);
+  await page.click('#profileReset'); assert.match(await page.textContent('#quickSection'), /沒有改過/);
+  await page.click('#quickPublish'); await page.waitForFunction(() => /已發布/.test(document.querySelector('#quickSection').textContent));
+  const pub = await page.evaluate(async () => (await (await fetch('/api/teacher/lessons')).json()).published);
+  assert.equal(pub.rectangle.settings.profile, 'mid'); assert.equal(pub.rectangle.settings.lessonGoal, 5);
+  assert.ok(await page.$('#advanced')); assert.ok(await page.$('#sec-aids .help'), '設定旁有「？」連到手冊');
+  assert.deepEqual(errors, []); await page.close();
 });

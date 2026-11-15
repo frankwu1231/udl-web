@@ -158,11 +158,11 @@
   }
   function practiceDone(skipped) {
     try { const a = JSON.parse(localStorage.getItem(PRACTICE_KEY) || '[]') || []; if (!a.includes(tourWho())) a.push(tourWho()); localStorage.setItem(PRACTICE_KEY, JSON.stringify(a.slice(-200))); } catch { /* 略過 */ }
-    log('操作練習', { choice: skipped ? '略過' : '完成', secs: Math.round((Date.now() - practice.at) / 1000), deadClicks: practice.dead });
+    log('操作練習', { cycle: 0, choice: skipped ? '略過' : '完成', secs: Math.round((Date.now() - practice.at) / 1000), deadClicks: practice.dead });
     practice = null; render(); focus();
   }
   function practiceView() {
-    if (!practice) { practice = { at: Date.now(), stage: 'pick', pick: '', dead: 0, wrong: 0 }; log('操作練習', { choice: '開始' }); }
+    if (!practice) { practice = { at: Date.now(), stage: 'pick', pick: '', dead: 0, wrong: 0 }; log('操作練習', { cycle: 0, choice: '開始' }); }
     const P0 = practice, items = [['apple', '🍎 蘋果'], ['star', '⭐ 星星'], ['car', '🚗 汽車']];
     const say = { pick: '先練習怎麼用。請點一下「⭐ 星星」。', check: '選好了，按「✔ 檢查」。', stuck: '答對了！不會的時候，可以按「😣 我卡住了」。現在按一次看看。', next: '很好！最後按「下一步 →」，就可以開始上課了。' }[P0.stage];
     const wrong = P0.wrong && P0.stage === 'pick' ? '<p class="feedback needs-work" role="status" data-read data-say>這個不是星星，再找一找。</p>' : P0.stage !== 'pick' && P0.stage !== 'check' ? '<p class="feedback correct" role="status"><span class="star" aria-hidden="true">⭐</span><span data-read data-say>答對了！</span></p>' : '';
@@ -1392,8 +1392,9 @@
       || !!root.querySelector('[aria-pressed="true"], .filled, .ac-mark, .ln-pt, .picked, .on');
   }
   function updateGlow() {
+    if (practice) return;   // 操作練習自己決定哪裡發光
     document.querySelectorAll('.glow-next').forEach(e => e.classList.remove('glow-next'));
-    if (!type || settings.guide === false || tourOn || mode() === 'demo' || practice) return;
+    if (!type || settings.guide === false || tourOn || mode() === 'demo') return;
     let el = null;
     if (phase === 'solve') {
       const n = $('next'), act = [...document.querySelectorAll('.activity')].find(a => !checked.has(Number(a.dataset.stage)));

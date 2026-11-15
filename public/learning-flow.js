@@ -52,6 +52,13 @@
     guide: true             // 第 30 版：現在該按的地方發光（作答區 → 檢查 → 下一步），其他照常可以按
   };
   const SIMPLE_ITEMS = ['aids', 'say', 'progress', 'selfAsk', 'hint'];
+  // 第 30 版：建議設定（一鍵套用到全部活動；套用後老師仍可微調，畫面會標出改過幾項）
+  const PROFILES = {
+    mid: { name: '輕度智能障礙建議', note: '題目簡單、提示自動出現、每一步都可以看示範、國字加注音、字大一點；做 5 題提醒休息。', settings: { difficulty: 'easy', support: 'full', video: 'always', tryFirst: true, srlAsk: 'first', confidence: false, selfAsk: false, zhuyin: true, textSize: 'large', buddy: true, buddyWait: 60, buddyVoice: true, simple: true, simpleShow: ['say'], guide: true, practice: true, tour: true, rest: 3, lessonGoal: 5 } },
+    ld: { name: '學習障礙建議', note: '標準難度、需要時才看提示、保留朗讀鍵和自問卡、字大一點。', settings: { difficulty: 'standard', support: 'faded', video: 'hint', tryFirst: true, srlAsk: 'first', confidence: true, selfAsk: true, zhuyin: false, textSize: 'large', buddy: true, buddyWait: 60, buddyVoice: true, simple: true, simpleShow: ['say', 'selfAsk'], guide: true, practice: true, tour: true, rest: 0, lessonGoal: 0 } },
+    general: { name: '一般練習', note: '標準難度、需要時才看提示、顯示進度和提示鍵，每 3 題問一次目標。', settings: { difficulty: 'standard', support: 'faded', video: 'hint', tryFirst: true, srlAsk: 'every3', confidence: true, selfAsk: true, zhuyin: false, textSize: 'normal', buddy: true, buddyWait: 60, buddyVoice: false, simple: true, simpleShow: ['progress', 'hint'], guide: false, practice: true, tour: true, rest: 0, lessonGoal: 0 } }
+  };
+  const profileDiff = (s, id) => { const p = PROFILES[id]; return p ? Object.keys(p.settings).filter(k => JSON.stringify(s[k] ?? defaults[k]) !== JSON.stringify(p.settings[k])) : []; };
   const SRL_ASK = ['first', 'every3', 'always', 'off'], LESSON_GOALS = [0, 3, 5, 8, 10];
   const validNames = n => n === undefined || (!!n && typeof n === 'object' && !Array.isArray(n) && Object.entries(n).every(([k, v]) => /^[0-6]$/.test(k) && typeof v === 'string' && v.trim().length <= 12 && !/[<>&"'`]/.test(v)));
   const METHODS = ['mark', 'row', 'self'];
@@ -98,6 +105,7 @@
       && [undefined, ...MODES].includes(s.mode) && [undefined, 'hints', 'firstTry'].includes(s.goalKind)
       && [undefined, 'off', 'hint', 'always'].includes(s.video) && [undefined, 'normal', 'large', 'xlarge'].includes(s.textSize) && [undefined, 0, 2, 3].includes(s.rest)
       && (s.methods === undefined || (Array.isArray(s.methods) && s.methods.length > 0 && s.methods.every(v => METHODS.includes(v))))
+      && [undefined, ...Object.keys(PROFILES)].includes(s.profile)
       && [undefined, ...SRL_ASK].includes(s.srlAsk) && [undefined, ...LESSON_GOALS].includes(s.lessonGoal) && validNames(s.stepNames);
   }
 
@@ -134,5 +142,5 @@
     }));
   }
 
-  window.learningFlow = { defaults, SIMPLE_ITEMS, OPTIONAL, METHODS, MODES, SRL_ASK, LESSON_GOALS, randomProblem, settings, pages, active, hasActivity, targetInPlan, unitInReflect, valid, shuffle, preset };
+  window.learningFlow = { defaults, SIMPLE_ITEMS, PROFILES, profileDiff, OPTIONAL, METHODS, MODES, SRL_ASK, LESSON_GOALS, randomProblem, settings, pages, active, hasActivity, targetInPlan, unitInReflect, valid, shuffle, preset };
 })();
