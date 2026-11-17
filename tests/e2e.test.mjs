@@ -902,7 +902,7 @@ test('現場試用：開始前老師點選代號（不用打字）；沒選齊�
   assert.match(await p.text('#researchBar .who'), /T02-S05/);
   await p.page.click('#researchFlush'); await p.page.waitForTimeout(300);
   const start = p.rows('場次')[0];
-  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v31'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
+  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v32'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
   assert.ok(p.rows('教師設定').some(r => r.actId === 'rectangle' && r.buddy === '開'), '記下老師這次的設定');
   assert.ok(!JSON.stringify(p.posts).match(/姓名/), '不傳姓名欄位');
 
@@ -1206,7 +1206,7 @@ test('第 26 版：研究紀錄存網站資料庫：開始本節編節次、錯�
   const ev = await events();
   const wrong = ev.find(r => r.event === '步驟檢核' && r.correct === '否');
   assert.ok(wrong, '錯誤存進網站資料庫');
-  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v31');
+  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v32');
   const d = JSON.parse(wrong.detail); assert.equal(d.obs, 'chosePerimeter'); assert.equal(d.outcome, 'wrong'); assert.equal(d.firstTry, true);
   assert.ok(ev.some(r => r.event === '無法判定'), '老師按「這題無法判定」');
   // 老師調整支持：沒選理由不能存；減少支持存成這位學生的設定，記下方向
@@ -1687,7 +1687,7 @@ test('第 27 版第 1 輪修正：換教材再換回保留指派；2-1 依實際
     return { k322: k({ l: 3, w: 2, h: 2 }), k432: k({ l: 4, w: 3, h: 2 }), k222: k({ l: 2, w: 2, h: 2 }), faces: (net.match(/class="sf-net/g) || []).length, none: /沒有上面/.test(net), front: />前面</.test(label) && !/>上面</.test(label) }; });
   assert.deepEqual(r, { k322: '2', k432: '3', k222: '1', faces: 5, none: true, front: true });
   const rec = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16') || '[]').find(x => x.event === '整題定標'));
-  assert.equal(rec.siteVersion, 'v31'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
+  assert.equal(rec.siteVersion, 'v32'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
   assert.match(await p.page.title(), /表面積/); assert.match(await p.text('header .brand'), /表面積/);
   assert.deepEqual(p.errors, []);
   await publish({});
@@ -2148,6 +2148,74 @@ test('第 31 版：6-3 短除分解：除數不是質數、除不盡會擋；學
   assert.ok(await page.$('.map-card.locked[data-map="fmShare"]'), '0-1 還沒全對，0-2 鎖住');
   const tp = await browser.newPage(); await tp.goto(base + '/teacher.html'); await tp.waitForSelector('[data-pkg="factor"]');
   assert.match(await tp.innerText('[data-pkg="factor"]'), /因數與倍數/);
+  assert.deepEqual(errs, []); await ctx.close(); await tp.close();
+  await publish({});
+});
+
+// ---------- 第 32 版：時間概念教材包 ----------
+const TIME_MAP = ids => ({ __map: { pkg: 'time', assigned: ids, path: 'all' } });
+// 從畫面上的時鐘讀回題目的時和分（分針、時針的角度）
+const readClock = p => p.page.evaluate(() => {
+  const ang = sel => { const d = document.querySelector(sel).getAttribute('d').match(/L(-?[\d.]+) (-?[\d.]+)/); let a = Math.atan2(Number(d[1]), -Number(d[2])) * 180 / Math.PI; return a < 0 ? a + 360 : a; };
+  const m = Math.round(ang('.tm-clock .tm-mh') / 6) % 60, h = Math.floor((ang('.tm-clock .tm-hh') - m / 2 + 1) / 30) || 12;
+  return { h, m };
+});
+
+test('第 32 版：時間概念 30 個活動都能出題、畫圖，照示範做完每一步都對；空白的不會過；畫面沒有 undefined', { skip: skip || !distReady }, async () => {
+  const p = await act('tmRead1', { difficulty: 'standard', ...TIME_MAP(['tmRead1']) });
+  const out = await p.page.evaluate(() => {
+    const A = window.areaActs, bad = [];
+    const ids = A.packages.time.activities.map(a => a.id);
+    for (const id of ids) {
+      const pl = A.get(id); if (!pl) { bad.push(id + ' 沒有註冊'); continue; }
+      for (const level of ['easy', 'standard', 'challenge']) for (let i = 0; i < 8; i++) {
+        const problem = pl.makeProblem(level, i, Math.random), answers = {}, state = {};
+        const ctx = { answers, state, problem, plugin: pl, settings: {}, method: 'mark', level, hint: () => 3, checked: () => false, invalidate() {}, refreshFigure() {}, rerender() {}, log() {}, choice: (k, t, items) => items.map(x => x[1]).join('|') };
+        if (/undefined|NaN/.test(problem.prompt || '')) bad.push(`${id} 題目有 undefined/NaN`);
+        try { pl.planFigure && pl.planFigure(ctx); } catch (e) { bad.push(`${id} planFigure ${e.message}`); }
+        pl.steps.forEach((st, s) => {
+          try { const html = (st.figure ? st.figure(ctx) : '') + st.answer(ctx); if (/undefined|NaN/.test(html)) bad.push(`${id} 第${s + 1}步畫面有 undefined/NaN`); } catch (e) { bad.push(`${id} 第${s + 1}步畫面 ${e.message}`); }
+          try { if (!st.check(ctx)) bad.push(`${id} 第${s + 1}步沒作答也過`); st.solve(ctx); const r = st.check(ctx); if (r) bad.push(`${id} ${level} ${i} 第${s + 1}步照示範做卻沒過：${r.msg}`); } catch (e) { bad.push(`${id} 第${s + 1}步 ${e.message}`); }
+        });
+        try { pl.done(ctx); } catch (e) { bad.push(`${id} done ${e.message}`); }
+      }
+    }
+    return { bad, n: ids.length, paths: Object.keys(A.packages.time.paths), core: A.packages.time.activities.filter(a => a.core).map(a => a.id), pre: A.packages.time.activities.filter(a => a.pretest).map(a => a.id) };
+  });
+  assert.equal(out.n, 30); assert.deepEqual(out.bad, []); assert.deepEqual(out.paths, ['clock', 'elapsed', 'life', 'all']);
+  assert.deepEqual(out.core, ['tmRead1', 'tmCross', 'tmInTime']); assert.deepEqual(out.pre, ['tmCount5', 'tmTo60']);
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 32 版：3-2 看鐘六步：長針當時針記 handSwap、數字當分記 minuteAsNumber；做完寫出電子鐘', { skip: skip || !distReady }, async () => {
+  const p = await act('tmRead1', { difficulty: 'standard', ...TIME_MAP(['tmRead1']) });
+  await p.page.waitForSelector('.tm-clock .tm-mh');
+  const { h, m } = await readClock(p), no = Math.floor(m / 5);
+  await p.choose('hand', 'long'); await p.check(); assert.match(await p.text('#feedback0'), /分針/);
+  await p.choose('hand', 'short'); await p.check(); await p.next();
+  await p.page.fill('#hh', String(h)); await p.check(); await p.next();
+  await p.page.fill('#mn', String(no)); await p.check(); await p.next();
+  await p.page.fill('#five', String(no)); await p.check(); assert.match(await p.text('#feedback3'), /五個一數/);
+  await p.page.fill('#five', String(no * 5)); await p.check(); await p.next();
+  await p.page.fill('#rdH', String(h)); await p.page.fill('#rdM', String(m)); await p.check(); await p.next();
+  await p.choose('digi', 'ok'); await p.check(); await p.next();
+  const dg = `${h}:${String(m).padStart(2, '0')}`;
+  assert.match(await p.text('.done-banner'), new RegExp(dg));
+  const rec = await records(p);
+  for (const code of ['handSwap', 'minuteAsNumber']) assert.match(rec, new RegExp(code));
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 32 版：學習地圖換成時間概念、單元 0 是先測、有時間小管家；教師頁可以換成時間教材', { skip: skip || !distReady }, async () => {
+  await setup(); await publish({ __map: { pkg: 'time', assigned: ['tmCount5', 'tmTo60', 'tmBus'], sequential: true } });
+  const ctx = await browser.newContext(); const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.goto(base + '/seven.html'); await page.waitForSelector('.map-card');
+  const units = await page.$$eval('.map-unit h2', h => h.map(x => x.innerText.trim()).join('|'));
+  assert.match(units, /準備好了嗎/); assert.match(units, /時間小管家/); assert.doesNotMatch(units, /因數/);
+  assert.match(await page.innerText('[data-map="tmCount5"]'), /先測/);
+  assert.ok(await page.$('.map-card.locked[data-map="tmTo60"]'), '0-1 還沒全對，0-2 鎖住');
+  const tp = await browser.newPage(); await tp.goto(base + '/teacher.html'); await tp.waitForSelector('[data-pkg="time"]');
+  assert.match(await tp.innerText('[data-pkg="time"]'), /時間/);
   assert.deepEqual(errs, []); await ctx.close(); await tp.close();
   await publish({});
 });

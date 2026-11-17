@@ -178,3 +178,27 @@ html.contrast .map-card{border-color:#000}html.contrast .ac-outline{stroke:#000}
 .fm-lnums>span{min-width:3.4rem;text-align:center}.fm-ladder-in input{width:3.2rem;min-height:40px;font-size:1.1rem;text-align:center}
 html.contrast .fm-grid .fm-n{border-color:#000;color:#000}html.contrast .fm-grid .fm-n[aria-pressed=true]{background:#000;color:#fff}
 .fm-lab-big{font-size:17px}.fm-tick{font-size:16px}.fm-grid .fm-n.ca.cb{background:linear-gradient(135deg,#9ec2ff 50%,#ffc29a 50%)}
+/* 第 32 版：時間概念教材包 */
+.tm-clock{max-width:250px;max-height:250px;margin:.3rem auto;display:block}
+.tm-face{fill:#fff;stroke:#1d2b44;stroke-width:4}.tm-tick{stroke:#8094b4;stroke-width:1.5}.tm-tick.big{stroke:#1d2b44;stroke-width:3}
+.tm-num{font-size:19px;font-weight:700;fill:#1d2b44}.tm-five{font-size:13px;font-weight:700;fill:#7c3aed}
+.tm-hh{stroke:#1d2b44;stroke-width:9;stroke-linecap:round}.tm-mh{stroke:#1f6fd1;stroke-width:5;stroke-linecap:round}
+.tm-hh.on{stroke:#c2410c}.tm-mh.on{stroke:#d9480f;stroke-width:6}.tm-sh{stroke:#e03131;stroke-width:2}.tm-pin{fill:#1d2b44}
+.tm-pair{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;align-items:center}.tm-pair .tm-clock{margin:0}
+.tm-digi{display:inline-flex;flex-direction:column;align-items:center;font:700 2.6rem/1.1 ui-monospace,Menlo,Consolas,monospace;background:#1d2b44;color:#7CFFB2;border-radius:12px;padding:.4rem 1rem;letter-spacing:.08em}
+.tm-digi small{font-size:.9rem;color:#fff;letter-spacing:0;font-family:inherit}
+.tm-set{display:flex;flex-wrap:wrap;gap:.8rem;align-items:center;justify-content:center}.tm-setbtn{display:grid;grid-template-columns:auto auto auto;gap:.4rem;align-items:center}
+.tm-setbtn button{min-height:44px;min-width:5rem;font-size:1rem}
+.tm-line{max-width:600px;margin:.3rem auto;display:block}.tm-mark{fill:#1f6fd1}.tm-mark.s{fill:#0b7a43}.tm-mark.e{fill:#d9480f}
+.tm-lab{font-size:14px;fill:#1d2b44;font-weight:700}.tm-jl{fill:#7c3aed}.tm-jump{fill:none;stroke:#7c3aed;stroke-width:3}
+.tm-hm{display:flex;gap:.8rem;flex-wrap:wrap}.tm-hm .field{flex:1 1 8rem}
+.tm-cal{border-collapse:collapse;margin:.4rem auto;font-size:1.05rem}.tm-cal caption{font-weight:700;padding:.2rem}
+.tm-cal th,.tm-cal td{border:1px solid #b8c7de;width:2.6rem;height:2.4rem;text-align:center}.tm-cal th{background:#eef4fc}.tm-cal td.we{color:#c2410c}
+.tm-cal td.on{background:#ffd43b;font-weight:700}.tm-cal td.hint{outline:3px dashed #7c3aed;outline-offset:-4px}
+.tm-tt{border-collapse:collapse;margin:.4rem auto;font-size:1.05rem}.tm-tt caption{font-weight:700;padding:.2rem}.tm-tt th,.tm-tt td{border:1px solid #b8c7de;padding:.3rem .7rem;text-align:center}.tm-tt th{background:#eef4fc}.tm-tt tr.hint td{outline:3px dashed #7c3aed;outline-offset:-4px}
+.tm-days{display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap}.tm-dcard{border:2px solid #b8c7de;border-radius:12px;padding:.5rem .8rem;min-width:6rem;text-align:center;background:#fff;display:flex;flex-direction:column;gap:.2rem}.tm-dcard.on{border-color:#1f6fd1;background:#eef4fc}
+.tm-tasks{margin:.3rem 0 .3rem 1.2rem;font-size:1.05rem}.tm-conv{margin:.3rem 0 .3rem 1.2rem;font-size:1.1rem;font-weight:700}
+.tm-timer{margin:.4rem 0}.tm-timer button{min-height:44px;font-size:1.05rem}#tmSecs{font:700 1.4rem ui-monospace,monospace;margin-left:.5rem}
+.tm-fist{font-weight:700;text-align:center}
+html.contrast .tm-face{stroke:#000}html.contrast .tm-mh{stroke:#000}html.contrast .tm-cal td,html.contrast .tm-tt td{border-color:#000}
+@media (max-width:420px){.tm-digi{font-size:2rem}.tm-cal th,.tm-cal td{width:2.2rem;height:2.1rem}.tm-setbtn button{min-width:4.2rem}}
