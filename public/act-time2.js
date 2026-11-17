@@ -3,7 +3,7 @@
 // 課綱備註：N-1-6 只報整點、半點，以鐘面教學；N-2-13 不含秒針；N-2-14 不做時間間隔；N-3-17 加減不進退位。
 (() => {
   const A = window.areaActs, U = A.util, { esc } = U, T = window.timeFig;
-  const { rnd, any, toMin, split, hmText, digital, to12, periodOf, say12, durText, minuteNo, clockSVG, digiHtml, clockPair, setClockHtml, bindClock, lineSVG, WEEK, daysIn, weekday, calHtml, fiveAid, convAid, nStep, cStep, hmStep, prompt, shown, readWrong } = T;
+  const { rnd, any, toMin, split, hmText, digital, to12, periodOf, say12, durText, minuteNo, clockSVG, digiHtml, clockPair, setClockHtml, bindClock, lineSVG, WEEK, daysIn, weekday, calHtml, fiveAid, convAid, nStep, cStep, hmStep, prompt, shown, ql, readWrong } = T;
   const methods = [['mark', '🕐 一步一步做'], ['self', '🧠 先自己想，需要時看提示']];
   const reasons = [['look', '先看圖'], ['count', '五個一數或一個一個數'], ['hint', '看提示']];
   const fromLevel = (o, level) => o[level] || o.standard;
@@ -216,7 +216,7 @@
       nStep(0, { title: '時換成分', ask: '幾個 60 分？', id: 'm', aid: convAid, hints: ['1 時是 60 分。', '幾時就是幾個 60 分。', '時間是 60 進位，不是 100。'], think: '老師想：1 時是 60 分，幾時就是幾個 60。', together: '一起算：是幾分？', pre: prompt,
         label: ctx => `${ctx.problem.a} 時 ＝ □ 分`, ans: ctx => ctx.problem.a * 60, wrong: (ctx, v) => v === ctx.problem.a * 100 ? { obs: 'base100', msg: '1 時是 60 分，不是 100 分。' } : null, say: ex => `${ex.problem.a} 時是 ${ex.problem.a * 60} 分。` }),
       hmStep(1, { title: '分換成時和分', ask: '裡面有幾個 60？', id: 'hm', dur: false, aid: convAid, hints: ['先找裡面有幾個 60 分。', '每個 60 分換成 1 時。', '剩下不到 60 的，就是幾分。'],
-        think: '老師把分鐘 60 個一組圈起來，一組就是 1 時。', together: '一起圈：幾時幾分？', figure: ctx => { const n = ctx.problem.n, full = Math.floor(n / 60); return lineSVG(0, n, { marks: [...Array.from({ length: full + 1 }, (_, k) => k * 60), n], fmt: t => `${t} 分`, jumps: shown(ctx, 1) ? [...Array.from({ length: full }, (_, k) => [k * 60, (k + 1) * 60, '1 時']), ...(n % 60 ? [[full * 60, n, `${n % 60} 分`]] : [])] : [], aria: '把分鐘 60 個一組' }); },
+        think: '老師把分鐘 60 個一組圈起來，一組就是 1 時。', together: '一起圈：幾時幾分？', figure: ctx => { const n = ctx.problem.n, full = Math.floor(n / 60); return lineSVG(0, n, { marks: [...Array.from({ length: full + 1 }, (_, k) => k * 60), n], fmt: t => `${t} 分`, jumps: shown(ctx, 1) ? [...Array.from({ length: full }, (_, k) => [k * 60, (k + 1) * 60, '1 時']), ...(n % 60 ? [[full * 60, n, ql(ctx, 1, `${n % 60} 分`)]] : [])] : [], aria: '把分鐘 60 個一組' }); },
         label: ctx => `${ctx.problem.n} 分 ＝ □ 時 □ 分`, ans: ctx => [Math.floor(ctx.problem.n / 60), ctx.problem.n % 60],
         wrong: (ctx, [a, b]) => a === Math.floor(ctx.problem.n / 100) && b === ctx.problem.n % 100 ? { obs: 'base100', msg: '1 時是 60 分，要 60 個一組，不是 100 個一組。' } : null, say: ex => `${ex.problem.n} 分是 ${Math.floor(ex.problem.n / 60)} 時 ${ex.problem.n % 60} 分。` })
     ],
@@ -316,7 +316,9 @@
         say: ex => `是 ${ex.problem.h + (ex.problem.pm ? 12 : 0)} 時 ${ex.problem.m} 分，寫成 ${digital(ex.problem.h + (ex.problem.pm ? 12 : 0), ex.problem.m)}。` }),
       cStep(1, { title: '24 時制換 12 時制', ask: '超過 12，減 12', id: 'back', hints: ['24 時制超過 12，就是下午或晚上。', '時減 12。', '18 時以後通常說晚上。'], think: '老師看：超過 12，是下午或晚上，再減 12。', together: '一起換：是下午還是晚上的幾時？',
         figure: ctx => digiHtml(ctx.problem.h2, ctx.problem.m2), q: ctx => `${digital(ctx.problem.h2, ctx.problem.m2)} 是什麼時候？`,
-        opts: ctx => { const { h2, m2 } = ctx.problem, p = periodOf(h2), other = p === '晚上' ? '下午' : '晚上'; return uniq([['ok', `${p} ${hmText(h2 - 12, m2)}`], ['am', `上午 ${hmText(h2 - 12, m2)}`], ['raw', `${other} ${hmText(h2 - 10, m2)}`]]); }, ans: () => 'ok',
+        opts: ctx => { const { h2, m2 } = ctx.problem, p = periodOf(h2), list = [['ok', `${p} ${hmText(h2 - 12, m2)}`], ['am', `上午 ${hmText(h2 - 12, m2)}`]];
+          if (h2 - 10 <= 12) list.push(['raw', `${periodOf(h2 + 2)} ${hmText(h2 - 10, m2)}`]);   // 第 32 版第 2 輪：錯誤選項也要是合理的 12 時制時刻
+          return uniq(list); }, ans: () => 'ok',
         wrong: (ctx, a) => ({ obs: 'plus12', msg: a === 'am' ? `超過 12 時是下午或晚上，不是上午。` : '時要減 12，不是減 10。' }), say: ex => `${digital(ex.problem.h2, ex.problem.m2)} 是${periodOf(ex.problem.h2)} ${hmText(ex.problem.h2 - 12, ex.problem.m2)}。` })
     ],
     reasons, done: ctx => `${ctx.problem.pm ? '下午、晚上加 12' : '上午不變'}；${digital(ctx.problem.h2, ctx.problem.m2)} 是${say12(toMin(ctx.problem.h2, ctx.problem.m2))}。`, chant: '24 時制：下午、晚上加 12；超過 12 減 12。', transfer: '想一想：火車票上寫 17:45，是下午還是晚上？'

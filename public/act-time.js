@@ -68,7 +68,10 @@
     for (let t = Math.ceil(from / 60) * 60; t <= to; t += 60) parts.push(`<path d="M${X(t).toFixed(1)} ${y - 9}V${y + 9}" class="ln-axis"/>`);
     (o.marks || []).forEach((t, i) => parts.push(`<circle cx="${X(t).toFixed(1)}" cy="${y}" r="6" class="tm-mark${i === 0 ? ' s' : i === (o.marks.length - 1) ? ' e' : ''}"/><text x="${X(t).toFixed(1)}" y="${y + 30}" text-anchor="middle" class="tm-lab">${esc(o.fmt ? o.fmt(t) : digital(...split(t)))}</text>`));
     (o.jumps || []).slice(0, o.show ?? 99).forEach(([a, b, t]) => { const xa = X(a), xb = X(b), mid = (xa + xb) / 2; parts.push(`<path d="M${xa.toFixed(1)} ${y}Q${mid.toFixed(1)} ${y - 62} ${xb.toFixed(1)} ${y}" class="tm-jump"/><text x="${mid.toFixed(1)}" y="${y - 40}" text-anchor="middle" class="tm-lab tm-jl">${esc(t)}</text>`); });
-    return `<svg class="ac-svg tm-line" viewBox="0 0 ${W} ${y + 44}" role="img" aria-label="${esc(o.aria || '時間線')}">${parts.join('')}</svg>`;
+    // 第 32 版第 2 輪：手機上時間線縮小，字太小；另外用一般字級列出端點和每一段（只在窄螢幕顯示）
+    const lab = t => o.fmt ? o.fmt(t) : digital(...split(t)), segs = (o.jumps || []).slice(0, o.show ?? 99).map(j => `${lab(j[0])} → ${lab(j[1])}：${j[2]}`);
+    const text = `<ul class="tm-line-text" aria-hidden="true">${(segs.length ? segs : [(o.marks || []).map(lab).join(' → ')]).map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
+    return `<svg class="ac-svg tm-line" viewBox="0 0 ${W} ${y + 44}" role="img" aria-label="${esc(o.aria || '時間線')}">${parts.join('')}</svg>${text}`;
   }
   // 月曆：y 年 mo 月；o.mark 圈起來的日；o.hint 提示框起來的日
   const WEEK = ['日', '一', '二', '三', '四', '五', '六'];
@@ -83,7 +86,7 @@
     return `<table class="tm-cal" aria-label="${y} 年 ${mo} 月的月曆"><caption>${y} 年 ${mo} 月</caption><thead><tr>${WEEK.map(w => `<th scope="col">${w}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
   }
   // 時刻表：head 欄名，rows 每一列；o.hint 提示框起來的列
-  const ttHtml = (title, head, rows, o = {}) => `<table class="tm-tt"><caption>${esc(title)}</caption><thead><tr>${head.map(h => `<th scope="col">${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map((r, i) => `<tr class="${(o.hint || []).includes(i) ? 'hint' : ''}">${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  const ttHtml = (title, head, rows, o = {}) => `<table class="tm-tt"><caption>${esc(title)}</caption><thead><tr>${head.map((h, k) => `<th scope="col"${k === o.col ? ' class="hint"' : ''}>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map((r, i) => `<tr class="${(o.hint || []).includes(i) ? 'hint' : ''}">${r.map((c, k) => `<td${k === o.col ? ' class="hint"' : ''}>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 
   // ---------- 輔助（入門、一般可以打開；打開會記一筆） ----------
   let aidCtx = null;
@@ -114,6 +117,8 @@
     solve: ctx => { const [x, y] = o.ans(ctx); ctx.answers[o.id + 'H'] = String(x); ctx.answers[o.id + 'M'] = String(y); }, say: o.say });
   const prompt = ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>`;
   const shown = (ctx, n) => ctx.hint(n) >= 2 || ctx.checked(n);
+  // 第 32 版第 2 輪：時間線上這一步要算的那一段，答對以前只畫弧、標「？」，不直接寫出答案
+  const ql = (ctx, n, text) => ctx.checked(n) ? text : '？';
   // 讀鐘時常見的錯：時針快到下一個數字就讀成下一時、時針分針看反
   const readWrong = (h, m) => (ctx, v) => v === (h % 12) + 1 && m >= 30 ? { obs: 'hourNext', msg: `時針快到 ${(h % 12) + 1}，可是還沒到，所以還是 ${h} 時。` } : v === minuteNo(m) && v !== h ? { obs: 'handSwap', msg: '這是長針（分針）指的數字。時針是短的那一根。' } : { msg: '看短針（時針）剛走過哪個數字。' };
 
@@ -132,7 +137,7 @@
       think: '老師先找短的那一根：短針是時針。', together: '一起找：哪一根是時針？', figure: ctx => clockSVG(ctx.problem.h, ctx.problem.m, { hl: shown(ctx, 0) ? 'h' : null }), pre: prompt,
       q: () => '哪一根是時針（告訴我們幾時）？', opts: () => [['short', '短的、粗的那一根'], ['long', '長的、細的那一根']], ans: () => 'short',
       wrong: () => ({ obs: 'handSwap', msg: '長的那一根是分針。時針是短的那一根。' }), say: () => '短的、粗的是時針。' }),
-    nStep(1, { title: '讀幾時', ask: '時針剛走過哪個數字？', id: 'hh', hints: ['看短針剛走過哪個數字。', '短針在兩個數字中間時，看它「剛走過」的那一個（比較小的）。', '還沒走到的數字不算。'],
+    nStep(1, { title: '讀幾時', ask: '時針剛走過哪個數字？', id: 'hh', hints: ['看短針剛走過哪個數字。', '短針在兩個數字中間時，看它順著時針方向「剛走過」的那一個。', '還沒走到的數字不算：在 12 和 1 中間，還沒走到 1，就是 12 時。'],
       think: '老師看短針：它剛走過的數字就是幾時。', together: '一起讀：幾時？', figure: ctx => clockSVG(ctx.problem.h, ctx.problem.m, { hl: 'h' }),
       label: () => '時針剛走過哪個數字？是幾時？', ans: ctx => ctx.problem.h, wrong: (ctx, v) => readWrong(ctx.problem.h, ctx.problem.m)(ctx, v), say: ex => `短針剛走過 ${ex.problem.h}，是 ${ex.problem.h} 時。` }),
     nStep(2, { title: '找長針', ask: '分針剛走過哪個數字？', id: 'mn', hints: ['長針是分針。', '看長針剛走過哪個數字。', '還沒走到的數字不算。'],
@@ -187,11 +192,12 @@
       }
     }
   }
-  const crossLine = (ctx, show) => { const p = ctx.problem, s = toMin(p.sh, p.sm), e = toMin(p.eh, p.em), mid = [s, toMin(p.sh + 1, 0)];
+  const crossLine = (ctx, show, ask = -1, n = 0) => { const p = ctx.problem, s = toMin(p.sh, p.sm), e = toMin(p.eh, p.em), mid = [s, toMin(p.sh + 1, 0)];
     if (p.eh > p.sh + 1) mid.push(toMin(p.eh, 0)); mid.push(e);
     const jumps = [[s, toMin(p.sh + 1, 0), `${60 - p.sm} 分`]]; if (p.eh > p.sh + 1) jumps.push([toMin(p.sh + 1, 0), toMin(p.eh, 0), `${p.eh - p.sh - 1} 小時`]); jumps.push([toMin(p.eh, 0), e, `${p.em} 分`]);
-    const n = show >= 3 ? jumps.length : show === 2 ? (p.eh > p.sh + 1 ? 2 : 1) : show;
-    return lineSVG(s - 5, e + 5, { marks: mid, jumps, show: n, aria: '時間線：開始、整點、結束' }); };
+    const k = show >= 3 ? jumps.length : show === 2 ? (p.eh > p.sh + 1 ? 2 : 1) : show;
+    if (ask >= 0 && jumps[ask] && !ctx.checked(n)) jumps[ask][2] = '？';
+    return lineSVG(s - 5, e + 5, { marks: mid, jumps, show: k, aria: '時間線：開始、整點、結束' }); };
   const crossSteps = [
     cStep(0, { title: '看題目', ask: '要找開始、結束，還是經過多久？', id: 'find', fixed: true, hints: ['讀一讀最後一句：問的是什麼？', '「經過多久」問的是時間量（幾小時幾分鐘）。', '「幾時幾分開始、結束」問的是時刻。'],
       think: '老師讀最後一句：問「經過多久」，要找的是時間量。', together: '一起讀：題目問什麼？', pre: prompt,
@@ -202,15 +208,15 @@
       label: () => '開始的時刻（看左邊的時鐘）是幾時幾分？', ans: ctx => [ctx.problem.sh, ctx.problem.sm], wrong: (ctx, [a]) => a !== ctx.problem.sh ? readWrong(ctx.problem.sh, ctx.problem.sm)(ctx, a) : { msg: '再看一次長針：五個一數，再一小格一小格數。' },
       say: ex => `${hmText(ex.problem.sh, ex.problem.sm)}開始，${hmText(ex.problem.eh, ex.problem.em)}結束。` }),
     nStep(2, { title: '先跳到整點', ask: '到下一個整點要幾分鐘？', id: 'j1', aid: convAid, hints: ['在時間線上，從開始跳到下一個整點。', '1 小時是 60 分鐘。', '60 － 開始的分 ＝ 跳到整點的分鐘。'],
-      think: '老師先從開始跳到下一個整點：60 減掉開始的分。', together: '一起跳：到整點要幾分鐘？', figure: ctx => crossLine(ctx, ctx.checked(2) || ctx.hint(2) >= 2 ? 1 : 0),
+      think: '老師先從開始跳到下一個整點：60 減掉開始的分。', together: '一起跳：到整點要幾分鐘？', figure: ctx => crossLine(ctx, ctx.checked(2) || ctx.hint(2) >= 2 ? 1 : 0, 0, 2),
       label: ctx => `${hmText(ctx.problem.sh, ctx.problem.sm)} 到 ${ctx.problem.sh + 1} 時，是幾分鐘？`, ans: ctx => 60 - ctx.problem.sm,
       wrong: (ctx, v) => v === 100 - ctx.problem.sm ? { obs: 'base100', msg: '1 小時是 60 分鐘，不是 100 分鐘。' } : v === ctx.problem.sm ? { msg: `${ctx.problem.sm} 是開始的分，還要幾分鐘才到整點？` } : { msg: `60 － ${ctx.problem.sm} ＝ ？` },
       say: ex => `到 ${ex.problem.sh + 1} 時要 ${60 - ex.problem.sm} 分鐘。` }),
     nStep(3, { title: '再跳整時', ask: '中間有幾個整小時？', id: 'j2', hints: ['從第一個整點，一小時一小時跳。', '跳到結束那一時的整點就停。', '沒有整小時就填 0。'],
-      think: '老師從整點開始，一小時一小時跳，跳到結束那一時。', together: '一起跳：幾小時？', figure: ctx => crossLine(ctx, ctx.checked(3) || ctx.hint(3) >= 2 ? 2 : 1),
+      think: '老師從整點開始，一小時一小時跳，跳到結束那一時。', together: '一起跳：幾小時？', figure: ctx => crossLine(ctx, ctx.checked(3) || ctx.hint(3) >= 2 ? 2 : 1, ctx.problem.eh > ctx.problem.sh + 1 ? 1 : -1, 3),
       label: ctx => `${ctx.problem.sh + 1} 時到 ${ctx.problem.eh} 時，是幾小時？（沒有就填 0）`, ans: ctx => ctx.problem.eh - ctx.problem.sh - 1, say: ex => `中間有 ${ex.problem.eh - ex.problem.sh - 1} 小時。` }),
     nStep(4, { title: '跳剩下的', ask: '最後一段是幾分鐘？', id: 'j3', hints: ['從結束那一時的整點，跳到結束的時刻。', '整點到幾分，就是幾分鐘。', '看結束時刻的分。'],
-      think: '老師跳最後一段：從整點跳到結束的時刻。', together: '一起跳：最後幾分鐘？', figure: ctx => crossLine(ctx, 3),
+      think: '老師跳最後一段：從整點跳到結束的時刻。', together: '一起跳：最後幾分鐘？', figure: ctx => crossLine(ctx, 3, ctx.problem.eh > ctx.problem.sh + 1 ? 2 : 1, 4),
       label: ctx => `${ctx.problem.eh} 時到 ${hmText(ctx.problem.eh, ctx.problem.em)}，是幾分鐘？`, ans: ctx => ctx.problem.em, say: ex => `最後一段 ${ex.problem.em} 分鐘。` }),
     hmStep(5, { title: '加起來', ask: '分鐘加起來滿 60 了嗎？', id: 'tot', dur: true, aid: convAid, hints: ['把三段加起來：分鐘加分鐘，小時加小時。', '分鐘滿 60，換成 1 小時。', '時間是 60 進位，不是 100 進位。'],
       think: '老師把三段加起來；分鐘滿 60 就換成 1 小時。', together: '一起加：一共經過多久？', figure: ctx => crossLine(ctx, 3),
@@ -258,7 +264,7 @@
       q: () => '題目說的是哪一件事？', opts: ctx => { const p = ctx.problem; return [['ok', `${say12(p.T)}以前要到${p.c.place}`], ['now', `${say12(p.now)}以前要到${p.c.place}`], ['late', `${say12(p.T)}才出門`]]; }, ans: () => 'ok',
       wrong: (ctx, a) => a === 'now' ? { obs: 'departVsArrive', msg: `${say12(ctx.problem.now)}是「現在」，不是期限。` } : { obs: 'departVsArrive', msg: '期限是「要到」的時刻，不是出門的時刻。' }, say: ex => `${say12(ex.problem.T)}以前要到${ex.problem.c.place}。` }),
     nStep(1, { title: '期限：還剩多久', ask: '從現在到期限，還剩幾分鐘？', id: 'remain', aid: convAid, hints: ['從現在跳到期限。', '先跳到整點，再跳剩下的。', '1 小時是 60 分鐘。'],
-      think: '老師從現在跳到期限：先跳到整點，再跳剩下的。', together: '一起跳：還剩幾分鐘？', figure: ctx => { const p = ctx.problem; return lineSVG(p.now - 3, p.T + 3, { marks: [p.now, p.T], fmt: say12, jumps: shown(ctx, 1) ? [[p.now, p.T, `${p.remain} 分`]] : [], aria: '時間線：現在到期限' }); },
+      think: '老師從現在跳到期限：先跳到整點，再跳剩下的。', together: '一起跳：還剩幾分鐘？', figure: ctx => { const p = ctx.problem; return lineSVG(p.now - 3, p.T + 3, { marks: [p.now, p.T], fmt: say12, jumps: shown(ctx, 1) ? [[p.now, p.T, ql(ctx, 1, `${p.remain} 分`)]] : [], aria: '時間線：現在到期限' }); },
       label: ctx => `${say12(ctx.problem.now)}到${say12(ctx.problem.T)}，還剩幾分鐘？`, ans: ctx => ctx.problem.remain,
       wrong: (ctx, v) => v === base100Diff(ctx.problem.now, ctx.problem.T) ? { obs: 'base100', msg: '直接相減是把時間當成 100 進位了。先跳到整點，再跳剩下的。' } : { msg: '用時間線：先跳到整點，再跳剩下的。' }, say: ex => `還剩 ${ex.problem.remain} 分鐘。` }),
     nStep(2, { title: '需要多久', ask: '要做的事一共要幾分鐘？', id: 'need', hints: ['把每一件事要的時間加起來。', '走路的時間也要算。', '老師說要提早到，提早的分鐘也要加。'],
@@ -283,5 +289,5 @@
     transfer: '想一想：明天早上要幾點起床，上學才來得及？'
   });
 
-  window.timeFig = { rnd, any, pad2, toMin, split, hmText, digital, to12, periodOf, say12, durText, base100Diff, minuteNo, clockSVG, digiHtml, clockPair, setClockHtml, bindClock, lineSVG, WEEK, daysIn, weekday, calHtml, ttHtml, fiveAid, convAid, nStep, cStep, hmStep, prompt, shown, readWrong };
+  window.timeFig = { rnd, any, pad2, toMin, split, hmText, digital, to12, periodOf, say12, durText, base100Diff, minuteNo, clockSVG, digiHtml, clockPair, setClockHtml, bindClock, lineSVG, WEEK, daysIn, weekday, calHtml, ttHtml, fiveAid, convAid, nStep, cStep, hmStep, prompt, shown, ql, readWrong };
 })();

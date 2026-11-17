@@ -12,6 +12,16 @@
   const load = (k, f) => { try { return JSON.parse(sessionStorage.getItem(k) || 'null') ?? f; } catch { return f; } };
   const keep = (k, v) => { try { sessionStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } };
   let state = null, item = null, answers = {}, itemStart = 0, timer = null, tech = false, busy = false;
+  // 第 32 版：注音沿用學生頁（學生頁按過的注音鍵優先，其次是老師的設定）；探試頁也可以自己切換
+  const AID_KEY = 'area-reading-v18', READ_KEY = 'area-reading-now';
+  const zyOn = () => { const a = load(AID_KEY, {}) || {}; return typeof a.zhuyin === 'boolean' ? a.zhuyin : !!(load(READ_KEY, {}) || {}).zhuyin; };
+  function applyZhuyin() {
+    const on = zyOn(); document.documentElement.classList.toggle('zhuyin-on', on);
+    if ($('aidZhuyin')) $('aidZhuyin').setAttribute('aria-pressed', String(on));
+    if (window.zhuyin) window.zhuyin.enable($('probe'), on);
+  }
+  if ($('aidZhuyin')) $('aidZhuyin').onclick = () => { const a = load(AID_KEY, {}) || {}; a.zhuyin = !zyOn(); keep(AID_KEY, a); applyZhuyin(); };
+  applyZhuyin();
 
   async function api(path, body) {
     const res = await fetch(path, body === undefined ? { cache: 'no-store' } : { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), cache: 'no-store' });

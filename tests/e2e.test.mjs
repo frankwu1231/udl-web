@@ -2219,3 +2219,39 @@ test('第 32 版：學習地圖換成時間概念、單元 0 是先測、有時�
   assert.deepEqual(errs, []); await ctx.close(); await tp.close();
   await publish({});
 });
+
+test('第 32 版第 2 輪：7-2 錯誤選項是合理的 12 時制；時間線這一步的答案先標「？」；公車第三層提示框到站欄、不框答案', { skip: skip || !distReady }, async () => {
+  const p = await act('tmRead1', { difficulty: 'standard', ...TIME_MAP(['tmRead1']) });
+  const out = await p.page.evaluate(() => {
+    const A = window.areaActs, bad = [], mk = (id, level, hint, checked) => { const pl = A.get(id), problem = pl.makeProblem(level, 0, Math.random); return { pl, ctx: { answers: {}, state: {}, problem, plugin: pl, settings: {}, method: 'mark', level, hint: () => hint, checked: () => checked, invalidate() {}, refreshFigure() {}, rerender() {}, log() {}, choice: (k, t, items) => items.map(x => x[1]).join('|') } }; };
+    for (let h2 = 13; h2 <= 23; h2++) { const { pl, ctx } = mk('tm24', 'standard', 0, false); ctx.problem.h2 = h2; ctx.problem.m2 = 25;
+      for (const o of pl.steps[1].answer(ctx).split('|')) { const m = o.match(/^(上午|下午|晚上) (\d+) 時/); if (!m) { bad.push('7-2 選項格式 ' + o); continue; } const h = Number(m[2]); if (h < 1 || h > 12 || (m[1] === '下午' && h > 6) || (m[1] === '晚上' && h < 6)) bad.push('7-2 選項不合理 ' + o); } }
+    for (let i = 0; i < 20; i++) { const { pl, ctx } = mk('tmMidnight', 'standard', 3, false), html = pl.steps[0].figure(ctx); if (!/？/.test(html)) bad.push('8-3 第三層提示沒有標？');
+      const p2 = mk('tmMidnight', 'standard', 3, true); if (/？/.test(p2.pl.steps[0].figure(p2.ctx))) bad.push('8-3 答對後還是？'); }
+    { const { pl, ctx } = mk('tmBus', 'standard', 3, false), html = pl.steps[1].figure(ctx); if (/<tr class="hint"/.test(html)) bad.push('9-4 第三層提示框了答案那一列'); if (!/<td class="hint"/.test(html)) bad.push('9-4 第三層提示沒有框到站欄'); }
+    return bad;
+  });
+  assert.deepEqual(out, []); assert.deepEqual(p.errors, []);
+});
+
+test('第 32 版第 2 輪：手機 390px 開注音，月曆七欄都在卡片裡；小測驗頁沿用注音，也可以自己關掉', { skip: skip || !distReady }, async () => {
+  await setup(); await publish({ ...TIME_MAP(['tmCal']) });
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } }), page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('dialog', d => d.accept());
+  await page.addInitScript(() => { if (!sessionStorage.getItem('area-reading-v18')) sessionStorage.setItem('area-reading-v18', JSON.stringify({ zhuyin: true })); });
+  await page.goto(`${base}/seven.html?a=tmCal`); await page.waitForSelector('#start');
+  await begin({ page, choose: (k, v) => page.click(`[data-choice="${k}"][data-value="${v}"]`) }); await page.waitForSelector('.tm-cal');
+  await page.waitForSelector('.tm-cal ruby'); assert.ok(await page.$('#app ruby'), '注音打開');
+  const fit = await page.$eval('.tm-cal', t => { const r = t.getBoundingClientRect(), box = t.closest('.figure, .ac-fig, section, .stage') || t.parentElement, b = box.getBoundingClientRect(); return { right: r.right, boxRight: b.right, w: r.width, vw: innerWidth }; });
+  assert.ok(fit.right <= Math.min(fit.boxRight, fit.vw) + 1, `月曆超出：${JSON.stringify(fit)}`);
+  // 小測驗頁：匯入時間題組，學生頁開著注音 → 小測驗頁也有注音
+  await page.goto(base + '/study.html'); await page.waitForSelector('#probeFile');
+  await page.setInputFiles('#probeFile', fileURLToPath(new URL('../scenarios/time-clock-probe.json', import.meta.url)));
+  await page.waitForFunction(() => /timeClockProbe@1|匯入過/.test(document.querySelector('#probeMsg')?.textContent || ''));
+  await page.evaluate(() => sessionStorage.setItem('area-research-who-v22', JSON.stringify({ teacher: 'T01', student: 'T01-S08', sessionNo: 1, sessionId: 'zy' })));
+  await page.goto(base + '/probe.html'); await page.waitForSelector('#probeStart');
+  await page.selectOption('#probeSet', 'timeClockProbe@1'); await page.click('#probeStart'); await page.waitForSelector('[data-step]');
+  assert.ok(await page.$('.probe .prompt ruby'), '題目有注音'); assert.ok(await page.$('.probe .label ruby'), '欄位有注音');
+  assert.ok(await page.$('.probe svg.probe-clock, .probe svg'), '有時鐘圖');
+  await page.click('#aidZhuyin'); assert.equal(await page.$('.probe ruby'), null, '可以關掉');
+  assert.deepEqual(errors, []); await ctx.close();
+});

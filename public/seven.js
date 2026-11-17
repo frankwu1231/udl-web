@@ -1475,6 +1475,7 @@
     root.dataset.size = r.textSize; root.classList.toggle('contrast', r.contrast); root.classList.toggle('zhuyin-on', r.zhuyin); applySimple();
     if ($('aidZhuyin')) { $('aidZhuyin').setAttribute('aria-pressed', String(r.zhuyin)); $('aidSize').textContent = { normal: '字：一般', large: '字：大', xlarge: '字：特大' }[r.textSize]; $('aidContrast').setAttribute('aria-pressed', String(r.contrast)); }
     if (window.zhuyin) window.zhuyin.enable($('app'), r.zhuyin);
+    try { sessionStorage.setItem('area-reading-now', JSON.stringify(r)); } catch { /* 略過 */ }   // 第 32 版：給小測驗頁沿用
   }
   // 第 29 版：精簡畫面。只在解題活動裡用（學習地圖照舊）；老師勾的項目才顯示
   function applySimple() {

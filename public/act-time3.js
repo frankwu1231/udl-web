@@ -4,7 +4,7 @@
 // 時刻表、站名、店名都是虛構的練習資料，不是真實的班次。
 (() => {
   const A = window.areaActs, U = A.util, { esc } = U, T = window.timeFig;
-  const { rnd, any, toMin, split, hmText, digital, to12, periodOf, say12, durText, base100Diff, clockSVG, digiHtml, clockPair, lineSVG, ttHtml, convAid, nStep, cStep, hmStep, prompt, shown } = T;
+  const { rnd, any, toMin, split, hmText, digital, to12, periodOf, say12, durText, base100Diff, clockSVG, digiHtml, clockPair, lineSVG, ttHtml, convAid, nStep, cStep, hmStep, prompt, shown, ql } = T;
   const methods = [['mark', '🧮 一步一步算'], ['self', '🧠 先自己想，需要時看提示']];
   const reasons = [['line', '畫時間線'], ['sixty', '記得 60 進位'], ['hint', '看提示']];
   const hm12 = t => { const [h, m] = split(t); return [to12(h), m]; };
@@ -20,10 +20,10 @@
       nStep(0, { title: '換成 24 時制', ask: '下午的時刻要加 12', id: 'h24', hints: ['上午和下午的數字不能直接比。', '下午的時刻加 12，換成 24 時制。', `例如下午 2 時是 14 時。`], think: '老師先把下午的時刻換成 24 時制：加 12。', together: '一起換：是幾時？', pre: prompt,
         label: ctx => `下午 ${ctx.problem.h2} 時，用 24 時制是幾時？`, ans: ctx => ctx.problem.h2 + 12, wrong: (ctx, v) => v === ctx.problem.h2 ? { obs: 'plus12', msg: '下午的時刻要加 12。' } : null, say: ex => `下午 ${ex.problem.h2} 時是 ${ex.problem.h2 + 12} 時。` }),
       hmStep(1, { title: '先跳到中午 12 時', ask: '到中午 12 時經過多久？', id: 'a', dur: true, hints: ['從開始跳到中午 12 時。', '先跳到下一個整點，再一小時一小時跳。', '1 小時 60 分鐘。'], think: '老師先從上午跳到中午 12 時。', together: '一起跳：到中午經過多久？',
-        figure: ctx => { const p = ctx.problem; return lineSVG(p.s - 10, p.e + 10, { marks: [p.s, 720, p.e], fmt: say12, jumps: shown(ctx, 1) ? [[p.s, 720, durText(720 - p.s)]] : [], aria: '時間線：開始、中午 12 時、結束' }); },
+        figure: ctx => { const p = ctx.problem; return lineSVG(p.s - 10, p.e + 10, { marks: [p.s, 720, p.e], fmt: say12, jumps: shown(ctx, 1) ? [[p.s, 720, ql(ctx, 1, durText(720 - p.s))]] : [], aria: '時間線：開始、中午 12 時、結束' }); },
         label: ctx => `上午 ${hmText(ctx.problem.h1, ctx.problem.m1)}到中午 12 時，經過幾小時幾分鐘？`, ans: ctx => split(720 - ctx.problem.s), say: ex => `到中午經過 ${durText(720 - ex.problem.s)}。` }),
       hmStep(2, { title: '再跳到結束', ask: '中午 12 時到結束經過多久？', id: 'b', dur: true, hints: ['從中午 12 時跳到結束。', '中午 12 時到下午 1 時是 1 小時。', '下午幾時幾分，就是過了幾小時幾分鐘。'], think: '老師再從中午 12 時跳到結束。', together: '一起跳：中午以後經過多久？',
-        figure: ctx => { const p = ctx.problem; return lineSVG(p.s - 10, p.e + 10, { marks: [p.s, 720, p.e], fmt: say12, jumps: [[p.s, 720, durText(720 - p.s)], ...(shown(ctx, 2) ? [[720, p.e, durText(p.e - 720)]] : [])] }); },
+        figure: ctx => { const p = ctx.problem; return lineSVG(p.s - 10, p.e + 10, { marks: [p.s, 720, p.e], fmt: say12, jumps: [[p.s, 720, durText(720 - p.s)], ...(shown(ctx, 2) ? [[720, p.e, ql(ctx, 2, durText(p.e - 720))]] : [])] }); },
         label: ctx => `中午 12 時到下午 ${hmText(ctx.problem.h2, ctx.problem.m2)}，經過幾小時幾分鐘？`, ans: ctx => [ctx.problem.h2, ctx.problem.m2], say: ex => `中午以後經過 ${durText(ex.problem.e - 720)}。` }),
       hmStep(3, { title: '加起來', ask: '兩段加起來', id: 'tot', dur: true, aid: convAid, hints: ['兩段的時間加起來。', '分鐘滿 60 換 1 小時。', '不能直接用下午的數字減上午的數字。'], think: '老師把兩段加起來，分鐘滿 60 換成 1 小時。', together: '一起加：一共多久？',
         figure: ctx => { const p = ctx.problem; return lineSVG(p.s - 10, p.e + 10, { marks: [p.s, 720, p.e], fmt: say12, jumps: [[p.s, 720, durText(720 - p.s)], [720, p.e, durText(p.e - 720)]] }); },
@@ -41,7 +41,7 @@
     planFigure: () => '<p class="fm-big">🌙 → ☀️</p>',
     steps: [
       hmStep(0, { title: '跳到半夜 12 時', ask: '晚上到半夜 12 時（0 時）經過多久？', id: 'a', dur: true, hints: ['一天的最後是半夜 12 時，也就是 24 時（0 時）。', '晚上的時刻換成 24 時制：加 12。', '24 時減掉睡覺的時刻。'], think: '老師先從晚上跳到半夜 12 時，那時是新的一天的 0 時。', together: '一起跳：到半夜經過多久？', pre: prompt,
-        figure: ctx => { const p = ctx.problem; return lineSVG(p.s - 10, p.e + 10, { marks: [p.s, 1440, p.e], fmt: t => t === 1440 ? '半夜 12 時' : say12(t), jumps: shown(ctx, 0) ? [[p.s, 1440, durText(1440 - p.s)]] : [], aria: '時間線：睡覺、半夜 12 時、起床' }); },
+        figure: ctx => { const p = ctx.problem; return lineSVG(p.s - 10, p.e + 10, { marks: [p.s, 1440, p.e], fmt: t => t === 1440 ? '半夜 12 時' : say12(t), jumps: shown(ctx, 0) ? [[p.s, 1440, ql(ctx, 0, durText(1440 - p.s))]] : [], aria: '時間線：睡覺、半夜 12 時、起床' }); },
         label: ctx => `晚上 ${hmText(ctx.problem.h1, ctx.problem.m1)}到半夜 12 時，經過幾小時幾分鐘？`, ans: ctx => split(1440 - ctx.problem.s), say: ex => `到半夜 12 時經過 ${durText(1440 - ex.problem.s)}。` }),
       hmStep(1, { title: '再跳到早上', ask: '0 時到早上經過多久？', id: 'b', dur: true, hints: ['半夜 12 時就是 0 時。', '0 時到早上幾時幾分，就是經過幾小時幾分鐘。', '看起床的時刻。'], think: '老師從 0 時跳到早上起床。', together: '一起跳：0 時以後經過多久？',
         label: ctx => `半夜 12 時（0 時）到早上 ${hmText(ctx.problem.h2, ctx.problem.m2)}，經過幾小時幾分鐘？`, ans: ctx => [ctx.problem.h2, ctx.problem.m2], say: ex => `再經過 ${durText(ex.problem.e - 1440)}。` }),
@@ -143,12 +143,12 @@
         figure: ctx => { const p = ctx.problem, f = t => digital(...split(t)); return `<div class="tm-pair">${ttHtml(`往${p.b}（${p.a}發車）`, ['班次', `${p.a}開`], p.deps.map((t, k) => [`第 ${k + 1} 班`, f(t)]))}${ttHtml(`往${p.a}（${p.b}發車）`, ['班次', `${p.b}開`], p.back.map((t, k) => [`第 ${k + 1} 班`, f(t)]))}</div>`; },
         q: () => '要看哪一張時刻表？', opts: ctx => [['go', `往${ctx.problem.b}`], ['back', `往${ctx.problem.a}`]], ans: () => 'go', wrong: () => ({ obs: 'wrongDirection', msg: '這是反方向的車。要從出發的那一站開往目的地。' }), say: ex => `看「往${ex.problem.b}」那一張。` }),
       cStep(1, { title: '選班次', ask: '哪一班最晚、又不會遲到？', id: 'bus', hints: ['每一班開車的時刻，加上坐車的時間，就是到站的時刻。', '到站的時刻要在期限以前。', '在來得及的班次裡，選最晚的一班。'], think: '老師一班一班算：開車時刻加上坐車時間，看會不會遲到。', together: '一起選：搭哪一班？',
-        figure: ctx => { const p = ctx.problem, f = t => digital(...split(t)); return ttHtml(`往${p.b}（坐 ${p.ride} 分鐘）`, ['班次', `${p.a}開`, ...(shown(ctx, 1) ? [`到${p.b}`] : [])], p.deps.map((t, k) => [`第 ${k + 1} 班`, f(t), ...(shown(ctx, 1) ? [f(t + p.ride)] : [])]), { hint: ctx.hint(1) >= 3 ? [p.pick] : [] }); },
+        figure: ctx => { const p = ctx.problem, f = t => digital(...split(t)); return ttHtml(`往${p.b}（坐 ${p.ride} 分鐘）`, ['班次', `${p.a}開`, ...(shown(ctx, 1) ? [`到${p.b}`] : [])], p.deps.map((t, k) => [`第 ${k + 1} 班`, f(t), ...(shown(ctx, 1) ? [f(t + p.ride)] : [])]), { col: shown(ctx, 1) && ctx.hint(1) >= 3 ? 2 : -1 }); },
         q: ctx => `${digital(...split(ctx.problem.T))} 以前要到，最晚可以搭哪一班？`, opts: ctx => ctx.problem.deps.slice(Math.max(0, ctx.problem.pick - 2), ctx.problem.pick + 2).map(t => [String(t), digital(...split(t))]), ans: ctx => String(ctx.problem.deps[ctx.problem.pick]),
         wrong: (ctx, a) => { const p = ctx.problem, t = Number(a); return t + p.ride > p.T ? { obs: 'departVsArrive', msg: `這班 ${digital(...split(t))} 開，${digital(...split(t + p.ride))} 才到，會遲到。要看「到站」的時刻。` } : { msg: '這班也來得及，可是題目問「最晚」的一班。' }; },
         say: ex => `最晚搭 ${digital(...split(ex.problem.deps[ex.problem.pick]))} 那一班，${digital(...split(ex.problem.deps[ex.problem.pick] + ex.problem.ride))} 到。` }),
       nStep(2, { title: '要等多久', ask: '現在到開車，要等幾分鐘？', id: 'wait', hints: ['從現在跳到開車的時刻。', '用減的，或在時間線上跳。', '60 進位，不夠減要借 1 小時。'], think: '老師從現在跳到開車的時刻。', together: '一起算：要等幾分鐘？',
-        figure: ctx => { const p = ctx.problem, d = p.deps[p.pick]; return lineSVG(p.now - 3, d + 3, { marks: [p.now, d], jumps: shown(ctx, 2) ? [[p.now, d, `${p.wait} 分`]] : [] }); },
+        figure: ctx => { const p = ctx.problem, d = p.deps[p.pick]; return lineSVG(p.now - 3, d + 3, { marks: [p.now, d], jumps: shown(ctx, 2) ? [[p.now, d, ql(ctx, 2, `${p.wait} 分`)]] : [] }); },
         label: ctx => `現在 ${digital(...split(ctx.problem.now))}，到 ${digital(...split(ctx.problem.deps[ctx.problem.pick]))} 要等幾分鐘？`, ans: ctx => ctx.problem.wait,
         wrong: (ctx, v) => v === base100Diff(ctx.problem.now, ctx.problem.deps[ctx.problem.pick]) ? { obs: 'base100', msg: '直接相減是把時間當成 100 進位了。' } : null, say: ex => `要等 ${ex.problem.wait} 分鐘。` }),
       cStep(3, { title: '錯過了怎麼辦', ask: '下一班來得及嗎？', id: 'miss', fixed: true, hints: ['看下一班幾時幾分開。', '加上坐車的時間，看幾時幾分到。', '和期限比一比。'], think: '老師想：如果錯過了，下一班會不會遲到？要怎麼辦？', together: '一起想：錯過了怎麼辦？',
@@ -173,7 +173,7 @@
       nStep(0, { title: '要做的事一共多久', ask: '想做的事加起來', id: 'sum', hints: ['把每一件事的時間加起來。', '一件一件加，不要漏。', '可以先加成整十的。'], think: '老師把想做的事一件一件加起來。', together: '一起加：一共幾分鐘？', pre: prompt,
         figure: ctx => `<ul class="tm-tasks">${ctx.problem.tasks.map(t => `<li data-read>${esc(t[0])}：${t[1]} 分鐘</li>`).join('')}</ul>`, label: () => '想做的事一共幾分鐘？', ans: ctx => ctx.problem.sum, say: ex => `一共 ${ex.problem.sum} 分鐘。` }),
       nStep(1, { title: '有多少時間', ask: '放學到睡覺，扣掉晚餐，還有幾分鐘？', id: 'free', aid: convAid, hints: ['先算放學到睡覺經過多久。', '換成分鐘：1 小時 60 分鐘。', '再扣掉晚餐 30 分鐘。'], think: '老師先算放學到睡覺有多久，再扣掉晚餐。', together: '一起算：還有幾分鐘？',
-        figure: ctx => { const p = ctx.problem; return lineSVG(p.home - 10, p.bed + 10, { marks: [p.home, toMin(18, 0), toMin(18, 30), p.bed], fmt: say12, jumps: shown(ctx, 1) ? [[p.home, p.bed, durText(p.bed - p.home)]] : [], aria: '時間線：放學、晚餐、睡覺' }); },
+        figure: ctx => { const p = ctx.problem; return lineSVG(p.home - 10, p.bed + 10, { marks: [p.home, toMin(18, 0), toMin(18, 30), p.bed], fmt: say12, jumps: shown(ctx, 1) ? [[p.home, p.bed, ql(ctx, 1, durText(p.bed - p.home))]] : [], aria: '時間線：放學、晚餐、睡覺' }); },
         label: () => '扣掉晚餐，還有幾分鐘可以安排？', ans: ctx => ctx.problem.free, wrong: (ctx, v) => v === ctx.problem.free + 30 ? { msg: '別忘了扣掉晚餐 30 分鐘。' } : v === base100Diff(ctx.problem.home, ctx.problem.bed) - 30 ? { obs: 'base100', msg: '1 小時是 60 分鐘，不是 100 分鐘。' } : null, say: ex => `還有 ${ex.problem.free} 分鐘。` }),
       cStep(2, { title: '排得下嗎', ask: '要做的事放得進去嗎？', id: 'fit', fixed: true, hints: ['比一比：要做的事一共多久、有多少時間。', '要做的比較少（或一樣），排得下。', '要做的比較多，就要少做一件或改到別天。'], think: '老師比一比：要做的事，放得進有空的時間嗎？', together: '一起比：排得下嗎？',
         q: () => '排得下嗎？', opts: () => [['yes', '排得下'], ['no', '排不下，要少做一件或改到別天']], ans: ctx => ctx.problem.fits ? 'yes' : 'no', wrong: ctx => ({ msg: `要做 ${ctx.problem.sum} 分鐘，有 ${ctx.problem.free} 分鐘。` }), say: ex => ex.problem.fits ? '排得下。' : '排不下，要少做一件或改到別天。' }),
@@ -194,7 +194,7 @@
     planFigure: ctx => clockPair(clockSVG(...hm12(ctx.problem.now), { aria: '現在的時鐘' }), digiHtml(...split(ctx.problem.close), { period: '關門', aria: '關門時刻' })),
     steps: [
       nStep(0, { title: '還剩多久', ask: '現在到關門，還剩幾分鐘？', id: 'remain', aid: convAid, hints: ['從現在跳到關門的時刻。', '先跳到整點，再跳剩下的。', '1 小時 60 分鐘。'], think: '老師從現在跳到關門。', together: '一起算：還剩幾分鐘？', pre: prompt,
-        figure: ctx => { const p = ctx.problem; return lineSVG(p.now - 3, p.close + 3, { marks: [p.now, p.close], fmt: say12, jumps: shown(ctx, 0) ? [[p.now, p.close, `${p.remain} 分`]] : [] }); },
+        figure: ctx => { const p = ctx.problem; return lineSVG(p.now - 3, p.close + 3, { marks: [p.now, p.close], fmt: say12, jumps: shown(ctx, 0) ? [[p.now, p.close, ql(ctx, 0, `${p.remain} 分`)]] : [] }); },
         label: () => '到關門還剩幾分鐘？', ans: ctx => ctx.problem.remain, wrong: (ctx, v) => v === base100Diff(ctx.problem.now, ctx.problem.close) ? { obs: 'base100', msg: '直接相減是把時間當成 100 進位了。' } : null, say: ex => `還剩 ${ex.problem.remain} 分鐘。` }),
       nStep(1, { title: '需要多久', ask: '走過去加上辦事，要幾分鐘？', id: 'need', hints: ['走路的時間要算。', '在店裡辦事的時間也要算。', '店關門以前要辦完。'], think: '老師把走路和辦事的時間加起來。', together: '一起加：要幾分鐘？',
         label: () => '走過去加上辦事，一共幾分鐘？', ans: ctx => ctx.problem.need, wrong: (ctx, v) => v === ctx.problem.w ? { obs: 'arriveOnly', msg: '只算了走過去。到了以後還要辦事。' } : null, say: ex => `要 ${ex.problem.need} 分鐘。` }),
