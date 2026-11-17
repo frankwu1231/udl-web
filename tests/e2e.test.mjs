@@ -2046,7 +2046,7 @@ const FACTOR_IDS = ['fmTimes', 'fmShare', 'fmArray', 'fmIsFactor', 'fmFactors', 
 const FACTOR_MAP = { __map: { pkg: 'factor', assigned: FACTOR_IDS, path: 'all' } };
 const records = p => p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || '');
 
-test('第 31 版：因數與倍數 20 個活動都能出題、畫圖，照示範做完每一步都對；空白的不會過；題目、答案、數線都在等級上限內（24／50／100）', { skip: skip || !distReady }, async () => {
+test('第 31 版：因數與倍數 20 個活動都能出題、畫圖，照示範做完每一步都對；空白的不會過；題目、答案、數線、選項都在等級上限內（24／50／100）', { skip: skip || !distReady }, async () => {
   const p = await act('fmFactors', { difficulty: 'standard', ...FACTOR_MAP });
   const out = await p.page.evaluate(() => {
     const A = window.areaActs, bad = [];
@@ -2058,7 +2058,7 @@ test('第 31 版：因數與倍數 20 個活動都能出題、畫圖，照示範
         if ((problem.dims || []).some(n => n > 100)) bad.push(`${id} 數字超過 100：${problem.dims}`);
         const cap = { easy: 24, standard: 50, challenge: 100 }[level], nums = [], walk = v => { if (typeof v === 'number') nums.push(v); else if (v && typeof v === 'object') Object.values(v).forEach(walk); };
         walk(problem); if (nums.some(n => n > cap)) bad.push(`${id} ${level} 題目、答案或數線超過 ${cap}：${Math.max(...nums)}`);
-        const ctx = { answers, state, problem, plugin: pl, settings: {}, method: 'mark', level, hint: () => 3, checked: () => false, invalidate() {}, refreshFigure() {}, rerender() {}, log() {}, choice: (k, t, items) => items.map(x => x[1]).join('|') };
+        const ctx = { answers, state, problem, plugin: pl, settings: {}, method: 'mark', level, hint: () => 3, checked: () => false, invalidate() {}, refreshFigure() {}, rerender() {}, log() {}, choice: (k, t, items) => { const txt = items.map(x => x[1]).join('|'), big = (txt.match(/\d+/g) || []).map(Number).filter(n => n > cap); if (big.length) bad.push(`${id} ${level} 選項超過 ${cap}：${big[0]}`); return txt; } };
         try { pl.planFigure && pl.planFigure(ctx); } catch (e) { bad.push(`${id} planFigure ${e.message}`); }
         pl.steps.forEach((st, s) => {
           try { const html = (st.figure ? st.figure(ctx) : '') + st.answer(ctx); if (/undefined|NaN/.test(html)) bad.push(`${id} 第${s + 1}步畫面有 undefined/NaN`); } catch (e) { bad.push(`${id} 第${s + 1}步畫面 ${e.message}`); }

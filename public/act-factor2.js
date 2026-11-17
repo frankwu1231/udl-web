@@ -71,7 +71,7 @@
     methods, makeProblem: (level, i, rand = Math.random) => { const n = any(rand, fromLevel(ARR, level)), mid = factorsOf(n).filter(d => d > 1 && d < n && n / d <= 12);
       const r1 = any(rand, mid), r2 = any(rand, mid.filter(d => d !== r1));
       const k = any(rand, [2, 3, 4, 5, 6, 7, 8, 9].filter(d => n % d && d < n));
-      return { n, r1, r2, k, dims: [n, r1, r2], prompt: `把 ${n} 個方塊排成長方形，每一排一樣多。` }; },
+      return { n, r1, r2, k, big: Math.min(n + r1, capOf(level)), dims: [n, r1, r2], prompt: `把 ${n} 個方塊排成長方形，每一排一樣多。` }; },
     planFigure: ctx => pileSVG(ctx.problem.n),
     steps: [
       nStep(0, { title: '排排看', ask: '每一排一樣多嗎？', id: 'c1', aid: true, hints: ['一排一排放，每排一樣多。', '方塊的數量 ÷ 排數。', '想乘法表：排數 × 幾 ＝ 方塊的數量？'],
@@ -85,7 +85,7 @@
         q: ctx => `排成 ${ctx.problem.k} 排，每排一樣多，可以剛好排完嗎？`, opts: () => [['zero', '可以，剛好排完'], ['left', '不行，有剩']], ans: () => 'left',
         wrong: ctx => ({ obs: 'remainderOK', msg: `${ctx.problem.n} ÷ ${ctx.problem.k} ＝ ${Math.floor(ctx.problem.n / ctx.problem.k)} 餘 ${ctx.problem.n % ctx.problem.k}，有剩。` }), say: ex => `排成 ${ex.problem.k} 排會剩 ${ex.problem.n % ex.problem.k} 個，排不出來。` }),
       cStep(3, { title: '說說看', ask: '排得出來的排數，就是因數嗎？', id: 'f', hints: ['排得出來的排數，就是因數。', '前面哪一種排得出來？', `排不出來（有剩）的不是因數。`], think: '老師說：可以剛好排完的排數，就是因數。', together: '一起說：哪一個是因數？',
-        q: ctx => `哪一個是 ${ctx.problem.n} 的因數？`, opts: ctx => { const p = ctx.problem; return [[String(p.r1), String(p.r1)], [String(p.k), String(p.k)], [String(p.n + p.r1), String(p.n + p.r1)]]; }, ans: ctx => String(ctx.problem.r1),
+        q: ctx => `哪一個是 ${ctx.problem.n} 的因數？`, opts: ctx => { const p = ctx.problem; return [[String(p.r1), String(p.r1)], [String(p.k), String(p.k)], [String(p.big), String(p.big)]]; }, ans: ctx => String(ctx.problem.r1),
         wrong: (ctx, a) => a === String(ctx.problem.k) ? { obs: 'remainderOK', msg: `排成 ${ctx.problem.k} 排會有剩，${ctx.problem.k} 不是因數。` } : { obs: 'wrongChoice', msg: `因數不會比 ${ctx.problem.n} 大。` }, say: ex => `${ex.problem.r1} 排可以排完，${ex.problem.r1} 是 ${ex.problem.n} 的因數。` })
     ],
     reasons, done: ctx => `${ctx.problem.n} 可以排成 ${ctx.problem.r1} 排、${ctx.problem.r2} 排，${ctx.problem.r1} 和 ${ctx.problem.r2} 都是 ${ctx.problem.n} 的因數。`, chant: '排得出長方形的排數，就是因數。', transfer: '想一想：教室的椅子要排成一樣多的幾排，可以怎麼排？'
