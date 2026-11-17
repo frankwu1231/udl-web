@@ -1,0 +1,852 @@
+{
+ "id": "factorG6Probe",
+ "version": "1",
+ "kind": "probe",
+ "package": "factor",
+ "variant": "g6",
+ "title": "因數與倍數小測驗：六年級",
+ "itemSecs": 120,
+ "totalSecs": 1200,
+ "forms": [
+  {
+   "id": "A",
+   "items": [
+    {
+     "id": "A01",
+     "type": "prime",
+     "prompt": "19 是質數、合數，還是都不是？",
+     "steps": [
+      {
+       "key": "cnt",
+       "label": "19 有幾個因數",
+       "role": "measure",
+       "input": "number",
+       "answer": 2
+      },
+      {
+       "key": "kind",
+       "label": "是哪一種",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "質數",
+        "合數",
+        "都不是"
+       ],
+       "answer": "質數"
+      }
+     ]
+    },
+    {
+     "id": "A02",
+     "type": "prime",
+     "prompt": "9 是質數、合數，還是都不是？",
+     "steps": [
+      {
+       "key": "cnt",
+       "label": "9 有幾個因數",
+       "role": "measure",
+       "input": "number",
+       "answer": 3
+      },
+      {
+       "key": "kind",
+       "label": "是哪一種",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "質數",
+        "合數",
+        "都不是"
+       ],
+       "answer": "合數"
+      }
+     ]
+    },
+    {
+     "id": "A03",
+     "type": "test235",
+     "prompt": "44 是不是 3 的倍數？",
+     "steps": [
+      {
+       "key": "sum",
+       "label": "各位數字加起來",
+       "role": "measure",
+       "input": "number",
+       "answer": 8
+      },
+      {
+       "key": "yes",
+       "label": "是不是 3 的倍數",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "是",
+        "不是"
+       ],
+       "answer": "不是"
+      }
+     ]
+    },
+    {
+     "id": "A04",
+     "type": "primeDiv",
+     "prompt": "用短除法，把 18 分解成質數相乘。",
+     "steps": [
+      {
+       "key": "first",
+       "label": "先除以哪一個質數（最小的）",
+       "role": "measure",
+       "input": "number",
+       "answer": 2
+      },
+      {
+       "key": "pf",
+       "label": "質因數分解",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "2×3×3",
+        "6×3",
+        "1×18"
+       ],
+       "answer": "2×3×3"
+      }
+     ]
+    },
+    {
+     "id": "A05",
+     "type": "primeDiv",
+     "prompt": "用短除法，把 12 分解成質數相乘。",
+     "steps": [
+      {
+       "key": "first",
+       "label": "先除以哪一個質數（最小的）",
+       "role": "measure",
+       "input": "number",
+       "answer": 2
+      },
+      {
+       "key": "pf",
+       "label": "質因數分解",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "2×2×3",
+        "4×3",
+        "1×12"
+       ],
+       "answer": "2×2×3"
+      }
+     ]
+    },
+    {
+     "id": "A06",
+     "type": "gcd",
+     "prompt": "用短除法，找 18 和 24 的最大公因數。",
+     "steps": [
+      {
+       "key": "how",
+       "label": "最大公因數怎麼算",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "左邊的數相乘",
+        "左邊和下面的數相乘"
+       ],
+       "answer": "左邊的數相乘"
+      },
+      {
+       "key": "g",
+       "label": "最大公因數",
+       "role": "answer",
+       "input": "number",
+       "answer": 6
+      }
+     ]
+    },
+    {
+     "id": "A07",
+     "type": "gcd",
+     "prompt": "用短除法，找 12 和 30 的最大公因數。",
+     "steps": [
+      {
+       "key": "how",
+       "label": "最大公因數怎麼算",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "左邊的數相乘",
+        "左邊和下面的數相乘"
+       ],
+       "answer": "左邊的數相乘"
+      },
+      {
+       "key": "g",
+       "label": "最大公因數",
+       "role": "answer",
+       "input": "number",
+       "answer": 6
+      }
+     ]
+    },
+    {
+     "id": "A08",
+     "type": "lcm",
+     "prompt": "用短除法，找 24 和 36 的最小公倍數。",
+     "steps": [
+      {
+       "key": "g",
+       "label": "左邊的數相乘是多少",
+       "role": "measure",
+       "input": "number",
+       "answer": 12
+      },
+      {
+       "key": "ra",
+       "label": "除到最下面，24 變成多少",
+       "role": "part",
+       "input": "number",
+       "answer": 2
+      },
+      {
+       "key": "rb",
+       "label": "除到最下面，36 變成多少",
+       "role": "part",
+       "input": "number",
+       "answer": 3
+      },
+      {
+       "key": "lcm",
+       "label": "最小公倍數",
+       "role": "answer",
+       "input": "number",
+       "answer": 72
+      }
+     ]
+    },
+    {
+     "id": "A09",
+     "type": "lcm",
+     "prompt": "用短除法，找 16 和 24 的最小公倍數。",
+     "steps": [
+      {
+       "key": "g",
+       "label": "左邊的數相乘是多少",
+       "role": "measure",
+       "input": "number",
+       "answer": 8
+      },
+      {
+       "key": "ra",
+       "label": "除到最下面，16 變成多少",
+       "role": "part",
+       "input": "number",
+       "answer": 2
+      },
+      {
+       "key": "rb",
+       "label": "除到最下面，24 變成多少",
+       "role": "part",
+       "input": "number",
+       "answer": 3
+      },
+      {
+       "key": "lcm",
+       "label": "最小公倍數",
+       "role": "answer",
+       "input": "number",
+       "answer": 48
+      }
+     ]
+    },
+    {
+     "id": "A10",
+     "type": "simplify",
+     "prompt": "把 15 分之 10 約成最簡分數。",
+     "steps": [
+      {
+       "key": "g",
+       "label": "10 和 15 的最大公因數",
+       "role": "measure",
+       "input": "number",
+       "answer": 5
+      },
+      {
+       "key": "frac",
+       "label": "最簡分數",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "3分之2",
+        "15分之10",
+        "30分之20"
+       ],
+       "answer": "3分之2"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "B",
+   "items": [
+    {
+     "id": "B01",
+     "type": "prime",
+     "prompt": "11 是質數、合數，還是都不是？",
+     "steps": [
+      {
+       "key": "cnt",
+       "label": "11 有幾個因數",
+       "role": "measure",
+       "input": "number",
+       "answer": 2
+      },
+      {
+       "key": "kind",
+       "label": "是哪一種",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "質數",
+        "合數",
+        "都不是"
+       ],
+       "answer": "質數"
+      }
+     ]
+    },
+    {
+     "id": "B02",
+     "type": "prime",
+     "prompt": "15 是質數、合數，還是都不是？",
+     "steps": [
+      {
+       "key": "cnt",
+       "label": "15 有幾個因數",
+       "role": "measure",
+       "input": "number",
+       "answer": 4
+      },
+      {
+       "key": "kind",
+       "label": "是哪一種",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "質數",
+        "合數",
+        "都不是"
+       ],
+       "answer": "合數"
+      }
+     ]
+    },
+    {
+     "id": "B03",
+     "type": "test235",
+     "prompt": "74 是不是 3 的倍數？",
+     "steps": [
+      {
+       "key": "sum",
+       "label": "各位數字加起來",
+       "role": "measure",
+       "input": "number",
+       "answer": 11
+      },
+      {
+       "key": "yes",
+       "label": "是不是 3 的倍數",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "是",
+        "不是"
+       ],
+       "answer": "不是"
+      }
+     ]
+    },
+    {
+     "id": "B04",
+     "type": "primeDiv",
+     "prompt": "用短除法，把 33 分解成質數相乘。",
+     "steps": [
+      {
+       "key": "first",
+       "label": "先除以哪一個質數（最小的）",
+       "role": "measure",
+       "input": "number",
+       "answer": 3
+      },
+      {
+       "key": "pf",
+       "label": "質因數分解",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "3×11",
+        "33",
+        "1×33"
+       ],
+       "answer": "3×11"
+      }
+     ]
+    },
+    {
+     "id": "B05",
+     "type": "primeDiv",
+     "prompt": "用短除法，把 20 分解成質數相乘。",
+     "steps": [
+      {
+       "key": "first",
+       "label": "先除以哪一個質數（最小的）",
+       "role": "measure",
+       "input": "number",
+       "answer": 2
+      },
+      {
+       "key": "pf",
+       "label": "質因數分解",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "2×2×5",
+        "4×5",
+        "1×20"
+       ],
+       "answer": "2×2×5"
+      }
+     ]
+    },
+    {
+     "id": "B06",
+     "type": "gcd",
+     "prompt": "用短除法，找 16 和 24 的最大公因數。",
+     "steps": [
+      {
+       "key": "how",
+       "label": "最大公因數怎麼算",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "左邊的數相乘",
+        "左邊和下面的數相乘"
+       ],
+       "answer": "左邊的數相乘"
+      },
+      {
+       "key": "g",
+       "label": "最大公因數",
+       "role": "answer",
+       "input": "number",
+       "answer": 8
+      }
+     ]
+    },
+    {
+     "id": "B07",
+     "type": "gcd",
+     "prompt": "用短除法，找 12 和 18 的最大公因數。",
+     "steps": [
+      {
+       "key": "how",
+       "label": "最大公因數怎麼算",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "左邊的數相乘",
+        "左邊和下面的數相乘"
+       ],
+       "answer": "左邊的數相乘"
+      },
+      {
+       "key": "g",
+       "label": "最大公因數",
+       "role": "answer",
+       "input": "number",
+       "answer": 6
+      }
+     ]
+    },
+    {
+     "id": "B08",
+     "type": "lcm",
+     "prompt": "用短除法，找 24 和 36 的最小公倍數。",
+     "steps": [
+      {
+       "key": "g",
+       "label": "左邊的數相乘是多少",
+       "role": "measure",
+       "input": "number",
+       "answer": 12
+      },
+      {
+       "key": "ra",
+       "label": "除到最下面，24 變成多少",
+       "role": "part",
+       "input": "number",
+       "answer": 2
+      },
+      {
+       "key": "rb",
+       "label": "除到最下面，36 變成多少",
+       "role": "part",
+       "input": "number",
+       "answer": 3
+      },
+      {
+       "key": "lcm",
+       "label": "最小公倍數",
+       "role": "answer",
+       "input": "number",
+       "answer": 72
+      }
+     ]
+    },
+    {
+     "id": "B09",
+     "type": "lcm",
+     "prompt": "用短除法，找 18 和 24 的最小公倍數。",
+     "steps": [
+      {
+       "key": "g",
+       "label": "左邊的數相乘是多少",
+       "role": "measure",
+       "input": "number",
+       "answer": 6
+      },
+      {
+       "key": "ra",
+       "label": "除到最下面，18 變成多少",
+       "role": "part",
+       "input": "number",
+       "answer": 3
+      },
+      {
+       "key": "rb",
+       "label": "除到最下面，24 變成多少",
+       "role": "part",
+       "input": "number",
+       "answer": 4
+      },
+      {
+       "key": "lcm",
+       "label": "最小公倍數",
+       "role": "answer",
+       "input": "number",
+       "answer": 72
+      }
+     ]
+    },
+    {
+     "id": "B10",
+     "type": "simplify",
+     "prompt": "把 8 分之 6 約成最簡分數。",
+     "steps": [
+      {
+       "key": "g",
+       "label": "6 和 8 的最大公因數",
+       "role": "measure",
+       "input": "number",
+       "answer": 2
+      },
+      {
+       "key": "frac",
+       "label": "最簡分數",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "4分之3",
+        "8分之6",
+        "16分之12"
+       ],
+       "answer": "4分之3"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "C",
+   "items": [
+    {
+     "id": "C01",
+     "type": "prime",
+     "prompt": "19 是質數、合數，還是都不是？",
+     "steps": [
+      {
+       "key": "cnt",
+       "label": "19 有幾個因數",
+       "role": "measure",
+       "input": "number",
+       "answer": 2
+      },
+      {
+       "key": "kind",
+       "label": "是哪一種",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "質數",
+        "合數",
+        "都不是"
+       ],
+       "answer": "質數"
+      }
+     ]
+    },
+    {
+     "id": "C02",
+     "type": "prime",
+     "prompt": "9 是質數、合數，還是都不是？",
+     "steps": [
+      {
+       "key": "cnt",
+       "label": "9 有幾個因數",
+       "role": "measure",
+       "input": "number",
+       "answer": 3
+      },
+      {
+       "key": "kind",
+       "label": "是哪一種",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "質數",
+        "合數",
+        "都不是"
+       ],
+       "answer": "合數"
+      }
+     ]
+    },
+    {
+     "id": "C03",
+     "type": "test235",
+     "prompt": "36 是不是 3 的倍數？",
+     "steps": [
+      {
+       "key": "sum",
+       "label": "各位數字加起來",
+       "role": "measure",
+       "input": "number",
+       "answer": 9
+      },
+      {
+       "key": "yes",
+       "label": "是不是 3 的倍數",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "是",
+        "不是"
+       ],
+       "answer": "是"
+      }
+     ]
+    },
+    {
+     "id": "C04",
+     "type": "primeDiv",
+     "prompt": "用短除法，把 22 分解成質數相乘。",
+     "steps": [
+      {
+       "key": "first",
+       "label": "先除以哪一個質數（最小的）",
+       "role": "measure",
+       "input": "number",
+       "answer": 2
+      },
+      {
+       "key": "pf",
+       "label": "質因數分解",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "2×11",
+        "22",
+        "1×22"
+       ],
+       "answer": "2×11"
+      }
+     ]
+    },
+    {
+     "id": "C05",
+     "type": "primeDiv",
+     "prompt": "用短除法，把 33 分解成質數相乘。",
+     "steps": [
+      {
+       "key": "first",
+       "label": "先除以哪一個質數（最小的）",
+       "role": "measure",
+       "input": "number",
+       "answer": 3
+      },
+      {
+       "key": "pf",
+       "label": "質因數分解",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "3×11",
+        "33",
+        "1×33"
+       ],
+       "answer": "3×11"
+      }
+     ]
+    },
+    {
+     "id": "C06",
+     "type": "gcd",
+     "prompt": "用短除法，找 20 和 30 的最大公因數。",
+     "steps": [
+      {
+       "key": "how",
+       "label": "最大公因數怎麼算",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "左邊的數相乘",
+        "左邊和下面的數相乘"
+       ],
+       "answer": "左邊的數相乘"
+      },
+      {
+       "key": "g",
+       "label": "最大公因數",
+       "role": "answer",
+       "input": "number",
+       "answer": 10
+      }
+     ]
+    },
+    {
+     "id": "C07",
+     "type": "gcd",
+     "prompt": "用短除法，找 8 和 12 的最大公因數。",
+     "steps": [
+      {
+       "key": "how",
+       "label": "最大公因數怎麼算",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "左邊的數相乘",
+        "左邊和下面的數相乘"
+       ],
+       "answer": "左邊的數相乘"
+      },
+      {
+       "key": "g",
+       "label": "最大公因數",
+       "role": "answer",
+       "input": "number",
+       "answer": 4
+      }
+     ]
+    },
+    {
+     "id": "C08",
+     "type": "lcm",
+     "prompt": "用短除法，找 12 和 18 的最小公倍數。",
+     "steps": [
+      {
+       "key": "g",
+       "label": "左邊的數相乘是多少",
+       "role": "measure",
+       "input": "number",
+       "answer": 6
+      },
+      {
+       "key": "ra",
+       "label": "除到最下面，12 變成多少",
+       "role": "part",
+       "input": "number",
+       "answer": 2
+      },
+      {
+       "key": "rb",
+       "label": "除到最下面，18 變成多少",
+       "role": "part",
+       "input": "number",
+       "answer": 3
+      },
+      {
+       "key": "lcm",
+       "label": "最小公倍數",
+       "role": "answer",
+       "input": "number",
+       "answer": 36
+      }
+     ]
+    },
+    {
+     "id": "C09",
+     "type": "lcm",
+     "prompt": "用短除法，找 18 和 24 的最小公倍數。",
+     "steps": [
+      {
+       "key": "g",
+       "label": "左邊的數相乘是多少",
+       "role": "measure",
+       "input": "number",
+       "answer": 6
+      },
+      {
+       "key": "ra",
+       "label": "除到最下面，18 變成多少",
+       "role": "part",
+       "input": "number",
+       "answer": 3
+      },
+      {
+       "key": "rb",
+       "label": "除到最下面，24 變成多少",
+       "role": "part",
+       "input": "number",
+       "answer": 4
+      },
+      {
+       "key": "lcm",
+       "label": "最小公倍數",
+       "role": "answer",
+       "input": "number",
+       "answer": 72
+      }
+     ]
+    },
+    {
+     "id": "C10",
+     "type": "simplify",
+     "prompt": "把 8 分之 6 約成最簡分數。",
+     "steps": [
+      {
+       "key": "g",
+       "label": "6 和 8 的最大公因數",
+       "role": "measure",
+       "input": "number",
+       "answer": 2
+      },
+      {
+       "key": "frac",
+       "label": "最簡分數",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "4分之3",
+        "8分之6",
+        "16分之12"
+       ],
+       "answer": "4分之3"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

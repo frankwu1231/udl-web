@@ -1,0 +1,858 @@
+{
+ "id": "factorG5Probe",
+ "version": "1",
+ "kind": "probe",
+ "package": "factor",
+ "variant": "g5",
+ "title": "因數與倍數小測驗：五年級",
+ "itemSecs": 120,
+ "totalSecs": 1200,
+ "forms": [
+  {
+   "id": "A",
+   "items": [
+    {
+     "id": "A01",
+     "type": "isFactor",
+     "prompt": "7 是不是 36 的因數？",
+     "steps": [
+      {
+       "key": "rem",
+       "label": "36 ÷ 7 的餘數",
+       "role": "measure",
+       "input": "number",
+       "answer": 1
+      },
+      {
+       "key": "yes",
+       "label": "是不是因數",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "是",
+        "不是"
+       ],
+       "answer": "不是"
+      }
+     ]
+    },
+    {
+     "id": "A02",
+     "type": "factors",
+     "prompt": "找出 18 的全部因數。18 有幾個因數？",
+     "steps": [
+      {
+       "key": "small",
+       "label": "最小的因數",
+       "role": "part",
+       "input": "number",
+       "answer": 1
+      },
+      {
+       "key": "big",
+       "label": "最大的因數",
+       "role": "part",
+       "input": "number",
+       "answer": 18
+      },
+      {
+       "key": "pair",
+       "label": "2 × □ ＝ 18，□ 是多少",
+       "role": "measure",
+       "input": "number",
+       "answer": 9
+      },
+      {
+       "key": "count",
+       "label": "18 有幾個因數",
+       "role": "answer",
+       "input": "number",
+       "answer": 6
+      }
+     ]
+    },
+    {
+     "id": "A03",
+     "type": "factors",
+     "prompt": "找出 30 的全部因數。30 有幾個因數？",
+     "steps": [
+      {
+       "key": "small",
+       "label": "最小的因數",
+       "role": "part",
+       "input": "number",
+       "answer": 1
+      },
+      {
+       "key": "big",
+       "label": "最大的因數",
+       "role": "part",
+       "input": "number",
+       "answer": 30
+      },
+      {
+       "key": "pair",
+       "label": "2 × □ ＝ 30，□ 是多少",
+       "role": "measure",
+       "input": "number",
+       "answer": 15
+      },
+      {
+       "key": "count",
+       "label": "30 有幾個因數",
+       "role": "answer",
+       "input": "number",
+       "answer": 8
+      }
+     ]
+    },
+    {
+     "id": "A04",
+     "type": "isMult",
+     "prompt": "56 是不是 7 的倍數？",
+     "steps": [
+      {
+       "key": "rem",
+       "label": "56 ÷ 7 的餘數",
+       "role": "measure",
+       "input": "number",
+       "answer": 0
+      },
+      {
+       "key": "yes",
+       "label": "是不是倍數",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "是",
+        "不是"
+       ],
+       "answer": "是"
+      }
+     ]
+    },
+    {
+     "id": "A05",
+     "type": "pairWord",
+     "prompt": "4 × 6 ＝ 24。哪一句是對的？",
+     "steps": [
+      {
+       "key": "say",
+       "label": "選一句",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "24 是 4 的倍數",
+        "24 是 4 的因數",
+        "4 是 24 的倍數"
+       ],
+       "answer": "24 是 4 的倍數"
+      }
+     ]
+    },
+    {
+     "id": "A06",
+     "type": "gcd",
+     "prompt": "有 20 顆糖果和 30 塊餅乾，要分成一樣的袋，全部分完。最多可以分成幾袋？",
+     "steps": [
+      {
+       "key": "kind",
+       "label": "要找什麼",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "最大公因數",
+        "最小公倍數"
+       ],
+       "answer": "最大公因數"
+      },
+      {
+       "key": "g",
+       "label": "最多幾袋",
+       "role": "answer",
+       "input": "number",
+       "answer": 10
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "袋",
+        "顆",
+        "個人"
+       ],
+       "answer": "袋"
+      }
+     ]
+    },
+    {
+     "id": "A07",
+     "type": "lcm",
+     "prompt": "紅燈每 4 秒亮一次，綠燈每 6 秒亮一次。剛剛一起亮，最少再過幾秒又一起亮？",
+     "steps": [
+      {
+       "key": "kind",
+       "label": "要找什麼",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "最大公因數",
+        "最小公倍數"
+       ],
+       "answer": "最小公倍數"
+      },
+      {
+       "key": "lcm",
+       "label": "最少再過多久",
+       "role": "answer",
+       "input": "number",
+       "answer": 12
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "秒",
+        "次",
+        "分鐘"
+       ],
+       "answer": "秒"
+      }
+     ]
+    },
+    {
+     "id": "A08",
+     "type": "which",
+     "prompt": "甲車每 4 分鐘一班，乙車每 10 分鐘一班。剛剛一起開出，最少再過幾分鐘又一起開出？（不用算，只要選）",
+     "steps": [
+      {
+       "key": "kind",
+       "label": "要找什麼",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "最大公因數",
+        "最小公倍數"
+       ],
+       "answer": "最小公倍數"
+      }
+     ]
+    },
+    {
+     "id": "A09",
+     "type": "which",
+     "prompt": "有 24 朵紅花和 36 朵白花，要分成一樣的束，全部分完。最多可以分成幾束？（不用算，只要選）",
+     "steps": [
+      {
+       "key": "kind",
+       "label": "要找什麼",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "最大公因數",
+        "最小公倍數"
+       ],
+       "answer": "最大公因數"
+      }
+     ]
+    },
+    {
+     "id": "A10",
+     "type": "apply",
+     "prompt": "有 8 顆糖果和 12 塊餅乾，要分成一樣的袋，全部分完。最多可以分成幾袋？每袋有幾顆糖果？",
+     "steps": [
+      {
+       "key": "total",
+       "label": "糖果有幾顆",
+       "role": "measure",
+       "input": "number",
+       "answer": 8
+      },
+      {
+       "key": "g",
+       "label": "最多幾袋",
+       "role": "part",
+       "input": "number",
+       "answer": 4
+      },
+      {
+       "key": "each",
+       "label": "每袋有幾顆糖果",
+       "role": "answer",
+       "input": "number",
+       "answer": 2
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "B",
+   "items": [
+    {
+     "id": "B01",
+     "type": "isFactor",
+     "prompt": "7 是不是 30 的因數？",
+     "steps": [
+      {
+       "key": "rem",
+       "label": "30 ÷ 7 的餘數",
+       "role": "measure",
+       "input": "number",
+       "answer": 2
+      },
+      {
+       "key": "yes",
+       "label": "是不是因數",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "是",
+        "不是"
+       ],
+       "answer": "不是"
+      }
+     ]
+    },
+    {
+     "id": "B02",
+     "type": "factors",
+     "prompt": "找出 12 的全部因數。12 有幾個因數？",
+     "steps": [
+      {
+       "key": "small",
+       "label": "最小的因數",
+       "role": "part",
+       "input": "number",
+       "answer": 1
+      },
+      {
+       "key": "big",
+       "label": "最大的因數",
+       "role": "part",
+       "input": "number",
+       "answer": 12
+      },
+      {
+       "key": "pair",
+       "label": "2 × □ ＝ 12，□ 是多少",
+       "role": "measure",
+       "input": "number",
+       "answer": 6
+      },
+      {
+       "key": "count",
+       "label": "12 有幾個因數",
+       "role": "answer",
+       "input": "number",
+       "answer": 6
+      }
+     ]
+    },
+    {
+     "id": "B03",
+     "type": "factors",
+     "prompt": "找出 36 的全部因數。36 有幾個因數？",
+     "steps": [
+      {
+       "key": "small",
+       "label": "最小的因數",
+       "role": "part",
+       "input": "number",
+       "answer": 1
+      },
+      {
+       "key": "big",
+       "label": "最大的因數",
+       "role": "part",
+       "input": "number",
+       "answer": 36
+      },
+      {
+       "key": "pair",
+       "label": "2 × □ ＝ 36，□ 是多少",
+       "role": "measure",
+       "input": "number",
+       "answer": 18
+      },
+      {
+       "key": "count",
+       "label": "36 有幾個因數",
+       "role": "answer",
+       "input": "number",
+       "answer": 9
+      }
+     ]
+    },
+    {
+     "id": "B04",
+     "type": "isMult",
+     "prompt": "42 是不是 7 的倍數？",
+     "steps": [
+      {
+       "key": "rem",
+       "label": "42 ÷ 7 的餘數",
+       "role": "measure",
+       "input": "number",
+       "answer": 0
+      },
+      {
+       "key": "yes",
+       "label": "是不是倍數",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "是",
+        "不是"
+       ],
+       "answer": "是"
+      }
+     ]
+    },
+    {
+     "id": "B05",
+     "type": "pairWord",
+     "prompt": "5 × 9 ＝ 45。哪一句是對的？",
+     "steps": [
+      {
+       "key": "say",
+       "label": "選一句",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "45 是 5 的倍數",
+        "45 是 5 的因數",
+        "5 是 45 的倍數"
+       ],
+       "answer": "45 是 5 的倍數"
+      }
+     ]
+    },
+    {
+     "id": "B06",
+     "type": "gcd",
+     "prompt": "有 18 朵紅花和 24 朵白花，要分成一樣的束，全部分完。最多可以分成幾束？",
+     "steps": [
+      {
+       "key": "kind",
+       "label": "要找什麼",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "最大公因數",
+        "最小公倍數"
+       ],
+       "answer": "最大公因數"
+      },
+      {
+       "key": "g",
+       "label": "最多幾束",
+       "role": "answer",
+       "input": "number",
+       "answer": 6
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "束",
+        "朵",
+        "個人"
+       ],
+       "answer": "束"
+      }
+     ]
+    },
+    {
+     "id": "B07",
+     "type": "lcm",
+     "prompt": "甲車每 8 分鐘一班，乙車每 12 分鐘一班。剛剛一起開出，最少再過幾分鐘又一起開出？",
+     "steps": [
+      {
+       "key": "kind",
+       "label": "要找什麼",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "最大公因數",
+        "最小公倍數"
+       ],
+       "answer": "最小公倍數"
+      },
+      {
+       "key": "lcm",
+       "label": "最少再過多久",
+       "role": "answer",
+       "input": "number",
+       "answer": 24
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "分鐘",
+        "班",
+        "公分"
+       ],
+       "answer": "分鐘"
+      }
+     ]
+    },
+    {
+     "id": "B08",
+     "type": "which",
+     "prompt": "甲車每 3 分鐘一班，乙車每 4 分鐘一班。剛剛一起開出，最少再過幾分鐘又一起開出？（不用算，只要選）",
+     "steps": [
+      {
+       "key": "kind",
+       "label": "要找什麼",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "最大公因數",
+        "最小公倍數"
+       ],
+       "answer": "最小公倍數"
+      }
+     ]
+    },
+    {
+     "id": "B09",
+     "type": "which",
+     "prompt": "有 18 枝鉛筆和 27 個橡皮擦，要分成一樣的份，全部分完。最多可以分成幾份？（不用算，只要選）",
+     "steps": [
+      {
+       "key": "kind",
+       "label": "要找什麼",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "最大公因數",
+        "最小公倍數"
+       ],
+       "answer": "最大公因數"
+      }
+     ]
+    },
+    {
+     "id": "B10",
+     "type": "apply",
+     "prompt": "有 20 朵紅花和 30 朵白花，要分成一樣的束，全部分完。最多可以分成幾束？每束有幾朵紅花？",
+     "steps": [
+      {
+       "key": "total",
+       "label": "紅花有幾朵",
+       "role": "measure",
+       "input": "number",
+       "answer": 20
+      },
+      {
+       "key": "g",
+       "label": "最多幾束",
+       "role": "part",
+       "input": "number",
+       "answer": 10
+      },
+      {
+       "key": "each",
+       "label": "每束有幾朵紅花",
+       "role": "answer",
+       "input": "number",
+       "answer": 2
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "C",
+   "items": [
+    {
+     "id": "C01",
+     "type": "isFactor",
+     "prompt": "7 是不是 36 的因數？",
+     "steps": [
+      {
+       "key": "rem",
+       "label": "36 ÷ 7 的餘數",
+       "role": "measure",
+       "input": "number",
+       "answer": 1
+      },
+      {
+       "key": "yes",
+       "label": "是不是因數",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "是",
+        "不是"
+       ],
+       "answer": "不是"
+      }
+     ]
+    },
+    {
+     "id": "C02",
+     "type": "factors",
+     "prompt": "找出 20 的全部因數。20 有幾個因數？",
+     "steps": [
+      {
+       "key": "small",
+       "label": "最小的因數",
+       "role": "part",
+       "input": "number",
+       "answer": 1
+      },
+      {
+       "key": "big",
+       "label": "最大的因數",
+       "role": "part",
+       "input": "number",
+       "answer": 20
+      },
+      {
+       "key": "pair",
+       "label": "2 × □ ＝ 20，□ 是多少",
+       "role": "measure",
+       "input": "number",
+       "answer": 10
+      },
+      {
+       "key": "count",
+       "label": "20 有幾個因數",
+       "role": "answer",
+       "input": "number",
+       "answer": 6
+      }
+     ]
+    },
+    {
+     "id": "C03",
+     "type": "factors",
+     "prompt": "找出 30 的全部因數。30 有幾個因數？",
+     "steps": [
+      {
+       "key": "small",
+       "label": "最小的因數",
+       "role": "part",
+       "input": "number",
+       "answer": 1
+      },
+      {
+       "key": "big",
+       "label": "最大的因數",
+       "role": "part",
+       "input": "number",
+       "answer": 30
+      },
+      {
+       "key": "pair",
+       "label": "2 × □ ＝ 30，□ 是多少",
+       "role": "measure",
+       "input": "number",
+       "answer": 15
+      },
+      {
+       "key": "count",
+       "label": "30 有幾個因數",
+       "role": "answer",
+       "input": "number",
+       "answer": 8
+      }
+     ]
+    },
+    {
+     "id": "C04",
+     "type": "isMult",
+     "prompt": "42 是不是 7 的倍數？",
+     "steps": [
+      {
+       "key": "rem",
+       "label": "42 ÷ 7 的餘數",
+       "role": "measure",
+       "input": "number",
+       "answer": 0
+      },
+      {
+       "key": "yes",
+       "label": "是不是倍數",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "是",
+        "不是"
+       ],
+       "answer": "是"
+      }
+     ]
+    },
+    {
+     "id": "C05",
+     "type": "pairWord",
+     "prompt": "5 × 8 ＝ 40。哪一句是對的？",
+     "steps": [
+      {
+       "key": "say",
+       "label": "選一句",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "40 是 5 的倍數",
+        "40 是 5 的因數",
+        "5 是 40 的倍數"
+       ],
+       "answer": "40 是 5 的倍數"
+      }
+     ]
+    },
+    {
+     "id": "C06",
+     "type": "gcd",
+     "prompt": "有 8 顆糖果和 12 塊餅乾，要分成一樣的袋，全部分完。最多可以分成幾袋？",
+     "steps": [
+      {
+       "key": "kind",
+       "label": "要找什麼",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "最大公因數",
+        "最小公倍數"
+       ],
+       "answer": "最大公因數"
+      },
+      {
+       "key": "g",
+       "label": "最多幾袋",
+       "role": "answer",
+       "input": "number",
+       "answer": 4
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "袋",
+        "顆",
+        "個人"
+       ],
+       "answer": "袋"
+      }
+     ]
+    },
+    {
+     "id": "C07",
+     "type": "lcm",
+     "prompt": "甲車每 3 分鐘一班，乙車每 4 分鐘一班。剛剛一起開出，最少再過幾分鐘又一起開出？",
+     "steps": [
+      {
+       "key": "kind",
+       "label": "要找什麼",
+       "role": "formula",
+       "input": "choice",
+       "options": [
+        "最大公因數",
+        "最小公倍數"
+       ],
+       "answer": "最小公倍數"
+      },
+      {
+       "key": "lcm",
+       "label": "最少再過多久",
+       "role": "answer",
+       "input": "number",
+       "answer": 12
+      },
+      {
+       "key": "unit",
+       "label": "單位",
+       "role": "unit",
+       "input": "choice",
+       "options": [
+        "分鐘",
+        "班",
+        "公分"
+       ],
+       "answer": "分鐘"
+      }
+     ]
+    },
+    {
+     "id": "C08",
+     "type": "which",
+     "prompt": "紅燈每 10 秒亮一次，綠燈每 15 秒亮一次。剛剛一起亮，最少再過幾秒又一起亮？（不用算，只要選）",
+     "steps": [
+      {
+       "key": "kind",
+       "label": "要找什麼",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "最大公因數",
+        "最小公倍數"
+       ],
+       "answer": "最小公倍數"
+      }
+     ]
+    },
+    {
+     "id": "C09",
+     "type": "which",
+     "prompt": "有 18 朵紅花和 24 朵白花，要分成一樣的束，全部分完。最多可以分成幾束？（不用算，只要選）",
+     "steps": [
+      {
+       "key": "kind",
+       "label": "要找什麼",
+       "role": "answer",
+       "input": "choice",
+       "options": [
+        "最大公因數",
+        "最小公倍數"
+       ],
+       "answer": "最大公因數"
+      }
+     ]
+    },
+    {
+     "id": "C10",
+     "type": "apply",
+     "prompt": "有 16 朵紅花和 24 朵白花，要分成一樣的束，全部分完。最多可以分成幾束？每束有幾朵紅花？",
+     "steps": [
+      {
+       "key": "total",
+       "label": "紅花有幾朵",
+       "role": "measure",
+       "input": "number",
+       "answer": 16
+      },
+      {
+       "key": "g",
+       "label": "最多幾束",
+       "role": "part",
+       "input": "number",
+       "answer": 8
+      },
+      {
+       "key": "each",
+       "label": "每束有幾朵紅花",
+       "role": "answer",
+       "input": "number",
+       "answer": 2
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
