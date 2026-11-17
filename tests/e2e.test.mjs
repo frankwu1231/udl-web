@@ -249,6 +249,7 @@ test('教師備課：選難度立即換題、可套用到四種圖形、平行�
 test('第 31 版：朗讀鍵、精簡畫面、閱讀輔助在一個活動設定，就套用到全部教材包的全部活動；切換教材包不會蓋掉別包；建議設定也套用到每一包', { skip: skip || !distReady }, async () => {
   await setup(); await publish({ simple: true, simpleShow: [], zhuyin: false });
   const page = await browser.newPage(); await page.goto(base + '/teacher.html'); await page.waitForSelector('[data-simple-show="say"]');
+  const before = await page.evaluate(async () => (await (await fetch('/api/teacher/lessons')).json()).published);   // 測完還原，不影響後面的測試
   const read = () => page.evaluate(async () => { const c = (await (await fetch('/api/teacher/lessons')).json()).published, A = window.areaActs, out = {};
     for (const k of ['rectangle', 'square', 'triangle', 'parallelogram']) out[k] = c[k].settings;
     for (const p of Object.values(A.packages)) for (const a of p.activities) if (A.get(a.id)) out[a.id] = (c.activities[a.id] || {}).settings || {};
@@ -271,6 +272,9 @@ test('第 31 版：朗讀鍵、精簡畫面、閱讀輔助在一個活動設定�
   await sp.goto(`${base}/seven.html?a=fmGcd`); await sp.waitForTimeout(800);
   assert.ok(await sp.evaluate(() => document.documentElement.classList.contains('show-say') && [...document.querySelectorAll('.say')].some(e => e.getClientRects().length)), '別的教材包的活動也有朗讀鍵');
   await ctx.close();
+  const rp = await browser.newPage(); await rp.goto(base + '/teacher.html');
+  assert.equal(await rp.evaluate(async c => (await fetch('/api/teacher/lessons', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'published', config: c }) })).status, before), 200);
+  await rp.close();
 });
 
 test('教師可修改第 2、3 層提示，學生看到修改後的文字；列算式答對後出現口訣', { skip: skip || !distReady }, async () => {
