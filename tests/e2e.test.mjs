@@ -47,6 +47,7 @@ async function publish(settings) {
     for (const k of ['rectangle', 'square', 'triangle', 'parallelogram']) c[k].settings = { ...c[k].settings, ...s };
     for (const k of Object.keys(c.activities || {})) c.activities[k].settings = { ...c.activities[k].settings, ...s };
     c.map = { assigned: window.areaActs.packages[map.pkg || 'area'].activities.map(a => a.id), sequential: false, path: 'all', ...map };
+    await fetch('/api/teacher/lessons', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'draft', config: c }) });   // 第 31 版：發布也會更新草稿（和教師頁一樣）
     return (await fetch('/api/teacher/lessons', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'published', config: c }) })).status;
   }, { flow: 'seven', keep: [0, 1, 2, 3], support: 'full', labels: 'reveal', ai: true, reward: false, sound: false, hintGate: false, mode: 'self', goalKind: 'hints', confidence: true, selfAsk: true, badges: true, voice: false, rest: 0, handsOn: false, methods: ['mark', 'row', 'self'], zhuyin: false, textSize: 'normal', contrast: false, video: 'hint', difficulty: 'standard', convert: false, srlAsk: 'first', lessonGoal: 0, stepNames: {}, attention: false, simple: false, tour: false, practice: false, ...settings });
   await page.close(); assert.equal(status, 200);
@@ -246,6 +247,38 @@ test('教師備課：選難度立即換題、可套用到四種圖形、平行�
   await page.close();
 });
 
+test('第 31 版：朗讀鍵、精簡畫面、閱讀輔助在一個活動設定，就套用到全部教材包的全部活動；切換教材包不會蓋掉別包；建議設定也套用到每一包', { skip: skip || !distReady }, async () => {
+  await setup(); await publish({ simple: true, simpleShow: [], zhuyin: false });
+  const page = await browser.newPage(); await page.goto(base + '/teacher.html'); await page.waitForSelector('[data-simple-show="say"]');
+  const before = await page.evaluate(async () => (await (await fetch('/api/teacher/lessons')).json()).published);   // 測完還原，不影響後面的測試
+  const read = () => page.evaluate(async () => { const c = (await (await fetch('/api/teacher/lessons')).json()).published, A = window.areaActs, out = {};
+    for (const k of ['rectangle', 'square', 'triangle', 'parallelogram']) out[k] = c[k].settings;
+    for (const p of Object.values(A.packages)) for (const a of p.activities) if (A.get(a.id)) out[a.id] = (c.activities[a.id] || {}).settings || {};
+    return Object.fromEntries(Object.entries(out).map(([k, x]) => [k, `${(x.simpleShow || []).join('+')}|${!!x.zhuyin}|${x.profile || ''}`])); });
+  const pub = async () => { await page.evaluate(() => { document.querySelector('#status').textContent = ''; document.querySelector('#publish').click(); }); await page.waitForFunction(() => /已發布/.test(document.querySelector('#status').textContent)); };
+  await page.check('[data-simple-show="say"]'); await page.check('[data-simple-show="aids"]'); await page.check('#zhuyin'); await pub();
+  assert.deepEqual(await page.evaluate(async () => { const r = await (await fetch('/api/teacher/lessons')).json(); return [r.draft.rectangle.settings.simpleShow, r.draft.activities.fmGcd.settings.simpleShow]; }), [['aids', 'say'], ['aids', 'say']], '發布時草稿也一起更新');
+  let all = await read(); assert.ok(Object.keys(all).length >= 70, '四個教材包都有'); assert.deepEqual([...new Set(Object.values(all))], ['aids+say|true|']);
+  // 切到別的教材包、什麼都不改就發布：不會把面積的設定蓋掉
+  await page.evaluate(async () => { const r = await (await fetch('/api/teacher/lessons')).json(), c = r.published;
+    for (const id of window.areaActs.packages.line.activities.map(a => a.id)) if (c.activities[id]) c.activities[id].settings = { ...c.activities[id].settings, simpleShow: [], zhuyin: false };
+    for (const kind of ['draft', 'published']) await fetch('/api/teacher/lessons', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind, config: c }) }); });
+  await page.reload(); await page.waitForSelector('[data-pkg="line"]');
+  await page.evaluate(() => document.querySelector('[data-pkg="line"]').click()); await page.waitForTimeout(100); await pub();
+  all = await read(); assert.equal(all.rectangle, 'aids+say|true|'); assert.equal(all.fmFactors, 'aids+say|true|');
+  // 建議設定：每一包都套用
+  await page.evaluate(() => document.querySelector('[data-profile="mid"]').click()); await pub();
+  all = await read(); assert.deepEqual([...new Set(Object.values(all))], ['say|true|mid']);
+  await page.close();
+  const ctx = await browser.newContext({ viewport: { width: 820, height: 1180 } }); const sp = await ctx.newPage();
+  await sp.goto(`${base}/seven.html?a=fmGcd`); await sp.waitForTimeout(800);
+  assert.ok(await sp.evaluate(() => document.documentElement.classList.contains('show-say') && [...document.querySelectorAll('.say')].some(e => e.getClientRects().length)), '別的教材包的活動也有朗讀鍵');
+  await ctx.close();
+  const rp = await browser.newPage(); await rp.goto(base + '/teacher.html');
+  assert.deepEqual(await rp.evaluate(async c => { const out = []; for (const kind of ['draft', 'published']) out.push((await fetch('/api/teacher/lessons', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind, config: c }) })).status); return out; }, before), [200, 200]);
+  await rp.close();
+});
+
 test('教師可修改第 2、3 層提示，學生看到修改後的文字；列算式答對後出現口訣', { skip: skip || !distReady }, async () => {
   await setup(); await publish({});
   const page = await browser.newPage(); await page.goto(base + '/teacher.html'); await page.waitForSelector('[data-hint2="0"]');
@@ -420,7 +453,7 @@ test('教學階段：老師示範有放聲思考並可代做一步；一起做�
 test('閱讀輔助：注音可開關且不影響朗讀與紀錄；字級與高對比；休息一下；自問卡；生活情境', { skip: skip || !distReady }, async () => {
   await setup();
   const page0 = await browser.newPage(); await page0.goto(base + '/teacher.html');
-  await page0.evaluate(async () => { const r = await (await fetch('/api/teacher/lessons')).json(); const c = r.draft || r.published; c.rectangle.problems.forEach(p => { p.context = 'desk'; }); await fetch('/api/teacher/lessons', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'published', config: c }) }); });
+  await page0.evaluate(async () => { const r = await (await fetch('/api/teacher/lessons')).json(); const c = r.draft || r.published; c.rectangle.problems.forEach(p => { p.context = 'desk'; }); for (const kind of ['draft', 'published']) await fetch('/api/teacher/lessons', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind, config: c }) }); });
   await page0.close();
   const p = await student('rectangle', { zhuyin: true }), page = p.page;
   assert.match(await page.$eval('.context-card', e => { const c = e.cloneNode(true); c.querySelectorAll('rt').forEach(x => x.remove()); return c.textContent; }), /書桌的桌面/);
