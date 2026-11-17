@@ -2228,6 +2228,8 @@ test('第 32 版第 2 輪：7-2 錯誤選項是合理的 12 時制；時間線�
       for (const o of pl.steps[1].answer(ctx).split('|')) { const m = o.match(/^(上午|下午|晚上) (\d+) 時/); if (!m) { bad.push('7-2 選項格式 ' + o); continue; } const h = Number(m[2]); if (h < 1 || h > 12 || (m[1] === '下午' && h > 6) || (m[1] === '晚上' && h < 6)) bad.push('7-2 選項不合理 ' + o); } }
     for (let i = 0; i < 20; i++) { const { pl, ctx } = mk('tmMidnight', 'standard', 3, false), html = pl.steps[0].figure(ctx); if (!/？/.test(html)) bad.push('8-3 第三層提示沒有標？');
       const p2 = mk('tmMidnight', 'standard', 3, true); if (/？/.test(p2.pl.steps[0].figure(p2.ctx))) bad.push('8-3 答對後還是？'); }
+    for (const [id, st, re] of [['tmFind', 1, null], ['tmLeave', 1, null], ['tmLeave', 2, null]]) for (let i = 0; i < 10; i++) { const { pl, ctx } = mk(id, 'standard', 3, false), html = pl.steps[st].figure(ctx), ans = pl.steps[st].ids.map(k => (pl.steps[st].solve(ctx), ctx.answers[k])); const [h, m] = ans.map(Number);
+      if (new RegExp(`\\b${h} 時${m ? ` ${m} 分` : ''}(?! ?\\d)`).test(html.replace(/<[^>]+>/g, ' '))) bad.push(`${id} 第${st + 1}步提示圖露出答案 ${h} 時 ${m} 分`); }
     { const { pl, ctx } = mk('tmBus', 'standard', 3, false), html = pl.steps[1].figure(ctx); if (/<tr class="hint"/.test(html)) bad.push('9-4 第三層提示框了答案那一列'); if (!/<td class="hint"/.test(html)) bad.push('9-4 第三層提示沒有框到站欄'); }
     return bad;
   });

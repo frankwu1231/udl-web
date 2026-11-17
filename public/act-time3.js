@@ -67,7 +67,7 @@
         wrong: (ctx, a) => a === 'dur' ? { obs: 'pointVsDuration', msg: '經過多久題目已經告訴你了，要找的是時刻。' } : { msg: '再讀一次最後一句。' }, say: ex => ex.problem.kind === 'end' ? '要找結束的時刻。' : '要找開始的時刻。' }),
       hmStep(1, { title: '往前或往回跳', ask: '找結束往後跳；找開始往回跳', id: 'ans', aid: convAid, hints: ['找結束：從開始往後跳。找開始：從結束往回跳。', '先跳整小時，再跳分鐘。', '分鐘超過 60 換 1 小時；不夠減，借 1 小時當 60 分鐘。'],
         think: '老師在時間線上跳：先跳整小時，再跳分鐘，記得 60 進位。', together: '一起跳：是幾時幾分？',
-        figure: ctx => { const p = ctx.problem; return lineSVG(p.s - 10, p.e + 10, { marks: p.kind === 'end' ? [p.s, p.e] : [p.s, p.e], fmt: t => (p.kind === 'end' ? t === p.e : t === p.s) && !shown(ctx, 1) ? '？' : say12(t), jumps: [[p.s, p.e, durText(p.d)]] }); },
+        figure: ctx => { const p = ctx.problem; return lineSVG(p.s - 10, p.e + 10, { marks: p.kind === 'end' ? [p.s, p.e] : [p.s, p.e], fmt: t => (p.kind === 'end' ? t === p.e : t === p.s) && !ctx.checked(1) ? '？' : say12(t), jumps: [[p.s, p.e, durText(p.d)]] }); },
         label: ctx => ctx.problem.kind === 'end' ? '幾時幾分結束？（用 12 時制，例如下午 3 時 20 分填 3 和 20）' : '幾時幾分開始？（用 12 時制）', ans: ctx => hm12(ctx.problem.kind === 'end' ? ctx.problem.e : ctx.problem.s),
         wrong: (ctx, [a, b]) => { const p = ctx.problem, other = hm12(p.kind === 'end' ? p.s - p.d : p.e + p.d); return a === other[0] && b === other[1] ? { msg: p.kind === 'end' ? '找結束要往後跳（加）。' : '找開始要往回跳（減）。' } : { msg: '先跳整小時，再跳分鐘。' }; },
         say: ex => ex.problem.kind === 'end' ? `${say12(ex.problem.e)}結束。` : `${say12(ex.problem.s)}開始。` }),
@@ -115,12 +115,12 @@
         label: ctx => ctx.problem.b ? '走路加上提早到，一共幾分鐘？' : '走路要幾分鐘？', ans: ctx => ctx.problem.w + ctx.problem.b,
         wrong: (ctx, v) => ctx.problem.b && v === ctx.problem.w ? { obs: 'noBuffer', msg: '別忘了要提早到。' } : v === ctx.problem.w + ctx.problem.b + ctx.problem.p ? { msg: '準備的時間在出門以前，下一步再算。' } : null, say: ex => `路上要留 ${ex.problem.w + ex.problem.b} 分鐘。` }),
       hmStep(1, { title: '倒推出門時刻', ask: '從要到的時刻往回跳', id: 'lv', aid: convAid, hints: ['從要到的時刻往回跳。', '往回跳就是減。', '不夠減，借 1 小時當 60 分鐘。'], think: '老師從要到的時刻，往回跳路上要留的時間。', together: '一起倒推：最晚幾時幾分出門？',
-        figure: ctx => { const p = ctx.problem; return lineSVG(p.start - 5, p.T + 5, { marks: [p.leave, p.T], fmt: say12, jumps: shown(ctx, 1) ? [[p.leave, p.T, `${p.w + p.b} 分`]] : [], aria: '時間線：出門到到達' }); },
+        figure: ctx => { const p = ctx.problem; return lineSVG(p.start - 5, p.T + 5, { marks: [p.leave, p.T], fmt: t => t === p.leave && !ctx.checked(1) ? '？' : say12(t), jumps: shown(ctx, 1) ? [[p.leave, p.T, `${p.w + p.b} 分`]] : [], aria: '時間線：出門到到達' }); },
         label: () => '最晚幾時幾分要出門？', ans: ctx => hm12(ctx.problem.leave),
         wrong: (ctx, [a, b]) => { const p = ctx.problem, eq = t => { const [x, y] = hm12(t); return a === x && b === y; }; return eq(p.T) ? { obs: 'departVsArrive', msg: '這是要到的時刻。出門要更早。' } : p.b && eq(p.T - p.w) ? { obs: 'noBuffer', msg: '還要再提早幾分鐘到。' } : eq(p.T + p.w + p.b) ? { obs: 'departVsArrive', msg: '出門要比到達早，要往回跳（減）。' } : { msg: '從要到的時刻往回跳。' }; },
         say: ex => `最晚${say12(ex.problem.leave)}出門。` }),
       hmStep(2, { title: '倒推開始準備', ask: '出門前還要準備多久？', id: 'st', hints: ['從出門的時刻，再往回跳準備的時間。', '往回跳就是減。', '這是最晚要開始準備的時刻。'], think: '老師從出門的時刻，再往回跳準備的時間。', together: '一起倒推：最晚幾時幾分開始準備？',
-        figure: ctx => { const p = ctx.problem; return lineSVG(p.start - 5, p.T + 5, { marks: [p.start, p.leave, p.T], fmt: say12, jumps: [[p.leave, p.T, `${p.w + p.b} 分`], ...(shown(ctx, 2) ? [[p.start, p.leave, `${p.p} 分`]] : [])] }); },
+        figure: ctx => { const p = ctx.problem; return lineSVG(p.start - 5, p.T + 5, { marks: [p.start, p.leave, p.T], fmt: t => t === p.start && !ctx.checked(2) ? '？' : say12(t), jumps: [[p.leave, p.T, `${p.w + p.b} 分`], ...(shown(ctx, 2) ? [[p.start, p.leave, `${p.p} 分`]] : [])] }); },
         label: () => '最晚幾時幾分要開始準備？', ans: ctx => hm12(ctx.problem.start), say: ex => `最晚${say12(ex.problem.start)}開始準備。` })
     ],
     reasons, done: ctx => `最晚${say12(ctx.problem.start)}開始準備，${say12(ctx.problem.leave)}出門，${say12(ctx.problem.T)}以前到。`, chant: '倒推：從要到的時刻往回跳，先跳路上的時間，再跳準備的時間。', transfer: '想一想：明天上學，你最晚幾時幾分要出門？'
