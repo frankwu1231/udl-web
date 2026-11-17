@@ -2,7 +2,7 @@
 // 第 31 版：因數與倍數教材包的其他 16 個活動（單元 0、1-1、1-2、2、3-1、4-1、5-1、6、7）。圖形和計算在 act-factor.js（window.factorFig）。
 (() => {
   const A = window.areaActs, U = A.util, { esc, num, fieldHtml, shuffle } = U, F = window.factorFig;
-  const { rnd, any, factorsOf, gcd, lcm, isPrime, multiplesTo, common, arraySVG, pileSVG, shareSVG, jumpSVG, numGrid, bindPick, countLine, pickCheck, timesAid, yesNo, fracHtml, ladderHtml, GPAIRS, LPAIRS, GCTX, LCTX, makeCommon, KIND_OPTS } = F;
+  const { capOf, rnd, any, factorsOf, gcd, lcm, isPrime, multiplesTo, common, arraySVG, pileSVG, shareSVG, jumpSVG, numGrid, bindPick, countLine, pickCheck, timesAid, yesNo, fracHtml, ladderHtml, GPAIRS, LPAIRS, GCTX, LCTX, makeCommon, KIND_OPTS } = F;
   const methods = [['mark', '🧱 一步一步做'], ['self', '🧠 先自己想，需要時看提示']];
   const reasons = [['look', '先看圖'], ['div', '用除法算一算'], ['hint', '看提示']];
   const fromLevel = (o, level) => o[level] || o.standard;
@@ -27,7 +27,7 @@
   const TIMES = { easy: [2, 5], standard: [2, 9], challenge: [3, 9] };
   A.register('fmTimes', {
     methods, makeProblem: (level, i, rand = Math.random) => { const [lo, hi] = fromLevel(TIMES, level), r = () => rnd(rand, lo, hi);
-      let a = r(), b = r(), c = r(), d = r(); if (c === d) d = c === hi ? lo : c + 1;
+      const cap = capOf(level); let a, b, c, d; do { a = r(); b = r(); } while (a * b > cap); do { c = r(); d = r(); } while (c === d || c * d > cap);
       return { a, b, c, d, n1: a * b, n2: c * d, dims: [a, b], prompt: '用乘法表想一想，□ 是多少？' }; },
     planFigure: ctx => arraySVG(ctx.problem.a, ctx.problem.b),
     steps: [
@@ -112,7 +112,7 @@
   });
 
   // =============== 2-1 一直加上去 ===============
-  const SKIP = { easy: [[2, 5], 30], standard: [[3, 9], 50], challenge: [[6, 12], 100] };
+  const SKIP = { easy: [[2, 5], 24], standard: [[3, 9], 50], challenge: [[6, 12], 100] };
   A.register('fmSkip', {
     methods, makeProblem: (level, i, rand = Math.random) => { const [[lo, hi], top] = fromLevel(SKIP, level), a = rnd(rand, lo, hi);
       return { a, top, ms: multiplesTo(a, top), dims: [a, top], prompt: `${a} 的倍數：${a}、${2 * a}、□、……` }; },
@@ -137,7 +137,7 @@
   });
 
   // =============== 2-2 是不是倍數 ===============
-  const ISM = { easy: [[2, 5], 30], standard: [[3, 9], 60], challenge: [[6, 12], 100] };
+  const ISM = { easy: [[2, 5], 24], standard: [[3, 9], 50], challenge: [[6, 12], 100] };
   A.register('fmIsMult', {
     methods, makeProblem: (level, i, rand = Math.random) => { const [[lo, hi], top] = fromLevel(ISM, level), a = rnd(rand, lo, hi), m = a * rnd(rand, 3, Math.floor(top / a));
       let x; do x = rnd(rand, a + 1, top); while (x % a === 0);
@@ -158,7 +158,7 @@
   // =============== 2-3 因數和倍數是一對 ===============
   const FW = [['f', '因數'], ['m', '倍數']];
   A.register('fmPair', {
-    methods, makeProblem: (level, i, rand = Math.random) => { const [lo, hi] = level === 'easy' ? [2, 5] : [2, 9]; let a = rnd(rand, lo, hi), b = rnd(rand, lo, hi); if (a === b) b = a === hi ? lo : a + 1;
+    methods, makeProblem: (level, i, rand = Math.random) => { const [lo, hi] = level === 'easy' ? [2, 5] : [2, 9]; const cap = capOf(level); let a, b; do { a = rnd(rand, lo, hi); b = rnd(rand, lo, hi); } while (a === b || a * b > cap);
       return { a, b, n: a * b, dims: [a, b], prompt: `${a} × ${b} ＝ ${a * b}` }; },
     planFigure: ctx => arraySVG(ctx.problem.a, ctx.problem.b),
     steps: [
@@ -207,15 +207,15 @@
   A.register('fmMeet', {
     methods, makeProblem: (level, i, rand = Math.random) => { const [x, y] = any(rand, fromLevel(LPAIRS, level)), c = LCTX[(i + rnd(rand, 0, 2)) % LCTX.length], L = lcm(x, y);
       const t1 = multiplesTo(y, L).find(v => v % x) || multiplesTo(x, L).find(v => v % y);
-      return { x, y, L, t1, c, top: Math.min(100, 2 * L), dims: [x, y, L], prompt: MEET[c.key].intro(x, y) }; },
-    planFigure: ctx => jumpSVG(ctx.problem.x, ctx.problem.y, Math.min(ctx.problem.top, 60), { aName: ctx.problem.c.aName, bName: ctx.problem.c.bName }),
+      return { x, y, L, t1, c, top: Math.max(L, Math.min(capOf(level), 2 * L)), dims: [x, y, L], prompt: MEET[c.key].intro(x, y) }; },
+    planFigure: ctx => jumpSVG(ctx.problem.x, ctx.problem.y, ctx.problem.top, { aName: ctx.problem.c.aName, bName: ctx.problem.c.bName }),
     steps: [
       cStep(0, { title: '這時候一起嗎', ask: '兩條線都跳到這裡了嗎？', id: 'at1', fixed: true, hints: ['看上面和下面兩條線。', '這個數，上面跳得到嗎？下面跳得到嗎？', '兩條都跳得到，才是一起。'], think: '老師看兩條數線：兩條都跳到這個數，才是一起。', together: '一起看：兩條都跳到了嗎？',
-        figure: ctx => { const p = ctx.problem; return jumpSVG(p.x, p.y, Math.min(p.top, 60), { aName: p.c.aName, bName: p.c.bName, mark: p.t1 }); }, pre: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>`,
+        figure: ctx => { const p = ctx.problem; return jumpSVG(p.x, p.y, p.top, { aName: p.c.aName, bName: p.c.bName, mark: p.t1 }); }, pre: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>`,
         q: ctx => MEET[ctx.problem.c.key].q(ctx.problem.t1), opts: () => [['yes', '會（做得到）'], ['no', '不會（做不到）']], ans: () => 'no',
         wrong: ctx => ({ obs: 'remainderOK', msg: `${ctx.problem.t1} 只有一條線跳得到。` }), say: ex => `${ex.problem.t1} 只有一條線跳到，不會一起。` }),
       cStep(1, { title: '再一起', ask: '兩條線都跳到這裡了嗎？', id: 'atL', fixed: true, hints: ['看上面和下面兩條線。', '這個數，兩條線都跳得到嗎？', `用除法：兩個數都可以剛好除盡。`], think: '老師看：兩條線都跳到這個數，所以會一起。', together: '一起看：兩條都跳到了嗎？',
-        figure: ctx => { const p = ctx.problem; return jumpSVG(p.x, p.y, Math.min(p.top, 60), { aName: p.c.aName, bName: p.c.bName, mark: p.L, common: shown(ctx, 1) }); },
+        figure: ctx => { const p = ctx.problem; return jumpSVG(p.x, p.y, p.top, { aName: p.c.aName, bName: p.c.bName, mark: p.L, common: shown(ctx, 1) }); },
         q: ctx => MEET[ctx.problem.c.key].q(ctx.problem.L), opts: () => [['yes', '會（做得到）'], ['no', '不會（做不到）']], ans: () => 'yes', wrong: ctx => ({ msg: `${ctx.problem.L} ÷ ${ctx.problem.x} 和 ${ctx.problem.L} ÷ ${ctx.problem.y} 都沒有剩，兩條都跳到。` }), say: ex => `${ex.problem.L} 兩條都跳到，會一起。` }),
       cStep(2, { title: '這叫什麼', ask: '兩個數一直加都會到的數叫什麼？', id: 'name', fixed: true, hints: ['兩個數一直加，都會加到它。', '兩個數「共同」的倍數。', '共同的倍數，叫做公倍數。'], think: '老師說：兩個數一直加都會到的數，是公倍數。', together: '一起說：這叫什麼？',
         q: ctx => `${ctx.problem.L} 是 ${ctx.problem.x} 和 ${ctx.problem.y} 的什麼？`, opts: () => [['l', '公倍數'], ['g', '公因數']], ans: () => 'l',
@@ -263,7 +263,7 @@
   });
 
   // =============== 6-2 2、3、5 的倍數判別 ===============
-  const T235 = { easy: [10, 40], standard: [10, 70], challenge: [40, 100] };   // 吳老師 2026-11-17：挑戰也在 100 以內
+  const T235 = { easy: [10, 24], standard: [10, 50], challenge: [40, 100] };   // 吳老師 2026-11-17：挑戰也在 100 以內
   const dsum = n => String(n).split('').reduce((s, d) => s + Number(d), 0);
   A.register('fmTest235', {
     methods, makeProblem: (level, i, rand = Math.random) => { const [lo, hi] = fromLevel(T235, level); let n; do n = rnd(rand, lo, hi); while (!(n % 2 === 0 || n % 3 === 0 || n % 5 === 0) || (i % 2 && n % 10 === 0));
@@ -286,7 +286,7 @@
 
   // =============== 6-3 短除分解 ===============
   // 課綱 N-6-1 備註：扣掉 2、3、5 以後，只剩 1 或 11、13、17、19（或 49、77、91），所以這裡不出現單獨的 7
-  const PD = { easy: [12, 18, 20, 24, 30, 45], standard: [36, 40, 48, 50, 60, 22, 26, 33, 44, 75], challenge: [72, 90, 96, 66, 78, 88, 52, 100, 34, 38] };
+  const PD = { easy: [12, 18, 20, 24, 16, 21], standard: [36, 40, 48, 50, 28, 22, 26, 33, 44, 45], challenge: [72, 90, 96, 66, 78, 88, 52, 100, 34, 38] };
   const primeFactors = n => { const f = []; for (let d = 2; n > 1; d++) while (n % d === 0) { f.push(d); n /= d; } return f; };
   const MAXR = 6, LAD = Array.from({ length: MAXR }, (_, k) => k);
   function ladderFields(ctx, n, rowsN, start, cols) {
@@ -318,9 +318,9 @@
       cStep(0, { title: '先除哪一個', ask: '2、3、5 判別法用了嗎？', id: 'first', fixed: true, hints: ['先用 2、3、5 判別法。', '從最小的質數 2 開始試。', '能整除的最小質數，先除。'], think: '老師從最小的質數 2 開始試，能整除就先除。', together: '一起想：先除以哪一個？',
         pre: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>`, q: ctx => `${ctx.problem.n} 先除以哪一個質數？（選最小的）`, opts: () => [['2', '2'], ['3', '3'], ['5', '5'], ['11', '11']], ans: ctx => String(ctx.problem.pf[0]),
         wrong: (ctx, a) => ctx.problem.n % Number(a) ? { obs: 'remainderOK', msg: `${ctx.problem.n} ÷ ${a} 會有剩。` } : { msg: '可以除，可是還有更小的質數也可以除。' }, say: ex => `先除以 ${ex.problem.pf[0]}。` }),
-      { title: '短除到底', ask: '除完的數還能再除嗎？', ids: ladderIds(1), hints: ['左邊寫質數，下面寫除完的數。', '除完的數，還能被 2、3、5 整除嗎？能就再除。', '除到下面剩下一個質數，就停。'],
+      { title: '短除到底', ask: '除完的數還能再除嗎？', ids: ladderIds(1), hints: ['左邊寫質數，下面寫除完的數。', '除完的數，還能被 2、3、5 整除嗎？能就再除。', '看下面的例子（不是這一題）：除到剩下質數，就停。'],
         think: '老師用質數一直往下除，除到下面剩下質數就停。', together: '一起除：下一次除以幾？',
-        answer: ctx => { const p = ctx.problem; return `<p data-read data-say>要除 ${p.rows} 次。左邊填質數，除完的數填在下一排。</p>${ladderFields(ctx, 1, p.rows, [p.n], [0])}${ctx.hint(1) >= 3 ? ladderHtml(p.pf.slice(0, -1).map((d, k) => [d, p.n / p.pf.slice(0, k).reduce((s, x) => s * x, 1)]), [p.pf.at(-1)]) : ''}`; },
+        answer: ctx => { const p = ctx.problem; return `<p data-read data-say>要除 ${p.rows} 次。左邊填質數，除完的數填在下一排。</p>${ladderFields(ctx, 1, p.rows, [p.n], [0])}${ctx.hint(1) >= 3 ? `<p data-read>例子：${p.n === 12 ? 18 : 12} 的短除</p>${p.n === 12 ? ladderHtml([[2, 18], [3, 9]], [3]) : ladderHtml([[2, 12], [2, 6]], [3])}` : ''}`; },
         check: ctx => ladderCheck(ctx, ctx.problem.rows, [ctx.problem.n], cur => isPrime(cur[0])),
         solve: ctx => ladderSolve(ctx, ctx.problem.pf.slice(0, -1), [ctx.problem.n]), say: ex => `${ex.problem.n} 一直除：${ex.problem.pf.slice(0, -1).join('、')}，最後剩 ${ex.problem.pf.at(-1)}。` },
       cStep(2, { title: '寫成相乘', ask: '每一個都是質數嗎？', id: 'prod', hints: ['把左邊的除數和最下面的數乘起來。', '每一個都要是質數。', '例如 12 ＝ 2 × 2 × 3。'], think: '老師把左邊的質數和最下面的數寫成相乘。', together: '一起寫：質因數分解是什麼？',
@@ -332,7 +332,8 @@
   });
 
   // =============== 7-1 短除找最大公因數和最小公倍數 ===============
-  const SDP = { easy: [[12, 18], [8, 12], [6, 9], [10, 15], [12, 16], [9, 12]], standard: [[24, 36], [18, 30], [20, 30], [32, 48], [27, 45], [24, 40]], challenge: [[36, 60], [48, 72], [54, 90], [60, 84], [45, 75], [40, 64]] };
+  // 最小公倍數也要在等級上限內（入門 24、一般 50、挑戰 100）
+  const SDP = { easy: [[8, 12], [6, 9], [4, 6], [6, 8], [4, 10]], standard: [[12, 18], [12, 16], [9, 12], [10, 15], [8, 20], [16, 24], [14, 21], [10, 25]], challenge: [[24, 36], [18, 30], [20, 30], [32, 48], [28, 42], [30, 45], [24, 32], [20, 50]] };
   A.register('fmShortDiv', {
     methods, makeProblem: (level, i, rand = Math.random) => { const [a, b] = any(rand, fromLevel(SDP, level)), g = gcd(a, b), cf = primeFactors(g);
       return { a, b, g, L: lcm(a, b), cf, ra: a / g, rb: b / g, dims: [a, b, g], prompt: `用短除法，找 ${a} 和 ${b} 的最大公因數和最小公倍數。` }; },

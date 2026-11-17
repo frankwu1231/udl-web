@@ -14,6 +14,8 @@
   const gcd = (a, b) => b ? gcd(b, a % b) : a;
   const lcm = (a, b) => a / gcd(a, b) * b;
   const isPrime = n => n > 1 && factorsOf(n).length === 2;
+  // 吳老師 2026-11-17：入門 24 以內、一般 50 以內、挑戰 100 以內（題目、答案、數線都不超過）
+  const CAP = { easy: 24, standard: 50, challenge: 100 }, capOf = level => CAP[level] || CAP.standard;
   const multiplesTo = (a, top) => { const m = []; for (let x = a; x <= top; x += a) m.push(x); return m; };
   const common = (x, y) => x.filter(v => y.includes(v));
   const sameSet = (a, b) => a.length === b.length && a.every(v => b.includes(v));
@@ -56,7 +58,7 @@
       return s;
     };
     g += line(y1, a, 'a', o.aName || `每 ${a}`) + line(y2, b, 'b', o.bName || `每 ${b}`);
-    for (let k = 0; k <= top; k += 5) g += `<text x="${L + k * u}" y="${y2 + 26}" text-anchor="middle" class="ln-ytick fm-tick">${k}</text>`;
+    for (let k = 0; k <= top; k += top > 60 ? 10 : 5) g += `<text x="${L + k * u}" y="${y2 + 26}" text-anchor="middle" class="ln-ytick fm-tick">${k}</text>`;
     if (o.common) for (let x = lcm(a, b); x <= top; x += lcm(a, b)) g += `<path d="M${L + x * u} ${y1 - 12}V${y2 + 10}" class="fm-meet"/><circle cx="${L + x * u}" cy="${y1}" r="10" class="fm-ring"/><circle cx="${L + x * u}" cy="${y2}" r="10" class="fm-ring"/>`;
     if (o.mark != null) g += `<path d="M${L + o.mark * u} ${y1 - 22}V${y2 + 12}" class="fm-ask"/><text x="${L + o.mark * u}" y="${y1 - 26}" text-anchor="middle" class="fm-lab">${o.mark}</text>`;
     return `<svg class="ac-svg fm-svg" viewBox="0 0 ${W} ${y2 + 36}" role="img" aria-label="${esc(o.aria || `兩條數線：上面每次跳 ${a}，下面每次跳 ${b}`)}">${g}</svg>`;
@@ -192,7 +194,7 @@
           each: x / g, eachQ: `每${c.bag}有幾${c.ua}${c.a}？`, eu: c.ua, dims: [x, y, g],
           prompt: `有 ${x} ${c.ua}${c.a}和 ${y} ${c.ub}${c.b}。要分裝成一樣的${c.bag}，每${c.bag}的${c.a}一樣多、${c.b}也一樣多，全部分完。最多可以分成幾${c.bag}？` };
       }
-      const [x, y] = any(rand, LPAIRS[level] || LPAIRS.standard), c = LCTX[(i + rnd(rand, 0, 2)) % LCTX.length], L = lcm(x, y), top = Math.min(100, 2 * L);
+      const [x, y] = any(rand, LPAIRS[level] || LPAIRS.standard), c = LCTX[(i + rnd(rand, 0, 2)) % LCTX.length], L = lcm(x, y), top = Math.max(L, Math.min(capOf(level), 2 * L));
       return { kind: 'lcm', x, y, L, best: L, c, unit: c.unit, top, listA: multiplesTo(x, top), listB: multiplesTo(y, top), both: common(multiplesTo(x, top), multiplesTo(y, top)),
         each: L / x, eachQ: c.each, eu: c.eu, dims: [x, y, L], prompt: c.text(x, y) };
     };
@@ -203,7 +205,7 @@
     return { title: side === 'A' ? '列第一個數' : '列第二個數', ask: '我有沒有漏掉？', ids: [key],
       hints: [`先看要列因數還是倍數。`, `因數：從 1 開始試，成對記下。倍數：一直加同一個數。`, `把每一個都點出來。`],
       think: side === 'A' ? '老師把第一個數的因數（或倍數）全部列出來。' : '老師再把第二個數的因數（或倍數）也列出來。', together: '一起列：有哪些？',
-      figure: ctx => { const p = ctx.problem; return p.kind === 'gcd' ? arraySVG(1, Math.min(side === 'A' ? p.x : p.y, 40), { aria: `${side === 'A' ? p.x : p.y} 個` }).replace(/fm-tile/g, `fm-tile${side === 'B' ? ' b' : ''}`) : jumpSVG(p.x, p.y, Math.min(p.top, 60), { aName: p.c.aName, bName: p.c.bName, hideJumps: true }); },
+      figure: ctx => { const p = ctx.problem; return p.kind === 'gcd' ? pileSVG(side === 'A' ? p.x : p.y).replace(/fm-tile/g, `fm-tile${side === 'B' ? ' b' : ''}`) : jumpSVG(p.x, p.y, p.top, { aName: p.c.aName, bName: p.c.bName, hideJumps: true }); },
       answer: ctx => { const p = ctx.problem, v = side === 'A' ? p.x : p.y, list = p[key];
         const q = p.kind === 'gcd' ? `點出 ${v} 的全部因數。` : `點出 ${v} 的倍數（到 ${p.top} 為止）。`;
         return `${timesAid(ctx)}<p data-read data-say>${q}</p>${numGrid(p.kind === 'gcd' ? v : p.top, { pick: key, sel: ctx.state[key], hint: ctx.hint(n) >= 3 ? list : [] })}${countLine(ctx, key)}`; },
@@ -219,7 +221,7 @@
   const commonSteps = [
     { title: '看情境', ask: '是要平分，還是要再碰在一起？', ids: ['kind'], hints: ['讀一讀：東西要「平分、分完」嗎？還是要「再一起」？', '平分、分完、最多 → 公因數；再一起、一樣長、最少 → 公倍數。', '找題目裡的關鍵字：分完、最多，或是再一起、最少。'],
       think: '老師讀題目，找關鍵字：是要平分、分完，還是要再碰在一起？', together: '一起讀：這題在問什麼？',
-      figure: ctx => { const p = ctx.problem; return p.kind === 'gcd' ? `${arraySVG(1, Math.min(p.x, 30), { aria: `${p.x} ${p.c.ua}${p.c.a}` })}${arraySVG(1, Math.min(p.y, 30), { aria: `${p.y} ${p.c.ub}${p.c.b}` }).replace(/fm-tile/g, 'fm-tile b')}` : jumpSVG(p.x, p.y, Math.min(p.top, 60), { aName: p.c.aName, bName: p.c.bName, hideJumps: true }); },
+      figure: ctx => { const p = ctx.problem; return p.kind === 'gcd' ? `${pileSVG(p.x, `${p.x} ${p.c.ua}${p.c.a}`)}${pileSVG(p.y, `${p.y} ${p.c.ub}${p.c.b}`).replace(/fm-tile/g, 'fm-tile b')}` : jumpSVG(p.x, p.y, p.top, { aName: p.c.aName, bName: p.c.bName, hideJumps: true }); },
       answer: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>${ctx.choice('kind', '這一題是哪一種？', KIND_OPTS, true)}`,
       check: ctx => !ctx.answers.kind ? { code: 'kind', msg: '先選一個答案。' } : ctx.answers.kind === ctx.problem.kind ? null : { code: 'kind', obs: 'gcdLcmSwap', msg: ctx.problem.kind === 'gcd' ? '題目說「全部分完、最多」，是平分。' : '題目說「又會一起、最少」，是再碰在一起。' },
       solve: ctx => { ctx.answers.kind = ctx.problem.kind; }, say: ex => ex.problem.kind === 'gcd' ? '要平分、全部分完，最多幾份。' : '要等到再碰在一起，最少多少。' },
@@ -245,7 +247,7 @@
       solve: ctx => { ctx.answers.best = String(ctx.problem.best); }, say: ex => ex.problem.kind === 'gcd' ? `最大的公因數是 ${ex.problem.g}。` : `最小的公倍數是 ${ex.problem.L}。` },
     { title: '回到情境', ask: '答案放回題目，說得通嗎？', ids: ['each', 'unit'], hints: ['把答案放回題目裡想一想。', '用除法算：每一份有幾個（或是幾班、幾次）。', '答案要寫題目的單位。'],
       think: '老師把答案放回題目：每份有幾個？答案的單位是什麼？', together: '一起說：答案說得通嗎？',
-      figure: ctx => { const p = ctx.problem; return p.kind === 'gcd' ? shareSVG(p.x, p.g, { aria: `${p.x} 分成 ${p.g} 份` }) : jumpSVG(p.x, p.y, Math.min(p.top, 60), { aName: p.c.aName, bName: p.c.bName, common: true }); },
+      figure: ctx => { const p = ctx.problem; return p.kind === 'gcd' ? shareSVG(p.x, p.g, { aria: `${p.x} 分成 ${p.g} 份` }) : jumpSVG(p.x, p.y, p.top, { aName: p.c.aName, bName: p.c.bName, common: true }); },
       answer: ctx => { const p = ctx.problem, units = [...new Set([p.unit, p.kind === 'gcd' ? '個' : '公尺', p.eu === p.unit ? '個' : p.eu])].slice(0, 3);
         return `${fieldHtml(ctx, 'each', esc(p.eachQ), 6)}${ctx.choice('unit', `答案「${p.best}」的單位是什麼？`, units.map(u => [u, u]))}`; },
       check: ctx => { const p = ctx.problem, v = num(ctx.answers.each); if (v === null || !ctx.answers.unit) return { code: 'ctx', msg: '兩題都要做。' };
@@ -264,5 +266,5 @@
   A.register('fmLcm', commonPlugin('lcm'));
   A.register('fmMixed', commonPlugin(null));
 
-  window.factorFig = { rnd, any, factorsOf, gcd, lcm, isPrime, multiplesTo, common, sameSet, arraySVG, pileSVG, shareSVG, jumpSVG, numGrid, bindPick, countLine, pickCheck, timesAid, yesNo, fracHtml, ladderHtml, GPAIRS, LPAIRS, GCTX, LCTX, makeCommon, KIND_OPTS };
+  window.factorFig = { CAP, capOf, rnd, any, factorsOf, gcd, lcm, isPrime, multiplesTo, common, sameSet, arraySVG, pileSVG, shareSVG, jumpSVG, numGrid, bindPick, countLine, pickCheck, timesAid, yesNo, fracHtml, ladderHtml, GPAIRS, LPAIRS, GCTX, LCTX, makeCommon, KIND_OPTS };
 })();
