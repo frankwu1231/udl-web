@@ -22,6 +22,7 @@
     <li>完整說明請看 <a href="seven-guide.html" target="_blank" rel="noopener">📘 教師使用手冊</a>。</li></ol></details>`;
 
   // ---------- 第 30 版：快速上課（三件事）與建議設定 ----------
+  const SHARED_KEYS = ['simple', 'simpleShow', 'zhuyin', 'textSize', 'contrast', 'rate'];
   const allSections = () => [...SHAPES.map(k => config[k]), ...A.available().filter(a => isP(a.id)).map(a => sec(a.id))];
   function currentProfile() { const ids = allSections().map(x => x.settings?.profile || ''); return ids.every(v => v && v === ids[0]) ? ids[0] : ''; }
   function changedCount(id) { return new Set(allSections().flatMap(x => F.profileDiff(x.settings || {}, id))).size; }
@@ -309,6 +310,7 @@
       <p class="subtle">鏡頭影像只在學生的電腦上判斷，不錄影、不存檔、不上傳；紀錄只有「提醒了幾次」。學生會先看到說明並按「好」才開鏡頭，隨時可以按「關掉」。低頭寫字不算分心。使用前請先取得家長同意。第一次使用時會從網路下載約 4 MB 的臉部模型。</p>
 
       <h2 id="sec-simple">🧹 精簡畫面與第一次導覽</h2>
+      <p class="subtle">精簡畫面和下面的閱讀輔助（含朗讀鍵）會一起套用到全部活動，不用一個一個設定。</p>
       <p class="subtle">精簡畫面：學生解題時只看到題目、作答區、「檢查」和「😣 我卡住了」（提示、示範、休息、請老師都在「我卡住了」裡面）。學生熟悉以後，再一項一項打開。</p>
       <label class="check"><input id="simple" type="checkbox" ${s.simple !== false ? 'checked' : ''}>使用精簡畫面（建議第一次使用時開著）</label>
       <fieldset id="simpleShow"><legend>精簡畫面也要顯示</legend>${[['aids', '閱讀輔助列（注音、字的大小、高對比、休息）和「全部唸給我聽」'], ['say', '每一句旁邊的 🔊 朗讀鍵'], ['progress', '學習階段和解題步驟的進度點'], ['selfAsk', '我的自問卡和「問問自己」'], ['hint', '「💡 給我提示」按鈕（不打開時，提示放在「我卡住了」裡）']].map(([k, t]) => `<label><input type="checkbox" data-simple-show="${k}" ${(s.simpleShow || []).includes(k) ? 'checked' : ''}>${t}</label>`).join('')}</fieldset>
@@ -472,6 +474,10 @@
       simple: $('simple').checked, simpleShow: [...document.querySelectorAll('[data-simple-show]:checked')].map(e => e.dataset.simpleShow), tour: $('tour').checked, guide: $('guide').checked, practice: $('practice').checked
     };
     if (!d.settings.methods.length) d.settings.methods = ['mark', 'row', 'self'];
+    // 第 31 版：朗讀鍵、精簡畫面、閱讀輔助是學生整節課的設定，在任何一個活動改了就套用到全部活動
+    // （現場回報：老師只在第一個活動打開朗讀，其他活動都沒有朗讀）
+    const shared = Object.fromEntries(SHARED_KEYS.map(k => [k, Array.isArray(d.settings[k]) ? d.settings[k].slice() : d.settings[k]]));
+    for (const x of allSections()) if (x && x !== d) x.settings = { ...F.settings(x), ...shared, simpleShow: shared.simpleShow.slice() };
     return config;
   }
 

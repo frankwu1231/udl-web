@@ -246,6 +246,21 @@ test('教師備課：選難度立即換題、可套用到四種圖形、平行�
   await page.close();
 });
 
+test('第 31 版：朗讀鍵、精簡畫面、閱讀輔助在一個活動設定，就套用到全部活動（現場回報只有第一個活動有朗讀）', { skip: skip || !distReady }, async () => {
+  await setup(); await publish({ simple: true, simpleShow: [], zhuyin: false });
+  const page = await browser.newPage(); await page.goto(base + '/teacher.html'); await page.waitForSelector('[data-simple-show="say"]');
+  await page.check('[data-simple-show="say"]'); await page.check('[data-simple-show="aids"]'); await page.check('#zhuyin');
+  await page.click('#publish'); await page.waitForFunction(() => /已發布/.test(document.querySelector('#status').textContent));
+  const all = await page.evaluate(async () => { const c = (await (await fetch('/api/teacher/lessons')).json()).published;
+    return [...['rectangle', 'square', 'triangle', 'parallelogram'].map(k => c[k].settings), ...Object.values(c.activities || {}).map(a => a.settings)].map(x => `${(x.simpleShow || []).join('+')}|${x.zhuyin}`); });
+  assert.ok(all.length > 10); assert.deepEqual([...new Set(all)], ['aids+say|true']);
+  await page.close();
+  const ctx = await browser.newContext({ viewport: { width: 820, height: 1180 } }); const sp = await ctx.newPage();
+  await sp.goto(`${base}/seven.html?a=compare`); await sp.waitForTimeout(800);
+  assert.ok(await sp.evaluate(() => document.documentElement.classList.contains('show-say') && [...document.querySelectorAll('.say')].some(e => e.getClientRects().length)), '第二個活動也有朗讀鍵');
+  await ctx.close();
+});
+
 test('教師可修改第 2、3 層提示，學生看到修改後的文字；列算式答對後出現口訣', { skip: skip || !distReady }, async () => {
   await setup(); await publish({});
   const page = await browser.newPage(); await page.goto(base + '/teacher.html'); await page.waitForSelector('[data-hint2="0"]');
