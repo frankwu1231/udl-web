@@ -636,11 +636,39 @@ test('第 28 版：折線圖讀圖、畫圖兩份題組依 variant 驗證題型�
   assert.equal(r(ch.id).correct,true);assert.equal(st(ch.id,'diff').selfCorrected,true);
 });
 
+test('第 31 版：因數與倍數五年級、六年級兩份題組依 variant 驗證題型；應用題和短除最小公倍數的連帶錯誤',async()=>{
+  const login=async teacher=>(await call('/api/test-login',{method:'POST',body:{username:'test',password:'test-pass',teacher}})).headers.get('set-cookie').split(';')[0];
+  const t12=await login('T12');
+  const g5=JSON.parse(fs.readFileSync(new URL('../scenarios/factor-g5-probe.json',import.meta.url),'utf8'));
+  const g6=JSON.parse(fs.readFileSync(new URL('../scenarios/factor-g6-probe.json',import.meta.url),'utf8'));
+  for(const s of [g5,g6])for(const f of s.forms)for(const it of f.items)for(const st of it.steps)if(typeof st.answer==='number')assert.ok(st.answer>=0&&st.answer<=100,`${it.id} 答案在 100 以內`);
+  const swapped=structuredClone(g6);swapped.variant='g5';
+  assert.equal((await call('/api/study/probe-sets',{method:'POST',user:owner,body:swapped})).status,400,'六年級的題目不能當五年級題組');
+  assert.equal((await call('/api/study/probe-sets',{method:'POST',user:owner,body:g5})).data.id,'factorG5Probe@1');
+  assert.equal((await call('/api/study/probe-sets',{method:'POST',user:owner,body:g6})).data.id,'factorG6Probe@1');
+  const c=(...v)=>({confirms:v.map((x,i)=>({v:x,t:i,n:i+1}))});
+  // 五年級：應用題「最多幾袋」寫錯，每袋照自己的袋數算 → 每袋這一步連帶算對、整題錯
+  const s5=await call('/api/probe/start',{method:'POST',cookie:t12,body:{student:'T12-S01',set:'factorG5Probe@1',sessionNo:1}});
+  assert.equal(s5.status,200);assert.doesNotMatch(JSON.stringify(s5.data.items),/"answer":/);
+  const f5=g5.forms.find(f=>f.items.every((it,k)=>it.id===s5.data.items[k].id)),ap=f5.items.find(x=>x.type==='apply'),av=k=>ap.steps.find(s=>s.key===k).answer;
+  const half=factor=>av('total')%factor===0?factor:1,wrongG=[2,1].map(half).find(x=>x!==av('g'));
+  await call(`/api/probe/${s5.data.run}/item`,{method:'POST',cookie:t12,body:{itemId:ap.id,steps:{total:c(av('total')),g:c(wrongG),each:c(av('total')/wrongG)},secs:30}});
+  await call(`/api/probe/${s5.data.run}/finish`,{method:'POST',cookie:t12,body:{reason:'done'}});
+  // 六年級：短除左邊相乘算錯，最小公倍數照自己的數算 → 連帶算對、整題錯
+  const s6=await call('/api/probe/start',{method:'POST',cookie:t12,body:{student:'T12-S02',set:'factorG6Probe@1',sessionNo:1}});
+  const f6=g6.forms.find(f=>f.items.every((it,k)=>it.id===s6.data.items[k].id)),lm=f6.items.find(x=>x.type==='lcm'),lv=k=>lm.steps.find(s=>s.key===k).answer;
+  await call(`/api/probe/${s6.data.run}/item`,{method:'POST',cookie:t12,body:{itemId:lm.id,steps:{g:c(lv('g')*2),ra:c(lv('ra')),rb:c(lv('rb')),lcm:c(lv('g')*2*lv('ra')*lv('rb'))},secs:30}});
+  await call(`/api/probe/${s6.data.run}/finish`,{method:'POST',cookie:t12,body:{reason:'done'}});
+  const rows=(await call('/api/study/export?type=probeItems',{user:owner})).data.rows,r=(run,id)=>rows.find(x=>x.run===run&&x.itemId===id).result,st=(run,id,k)=>r(run,id).steps.find(s=>s.key===k);
+  assert.equal(st(s5.data.run,ap.id,'each').finalCorrect,true,'每袋依學生自己的袋數判定');assert.equal(r(s5.data.run,ap.id).correct,false);
+  assert.equal(st(s6.data.run,lm.id,'lcm').finalCorrect,true,'最小公倍數依學生自己的左邊相乘判定');assert.equal(r(s6.data.run,lm.id).correct,false);
+});
+
 test('第 29 版：實驗參數鎖定（判準不能改、AI 工具和快照不同就用固定內容、解鎖要理由）',async()=>{
   const login=async teacher=>(await call('/api/test-login',{method:'POST',body:{username:'test',password:'test-pass',teacher}})).headers.get('set-cookie').split(';')[0];
   const t11=await login('T11');
   assert.equal((await call('/api/study/lock',{cookie:t11})).status,403,'只有主持人');
-  const g=(await call('/api/study/lock',{user:owner})).data;assert.equal(g.lock.locked,false);assert.equal(g.current.provider,'deepseek');assert.equal(g.current.siteVersion,'v30');
+  const g=(await call('/api/study/lock',{user:owner})).data;assert.equal(g.lock.locked,false);assert.equal(g.current.provider,'deepseek');assert.equal(g.current.siteVersion,'v31');
   const locked=await call('/api/study/lock',{method:'POST',user:owner,body:{action:'lock',reason:'前導試做結束'}});
   assert.equal(locked.status,200);assert.equal(locked.data.lock.snapshot.model,'deepseek-flash');assert.equal(locked.data.lock.snapshot.rules.lowAcc,60);assert.deepEqual(Object.keys(locked.data.lock.snapshot.promptVersions),['hint','summary','tutor']);
   assert.equal((await call('/api/study/lock',{method:'POST',user:owner,body:{action:'lock'}})).status,409);

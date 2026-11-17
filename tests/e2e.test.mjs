@@ -902,7 +902,7 @@ test('現場試用：開始前老師點選代號（不用打字）；沒選齊�
   assert.match(await p.text('#researchBar .who'), /T02-S05/);
   await p.page.click('#researchFlush'); await p.page.waitForTimeout(300);
   const start = p.rows('場次')[0];
-  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v30'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
+  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v31'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
   assert.ok(p.rows('教師設定').some(r => r.actId === 'rectangle' && r.buddy === '開'), '記下老師這次的設定');
   assert.ok(!JSON.stringify(p.posts).match(/姓名/), '不傳姓名欄位');
 
@@ -1206,7 +1206,7 @@ test('第 26 版：研究紀錄存網站資料庫：開始本節編節次、錯�
   const ev = await events();
   const wrong = ev.find(r => r.event === '步驟檢核' && r.correct === '否');
   assert.ok(wrong, '錯誤存進網站資料庫');
-  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v30');
+  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v31');
   const d = JSON.parse(wrong.detail); assert.equal(d.obs, 'chosePerimeter'); assert.equal(d.outcome, 'wrong'); assert.equal(d.firstTry, true);
   assert.ok(ev.some(r => r.event === '無法判定'), '老師按「這題無法判定」');
   // 老師調整支持：沒選理由不能存；減少支持存成這位學生的設定，記下方向
@@ -1687,7 +1687,7 @@ test('第 27 版第 1 輪修正：換教材再換回保留指派；2-1 依實際
     return { k322: k({ l: 3, w: 2, h: 2 }), k432: k({ l: 4, w: 3, h: 2 }), k222: k({ l: 2, w: 2, h: 2 }), faces: (net.match(/class="sf-net/g) || []).length, none: /沒有上面/.test(net), front: />前面</.test(label) && !/>上面</.test(label) }; });
   assert.deepEqual(r, { k322: '2', k432: '3', k222: '1', faces: 5, none: true, front: true });
   const rec = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16') || '[]').find(x => x.event === '整題定標'));
-  assert.equal(rec.siteVersion, 'v30'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
+  assert.equal(rec.siteVersion, 'v31'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
   assert.match(await p.page.title(), /表面積/); assert.match(await p.text('header .brand'), /表面積/);
   assert.deepEqual(p.errors, []);
   await publish({});
@@ -2039,4 +2039,115 @@ test('第 30 版：表面積展開圖可以慢慢摺成盒子，也可以拉回�
   await p.page.emulateMedia({ reducedMotion: 'reduce' }); await p.page.click('[data-fold-go="0"]');
   assert.equal(await p.page.$eval('.fold', e => e.dataset.fold), '0');
   assert.deepEqual(p.errors, []);
+});
+
+// ---------- 第 31 版：因數與倍數教材包 ----------
+const FACTOR_IDS = ['fmTimes', 'fmShare', 'fmArray', 'fmIsFactor', 'fmFactors', 'fmSkip', 'fmIsMult', 'fmPair', 'fmShareTwo', 'fmGcd', 'fmMeet', 'fmLcm', 'fmWhich', 'fmMixed', 'fmPrime', 'fmTest235', 'fmPrimeDiv', 'fmShortDiv', 'fmCoprime', 'fmSimplify'];
+const FACTOR_MAP = { __map: { pkg: 'factor', assigned: FACTOR_IDS, path: 'all' } };
+const records = p => p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || '');
+
+test('第 31 版：因數與倍數 20 個活動都能出題、畫圖，照示範做完每一步都對；空白的不會過；題目、答案、數線、選項都在等級上限內（24／50／100）', { skip: skip || !distReady }, async () => {
+  const p = await act('fmFactors', { difficulty: 'standard', ...FACTOR_MAP });
+  const out = await p.page.evaluate(() => {
+    const A = window.areaActs, bad = [];
+    const ids = A.packages.factor.activities.map(a => a.id);
+    for (const id of ids) {
+      const pl = A.get(id); if (!pl) { bad.push(id + ' 沒有註冊'); continue; }
+      for (const level of ['easy', 'standard', 'challenge']) for (let i = 0; i < 8; i++) {
+        const problem = pl.makeProblem(level, i, Math.random), answers = {}, state = {};
+        if ((problem.dims || []).some(n => n > 100)) bad.push(`${id} 數字超過 100：${problem.dims}`);
+        const cap = { easy: 24, standard: 50, challenge: 100 }[level], nums = [], walk = v => { if (typeof v === 'number') nums.push(v); else if (v && typeof v === 'object') Object.values(v).forEach(walk); };
+        walk(problem); if (nums.some(n => n > cap)) bad.push(`${id} ${level} 題目、答案或數線超過 ${cap}：${Math.max(...nums)}`);
+        const ctx = { answers, state, problem, plugin: pl, settings: {}, method: 'mark', level, hint: () => 3, checked: () => false, invalidate() {}, refreshFigure() {}, rerender() {}, log() {}, choice: (k, t, items) => { const txt = items.map(x => x[1]).join('|'), big = (txt.match(/\d+/g) || []).map(Number).filter(n => n > cap); if (big.length) bad.push(`${id} ${level} 選項超過 ${cap}：${big[0]}`); return txt; } };
+        try { pl.planFigure && pl.planFigure(ctx); } catch (e) { bad.push(`${id} planFigure ${e.message}`); }
+        pl.steps.forEach((st, s) => {
+          try { const html = (st.figure ? st.figure(ctx) : '') + st.answer(ctx); if (/undefined|NaN/.test(html)) bad.push(`${id} 第${s + 1}步畫面有 undefined/NaN`); } catch (e) { bad.push(`${id} 第${s + 1}步畫面 ${e.message}`); }
+          try { if (!st.check(ctx)) bad.push(`${id} 第${s + 1}步沒作答也過`); st.solve(ctx); const r = st.check(ctx); if (r) bad.push(`${id} ${level} ${i} 第${s + 1}步照示範做卻沒過：${r.msg}`); } catch (e) { bad.push(`${id} 第${s + 1}步 ${e.message}`); }
+        });
+        try { pl.done(ctx); } catch (e) { bad.push(`${id} done ${e.message}`); }
+      }
+    }
+    return { bad, n: ids.length, paths: Object.keys(A.packages.factor.paths), core: A.packages.factor.activities.filter(a => a.core).map(a => a.id) };
+  });
+  assert.equal(out.n, 20); assert.deepEqual(out.bad, []); assert.deepEqual(out.paths, ['grade5', 'grade6', 'all']); assert.deepEqual(out.core, ['fmFactors', 'fmGcd']);
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 31 版：1-3 找因數七步：講反記 swapFM、有剩記 remainderOK、漏 1 記 miss1Self；數字表點選；九九乘法表打開會記錄', { skip: skip || !distReady }, async () => {
+  const p = await act('fmFactors', { difficulty: 'easy', ...FACTOR_MAP });
+  const n = Number((await p.text('.lesson-prompt')).match(/找出 (\d+) 的/)[1]);
+  await p.choose('ask', 'mult'); await p.check(); assert.match(await p.text('#feedback0'), /不是倍數/);
+  await p.choose('ask', 'all'); await p.check(); await p.next();
+  await p.choose('think', 'share'); await p.check(); await p.next();
+  await p.page.click('.fm-times summary'); await p.page.waitForTimeout(60);
+  await p.page.fill('#one', String(n)); await p.check(); await p.next();
+  await p.choose('ra', 'zero'); await p.choose('rb', 'zero'); await p.check(); assert.match(await p.text('#feedback3'), /有剩/);
+  await p.choose('rb', 'left'); await p.check(); await p.next();
+  const a = Number((await p.text('[data-stage="4"] .answer')).match(/(\d+) × □ ＝/)[1]);
+  await p.page.fill('#pair', String(n / a)); await p.check(); await p.next();
+  await p.choose('stop', 'go'); await p.check(); assert.match(await p.text('#feedback5'), /同一對/);
+  await p.choose('stop', 'stop'); await p.check(); await p.next();
+  const fs = []; for (let d = 1; d <= n; d++) if (n % d === 0) fs.push(d);
+  for (const d of fs.slice(1)) await p.page.click(`[data-pick="all"] [data-num="${d}"]`);
+  assert.match(await p.text('#app'), new RegExp(`選了 ${fs.length - 1} 個數`), '點了以後計數馬上更新');
+  await p.check(); assert.match(await p.text('#feedback6'), /1 和/);
+  await p.page.click('[data-pick="all"] [data-num="1"]'); await p.check(); await p.next();
+  assert.match(await p.text('.done-banner'), new RegExp(`${n} 的因數有 ${fs.join('、')}`));
+  const rec = await records(p);
+  for (const code of ['swapFM', 'remainderOK', 'noStop', 'miss1Self', '開九九乘法表']) assert.match(rec, new RegExp(code));
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 31 版：4-2 最小公倍數七步：看情境選錯記 gcdLcmSwap、倍數選成因數記 swapFM、兩數相乘記 lcmProduct', { skip: skip || !distReady }, async () => {
+  const p = await act('fmLcm', { difficulty: 'standard', ...FACTOR_MAP });
+  const prompt = await p.text('.lesson-prompt');
+  await p.choose('kind', 'gcd'); await p.check(); assert.match(await p.text('#feedback0'), /再碰在一起/);
+  await p.choose('kind', 'lcm'); await p.check(); await p.next();
+  await p.choose('tool', 'm'); await p.check(); await p.next();
+  const pickAll = async (key, stage) => { const [, v, top] = (await p.text(`[data-stage="${stage}"] .answer`)).match(/點出 (\d+) 的倍數（到 (\d+) 為止）/).map(Number); const list = []; for (let x = v; x <= top; x += v) list.push(x); return { v, top, list }; };
+  const A1 = await pickAll('listA', 2);
+  await p.page.click(`[data-pick="listA"] [data-num="1"]`); await p.check(); assert.match(await p.text('#feedback2'), /倍數不會比/);
+  await p.page.click(`[data-pick="listA"] [data-num="1"]`);
+  for (const x of A1.list) await p.page.click(`[data-pick="listA"] [data-num="${x}"]`);
+  await p.check(); await p.next();
+  const B1 = await pickAll('listB', 3);
+  for (const x of B1.list) await p.page.click(`[data-pick="listB"] [data-num="${x}"]`);
+  await p.check(); await p.next();
+  const both = A1.list.filter(x => B1.list.includes(x)), L = both[0];
+  for (const x of both) await p.page.click(`[data-pick="both"] [data-num="${x}"]`);
+  await p.check(); await p.next();
+  if (A1.v * B1.v !== L) { await p.page.fill('#best', String(A1.v * B1.v)); await p.check(); assert.match(await p.text('#feedback5'), /不一定最小/); }
+  await p.page.fill('#best', String(L)); await p.check(); await p.next();
+  const unit = /分鐘/.test(prompt) ? '分鐘' : /秒/.test(prompt) ? '秒' : '公分';
+  await p.page.fill('#each', String(L / A1.v)); await p.choose('unit', unit); await p.check(); await p.next();
+  assert.match(await p.text('.done-banner'), new RegExp(`最少 ${L} `));
+  const rec = await records(p);
+  assert.match(rec, /gcdLcmSwap/); assert.match(rec, /swapFM/);
+  if (A1.v * B1.v !== L) assert.match(rec, /lcmProduct/);
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 31 版：6-3 短除分解：除數不是質數、除不盡會擋；學習地圖換成因數與倍數、單元 0 是先測；教師頁可以換教材', { skip: skip || !distReady }, async () => {
+  const p = await act('fmPrimeDiv', { difficulty: 'easy', ...FACTOR_MAP });
+  const n = Number((await p.text('.lesson-prompt')).match(/把 (\d+) 分解/)[1]);
+  const pf = []; for (let m = n, d = 2; m > 1; d++) while (m % d === 0) { pf.push(d); m /= d; }
+  await p.choose('first', String(pf[0])); await p.check(); await p.next();
+  await p.page.fill('#d0', '4'); await p.page.fill('#q0_0', String(n / 4)); await p.check(); assert.match(await p.text('#feedback1'), /不是質數/);
+  let cur = n; for (let k = 0; k < pf.length - 1; k++) { await p.page.fill('#d' + k, String(pf[k])); cur /= pf[k]; await p.page.fill(`#q0_${k}`, String(cur)); }
+  await p.check(); await p.next();
+  await p.choose('prod', 'ok'); await p.check(); await p.next();
+  assert.match(await p.text('.done-banner'), new RegExp(`${n} ＝ ${pf.join(' × ')}`));
+  assert.deepEqual(p.errors, []);
+
+  await publish({ __map: { pkg: 'factor', assigned: ['fmTimes', 'fmShare', 'fmArray'], sequential: true } });
+  const ctx = await browser.newContext(); const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.goto(base + '/seven.html'); await page.waitForSelector('.map-card');
+  const units = await page.$$eval('.map-unit h2', h => h.map(x => x.innerText.trim()).join('|'));
+  assert.match(units, /準備好了嗎/); assert.match(units, /因數/); assert.doesNotMatch(units, /折線圖/);
+  assert.match(await page.innerText('[data-map="fmTimes"]'), /先測/);
+  assert.ok(await page.$('.map-card.locked[data-map="fmShare"]'), '0-1 還沒全對，0-2 鎖住');
+  const tp = await browser.newPage(); await tp.goto(base + '/teacher.html'); await tp.waitForSelector('[data-pkg="factor"]');
+  assert.match(await tp.innerText('[data-pkg="factor"]'), /因數與倍數/);
+  assert.deepEqual(errs, []); await ctx.close(); await tp.close();
+  await publish({});
 });
