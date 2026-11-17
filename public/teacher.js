@@ -513,7 +513,9 @@
       const res = await fetch('/api/teacher/lessons', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind, config }), cache: 'no-store' });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'save_failed');
-      if (kind === 'published') published = JSON.parse(JSON.stringify(config));
+      if (kind === 'published') { published = JSON.parse(JSON.stringify(config));
+        // 第 31 版：發布時草稿也一起更新，下次打開教師頁才不會載入舊草稿、把發布的設定（例如朗讀）蓋回去
+        try { await fetch('/api/teacher/lessons', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'draft', config }), cache: 'no-store' }); } catch { /* 略過 */ } }
       cleanup();
       $('status').textContent = kind === 'draft' ? (testWorkspace ? '測試草稿已儲存。' : '草稿已儲存。') : (testWorkspace ? '已發布至測試工作區，不影響正式教材。' : '已發布。請重新開啟學生頁面查看（試用版只存在這個瀏覽器）。');
       return true;
