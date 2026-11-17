@@ -1,0 +1,795 @@
+{
+  "id": "timeElapsedProbe",
+  "version": "1",
+  "kind": "probe",
+  "package": "time",
+  "variant": "elapsed",
+  "title": "時間概念小測驗：經過時間（三、四年級）",
+  "itemSecs": 120,
+  "totalSecs": 1200,
+  "forms": [
+    {
+      "id": "A",
+      "items": [
+        {
+          "id": "A01",
+          "type": "hm",
+          "prompt": "2 小時 10 分是幾分鐘？",
+          "steps": [
+            {
+              "key": "h60",
+              "label": "2 小時是幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 120
+            },
+            {
+              "key": "tot",
+              "label": "一共幾分鐘",
+              "role": "answer",
+              "input": "number",
+              "answer": 130
+            }
+          ]
+        },
+        {
+          "id": "A02",
+          "type": "hm",
+          "prompt": "125 分鐘是幾小時幾分？",
+          "steps": [
+            {
+              "key": "hr",
+              "label": "幾小時",
+              "role": "part",
+              "input": "number",
+              "answer": 2
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "A03",
+          "type": "pointDur",
+          "prompt": "「下課有 10 分鐘」的 10 分鐘，是時刻，還是時間量？",
+          "steps": [
+            {
+              "key": "k",
+              "label": "是哪一種",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "時刻",
+                "時間量"
+              ],
+              "answer": "時間量"
+            }
+          ]
+        },
+        {
+          "id": "A04",
+          "type": "to24",
+          "prompt": "下午 3 時 20 分，用 24 時制是幾時幾分？",
+          "steps": [
+            {
+              "key": "add",
+              "label": "幾時要加多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 12
+            },
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "answer",
+              "input": "number",
+              "answer": 15
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "part",
+              "input": "number",
+              "answer": 20
+            }
+          ]
+        },
+        {
+          "id": "A05",
+          "type": "to24",
+          "prompt": "電子鐘顯示 20:25，是下午或晚上的幾時幾分？",
+          "steps": [
+            {
+              "key": "sub",
+              "label": "幾時要減多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 12
+            },
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "answer",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "part",
+              "input": "number",
+              "answer": 25
+            }
+          ]
+        },
+        {
+          "id": "A06",
+          "type": "cross",
+          "prompt": "從上午 9 時 50 分到上午 10 時 15 分，經過幾分鐘？",
+          "steps": [
+            {
+              "key": "toH",
+              "label": "到 10 時要幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 10
+            },
+            {
+              "key": "after",
+              "label": "10 時以後又過幾分鐘",
+              "role": "part",
+              "input": "number",
+              "answer": 15
+            },
+            {
+              "key": "tot",
+              "label": "一共幾分鐘",
+              "role": "answer",
+              "input": "number",
+              "answer": 25
+            }
+          ]
+        },
+        {
+          "id": "A07",
+          "type": "cross",
+          "prompt": "從下午 2 時 45 分到下午 4 時 10 分，經過幾小時幾分？",
+          "steps": [
+            {
+              "key": "all",
+              "label": "一共幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 85
+            },
+            {
+              "key": "hr",
+              "label": "幾小時",
+              "role": "part",
+              "input": "number",
+              "answer": 1
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 25
+            }
+          ]
+        },
+        {
+          "id": "A08",
+          "type": "noon",
+          "prompt": "從上午 11 時 20 分到下午 1 時 15 分，經過幾分鐘？",
+          "steps": [
+            {
+              "key": "toNoon",
+              "label": "到中午 12 時要幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 40
+            },
+            {
+              "key": "after",
+              "label": "中午 12 時以後又過幾分鐘",
+              "role": "part",
+              "input": "number",
+              "answer": 75
+            },
+            {
+              "key": "tot",
+              "label": "一共幾分鐘",
+              "role": "answer",
+              "input": "number",
+              "answer": 115
+            }
+          ]
+        },
+        {
+          "id": "A09",
+          "type": "midnight",
+          "prompt": "晚上 9 時睡覺，第二天早上 6 時起床，睡了幾小時？",
+          "steps": [
+            {
+              "key": "toMid",
+              "label": "到半夜 12 時睡了幾小時",
+              "role": "measure",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "after",
+              "label": "12 時以後又睡幾小時",
+              "role": "part",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "tot",
+              "label": "一共睡了幾小時",
+              "role": "answer",
+              "input": "number",
+              "answer": 9
+            }
+          ]
+        },
+        {
+          "id": "A10",
+          "type": "findEnd",
+          "prompt": "電影從下午 2 時 30 分開始，演了 1 小時 25 分。下午幾時幾分結束？",
+          "steps": [
+            {
+              "key": "sum",
+              "label": "分和分加起來是幾分",
+              "role": "measure",
+              "input": "number",
+              "answer": 55
+            },
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 55
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "items": [
+        {
+          "id": "B01",
+          "type": "hm",
+          "prompt": "1 小時 40 分是幾分鐘？",
+          "steps": [
+            {
+              "key": "h60",
+              "label": "1 小時是幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 60
+            },
+            {
+              "key": "tot",
+              "label": "一共幾分鐘",
+              "role": "answer",
+              "input": "number",
+              "answer": 100
+            }
+          ]
+        },
+        {
+          "id": "B02",
+          "type": "hm",
+          "prompt": "80 分鐘是幾小時幾分？",
+          "steps": [
+            {
+              "key": "hr",
+              "label": "幾小時",
+              "role": "part",
+              "input": "number",
+              "answer": 1
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 20
+            }
+          ]
+        },
+        {
+          "id": "B03",
+          "type": "pointDur",
+          "prompt": "「8 時 10 分上課」的 8 時 10 分，是時刻，還是時間量？",
+          "steps": [
+            {
+              "key": "k",
+              "label": "是哪一種",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "時刻",
+                "時間量"
+              ],
+              "answer": "時刻"
+            }
+          ]
+        },
+        {
+          "id": "B04",
+          "type": "to24",
+          "prompt": "下午 7 時 35 分，用 24 時制是幾時幾分？",
+          "steps": [
+            {
+              "key": "add",
+              "label": "幾時要加多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 12
+            },
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "answer",
+              "input": "number",
+              "answer": 19
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "part",
+              "input": "number",
+              "answer": 35
+            }
+          ]
+        },
+        {
+          "id": "B05",
+          "type": "to24",
+          "prompt": "電子鐘顯示 13:40，是下午或晚上的幾時幾分？",
+          "steps": [
+            {
+              "key": "sub",
+              "label": "幾時要減多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 12
+            },
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "answer",
+              "input": "number",
+              "answer": 1
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "part",
+              "input": "number",
+              "answer": 40
+            }
+          ]
+        },
+        {
+          "id": "B06",
+          "type": "cross",
+          "prompt": "從上午 8 時 40 分到上午 9 時 20 分，經過幾分鐘？",
+          "steps": [
+            {
+              "key": "toH",
+              "label": "到 9 時要幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "after",
+              "label": "9 時以後又過幾分鐘",
+              "role": "part",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "tot",
+              "label": "一共幾分鐘",
+              "role": "answer",
+              "input": "number",
+              "answer": 40
+            }
+          ]
+        },
+        {
+          "id": "B07",
+          "type": "cross",
+          "prompt": "從下午 2 時 45 分到下午 4 時 20 分，經過幾小時幾分？",
+          "steps": [
+            {
+              "key": "all",
+              "label": "一共幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 95
+            },
+            {
+              "key": "hr",
+              "label": "幾小時",
+              "role": "part",
+              "input": "number",
+              "answer": 1
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 35
+            }
+          ]
+        },
+        {
+          "id": "B08",
+          "type": "noon",
+          "prompt": "從上午 11 時 40 分到下午 1 時 30 分，經過幾分鐘？",
+          "steps": [
+            {
+              "key": "toNoon",
+              "label": "到中午 12 時要幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "after",
+              "label": "中午 12 時以後又過幾分鐘",
+              "role": "part",
+              "input": "number",
+              "answer": 90
+            },
+            {
+              "key": "tot",
+              "label": "一共幾分鐘",
+              "role": "answer",
+              "input": "number",
+              "answer": 110
+            }
+          ]
+        },
+        {
+          "id": "B09",
+          "type": "midnight",
+          "prompt": "晚上 10 時睡覺，第二天早上 7 時起床，睡了幾小時？",
+          "steps": [
+            {
+              "key": "toMid",
+              "label": "到半夜 12 時睡了幾小時",
+              "role": "measure",
+              "input": "number",
+              "answer": 2
+            },
+            {
+              "key": "after",
+              "label": "12 時以後又睡幾小時",
+              "role": "part",
+              "input": "number",
+              "answer": 7
+            },
+            {
+              "key": "tot",
+              "label": "一共睡了幾小時",
+              "role": "answer",
+              "input": "number",
+              "answer": 9
+            }
+          ]
+        },
+        {
+          "id": "B10",
+          "type": "findEnd",
+          "prompt": "電影從下午 2 時 30 分開始，演了 1 小時 40 分。下午幾時幾分結束？",
+          "steps": [
+            {
+              "key": "sum",
+              "label": "分和分加起來是幾分",
+              "role": "measure",
+              "input": "number",
+              "answer": 70
+            },
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 4
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "items": [
+        {
+          "id": "C01",
+          "type": "hm",
+          "prompt": "2 小時 10 分是幾分鐘？",
+          "steps": [
+            {
+              "key": "h60",
+              "label": "2 小時是幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 120
+            },
+            {
+              "key": "tot",
+              "label": "一共幾分鐘",
+              "role": "answer",
+              "input": "number",
+              "answer": 130
+            }
+          ]
+        },
+        {
+          "id": "C02",
+          "type": "hm",
+          "prompt": "110 分鐘是幾小時幾分？",
+          "steps": [
+            {
+              "key": "hr",
+              "label": "幾小時",
+              "role": "part",
+              "input": "number",
+              "answer": 1
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 50
+            }
+          ]
+        },
+        {
+          "id": "C03",
+          "type": "pointDur",
+          "prompt": "「跑了 5 分鐘」的 5 分鐘，是時刻，還是時間量？",
+          "steps": [
+            {
+              "key": "k",
+              "label": "是哪一種",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "時刻",
+                "時間量"
+              ],
+              "answer": "時間量"
+            }
+          ]
+        },
+        {
+          "id": "C04",
+          "type": "to24",
+          "prompt": "下午 9 時 5 分，用 24 時制是幾時幾分？",
+          "steps": [
+            {
+              "key": "add",
+              "label": "幾時要加多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 12
+            },
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "answer",
+              "input": "number",
+              "answer": 21
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "part",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "C05",
+          "type": "to24",
+          "prompt": "電子鐘顯示 20:40，是下午或晚上的幾時幾分？",
+          "steps": [
+            {
+              "key": "sub",
+              "label": "幾時要減多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 12
+            },
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "answer",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "part",
+              "input": "number",
+              "answer": 40
+            }
+          ]
+        },
+        {
+          "id": "C06",
+          "type": "cross",
+          "prompt": "從上午 8 時 40 分到上午 9 時 20 分，經過幾分鐘？",
+          "steps": [
+            {
+              "key": "toH",
+              "label": "到 9 時要幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "after",
+              "label": "9 時以後又過幾分鐘",
+              "role": "part",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "tot",
+              "label": "一共幾分鐘",
+              "role": "answer",
+              "input": "number",
+              "answer": 40
+            }
+          ]
+        },
+        {
+          "id": "C07",
+          "type": "cross",
+          "prompt": "從下午 1 時 50 分到下午 3 時 20 分，經過幾小時幾分？",
+          "steps": [
+            {
+              "key": "all",
+              "label": "一共幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 90
+            },
+            {
+              "key": "hr",
+              "label": "幾小時",
+              "role": "part",
+              "input": "number",
+              "answer": 1
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 30
+            }
+          ]
+        },
+        {
+          "id": "C08",
+          "type": "noon",
+          "prompt": "從上午 11 時 20 分到下午 1 時 30 分，經過幾分鐘？",
+          "steps": [
+            {
+              "key": "toNoon",
+              "label": "到中午 12 時要幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 40
+            },
+            {
+              "key": "after",
+              "label": "中午 12 時以後又過幾分鐘",
+              "role": "part",
+              "input": "number",
+              "answer": 90
+            },
+            {
+              "key": "tot",
+              "label": "一共幾分鐘",
+              "role": "answer",
+              "input": "number",
+              "answer": 130
+            }
+          ]
+        },
+        {
+          "id": "C09",
+          "type": "midnight",
+          "prompt": "晚上 9 時睡覺，第二天早上 7 時起床，睡了幾小時？",
+          "steps": [
+            {
+              "key": "toMid",
+              "label": "到半夜 12 時睡了幾小時",
+              "role": "measure",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "after",
+              "label": "12 時以後又睡幾小時",
+              "role": "part",
+              "input": "number",
+              "answer": 7
+            },
+            {
+              "key": "tot",
+              "label": "一共睡了幾小時",
+              "role": "answer",
+              "input": "number",
+              "answer": 10
+            }
+          ]
+        },
+        {
+          "id": "C10",
+          "type": "findEnd",
+          "prompt": "電影從下午 3 時 45 分開始，演了 1 小時 35 分。下午幾時幾分結束？",
+          "steps": [
+            {
+              "key": "sum",
+              "label": "分和分加起來是幾分",
+              "role": "measure",
+              "input": "number",
+              "answer": 80
+            },
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 20
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

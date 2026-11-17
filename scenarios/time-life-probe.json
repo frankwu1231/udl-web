@@ -1,0 +1,810 @@
+{
+  "id": "timeLifeProbe",
+  "version": "1",
+  "kind": "probe",
+  "package": "time",
+  "variant": "life",
+  "title": "時間概念小測驗：時間小管家",
+  "itemSecs": 120,
+  "totalSecs": 1200,
+  "forms": [
+    {
+      "id": "A",
+      "items": [
+        {
+          "id": "A01",
+          "type": "inTime",
+          "prompt": "現在是 7 時 50 分，走到學校要 15 分鐘，8 時要到。來得及嗎？",
+          "steps": [
+            {
+              "key": "left",
+              "label": "到 8 時還有幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 10
+            },
+            {
+              "key": "yes",
+              "label": "來得及嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "來得及",
+                "來不及"
+              ],
+              "answer": "來不及"
+            }
+          ]
+        },
+        {
+          "id": "A02",
+          "type": "inTime",
+          "prompt": "現在是 4 時 25 分，走到補習班要 25 分鐘，5 時要到。來得及嗎？",
+          "steps": [
+            {
+              "key": "left",
+              "label": "到 5 時還有幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 35
+            },
+            {
+              "key": "yes",
+              "label": "來得及嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "來得及",
+                "來不及"
+              ],
+              "answer": "來得及"
+            }
+          ]
+        },
+        {
+          "id": "A03",
+          "type": "leave",
+          "prompt": "要在 9 時 30 分到圖書館，走路要 10 分鐘。最晚幾時幾分要出門？",
+          "steps": [
+            {
+              "key": "way",
+              "label": "要往前推還是往後推",
+              "role": "formula",
+              "input": "choice",
+              "options": [
+                "往前推（減）",
+                "往後推（加）"
+              ],
+              "answer": "往前推（減）"
+            },
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 9
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 20
+            }
+          ]
+        },
+        {
+          "id": "A04",
+          "type": "leave",
+          "prompt": "要在 9 時 10 分到體育館，走路要 15 分鐘。最晚幾時幾分要出門？",
+          "steps": [
+            {
+              "key": "way",
+              "label": "要往前推還是往後推",
+              "role": "formula",
+              "input": "choice",
+              "options": [
+                "往前推（減）",
+                "往後推（加）"
+              ],
+              "answer": "往前推（減）"
+            },
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 55
+            }
+          ]
+        },
+        {
+          "id": "A05",
+          "type": "bus",
+          "prompt": "社區站開往體育館站的公車：7:10、7:35、8:00、8:25。現在是 7:50，下一班是幾時幾分？",
+          "steps": [
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 0
+            }
+          ]
+        },
+        {
+          "id": "A06",
+          "type": "bus",
+          "prompt": "社區站開往體育館站的公車：7:10、7:35、8:00、8:25。現在是 7:55，要等幾分鐘才有車？",
+          "steps": [
+            {
+              "key": "next",
+              "label": "下一班是幾分",
+              "role": "measure",
+              "input": "number",
+              "answer": 0
+            },
+            {
+              "key": "wait",
+              "label": "要等幾分鐘",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "A07",
+          "type": "bus",
+          "prompt": "社區站開往體育館站的公車：7:10、7:35、8:00、8:25。坐車到體育館站要 15 分鐘，8:20 以前要到。最晚要坐哪一班？",
+          "steps": [
+            {
+              "key": "way",
+              "label": "用到站時刻減什麼",
+              "role": "formula",
+              "input": "choice",
+              "options": [
+                "坐車的時間",
+                "等車的時間"
+              ],
+              "answer": "坐車的時間"
+            },
+            {
+              "key": "bus",
+              "label": "最晚坐哪一班",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "7:10",
+                "7:35",
+                "8:00",
+                "8:25"
+              ],
+              "answer": "8:00"
+            }
+          ]
+        },
+        {
+          "id": "A08",
+          "type": "plan",
+          "prompt": "小安下午 4 時 30 分到家，先寫功課 40 分鐘，再吃點心 20 分鐘。做完是下午幾時幾分？",
+          "steps": [
+            {
+              "key": "sum",
+              "label": "一共要幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 60
+            },
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 30
+            }
+          ]
+        },
+        {
+          "id": "A09",
+          "type": "shop",
+          "prompt": "巷口麵包店營業時間 9:00～20:30。現在是晚上 8 時 5 分，還有幾分鐘關門？",
+          "steps": [
+            {
+              "key": "h24",
+              "label": "晚上 8 時是 24 時制幾時",
+              "role": "measure",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "left",
+              "label": "還有幾分鐘關門",
+              "role": "answer",
+              "input": "number",
+              "answer": 25
+            }
+          ]
+        },
+        {
+          "id": "A10",
+          "type": "shop",
+          "prompt": "巷口麵包店營業時間 9:00～20:30。現在是晚上 8 時 50 分，店還開著嗎？",
+          "steps": [
+            {
+              "key": "h24",
+              "label": "晚上 8 時是 24 時制幾時",
+              "role": "measure",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "open",
+              "label": "店還開著嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "開著",
+                "關了"
+              ],
+              "answer": "關了"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "items": [
+        {
+          "id": "B01",
+          "type": "inTime",
+          "prompt": "現在是 8 時 45 分，走到公園要 20 分鐘，9 時要到。來得及嗎？",
+          "steps": [
+            {
+              "key": "left",
+              "label": "到 9 時還有幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 15
+            },
+            {
+              "key": "yes",
+              "label": "來得及嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "來得及",
+                "來不及"
+              ],
+              "answer": "來不及"
+            }
+          ]
+        },
+        {
+          "id": "B02",
+          "type": "inTime",
+          "prompt": "現在是 7 時 35 分，走到學校要 20 分鐘，8 時要到。來得及嗎？",
+          "steps": [
+            {
+              "key": "left",
+              "label": "到 8 時還有幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 25
+            },
+            {
+              "key": "yes",
+              "label": "來得及嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "來得及",
+                "來不及"
+              ],
+              "answer": "來得及"
+            }
+          ]
+        },
+        {
+          "id": "B03",
+          "type": "leave",
+          "prompt": "要在 9 時 25 分到體育館，走路要 15 分鐘。最晚幾時幾分要出門？",
+          "steps": [
+            {
+              "key": "way",
+              "label": "要往前推還是往後推",
+              "role": "formula",
+              "input": "choice",
+              "options": [
+                "往前推（減）",
+                "往後推（加）"
+              ],
+              "answer": "往前推（減）"
+            },
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 9
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 10
+            }
+          ]
+        },
+        {
+          "id": "B04",
+          "type": "leave",
+          "prompt": "要在 9 時 10 分到圖書館，走路要 15 分鐘。最晚幾時幾分要出門？",
+          "steps": [
+            {
+              "key": "way",
+              "label": "要往前推還是往後推",
+              "role": "formula",
+              "input": "choice",
+              "options": [
+                "往前推（減）",
+                "往後推（加）"
+              ],
+              "answer": "往前推（減）"
+            },
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 55
+            }
+          ]
+        },
+        {
+          "id": "B05",
+          "type": "bus",
+          "prompt": "公園站開往游泳池站的公車：7:00、7:25、7:50、8:15。現在是 7:15，下一班是幾時幾分？",
+          "steps": [
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 7
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 25
+            }
+          ]
+        },
+        {
+          "id": "B06",
+          "type": "bus",
+          "prompt": "公園站開往游泳池站的公車：7:00、7:25、7:50、8:15。現在是 8:10，要等幾分鐘才有車？",
+          "steps": [
+            {
+              "key": "next",
+              "label": "下一班是幾分",
+              "role": "measure",
+              "input": "number",
+              "answer": 15
+            },
+            {
+              "key": "wait",
+              "label": "要等幾分鐘",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "B07",
+          "type": "bus",
+          "prompt": "公園站開往游泳池站的公車：7:00、7:25、7:50、8:15。坐車到游泳池站要 20 分鐘，8:20 以前要到。最晚要坐哪一班？",
+          "steps": [
+            {
+              "key": "way",
+              "label": "用到站時刻減什麼",
+              "role": "formula",
+              "input": "choice",
+              "options": [
+                "坐車的時間",
+                "等車的時間"
+              ],
+              "answer": "坐車的時間"
+            },
+            {
+              "key": "bus",
+              "label": "最晚坐哪一班",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "7:00",
+                "7:25",
+                "7:50",
+                "8:15"
+              ],
+              "answer": "7:50"
+            }
+          ]
+        },
+        {
+          "id": "B08",
+          "type": "plan",
+          "prompt": "小安下午 4 時 30 分到家，先寫功課 40 分鐘，再吃點心 15 分鐘。做完是下午幾時幾分？",
+          "steps": [
+            {
+              "key": "sum",
+              "label": "一共要幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 55
+            },
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 25
+            }
+          ]
+        },
+        {
+          "id": "B09",
+          "type": "shop",
+          "prompt": "社區書店營業時間 9:00～20:30。現在是晚上 8 時 15 分，還有幾分鐘關門？",
+          "steps": [
+            {
+              "key": "h24",
+              "label": "晚上 8 時是 24 時制幾時",
+              "role": "measure",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "left",
+              "label": "還有幾分鐘關門",
+              "role": "answer",
+              "input": "number",
+              "answer": 15
+            }
+          ]
+        },
+        {
+          "id": "B10",
+          "type": "shop",
+          "prompt": "社區書店營業時間 9:00～20:30。現在是晚上 8 時 40 分，店還開著嗎？",
+          "steps": [
+            {
+              "key": "h24",
+              "label": "晚上 8 時是 24 時制幾時",
+              "role": "measure",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "open",
+              "label": "店還開著嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "開著",
+                "關了"
+              ],
+              "answer": "關了"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "items": [
+        {
+          "id": "C01",
+          "type": "inTime",
+          "prompt": "現在是 7 時 55 分，走到學校要 15 分鐘，8 時要到。來得及嗎？",
+          "steps": [
+            {
+              "key": "left",
+              "label": "到 8 時還有幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "yes",
+              "label": "來得及嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "來得及",
+                "來不及"
+              ],
+              "answer": "來不及"
+            }
+          ]
+        },
+        {
+          "id": "C02",
+          "type": "inTime",
+          "prompt": "現在是 8 時 30 分，走到公園要 25 分鐘，9 時要到。來得及嗎？",
+          "steps": [
+            {
+              "key": "left",
+              "label": "到 9 時還有幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 30
+            },
+            {
+              "key": "yes",
+              "label": "來得及嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "來得及",
+                "來不及"
+              ],
+              "answer": "來得及"
+            }
+          ]
+        },
+        {
+          "id": "C03",
+          "type": "leave",
+          "prompt": "要在 9 時 40 分到體育館，走路要 10 分鐘。最晚幾時幾分要出門？",
+          "steps": [
+            {
+              "key": "way",
+              "label": "要往前推還是往後推",
+              "role": "formula",
+              "input": "choice",
+              "options": [
+                "往前推（減）",
+                "往後推（加）"
+              ],
+              "answer": "往前推（減）"
+            },
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 9
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 30
+            }
+          ]
+        },
+        {
+          "id": "C04",
+          "type": "leave",
+          "prompt": "要在 9 時 15 分到游泳池，走路要 20 分鐘。最晚幾時幾分要出門？",
+          "steps": [
+            {
+              "key": "way",
+              "label": "要往前推還是往後推",
+              "role": "formula",
+              "input": "choice",
+              "options": [
+                "往前推（減）",
+                "往後推（加）"
+              ],
+              "answer": "往前推（減）"
+            },
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 55
+            }
+          ]
+        },
+        {
+          "id": "C05",
+          "type": "bus",
+          "prompt": "社區站開往體育館站的公車：7:00、7:20、7:40、8:00。現在是 7:35，下一班是幾時幾分？",
+          "steps": [
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 7
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 40
+            }
+          ]
+        },
+        {
+          "id": "C06",
+          "type": "bus",
+          "prompt": "社區站開往體育館站的公車：7:00、7:20、7:40、8:00。現在是 7:25，要等幾分鐘才有車？",
+          "steps": [
+            {
+              "key": "next",
+              "label": "下一班是幾分",
+              "role": "measure",
+              "input": "number",
+              "answer": 40
+            },
+            {
+              "key": "wait",
+              "label": "要等幾分鐘",
+              "role": "answer",
+              "input": "number",
+              "answer": 15
+            }
+          ]
+        },
+        {
+          "id": "C07",
+          "type": "bus",
+          "prompt": "社區站開往體育館站的公車：7:00、7:20、7:40、8:00。坐車到體育館站要 15 分鐘，7:45 以前要到。最晚要坐哪一班？",
+          "steps": [
+            {
+              "key": "way",
+              "label": "用到站時刻減什麼",
+              "role": "formula",
+              "input": "choice",
+              "options": [
+                "坐車的時間",
+                "等車的時間"
+              ],
+              "answer": "坐車的時間"
+            },
+            {
+              "key": "bus",
+              "label": "最晚坐哪一班",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "7:00",
+                "7:20",
+                "7:40",
+                "8:00"
+              ],
+              "answer": "7:20"
+            }
+          ]
+        },
+        {
+          "id": "C08",
+          "type": "plan",
+          "prompt": "小安下午 4 時 30 分到家，先寫功課 30 分鐘，再吃點心 15 分鐘。做完是下午幾時幾分？",
+          "steps": [
+            {
+              "key": "sum",
+              "label": "一共要幾分鐘",
+              "role": "measure",
+              "input": "number",
+              "answer": 45
+            },
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 15
+            }
+          ]
+        },
+        {
+          "id": "C09",
+          "type": "shop",
+          "prompt": "巷口麵包店營業時間 9:00～21:00。現在是晚上 8 時 40 分，還有幾分鐘關門？",
+          "steps": [
+            {
+              "key": "h24",
+              "label": "晚上 8 時是 24 時制幾時",
+              "role": "measure",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "left",
+              "label": "還有幾分鐘關門",
+              "role": "answer",
+              "input": "number",
+              "answer": 20
+            }
+          ]
+        },
+        {
+          "id": "C10",
+          "type": "shop",
+          "prompt": "巷口麵包店營業時間 9:00～21:00。現在是晚上 9 時 10 分，店還開著嗎？",
+          "steps": [
+            {
+              "key": "h24",
+              "label": "晚上 9 時是 24 時制幾時",
+              "role": "measure",
+              "input": "number",
+              "answer": 21
+            },
+            {
+              "key": "open",
+              "label": "店還開著嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "開著",
+                "關了"
+              ],
+              "answer": "關了"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

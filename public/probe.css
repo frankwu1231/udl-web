@@ -17,3 +17,11 @@
 /* 送不出去時的提示：答案還在，請老師再送一次 */
 .retry { margin: 16px 0; padding: 12px 16px; border: 2px solid #c0392b; border-radius: 12px; background: #fff3f1; }
 .retry p { margin: 0 0 8px; }
+/* 第 32 版：小測驗頁也可以開注音（樣式同學生頁） */
+ruby.zy{display:inline-flex;align-items:center;vertical-align:middle;margin:0 .04em}
+ruby.zy rt{display:flex;flex-direction:row;align-items:center;justify-content:center;font-size:.55em;padding:0!important;background:none!important;line-height:1;font-weight:normal;margin-left:.08em;color:inherit;font-family:"Microsoft JhengHei","PingFang TC","Noto Sans CJK TC",sans-serif;min-height:2.6em}
+ruby.zy z-b{display:block;padding:0;margin:0}
+ruby.zy rt .zc{display:flex;flex-direction:column;align-items:center}
+ruby.zy rt .zt{font-size:1.3em;line-height:1;font-weight:bold;margin-left:.02em;align-self:flex-end;transform:translateY(-.15em)}   /* 第 23 版：聲調放大、放在注音右邊，老師反映看不到 */
+ruby.zy rt .zn{order:-1;line-height:.6}
+html.zhuyin-on .probe p,html.zhuyin-on .probe .label,html.zhuyin-on .probe button{line-height:1.9}#aidZhuyin[aria-pressed=true]{background:#dceaff;border:2px solid #2157da;font-weight:bold}

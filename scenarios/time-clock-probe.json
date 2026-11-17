@@ -1,0 +1,906 @@
+{
+  "id": "timeClockProbe",
+  "version": "1",
+  "kind": "probe",
+  "package": "time",
+  "variant": "clock",
+  "title": "時間概念小測驗：報時（一、二年級）",
+  "itemSecs": 120,
+  "totalSecs": 1200,
+  "forms": [
+    {
+      "id": "A",
+      "items": [
+        {
+          "id": "A01",
+          "type": "hour",
+          "prompt": "鐘上是幾時？",
+          "figure": {
+            "clock": {
+              "h": 11,
+              "m": 0
+            }
+          },
+          "steps": [
+            {
+              "key": "long",
+              "label": "長針指著數字幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 12
+            },
+            {
+              "key": "h",
+              "label": "是幾時",
+              "role": "answer",
+              "input": "number",
+              "answer": 11
+            }
+          ]
+        },
+        {
+          "id": "A02",
+          "type": "half",
+          "prompt": "鐘上是幾時幾分？選一個。",
+          "figure": {
+            "clock": {
+              "h": 9,
+              "m": 30
+            }
+          },
+          "steps": [
+            {
+              "key": "short",
+              "label": "短針剛過數字幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 9
+            },
+            {
+              "key": "say",
+              "label": "是幾時幾分",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "9 時半",
+                "10 時半",
+                "9 時 6 分"
+              ],
+              "answer": "9 時半"
+            }
+          ]
+        },
+        {
+          "id": "A03",
+          "type": "read5",
+          "prompt": "鐘上是幾時幾分？",
+          "figure": {
+            "clock": {
+              "h": 8,
+              "m": 20
+            }
+          },
+          "steps": [
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "num",
+              "label": "長針指著數字幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 4
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 20
+            }
+          ]
+        },
+        {
+          "id": "A04",
+          "type": "read5",
+          "prompt": "鐘上是幾時幾分？",
+          "figure": {
+            "clock": {
+              "h": 5,
+              "m": 35
+            }
+          },
+          "steps": [
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "num",
+              "label": "長針指著數字幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 7
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 35
+            }
+          ]
+        },
+        {
+          "id": "A05",
+          "type": "read1",
+          "prompt": "鐘上是幾時幾分？",
+          "figure": {
+            "clock": {
+              "h": 4,
+              "m": 29
+            }
+          },
+          "steps": [
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 4
+            },
+            {
+              "key": "past",
+              "label": "長針剛過數字幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 29
+            }
+          ]
+        },
+        {
+          "id": "A06",
+          "type": "read1",
+          "prompt": "鐘上是幾時幾分？",
+          "figure": {
+            "clock": {
+              "h": 1,
+              "m": 37
+            }
+          },
+          "steps": [
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 1
+            },
+            {
+              "key": "past",
+              "label": "長針剛過數字幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 7
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 37
+            }
+          ]
+        },
+        {
+          "id": "A07",
+          "type": "hours",
+          "prompt": "從上午 7 時到上午 11 時，經過多久？",
+          "steps": [
+            {
+              "key": "d",
+              "label": "經過幾",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            },
+            {
+              "key": "unit",
+              "label": "單位",
+              "role": "unit",
+              "input": "choice",
+              "options": [
+                "小時",
+                "分鐘",
+                "時"
+              ],
+              "answer": "小時"
+            }
+          ]
+        },
+        {
+          "id": "A08",
+          "type": "calDay",
+          "prompt": "6 月 11 日是星期一。6 月 27 日是星期幾？",
+          "steps": [
+            {
+              "key": "gap",
+              "label": "兩個日子差幾天",
+              "role": "measure",
+              "input": "number",
+              "answer": 16
+            },
+            {
+              "key": "w",
+              "label": "是星期幾",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "星期三",
+                "星期一",
+                "星期四",
+                "星期二"
+              ],
+              "answer": "星期三"
+            }
+          ]
+        },
+        {
+          "id": "A09",
+          "type": "monthDays",
+          "prompt": "6 月有幾天？",
+          "steps": [
+            {
+              "key": "big",
+              "label": "大月還是小月",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "大月",
+                "小月"
+              ],
+              "answer": "小月"
+            },
+            {
+              "key": "days",
+              "label": "有幾天",
+              "role": "answer",
+              "input": "number",
+              "answer": 30
+            }
+          ]
+        },
+        {
+          "id": "A10",
+          "type": "period",
+          "prompt": "小安每天 4 時放學回家。這是上午、中午、下午，還是晚上？",
+          "steps": [
+            {
+              "key": "p",
+              "label": "是什麼時候",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "上午",
+                "中午",
+                "下午",
+                "晚上"
+              ],
+              "answer": "下午"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "items": [
+        {
+          "id": "B01",
+          "type": "hour",
+          "prompt": "鐘上是幾時？",
+          "figure": {
+            "clock": {
+              "h": 2,
+              "m": 0
+            }
+          },
+          "steps": [
+            {
+              "key": "long",
+              "label": "長針指著數字幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 12
+            },
+            {
+              "key": "h",
+              "label": "是幾時",
+              "role": "answer",
+              "input": "number",
+              "answer": 2
+            }
+          ]
+        },
+        {
+          "id": "B02",
+          "type": "half",
+          "prompt": "鐘上是幾時幾分？選一個。",
+          "figure": {
+            "clock": {
+              "h": 4,
+              "m": 30
+            }
+          },
+          "steps": [
+            {
+              "key": "short",
+              "label": "短針剛過數字幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 4
+            },
+            {
+              "key": "say",
+              "label": "是幾時幾分",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "4 時半",
+                "5 時半",
+                "4 時 6 分"
+              ],
+              "answer": "4 時半"
+            }
+          ]
+        },
+        {
+          "id": "B03",
+          "type": "read5",
+          "prompt": "鐘上是幾時幾分？",
+          "figure": {
+            "clock": {
+              "h": 2,
+              "m": 10
+            }
+          },
+          "steps": [
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 2
+            },
+            {
+              "key": "num",
+              "label": "長針指著數字幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 2
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 10
+            }
+          ]
+        },
+        {
+          "id": "B04",
+          "type": "read5",
+          "prompt": "鐘上是幾時幾分？",
+          "figure": {
+            "clock": {
+              "h": 5,
+              "m": 55
+            }
+          },
+          "steps": [
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "num",
+              "label": "長針指著數字幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 11
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 55
+            }
+          ]
+        },
+        {
+          "id": "B05",
+          "type": "read1",
+          "prompt": "鐘上是幾時幾分？",
+          "figure": {
+            "clock": {
+              "h": 8,
+              "m": 26
+            }
+          },
+          "steps": [
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "past",
+              "label": "長針剛過數字幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 26
+            }
+          ]
+        },
+        {
+          "id": "B06",
+          "type": "read1",
+          "prompt": "鐘上是幾時幾分？",
+          "figure": {
+            "clock": {
+              "h": 4,
+              "m": 48
+            }
+          },
+          "steps": [
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 4
+            },
+            {
+              "key": "past",
+              "label": "長針剛過數字幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 9
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 48
+            }
+          ]
+        },
+        {
+          "id": "B07",
+          "type": "hours",
+          "prompt": "從下午 1 時到下午 4 時，經過多久？",
+          "steps": [
+            {
+              "key": "d",
+              "label": "經過幾",
+              "role": "answer",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "unit",
+              "label": "單位",
+              "role": "unit",
+              "input": "choice",
+              "options": [
+                "小時",
+                "分鐘",
+                "時"
+              ],
+              "answer": "小時"
+            }
+          ]
+        },
+        {
+          "id": "B08",
+          "type": "calDay",
+          "prompt": "9 月 10 日是星期二。9 月 27 日是星期幾？",
+          "steps": [
+            {
+              "key": "gap",
+              "label": "兩個日子差幾天",
+              "role": "measure",
+              "input": "number",
+              "answer": 17
+            },
+            {
+              "key": "w",
+              "label": "是星期幾",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "星期五",
+                "星期二",
+                "星期六",
+                "星期四"
+              ],
+              "answer": "星期五"
+            }
+          ]
+        },
+        {
+          "id": "B09",
+          "type": "monthDays",
+          "prompt": "8 月有幾天？",
+          "steps": [
+            {
+              "key": "big",
+              "label": "大月還是小月",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "大月",
+                "小月"
+              ],
+              "answer": "大月"
+            },
+            {
+              "key": "days",
+              "label": "有幾天",
+              "role": "answer",
+              "input": "number",
+              "answer": 31
+            }
+          ]
+        },
+        {
+          "id": "B10",
+          "type": "period",
+          "prompt": "小安每天 4 時放學回家。這是上午、中午、下午，還是晚上？",
+          "steps": [
+            {
+              "key": "p",
+              "label": "是什麼時候",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "上午",
+                "中午",
+                "下午",
+                "晚上"
+              ],
+              "answer": "下午"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "items": [
+        {
+          "id": "C01",
+          "type": "hour",
+          "prompt": "鐘上是幾時？",
+          "figure": {
+            "clock": {
+              "h": 5,
+              "m": 0
+            }
+          },
+          "steps": [
+            {
+              "key": "long",
+              "label": "長針指著數字幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 12
+            },
+            {
+              "key": "h",
+              "label": "是幾時",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "C02",
+          "type": "half",
+          "prompt": "鐘上是幾時幾分？選一個。",
+          "figure": {
+            "clock": {
+              "h": 4,
+              "m": 30
+            }
+          },
+          "steps": [
+            {
+              "key": "short",
+              "label": "短針剛過數字幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 4
+            },
+            {
+              "key": "say",
+              "label": "是幾時幾分",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "4 時半",
+                "5 時半",
+                "4 時 6 分"
+              ],
+              "answer": "4 時半"
+            }
+          ]
+        },
+        {
+          "id": "C03",
+          "type": "read5",
+          "prompt": "鐘上是幾時幾分？",
+          "figure": {
+            "clock": {
+              "h": 8,
+              "m": 15
+            }
+          },
+          "steps": [
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "num",
+              "label": "長針指著數字幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 15
+            }
+          ]
+        },
+        {
+          "id": "C04",
+          "type": "read5",
+          "prompt": "鐘上是幾時幾分？",
+          "figure": {
+            "clock": {
+              "h": 9,
+              "m": 45
+            }
+          },
+          "steps": [
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 9
+            },
+            {
+              "key": "num",
+              "label": "長針指著數字幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 9
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 45
+            }
+          ]
+        },
+        {
+          "id": "C05",
+          "type": "read1",
+          "prompt": "鐘上是幾時幾分？",
+          "figure": {
+            "clock": {
+              "h": 5,
+              "m": 12
+            }
+          },
+          "steps": [
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "past",
+              "label": "長針剛過數字幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 2
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 12
+            }
+          ]
+        },
+        {
+          "id": "C06",
+          "type": "read1",
+          "prompt": "鐘上是幾時幾分？",
+          "figure": {
+            "clock": {
+              "h": 5,
+              "m": 42
+            }
+          },
+          "steps": [
+            {
+              "key": "hr",
+              "label": "幾時",
+              "role": "part",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "past",
+              "label": "長針剛過數字幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "mn",
+              "label": "幾分",
+              "role": "answer",
+              "input": "number",
+              "answer": 42
+            }
+          ]
+        },
+        {
+          "id": "C07",
+          "type": "hours",
+          "prompt": "從上午 8 時到上午 11 時，經過多久？",
+          "steps": [
+            {
+              "key": "d",
+              "label": "經過幾",
+              "role": "answer",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "unit",
+              "label": "單位",
+              "role": "unit",
+              "input": "choice",
+              "options": [
+                "小時",
+                "分鐘",
+                "時"
+              ],
+              "answer": "小時"
+            }
+          ]
+        },
+        {
+          "id": "C08",
+          "type": "calDay",
+          "prompt": "6 月 12 日是星期六。6 月 29 日是星期幾？",
+          "steps": [
+            {
+              "key": "gap",
+              "label": "兩個日子差幾天",
+              "role": "measure",
+              "input": "number",
+              "answer": 17
+            },
+            {
+              "key": "w",
+              "label": "是星期幾",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "星期二",
+                "星期六",
+                "星期三",
+                "星期一"
+              ],
+              "answer": "星期二"
+            }
+          ]
+        },
+        {
+          "id": "C09",
+          "type": "monthDays",
+          "prompt": "11 月有幾天？",
+          "steps": [
+            {
+              "key": "big",
+              "label": "大月還是小月",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "大月",
+                "小月"
+              ],
+              "answer": "小月"
+            },
+            {
+              "key": "days",
+              "label": "有幾天",
+              "role": "answer",
+              "input": "number",
+              "answer": 30
+            }
+          ]
+        },
+        {
+          "id": "C10",
+          "type": "period",
+          "prompt": "小安每天 9 時上床睡覺。這是上午、中午、下午，還是晚上？",
+          "steps": [
+            {
+              "key": "p",
+              "label": "是什麼時候",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "上午",
+                "中午",
+                "下午",
+                "晚上"
+              ],
+              "answer": "晚上"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

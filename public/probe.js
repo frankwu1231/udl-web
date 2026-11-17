@@ -12,6 +12,16 @@
   const load = (k, f) => { try { return JSON.parse(sessionStorage.getItem(k) || 'null') ?? f; } catch { return f; } };
   const keep = (k, v) => { try { sessionStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } };
   let state = null, item = null, answers = {}, itemStart = 0, timer = null, tech = false, busy = false;
+  // 第 32 版：注音沿用學生頁（學生頁按過的注音鍵優先，其次是老師的設定）；探試頁也可以自己切換
+  const AID_KEY = 'area-reading-v18', READ_KEY = 'area-reading-now';
+  const zyOn = () => { const a = load(AID_KEY, {}) || {}; return typeof a.zhuyin === 'boolean' ? a.zhuyin : !!(load(READ_KEY, {}) || {}).zhuyin; };
+  function applyZhuyin() {
+    const on = zyOn(); document.documentElement.classList.toggle('zhuyin-on', on);
+    if ($('aidZhuyin')) $('aidZhuyin').setAttribute('aria-pressed', String(on));
+    if (window.zhuyin) window.zhuyin.enable($('probe'), on);
+  }
+  if ($('aidZhuyin')) $('aidZhuyin').onclick = () => { const a = load(AID_KEY, {}) || {}; a.zhuyin = !zyOn(); keep(AID_KEY, a); applyZhuyin(); };
+  applyZhuyin();
 
   async function api(path, body) {
     const res = await fetch(path, body === undefined ? { cache: 'no-store' } : { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), cache: 'no-store' });
@@ -79,6 +89,12 @@
   function figure(f) {
     if (!f) return '';
     if (f.chart) return chartFig(f.chart);
+    // 第 32 版：時間概念的時鐘圖
+    if (f.clock) { const { h, m } = f.clock, ha = ((h % 12) + m / 60) * 30 * Math.PI / 180, ma = m * 6 * Math.PI / 180, p = ['<circle r="96" fill="#fff" stroke="#1d2b44" stroke-width="4"/>'];
+      for (let k = 0; k < 60; k++) { const a = k * 6 * Math.PI / 180, r1 = k % 5 ? 89 : 83; p.push(`<line x1="${(Math.sin(a) * r1).toFixed(1)}" y1="${(-Math.cos(a) * r1).toFixed(1)}" x2="${(Math.sin(a) * 94).toFixed(1)}" y2="${(-Math.cos(a) * 94).toFixed(1)}" stroke="#1d2b44" stroke-width="${k % 5 ? 1.5 : 3}"/>`); }
+      for (let k = 1; k <= 12; k++) { const a = k * 30 * Math.PI / 180; p.push(`<text x="${(Math.sin(a) * 74).toFixed(1)}" y="${(-Math.cos(a) * 74 + 7).toFixed(1)}" font-size="19" font-weight="700" text-anchor="middle" fill="#1d2b44">${k}</text>`); }
+      p.push(`<line x1="0" y1="0" x2="${(Math.sin(ha) * 50).toFixed(1)}" y2="${(-Math.cos(ha) * 50).toFixed(1)}" stroke="#1d2b44" stroke-width="9" stroke-linecap="round"/><line x1="0" y1="0" x2="${(Math.sin(ma) * 82).toFixed(1)}" y2="${(-Math.cos(ma) * 82).toFixed(1)}" stroke="#1f6fd1" stroke-width="5" stroke-linecap="round"/><circle r="6" fill="#1d2b44"/>`);
+      return `<figure><svg viewBox="-104 -104 208 208" width="240" role="img" aria-label="題目的時鐘">${p.join('')}</svg></figure>`; }
     const c = 32, w = f.cols * c, h = f.rows * c, parts = [];
     if (f.grid) for (let x = 0; x <= f.cols; x++) parts.push(`<line x1="${x * c}" y1="0" x2="${x * c}" y2="${h}" stroke="#c9d6ea"/>`);
     if (f.grid) for (let y = 0; y <= f.rows; y++) parts.push(`<line x1="0" y1="${y * c}" x2="${w}" y2="${y * c}" stroke="#c9d6ea"/>`);
