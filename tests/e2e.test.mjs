@@ -246,18 +246,30 @@ test('教師備課：選難度立即換題、可套用到四種圖形、平行�
   await page.close();
 });
 
-test('第 31 版：朗讀鍵、精簡畫面、閱讀輔助在一個活動設定，就套用到全部活動（現場回報只有第一個活動有朗讀）', { skip: skip || !distReady }, async () => {
+test('第 31 版：朗讀鍵、精簡畫面、閱讀輔助在一個活動設定，就套用到全部教材包的全部活動；切換教材包不會蓋掉別包；建議設定也套用到每一包', { skip: skip || !distReady }, async () => {
   await setup(); await publish({ simple: true, simpleShow: [], zhuyin: false });
   const page = await browser.newPage(); await page.goto(base + '/teacher.html'); await page.waitForSelector('[data-simple-show="say"]');
-  await page.check('[data-simple-show="say"]'); await page.check('[data-simple-show="aids"]'); await page.check('#zhuyin');
-  await page.click('#publish'); await page.waitForFunction(() => /已發布/.test(document.querySelector('#status').textContent));
-  const all = await page.evaluate(async () => { const c = (await (await fetch('/api/teacher/lessons')).json()).published;
-    return [...['rectangle', 'square', 'triangle', 'parallelogram'].map(k => c[k].settings), ...Object.values(c.activities || {}).map(a => a.settings)].map(x => `${(x.simpleShow || []).join('+')}|${x.zhuyin}`); });
-  assert.ok(all.length > 10); assert.deepEqual([...new Set(all)], ['aids+say|true']);
+  const read = () => page.evaluate(async () => { const c = (await (await fetch('/api/teacher/lessons')).json()).published, A = window.areaActs, out = {};
+    for (const k of ['rectangle', 'square', 'triangle', 'parallelogram']) out[k] = c[k].settings;
+    for (const p of Object.values(A.packages)) for (const a of p.activities) if (A.get(a.id)) out[a.id] = (c.activities[a.id] || {}).settings || {};
+    return Object.fromEntries(Object.entries(out).map(([k, x]) => [k, `${(x.simpleShow || []).join('+')}|${!!x.zhuyin}|${x.profile || ''}`])); });
+  const pub = async () => { await page.evaluate(() => { document.querySelector('#status').textContent = ''; document.querySelector('#publish').click(); }); await page.waitForFunction(() => /已發布/.test(document.querySelector('#status').textContent)); };
+  await page.check('[data-simple-show="say"]'); await page.check('[data-simple-show="aids"]'); await page.check('#zhuyin'); await pub();
+  let all = await read(); assert.ok(Object.keys(all).length >= 70, '四個教材包都有'); assert.deepEqual([...new Set(Object.values(all))], ['aids+say|true|']);
+  // 切到別的教材包、什麼都不改就發布：不會把面積的設定蓋掉
+  await page.evaluate(async () => { const r = await (await fetch('/api/teacher/lessons')).json(), c = r.published;
+    for (const id of window.areaActs.packages.line.activities.map(a => a.id)) if (c.activities[id]) c.activities[id].settings = { ...c.activities[id].settings, simpleShow: [], zhuyin: false };
+    await fetch('/api/teacher/lessons', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'published', config: c }) }); });
+  await page.reload(); await page.waitForSelector('[data-pkg="line"]');
+  await page.evaluate(() => document.querySelector('[data-pkg="line"]').click()); await page.waitForTimeout(100); await pub();
+  all = await read(); assert.equal(all.rectangle, 'aids+say|true|'); assert.equal(all.fmFactors, 'aids+say|true|');
+  // 建議設定：每一包都套用
+  await page.evaluate(() => document.querySelector('[data-profile="mid"]').click()); await pub();
+  all = await read(); assert.deepEqual([...new Set(Object.values(all))], ['say|true|mid']);
   await page.close();
   const ctx = await browser.newContext({ viewport: { width: 820, height: 1180 } }); const sp = await ctx.newPage();
-  await sp.goto(`${base}/seven.html?a=compare`); await sp.waitForTimeout(800);
-  assert.ok(await sp.evaluate(() => document.documentElement.classList.contains('show-say') && [...document.querySelectorAll('.say')].some(e => e.getClientRects().length)), '第二個活動也有朗讀鍵');
+  await sp.goto(`${base}/seven.html?a=fmGcd`); await sp.waitForTimeout(800);
+  assert.ok(await sp.evaluate(() => document.documentElement.classList.contains('show-say') && [...document.querySelectorAll('.say')].some(e => e.getClientRects().length)), '別的教材包的活動也有朗讀鍵');
   await ctx.close();
 });
 

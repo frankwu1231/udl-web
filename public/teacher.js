@@ -23,13 +23,17 @@
 
   // ---------- 第 30 版：快速上課（三件事）與建議設定 ----------
   const SHARED_KEYS = ['simple', 'simpleShow', 'zhuyin', 'textSize', 'contrast', 'rate'];
+  // 全部教材包的全部活動（共用設定和建議設定要套用到每一包，不只目前這一包）；還沒有設定的活動先建立
+  const everySection = () => { const seen = new Set(SHAPES), out = SHAPES.map(k => config[k]);
+    for (const p of Object.values(A.packages)) for (const a of p.activities) if (!seen.has(a.id) && isP(a.id) && A.get(a.id)) { seen.add(a.id); out.push(sec(a.id)); }
+    return out; };
   const allSections = () => [...SHAPES.map(k => config[k]), ...A.available().filter(a => isP(a.id)).map(a => sec(a.id))];
   function currentProfile() { const ids = allSections().map(x => x.settings?.profile || ''); return ids.every(v => v && v === ids[0]) ? ids[0] : ''; }
   function changedCount(id) { return new Set(allSections().flatMap(x => F.profileDiff(x.settings || {}, id))).size; }
   function applyProfile(id) {
     collect(); const P = F.PROFILES[id];
     for (const k of SHAPES) { const st = config[k].settings; Object.assign(st, P.settings, { profile: id }); if (P.settings.difficulty) F.preset(k, P.settings.difficulty).forEach((v, i) => Object.assign(config[k].problems[i], v)); }
-    for (const a of A.available()) if (isP(a.id)) Object.assign(sec(a.id).settings, P.settings, { profile: id });
+    for (const x of everySection().slice(SHAPES.length)) Object.assign(x.settings, P.settings, { profile: id });   // 第 31 版：每一個教材包都套用
     draw(); drawQuick(`✓ 已套用「${P.name}」到全部活動。記得按「發布給學生」。`);
   }
   function drawQuick(note = '') {
@@ -97,7 +101,7 @@
       m.pkg = b.dataset.pkg; m.path = back ? back.path : 'all'; m.assigned = back ? back.assigned : A.LIST.map(a => a.id);
       if (!Object.keys(others).length) delete m.others;
       for (const a of A.available()) if (isP(a.id)) sec(a.id);
-      drawMap(); buildSelect(); if ($('shape').options.length) { $('shape').value = $('shape').options[0].value; draw(); }
+      drawMap(); buildSelect(); if ($('shape').options.length) { $('shape').value = $('shape').options[0].value; draw(); } drawQuick();
       $('status').textContent = `已換成「${A.pkg.title}」，記得按「儲存草稿」或「發布給學生」。`;
     });
     $('sequential').onchange = () => { config.map.sequential = $('sequential').checked; count(); };
@@ -476,8 +480,10 @@
     if (!d.settings.methods.length) d.settings.methods = ['mark', 'row', 'self'];
     // 第 31 版：朗讀鍵、精簡畫面、閱讀輔助是學生整節課的設定，在任何一個活動改了就套用到全部活動
     // （現場回報：老師只在第一個活動打開朗讀，其他活動都沒有朗讀）
-    const shared = Object.fromEntries(SHARED_KEYS.map(k => [k, Array.isArray(d.settings[k]) ? d.settings[k].slice() : d.settings[k]]));
-    for (const x of allSections()) if (x && x !== d) x.settings = { ...F.settings(x), ...shared, simpleShow: shared.simpleShow.slice() };
+    // 只有老師真的改了這幾項才套用；切換活動或教材包時畫面上顯示的舊值不算改（Codex 測試：切包後發布會蓋掉別包的設定）
+    const now = F.settings(d), changed = SHARED_KEYS.some(k => JSON.stringify(now[k]) !== JSON.stringify(old[k]));
+    if (changed) { const shared = Object.fromEntries(SHARED_KEYS.map(k => [k, Array.isArray(now[k]) ? now[k].slice() : now[k]]));
+      for (const x of everySection()) if (x && x !== d) x.settings = { ...F.settings(x), ...shared, simpleShow: shared.simpleShow.slice() }; }
     return config;
   }
 
