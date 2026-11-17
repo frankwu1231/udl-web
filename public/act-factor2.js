@@ -71,7 +71,8 @@
     methods, makeProblem: (level, i, rand = Math.random) => { const n = any(rand, fromLevel(ARR, level)), mid = factorsOf(n).filter(d => d > 1 && d < n && n / d <= 12);
       const r1 = any(rand, mid), r2 = any(rand, mid.filter(d => d !== r1));
       const k = any(rand, [2, 3, 4, 5, 6, 7, 8, 9].filter(d => n % d && d < n));
-      return { n, r1, r2, k, big: Math.min(n + r1, capOf(level)), dims: [n, r1, r2], prompt: `把 ${n} 個方塊排成長方形，每一排一樣多。` }; },
+      return { n, r1, r2, k, big: n < capOf(level) ? Math.min(n + r1, capOf(level)) : any(rand, [2, 3, 4, 5, 6, 7, 8, 9, 10, 11].filter(d => n % d && d !== k)),   // 錯誤選項：比 n 大（不超過上限）；n 剛好等於上限時改用不能整除的數
+      dims: [n, r1, r2], prompt: `把 ${n} 個方塊排成長方形，每一排一樣多。` }; },
     planFigure: ctx => pileSVG(ctx.problem.n),
     steps: [
       nStep(0, { title: '排排看', ask: '每一排一樣多嗎？', id: 'c1', aid: true, hints: ['一排一排放，每排一樣多。', '方塊的數量 ÷ 排數。', '想乘法表：排數 × 幾 ＝ 方塊的數量？'],
@@ -86,7 +87,7 @@
         wrong: ctx => ({ obs: 'remainderOK', msg: `${ctx.problem.n} ÷ ${ctx.problem.k} ＝ ${Math.floor(ctx.problem.n / ctx.problem.k)} 餘 ${ctx.problem.n % ctx.problem.k}，有剩。` }), say: ex => `排成 ${ex.problem.k} 排會剩 ${ex.problem.n % ex.problem.k} 個，排不出來。` }),
       cStep(3, { title: '說說看', ask: '排得出來的排數，就是因數嗎？', id: 'f', hints: ['排得出來的排數，就是因數。', '前面哪一種排得出來？', `排不出來（有剩）的不是因數。`], think: '老師說：可以剛好排完的排數，就是因數。', together: '一起說：哪一個是因數？',
         q: ctx => `哪一個是 ${ctx.problem.n} 的因數？`, opts: ctx => { const p = ctx.problem; return [[String(p.r1), String(p.r1)], [String(p.k), String(p.k)], [String(p.big), String(p.big)]]; }, ans: ctx => String(ctx.problem.r1),
-        wrong: (ctx, a) => a === String(ctx.problem.k) ? { obs: 'remainderOK', msg: `排成 ${ctx.problem.k} 排會有剩，${ctx.problem.k} 不是因數。` } : { obs: 'wrongChoice', msg: `因數不會比 ${ctx.problem.n} 大。` }, say: ex => `${ex.problem.r1} 排可以排完，${ex.problem.r1} 是 ${ex.problem.n} 的因數。` })
+        wrong: (ctx, a) => a === String(ctx.problem.k) ? { obs: 'remainderOK', msg: `排成 ${ctx.problem.k} 排會有剩，${ctx.problem.k} 不是因數。` } : Number(a) > ctx.problem.n ? { obs: 'wrongChoice', msg: `因數不會比 ${ctx.problem.n} 大。` } : { obs: 'remainderOK', msg: `${ctx.problem.n} ÷ ${a} 會有剩，${a} 不是因數。` }, say: ex => `${ex.problem.r1} 排可以排完，${ex.problem.r1} 是 ${ex.problem.n} 的因數。` })
     ],
     reasons, done: ctx => `${ctx.problem.n} 可以排成 ${ctx.problem.r1} 排、${ctx.problem.r2} 排，${ctx.problem.r1} 和 ${ctx.problem.r2} 都是 ${ctx.problem.n} 的因數。`, chant: '排得出長方形的排數，就是因數。', transfer: '想一想：教室的椅子要排成一樣多的幾排，可以怎麼排？'
   });
@@ -273,9 +274,9 @@
       cStep(0, { title: '2 的倍數', ask: '個位是 0、2、4、6、8 嗎？', id: 'by2', fixed: true, hints: ['看個位。', '個位是 0、2、4、6、8，就是 2 的倍數。', `看最後一個數字。`], think: '老師看個位：是雙數（0、2、4、6、8），就是 2 的倍數。', together: '一起看：個位是多少？',
         pre: ctx => `<p class="lesson-prompt" data-read data-say>${esc(ctx.problem.prompt)}</p>`, q: ctx => `個位是 ${ctx.problem.last}。${ctx.problem.n} 是不是 2 的倍數？`, opts: () => YN, ans: ctx => ctx.problem.n % 2 ? 'no' : 'yes',
         wrong: () => ({ msg: '個位是 0、2、4、6、8，才是 2 的倍數。' }), say: ex => ex.problem.n % 2 ? '個位是單數，不是 2 的倍數。' : '個位是雙數，是 2 的倍數。' }),
-      nStep(1, { title: '數字加起來', ask: '每一位都加了嗎？', id: 'sum', hints: ['把每一位的數字加起來。', `例如 123：1 ＋ 2 ＋ 3。`, '一位一位加。'], think: '老師把每一位的數字加起來。', together: '一起加：加起來是多少？',
+      nStep(1, { title: '數字加起來', ask: '每一位都加了嗎？', id: 'sum', hints: ['把每一位的數字加起來。', `例如 12：1 ＋ 2 ＝ 3。`, '一位一位加。'], think: '老師把每一位的數字加起來。', together: '一起加：加起來是多少？',
         label: ctx => `${String(ctx.problem.n).split('').join(' ＋ ')} ＝ □`, ans: ctx => ctx.problem.s, say: ex => `${String(ex.problem.n).split('').join(' ＋ ')} ＝ ${ex.problem.s}。` }),
-      cStep(2, { title: '3 的倍數', ask: '加起來是 3 的倍數嗎？', id: 'by3', fixed: true, hints: ['看上一步加起來的數。', '加起來是 3 的倍數，原來的數就是 3 的倍數。', '3、6、9、12、15、18、21、24、27 是 3 的倍數。'], think: '老師看加起來的數是不是 3 的倍數。', together: '一起判斷：是不是 3 的倍數？',
+      cStep(2, { title: '3 的倍數', ask: '加起來是 3 的倍數嗎？', id: 'by3', fixed: true, hints: ['看上一步加起來的數。', '加起來是 3 的倍數，原來的數就是 3 的倍數。', '3、6、9、12、15、18 是 3 的倍數。'], think: '老師看加起來的數是不是 3 的倍數。', together: '一起判斷：是不是 3 的倍數？',
         q: ctx => `加起來是 ${ctx.problem.s}。${ctx.problem.n} 是不是 3 的倍數？`, opts: () => YN, ans: ctx => ctx.problem.s % 3 ? 'no' : 'yes',
         wrong: ctx => ({ msg: `${ctx.problem.s} ${ctx.problem.s % 3 ? '不是' : '是'} 3 的倍數。` }), say: ex => `${ex.problem.s} ${ex.problem.s % 3 ? '不是' : '是'} 3 的倍數，所以 ${ex.problem.n} ${ex.problem.n % 3 ? '不是' : '是'} 3 的倍數。` }),
       cStep(3, { title: '5 的倍數', ask: '個位是 0 或 5 嗎？', id: 'by5', fixed: true, hints: ['看個位。', '個位是 0 或 5，就是 5 的倍數。', '看最後一個數字。'], think: '老師看個位：是 0 或 5，就是 5 的倍數。', together: '一起看：個位是多少？',
