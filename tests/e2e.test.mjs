@@ -2290,3 +2290,21 @@ test('第 32 版第 2 輪：手機 390px 開注音，月曆七欄都在卡片裡
   await page.click('#aidZhuyin'); assert.equal(await page.$('.probe ruby'), null, '可以關掉');
   assert.deepEqual(errors, []); await ctx.close();
 });
+
+test('第 32 版修正：時間線上兩個時刻很近時（例如 60 分和 63 分），下面的字不會疊在一起；示範影片也一樣', { skip: skip || !distReady }, async () => {
+  const p = await act('tmRead1', { difficulty: 'standard', ...TIME_MAP(['tmRead1']) });
+  const out = await p.page.evaluate(async () => {
+    const A = window.areaActs, T = window.timeFig, bad = [], host = document.createElement('div'); host.style.width = '560px'; document.body.prepend(host);
+    const overlaps = where => { const labs = [...host.querySelectorAll('svg.tm-line text')].map(t => ({ t: t.textContent, r: t.getBoundingClientRect() }));
+      for (let i = 0; i < labs.length; i++) for (let j = i + 1; j < labs.length; j++) { const a = labs[i].r, b = labs[j].r;
+        if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1) bad.push(`${where}：「${labs[i].t}」和「${labs[j].t}」重疊`); } };
+    host.innerHTML = T.lineSVG(0, 63, { marks: [0, 60, 63], fmt: t => `${t} 分`, jumps: [[0, 60, '1 時'], [60, 63, '3 分']] }); overlaps('60 分和 63 分');
+    host.innerHTML = T.lineSVG(700, 730, { marks: [705, 720, 728], fmt: T.say12, jumps: [[705, 720, '15 分鐘'], [720, 728, '8 分鐘']] }); overlaps('跨午很近');
+    if (host.querySelector('svg.tm-line text').getBoundingClientRect().left < host.querySelector('svg.tm-line').getBoundingClientRect().left - 1) bad.push('最左邊的字超出時間線');
+    for (const a of A.packages.time.activities) { const pl = A.get(a.id); if (!pl) continue;
+      for (const level of ['easy', 'standard', 'challenge']) for (let s = 0; s < pl.steps.length; s++) for (let k = 0; k < 4; k++) {
+        for (const sc of A.demoScenes(pl, s, level, {}, null)) { host.innerHTML = sc.html(); overlaps(`${a.no} ${level} 第 ${s + 1} 步示範`); } } }
+    host.remove(); return [...new Set(bad)].slice(0, 10);
+  });
+  assert.deepEqual(out, []); assert.deepEqual(p.errors, []);
+});
