@@ -74,7 +74,7 @@
     planFigure: ctx => shapeSVG(ctx.problem.shape, 1, 0, { aria: '一張色紙' }),
     steps: [
       nStep(0, { title: '摺一摺', ask: '打開後有幾格？', id: 'n', hints: ['對摺一次，變成 2 格。', '每對摺一次，格子變成 2 倍。', '從 1 格開始，摺幾次就乘幾次 2。'],
-        think: '老師一次一次對摺：每摺一次，格子變 2 倍。', together: '一起摺：打開有幾格？', pre: prompt, figure: ctx => shown(ctx, 0) ? shapeSVG(ctx.problem.shape, ctx.problem.n, 0, { aria: `打開後有 ${ctx.problem.n} 格` }) : shapeSVG(ctx.problem.shape, 1, 0),
+        think: '老師一次一次對摺：每摺一次，格子變 2 倍。', together: '一起摺：打開有幾格？', pre: prompt, figure: ctx => shown(ctx, 0) ? shapeSVG(ctx.problem.shape, ctx.problem.n, 0, { aria: '打開後的色紙，摺痕把它分成一樣大的格子，一格一格數數看' }) : shapeSVG(ctx.problem.shape, 1, 0),
         label: () => '打開以後，有幾格一樣大的？', ans: ctx => ctx.problem.n, wrong: (ctx, v) => v === 2 * ctx.problem.f ? { msg: '每摺一次，格子是變成 2 倍，不是多 2 格。' } : null, say: ex => `摺 ${ex.problem.f} 次，有 ${ex.problem.n} 格。` }),
       fStep(1, { title: '一格是多少', ask: '一格是全部的幾分之一？', id: 'f', hints: ['全部有幾格？', '一格是全部的幾分之一。', `全部 □ 格，一格是 1/□。`],
         think: '老師想：全部幾格，一格就是幾分之一。', together: '一起寫：一格是多少？', figure: ctx => shapeSVG(ctx.problem.shape, ctx.problem.n, 1),

@@ -31,8 +31,9 @@
 
   // =============== 8-1 擴分和約分 ===============
   A.register('frScale', {
-    methods, makeProblem: (level, i, rand = Math.random) => { let a, b; do { b = rnd(rand, 2, level === 'easy' ? 4 : 9); a = rnd(rand, 1, b - 1); } while (gcd(a, b) > 1);
-      const m = rnd(rand, 2, level === 'challenge' ? 6 : 4), up = i % 2 === 0;
+    methods, makeProblem: (level, i, rand = Math.random) => { // 題目上的大分母（擴分後、約分前）：簡單 ≤12、標準 ≤20、挑戰 ≤36
+      const cap = { easy: 12, standard: 20, challenge: 36 }[level] || 20; let a, b, m; do { b = rnd(rand, 2, level === 'easy' ? 4 : 9); a = rnd(rand, 1, b - 1); m = rnd(rand, 2, level === 'challenge' ? 6 : 4); } while (gcd(a, b) > 1 || b * m > cap);
+      const up = i % 2 === 0;
       return { a, b, m, up, dims: [a, b, m], prompt: up ? `把 ${a}/${b} 擴分成分母是 ${b * m} 的分數。` : `把 ${a * m}/${b * m} 約成最簡分數。` }; },
     planFigure: ctx => { const p = ctx.problem; return barSVG(p.b * p.m, p.a * p.m, { aria: `${p.a * p.m}/${p.b * p.m}` }); },
     steps: [
