@@ -1,0 +1,1022 @@
+{
+  "id": "fracG4Probe",
+  "version": "1",
+  "kind": "probe",
+  "package": "frac",
+  "variant": "g4",
+  "title": "分數小測驗：四年級",
+  "itemSecs": 150,
+  "totalSecs": 1500,
+  "forms": [
+    {
+      "id": "A",
+      "items": [
+        {
+          "id": "A01",
+          "type": "improper",
+          "prompt": "每一條是 1 個整體，平分成 5 格。塗色的一共是多少？",
+          "figure": {
+            "cols": 5,
+            "rows": 2,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                5,
+                1
+              ],
+              [
+                0,
+                1,
+                3,
+                1
+              ]
+            ]
+          },
+          "steps": [
+            {
+              "key": "d",
+              "label": "1 條平分成幾格",
+              "role": "measure",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "cnt",
+              "label": "塗色一共幾格",
+              "role": "part",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "f",
+              "label": "一共是多少",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "5/8",
+                "8/5",
+                "3/5",
+                "8/10"
+              ],
+              "answer": "8/5"
+            }
+          ]
+        },
+        {
+          "id": "A02",
+          "type": "improper",
+          "prompt": "每一條是 1 個整體，平分成 5 格。塗色的一共是多少？",
+          "figure": {
+            "cols": 5,
+            "rows": 2,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                5,
+                1
+              ],
+              [
+                0,
+                1,
+                2,
+                1
+              ]
+            ]
+          },
+          "steps": [
+            {
+              "key": "d",
+              "label": "1 條平分成幾格",
+              "role": "measure",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "cnt",
+              "label": "塗色一共幾格",
+              "role": "part",
+              "input": "number",
+              "answer": 7
+            },
+            {
+              "key": "f",
+              "label": "一共是多少",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "7/5",
+                "2/5",
+                "7/10",
+                "5/7"
+              ],
+              "answer": "7/5"
+            }
+          ]
+        },
+        {
+          "id": "A03",
+          "type": "mixed",
+          "prompt": "把 15/4 換成帶分數。",
+          "steps": [
+            {
+              "key": "w",
+              "label": "可以拼成幾個整的",
+              "role": "measure",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "f",
+              "label": "帶分數是",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "4 又 3/4",
+                "3 又 1/4",
+                "3 又 3/4"
+              ],
+              "answer": "3 又 3/4"
+            }
+          ]
+        },
+        {
+          "id": "A04",
+          "type": "mixed",
+          "prompt": "把 2 又 6/8 換成假分數。",
+          "steps": [
+            {
+              "key": "wd",
+              "label": "2 個整的是幾個 1/8",
+              "role": "measure",
+              "input": "number",
+              "answer": 16
+            },
+            {
+              "key": "f",
+              "label": "假分數是",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "8/8",
+                "22/16",
+                "22/8",
+                "12/8"
+              ],
+              "answer": "22/8"
+            }
+          ]
+        },
+        {
+          "id": "A05",
+          "type": "times",
+          "prompt": "每天喝 1/6 瓶牛奶，3 天一共喝了幾瓶？",
+          "steps": [
+            {
+              "key": "cnt",
+              "label": "一共幾個 1/6",
+              "role": "part",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "f",
+              "label": "一共喝了幾瓶",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "1/18",
+                "3/18",
+                "4/6",
+                "3/6"
+              ],
+              "answer": "3/6"
+            }
+          ]
+        },
+        {
+          "id": "A06",
+          "type": "equiv",
+          "prompt": "4/5 ＝ □/15，□ 是多少？",
+          "figure": {
+            "cols": 5,
+            "rows": 1,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                4,
+                1
+              ]
+            ]
+          },
+          "steps": [
+            {
+              "key": "m",
+              "label": "分母乘了多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "ans",
+              "label": "□ 是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 12
+            }
+          ]
+        },
+        {
+          "id": "A07",
+          "type": "equiv",
+          "prompt": "1/4 ＝ □/12，□ 是多少？",
+          "steps": [
+            {
+              "key": "m",
+              "label": "分母乘了多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "ans",
+              "label": "□ 是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 3
+            }
+          ]
+        },
+        {
+          "id": "A08",
+          "type": "line",
+          "prompt": "數線上，0 到 1 平分成 5 段。從 0 往右跳 2 段，是多少？",
+          "steps": [
+            {
+              "key": "u",
+              "label": "一段是多少",
+              "role": "measure",
+              "input": "choice",
+              "options": [
+                "1/6",
+                "1/5",
+                "5/1"
+              ],
+              "answer": "1/5"
+            },
+            {
+              "key": "f",
+              "label": "跳到的地方是",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "2/6",
+                "2/5",
+                "3/5",
+                "5/2"
+              ],
+              "answer": "2/5"
+            }
+          ]
+        },
+        {
+          "id": "A09",
+          "type": "line",
+          "prompt": "數線上，0 到 1 平分成 4 段。從 0 往右跳 1 段，是多少？",
+          "steps": [
+            {
+              "key": "u",
+              "label": "一段是多少",
+              "role": "measure",
+              "input": "choice",
+              "options": [
+                "4/1",
+                "1/4",
+                "1/5"
+              ],
+              "answer": "1/4"
+            },
+            {
+              "key": "f",
+              "label": "跳到的地方是",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "1/4",
+                "1/5",
+                "4/1",
+                "2/4"
+              ],
+              "answer": "1/4"
+            }
+          ]
+        },
+        {
+          "id": "A10",
+          "type": "decimal",
+          "prompt": "把 1/2 寫成小數。",
+          "steps": [
+            {
+              "key": "t",
+              "label": "1/2 ＝ □/10，□ 是多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "dec",
+              "label": "寫成小數是",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "0.2",
+                "1.2",
+                "0.5",
+                "0.1"
+              ],
+              "answer": "0.5"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "items": [
+        {
+          "id": "B01",
+          "type": "improper",
+          "prompt": "每一條是 1 個整體，平分成 5 格。塗色的一共是多少？",
+          "figure": {
+            "cols": 5,
+            "rows": 2,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                5,
+                1
+              ],
+              [
+                0,
+                1,
+                4,
+                1
+              ]
+            ]
+          },
+          "steps": [
+            {
+              "key": "d",
+              "label": "1 條平分成幾格",
+              "role": "measure",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "cnt",
+              "label": "塗色一共幾格",
+              "role": "part",
+              "input": "number",
+              "answer": 9
+            },
+            {
+              "key": "f",
+              "label": "一共是多少",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "4/5",
+                "9/10",
+                "9/5",
+                "5/9"
+              ],
+              "answer": "9/5"
+            }
+          ]
+        },
+        {
+          "id": "B02",
+          "type": "improper",
+          "prompt": "每一條是 1 個整體，平分成 5 格。塗色的一共是多少？",
+          "figure": {
+            "cols": 5,
+            "rows": 2,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                5,
+                1
+              ],
+              [
+                0,
+                1,
+                3,
+                1
+              ]
+            ]
+          },
+          "steps": [
+            {
+              "key": "d",
+              "label": "1 條平分成幾格",
+              "role": "measure",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "cnt",
+              "label": "塗色一共幾格",
+              "role": "part",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "f",
+              "label": "一共是多少",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "8/10",
+                "5/8",
+                "8/5",
+                "3/5"
+              ],
+              "answer": "8/5"
+            }
+          ]
+        },
+        {
+          "id": "B03",
+          "type": "mixed",
+          "prompt": "把 10/3 換成帶分數。",
+          "steps": [
+            {
+              "key": "w",
+              "label": "可以拼成幾個整的",
+              "role": "measure",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "f",
+              "label": "帶分數是",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "1 又 3/3",
+                "3 又 1/3",
+                "4 又 1/3",
+                "3 又 2/3"
+              ],
+              "answer": "3 又 1/3"
+            }
+          ]
+        },
+        {
+          "id": "B04",
+          "type": "mixed",
+          "prompt": "把 1 又 1/6 換成假分數。",
+          "steps": [
+            {
+              "key": "wd",
+              "label": "1 個整的是幾個 1/6",
+              "role": "measure",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "f",
+              "label": "假分數是",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "7/6",
+                "1/6",
+                "2/6"
+              ],
+              "answer": "7/6"
+            }
+          ]
+        },
+        {
+          "id": "B05",
+          "type": "times",
+          "prompt": "每天喝 4/8 瓶牛奶，4 天一共喝了幾瓶？",
+          "steps": [
+            {
+              "key": "cnt",
+              "label": "一共幾個 1/8",
+              "role": "part",
+              "input": "number",
+              "answer": 16
+            },
+            {
+              "key": "f",
+              "label": "一共喝了幾瓶",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "4/32",
+                "8/8",
+                "16/32",
+                "16/8"
+              ],
+              "answer": "16/8"
+            }
+          ]
+        },
+        {
+          "id": "B06",
+          "type": "equiv",
+          "prompt": "3/5 ＝ □/10，□ 是多少？",
+          "figure": {
+            "cols": 5,
+            "rows": 1,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                3,
+                1
+              ]
+            ]
+          },
+          "steps": [
+            {
+              "key": "m",
+              "label": "分母乘了多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 2
+            },
+            {
+              "key": "ans",
+              "label": "□ 是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 6
+            }
+          ]
+        },
+        {
+          "id": "B07",
+          "type": "equiv",
+          "prompt": "1/4 ＝ □/8，□ 是多少？",
+          "steps": [
+            {
+              "key": "m",
+              "label": "分母乘了多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 2
+            },
+            {
+              "key": "ans",
+              "label": "□ 是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 2
+            }
+          ]
+        },
+        {
+          "id": "B08",
+          "type": "line",
+          "prompt": "數線上，0 到 1 平分成 4 段。從 0 往右跳 3 段，是多少？",
+          "steps": [
+            {
+              "key": "u",
+              "label": "一段是多少",
+              "role": "measure",
+              "input": "choice",
+              "options": [
+                "4/1",
+                "1/5",
+                "1/4"
+              ],
+              "answer": "1/4"
+            },
+            {
+              "key": "f",
+              "label": "跳到的地方是",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "3/5",
+                "4/4",
+                "3/4",
+                "4/3"
+              ],
+              "answer": "3/4"
+            }
+          ]
+        },
+        {
+          "id": "B09",
+          "type": "line",
+          "prompt": "數線上，0 到 1 平分成 5 段。從 0 往右跳 8 段，是多少？",
+          "steps": [
+            {
+              "key": "u",
+              "label": "一段是多少",
+              "role": "measure",
+              "input": "choice",
+              "options": [
+                "1/5",
+                "1/6",
+                "5/1"
+              ],
+              "answer": "1/5"
+            },
+            {
+              "key": "f",
+              "label": "跳到的地方是",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "8/5",
+                "5/8",
+                "8/6",
+                "9/5"
+              ],
+              "answer": "8/5"
+            }
+          ]
+        },
+        {
+          "id": "B10",
+          "type": "decimal",
+          "prompt": "把 3/5 寫成小數。",
+          "steps": [
+            {
+              "key": "t",
+              "label": "3/5 ＝ □/10，□ 是多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "dec",
+              "label": "寫成小數是",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "0.3",
+                "3.5",
+                "0.6",
+                "0.5"
+              ],
+              "answer": "0.6"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "items": [
+        {
+          "id": "C01",
+          "type": "improper",
+          "prompt": "每一條是 1 個整體，平分成 6 格。塗色的一共是多少？",
+          "figure": {
+            "cols": 6,
+            "rows": 2,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                6,
+                1
+              ],
+              [
+                0,
+                1,
+                2,
+                1
+              ]
+            ]
+          },
+          "steps": [
+            {
+              "key": "d",
+              "label": "1 條平分成幾格",
+              "role": "measure",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "cnt",
+              "label": "塗色一共幾格",
+              "role": "part",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "f",
+              "label": "一共是多少",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "6/8",
+                "2/6",
+                "8/6",
+                "8/12"
+              ],
+              "answer": "8/6"
+            }
+          ]
+        },
+        {
+          "id": "C02",
+          "type": "improper",
+          "prompt": "每一條是 1 個整體，平分成 3 格。塗色的一共是多少？",
+          "figure": {
+            "cols": 3,
+            "rows": 2,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                3,
+                1
+              ],
+              [
+                0,
+                1,
+                1,
+                1
+              ]
+            ]
+          },
+          "steps": [
+            {
+              "key": "d",
+              "label": "1 條平分成幾格",
+              "role": "measure",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "cnt",
+              "label": "塗色一共幾格",
+              "role": "part",
+              "input": "number",
+              "answer": 4
+            },
+            {
+              "key": "f",
+              "label": "一共是多少",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "1/3",
+                "4/3",
+                "3/4",
+                "4/6"
+              ],
+              "answer": "4/3"
+            }
+          ]
+        },
+        {
+          "id": "C03",
+          "type": "mixed",
+          "prompt": "把 9/5 換成帶分數。",
+          "steps": [
+            {
+              "key": "w",
+              "label": "可以拼成幾個整的",
+              "role": "measure",
+              "input": "number",
+              "answer": 1
+            },
+            {
+              "key": "f",
+              "label": "帶分數是",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "1 又 4/5",
+                "4 又 1/5",
+                "2 又 4/5",
+                "1 又 1/5"
+              ],
+              "answer": "1 又 4/5"
+            }
+          ]
+        },
+        {
+          "id": "C04",
+          "type": "mixed",
+          "prompt": "把 1 又 4/5 換成假分數。",
+          "steps": [
+            {
+              "key": "wd",
+              "label": "1 個整的是幾個 1/5",
+              "role": "measure",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "f",
+              "label": "假分數是",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "4/5",
+                "5/5",
+                "9/5"
+              ],
+              "answer": "9/5"
+            }
+          ]
+        },
+        {
+          "id": "C05",
+          "type": "times",
+          "prompt": "每天喝 2/4 瓶牛奶，4 天一共喝了幾瓶？",
+          "steps": [
+            {
+              "key": "cnt",
+              "label": "一共幾個 1/4",
+              "role": "part",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "f",
+              "label": "一共喝了幾瓶",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "8/16",
+                "6/4",
+                "2/16",
+                "8/4"
+              ],
+              "answer": "8/4"
+            }
+          ]
+        },
+        {
+          "id": "C06",
+          "type": "equiv",
+          "prompt": "4/5 ＝ □/10，□ 是多少？",
+          "figure": {
+            "cols": 5,
+            "rows": 1,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                4,
+                1
+              ]
+            ]
+          },
+          "steps": [
+            {
+              "key": "m",
+              "label": "分母乘了多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 2
+            },
+            {
+              "key": "ans",
+              "label": "□ 是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 8
+            }
+          ]
+        },
+        {
+          "id": "C07",
+          "type": "equiv",
+          "prompt": "2/3 ＝ □/6，□ 是多少？",
+          "steps": [
+            {
+              "key": "m",
+              "label": "分母乘了多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 2
+            },
+            {
+              "key": "ans",
+              "label": "□ 是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            }
+          ]
+        },
+        {
+          "id": "C08",
+          "type": "line",
+          "prompt": "數線上，0 到 1 平分成 3 段。從 0 往右跳 2 段，是多少？",
+          "steps": [
+            {
+              "key": "u",
+              "label": "一段是多少",
+              "role": "measure",
+              "input": "choice",
+              "options": [
+                "1/4",
+                "1/3",
+                "3/1"
+              ],
+              "answer": "1/3"
+            },
+            {
+              "key": "f",
+              "label": "跳到的地方是",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "2/3",
+                "3/2",
+                "3/3",
+                "2/4"
+              ],
+              "answer": "2/3"
+            }
+          ]
+        },
+        {
+          "id": "C09",
+          "type": "line",
+          "prompt": "數線上，0 到 1 平分成 3 段。從 0 往右跳 4 段，是多少？",
+          "steps": [
+            {
+              "key": "u",
+              "label": "一段是多少",
+              "role": "measure",
+              "input": "choice",
+              "options": [
+                "3/1",
+                "1/3",
+                "1/4"
+              ],
+              "answer": "1/3"
+            },
+            {
+              "key": "f",
+              "label": "跳到的地方是",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "4/3",
+                "5/3",
+                "4/4",
+                "3/4"
+              ],
+              "answer": "4/3"
+            }
+          ]
+        },
+        {
+          "id": "C10",
+          "type": "decimal",
+          "prompt": "把 3/10 寫成小數。",
+          "steps": [
+            {
+              "key": "t",
+              "label": "3/10 ＝ □/10，□ 是多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "dec",
+              "label": "寫成小數是",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "0.10",
+                "0.3",
+                "3.10"
+              ],
+              "answer": "0.3"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

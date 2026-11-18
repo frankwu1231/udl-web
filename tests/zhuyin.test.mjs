@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const read = f => fs.readFileSync(new URL('../public/' + f, import.meta.url), 'utf8');
-const files = ['seven.js', 'act-core.js', 'act-unit12.js', 'act-unit3.js', 'act-unit45.js', 'lesson-content.js', 'learning-flow.js', 'buddy.js', 'step-demo.js', 'research.js', 'seven.html', 'tutor.js', 'probe.js', 'act-factor.js', 'act-factor2.js', 'content-factor.js', 'act-time.js', 'act-time2.js', 'act-time3.js', 'content-time.js'];
+const files = ['seven.js', 'act-core.js', 'act-unit12.js', 'act-unit3.js', 'act-unit45.js', 'lesson-content.js', 'learning-flow.js', 'buddy.js', 'step-demo.js', 'research.js', 'seven.html', 'tutor.js', 'probe.js', 'act-factor.js', 'act-factor2.js', 'content-factor.js', 'act-time.js', 'act-time2.js', 'act-time3.js', 'content-time.js', 'act-frac.js', 'act-frac2.js', 'act-frac3.js', 'act-frac4.js', 'content-frac.js'];
 
 test('學生頁用到的國字，注音讀音表都有', () => {
   const chars = read('zhuyin.js').match(/const CHARS = '([^']*)'/)[1];

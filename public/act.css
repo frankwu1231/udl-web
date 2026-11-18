@@ -207,3 +207,27 @@ html.contrast .tm-face{stroke:#000}html.contrast .tm-mh{stroke:#000}html.contras
 .tm-line-text{display:none;margin:.2rem auto;padding:0;list-style:none;max-width:600px;font-size:1rem;font-weight:700;color:#1d2b44}.tm-line-text li{padding:.15rem 0}
 html.contrast .tm-jl{fill:#000;font-weight:900}html.contrast .tm-jump{stroke:#000}
 @media (max-width:420px){.tm-line-text{display:block}}
+/* 第 33 版：分數教材包 */
+.fr-svg{max-height:300px;margin:.3rem auto}
+.fr-part.fr-off{fill:#fff;stroke:#5b6f8f;stroke-width:2}
+.fr-part.fr-on{fill:#7fb2ff;stroke:#1e4f9a;stroke-width:2}.fr-part.fr-on.b{fill:#ffb37a;stroke:#b4530f}.fr-part.fr-on.dark{fill:#5b3cc4;stroke:#2e1a7a}
+.fr-whole{fill:none;stroke:#1d2b44;stroke-width:3}.fr-whole.on{stroke:#e8590c;stroke-width:6}
+.fr-sub{stroke:#1d2b44;stroke-width:1.5;stroke-dasharray:5 4}
+.fr-x{stroke:#c92a2a;stroke-width:4;stroke-linecap:round}
+.fr-lab{font-size:14px;fill:#1d2b44;font-weight:700}.fr-lab.big{font-size:20px}.fr-lab.small{font-size:12px}
+.fr-major{stroke-width:3}.fr-arrow{fill:#1d2b44}.fr-arrow.ask{fill:#7c3aed}.fr-pointer{stroke:#7c3aed;stroke-width:3}
+.fr-dot{fill:#1f6fd1;stroke:#fff;stroke-width:2}.fr-dot.b{fill:#d9480f}
+.fr-water{fill:#9fd3ff}.fr-water.b{fill:#ffd8a8}.fr-cup{fill:none;stroke:#1d2b44;stroke-width:4;stroke-linejoin:round}.fr-cupline{stroke:#1d2b44;stroke-width:2}
+.fr-mini{max-width:200px;max-height:120px;pointer-events:none}
+.fr-w{font-size:2rem;font-weight:700;margin-right:.1rem;vertical-align:middle}
+.fr-group{display:inline-block;padding:.1rem .3rem;margin:.1rem;border:2px dashed #8094b4;border-radius:10px;font-size:1.4rem}.fr-group.on{background:#dbe8ff;border-color:#1f6fd1;border-style:solid}
+.fr-fin{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;margin:.4rem 0}
+.fr-fs{display:flex;flex-direction:column;align-items:stretch;gap:.2rem;min-width:9rem}
+.fr-fs .field,.fr-fw .field{margin:0}
+.fr-bar{display:block;border-top:4px solid #1d2b44;margin:.1rem 0}
+.fr-aid{margin:.4rem 0}.fr-aid>summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center}
+.fr-wall{display:grid;gap:3px;max-width:520px;margin:.3rem auto}
+.fr-wall-row{display:flex}.fr-wall-row>span{flex:1;min-width:0;text-align:center;border:1px solid #5b6f8f;background:#eef4fc;font-size:.8rem;padding:.25rem 0;overflow:hidden;white-space:nowrap}
+.fr-wall-row:first-child>span{background:#cfe0ff;font-weight:700}
+html.contrast .fr-part.fr-on{fill:#000}html.contrast .fr-part.fr-off{fill:#fff;stroke:#000}html.contrast .fr-part.fr-on.b{fill:#666}html.contrast .fr-wall-row>span{border-color:#000;background:#fff;color:#000}
+@media (max-width:480px){.fr-wall-row>span{font-size:.65rem}.fr-fs{min-width:7rem}}
