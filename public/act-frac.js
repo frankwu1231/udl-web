@@ -89,8 +89,9 @@
     let g = '';
     for (let i = 0; i < b; i++) for (let j = 0; j < (o.rows === false ? 1 : d); j++) {
       const h = o.rows === false ? H : rh, inA = i < a, inC = o.rows !== false && j < c && inA;
-      g += `<rect x="${(pad + i * cw).toFixed(1)}" y="${(pad + j * h).toFixed(1)}" width="${cw.toFixed(1)}" height="${h.toFixed(1)}" class="ac-tile fr-part ${inC ? 'fr-on dark' : inA ? 'fr-on' : 'fr-off'}"/>`;
+      g += `<rect x="${(pad + i * cw).toFixed(1)}" y="${(pad + j * h).toFixed(1)}" width="${cw.toFixed(1)}" height="${h.toFixed(1)}" class="ac-tile fr-part ${inC ? 'fr-on dark' : inA ? 'fr-on lite' : 'fr-off'}"/>`;
     }
+    g = `<defs><pattern id="fr-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#fff"/><path d="M0 0V8" stroke="#000" stroke-width="2"/></pattern></defs>${g}`;
     g += `<rect x="${pad}" y="${pad}" width="${W}" height="${H}" class="fr-whole"/>`;
     return `<svg class="ac-svg fr-svg" viewBox="0 0 ${W + 2 * pad} ${H + 2 * pad}" style="max-width:420px" role="img" aria-label="${esc(o.aria || `長方形直的分成 ${b} 份，塗了 ${a} 份${o.rows === false ? '' : `；橫的分成 ${d} 份，深色有 ${a * c} 格`}`)}">${g}</svg>`;
   }
@@ -146,6 +147,7 @@
       const keys = o.whole ? ['W', 'N', 'D'] : ['N', 'D'], vals = keys.map(s => num(ctx.answers[o.id + s]));
       if (vals.some(v => v === null)) return { code: o.id, msg: o.whole ? '三格都要填（整數沒有就填 0）。' : '分子、分母都要填。' };
       const want = o.ans(ctx), [w, a, b] = o.whole ? vals : [0, ...vals], [ww, wa, wb] = o.whole ? want : [0, ...want];
+      if (vals.some(v => v < 0 || !Number.isInteger(v))) return { code: o.id, obs: 'other', msg: '分數的每一格都要填整數（0、1、2……），不能填小數。' };
       if (b === 0) return { code: o.id, obs: 'other', msg: '分母不能是 0：分母是「全部分成幾份」。' };
       if (vals.every((v, k) => v === want[k])) return null;
       const okValue = same(w * b + a, b, ww * wb + wa, wb);
@@ -166,7 +168,7 @@
   const cmpKey = (x, y) => Math.abs(x - y) < 1e-9 ? 'eq' : x > y ? 'gt' : 'lt';
 
   // 東西的名字（連續量）
-  const THINGS = [{ n: '蛋糕', shape: 'pie' }, { n: '披薩', shape: 'pie' }, { n: '巧克力', shape: 'bar' }, { n: '緞帶', shape: 'bar' }, { n: '吐司', shape: 'bar' }, { n: '鬆餅', shape: 'pie' }];
+  const THINGS = [{ n: '蛋糕', shape: 'pie' }, { n: '披薩', shape: 'pie' }, { n: '巧克力', shape: 'bar' }, { n: '蛋捲', shape: 'bar' }, { n: '吐司', shape: 'bar' }, { n: '鬆餅', shape: 'pie' }];
 
   // ---------- 核心活動 2-2：看分數五步 ----------
   function makeRead(level, i, rand = Math.random) {

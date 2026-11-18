@@ -229,5 +229,5 @@ html.contrast .tm-jl{fill:#000;font-weight:900}html.contrast .tm-jump{stroke:#00
 .fr-wall{display:grid;gap:3px;max-width:520px;margin:.3rem auto}
 .fr-wall-row{display:flex}.fr-wall-row>span{flex:1;min-width:0;text-align:center;border:1px solid #5b6f8f;background:#eef4fc;font-size:.8rem;padding:.25rem 0;overflow:hidden;white-space:nowrap}
 .fr-wall-row:first-child>span{background:#cfe0ff;font-weight:700}
-html.contrast .fr-part.fr-on{fill:#000}html.contrast .fr-part.fr-off{fill:#fff;stroke:#000}html.contrast .fr-part.fr-on.b{fill:#666}html.contrast .fr-wall-row>span{border-color:#000;background:#fff;color:#000}
+html.contrast .fr-part.fr-on{fill:#000}html.contrast .fr-part.fr-off{fill:#fff;stroke:#000}html.contrast .fr-part.fr-on.b{fill:#666}html.contrast .fr-part.fr-on.lite{fill:url(#fr-hatch);stroke:#000}html.contrast .fr-part.fr-on.dark{fill:#000;stroke:#fff;stroke-width:3}html.contrast .fr-wall-row>span{border-color:#000;background:#fff;color:#000}
 @media (max-width:480px){.fr-wall-row>span{font-size:.65rem}.fr-fs{min-width:7rem}}

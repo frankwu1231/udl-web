@@ -1634,7 +1634,9 @@ test('第 27 版：3-2 正方體與教師頁換成表面積教材', { skip: skip
   await p.choose('unit', 'cm2'); await p.check(); await p.next();
   assert.match(await p.text('.done-banner'), new RegExp(`表面積是 ${6 * s * s} 平方公分`));
   assert.deepEqual(p.errors, []);
-  // 學習地圖只出現表面積的單元
+  // 學習地圖只出現表面積的單元（第 33 版：反思沒選完，第一次按地圖連結先留在這頁提醒，再按一次才離開）
+  await p.page.click('.map-link'); await p.page.waitForTimeout(80);
+  assert.equal(await p.page.$('.map-card'), null, '第一次按先留在這頁'); assert.match(await p.text('#reflectFeedback'), /再按一次/);
   await p.page.click('.map-link'); await p.page.waitForSelector('.map-card');
   const units = await p.page.$$eval('.map-unit h2', h => h.map(x => x.innerText.trim()).join('|'));
   assert.match(units, /長方體和正方體的表面積/); assert.doesNotMatch(units, /周長和面積/);
@@ -2330,6 +2332,7 @@ test('第 33 版：2-2 看分數五步：分母寫成塗色的份數記 partToPa
   await p.page.fill('#den', String(k)); await p.check(); assert.match(await p.text('#feedback2'), /塗色/);
   await p.page.fill('#den', String(den)); await p.check(); await p.next();
   await p.page.fill('#num', String(k)); await p.check(); await p.next();
+  await p.page.fill('#fN', '0.5'); await p.page.fill('#fD', String(den)); await p.check(); assert.match(await p.text('#feedback4'), /整數/, '分數格不能填小數');
   await p.page.fill('#fN', String(den)); await p.page.fill('#fD', String(k)); await p.check(); assert.match(await p.text('#feedback4'), /放反/);
   await p.page.fill('#fN', String(k)); await p.page.fill('#fD', String(den)); await p.check(); await p.next();
   assert.match(await p.text('.done-banner'), new RegExp(`${den} 分之 ${k}`));

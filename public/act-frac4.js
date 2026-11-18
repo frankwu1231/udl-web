@@ -68,7 +68,7 @@
   });
   // =============== 11-3 飲料還剩多少 ===============
   A.register('frLeft', {
-    methods, makeProblem: (level, i, rand = Math.random) => { const d = any(rand, fromLevel({ easy: [3, 4, 5], standard: [4, 5, 6, 8], challenge: [6, 8, 10] }, level)); let a, b; do { a = rnd(rand, 1, d - 2); b = rnd(rand, 1, d - 2); } while (a + b >= d);
+    methods, makeProblem: (level, i, rand = Math.random) => { const d = any(rand, fromLevel({ easy: [3, 4], standard: [4, 5, 6, 8], challenge: [6, 8, 10] }, level)); let a, b; do { a = rnd(rand, 1, d - 2); b = rnd(rand, 1, d - 2); } while (a + b >= d);
       const r = d - a - b;
       return { d, a, b, r, dims: [d, a, b], prompt: `一瓶飲料，早上喝了 ${a}/${d} 瓶，下午喝了 ${b}/${d} 瓶。還剩幾瓶？剩下的比半瓶多還是少？` }; },
     planFigure: ctx => cupSVG(ctx.problem.d, ctx.problem.d, { unit: '1 瓶', aria: '一整瓶' }),

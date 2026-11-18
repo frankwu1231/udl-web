@@ -73,7 +73,7 @@
       return { shape, f, n: 2 ** f, dims: [f], prompt: `把一張${shape === 'pie' ? '圓形' : '長方形'}的色紙對摺 ${f} 次，再打開。` }; },
     planFigure: ctx => shapeSVG(ctx.problem.shape, 1, 0, { aria: '一張色紙' }),
     steps: [
-      nStep(0, { title: '摺一摺', ask: '打開後有幾格？', id: 'n', hints: ['對摺一次，變成 2 格。', '每對摺一次，格子變成 2 倍。', '摺 2 次是 4 格，摺 3 次是 8 格。'],
+      nStep(0, { title: '摺一摺', ask: '打開後有幾格？', id: 'n', hints: ['對摺一次，變成 2 格。', '每對摺一次，格子變成 2 倍。', '從 1 格開始，摺幾次就乘幾次 2。'],
         think: '老師一次一次對摺：每摺一次，格子變 2 倍。', together: '一起摺：打開有幾格？', pre: prompt, figure: ctx => shown(ctx, 0) ? shapeSVG(ctx.problem.shape, ctx.problem.n, 0, { aria: `打開後有 ${ctx.problem.n} 格` }) : shapeSVG(ctx.problem.shape, 1, 0),
         label: () => '打開以後，有幾格一樣大的？', ans: ctx => ctx.problem.n, wrong: (ctx, v) => v === 2 * ctx.problem.f ? { msg: '每摺一次，格子是變成 2 倍，不是多 2 格。' } : null, say: ex => `摺 ${ex.problem.f} 次，有 ${ex.problem.n} 格。` }),
       fStep(1, { title: '一格是多少', ask: '一格是全部的幾分之一？', id: 'f', hints: ['全部有幾格？', '一格是全部的幾分之一。', `全部 □ 格，一格是 1/□。`],
@@ -263,7 +263,7 @@
 
   // =============== 5-1 帶分數加減 ===============
   A.register('frMixAdd', {
-    methods, makeProblem: (level, i, rand = Math.random) => { const d = any(rand, fromLevel({ easy: [3, 4, 5], standard: [4, 5, 6, 8], challenge: [6, 7, 8, 9, 10] }, level)), add = i % 2 === 0, regroup = level !== 'easy' && (i % 4 >= 2);
+    methods, makeProblem: (level, i, rand = Math.random) => { const d = any(rand, fromLevel({ easy: [3, 4], standard: [4, 5, 6, 8], challenge: [6, 7, 8, 9, 10] }, level)), add = i % 2 === 0, regroup = level !== 'easy' && (i % 4 >= 2);
       let w1 = rnd(rand, 1, 4), w2 = rnd(rand, 1, 3), r1, r2;
       do { r1 = rnd(rand, 1, d - 1); r2 = rnd(rand, 1, d - 1); } while (add ? (regroup ? r1 + r2 <= d : r1 + r2 >= d) : (regroup ? r1 >= r2 : r1 < r2));
       if (!add && w1 <= w2) w1 = w2 + 1;
@@ -292,7 +292,7 @@
 
   // =============== 5-2 幾個一樣的分數（整數倍） ===============
   A.register('frTimes', {
-    methods, makeProblem: (level, i, rand = Math.random) => { const d = any(rand, fromLevel({ easy: [3, 4, 5], standard: [3, 4, 5, 6, 8], challenge: [5, 6, 7, 8, 9, 10] }, level)), a = rnd(rand, 1, d - 1), k = rnd(rand, 2, level === 'easy' ? 3 : 5);
+    methods, makeProblem: (level, i, rand = Math.random) => { const d = any(rand, fromLevel({ easy: [2, 3, 4], standard: [3, 4, 5, 6, 8], challenge: [5, 6, 7, 8, 9, 10] }, level)), a = rnd(rand, 1, d - 1), k = rnd(rand, 2, level === 'easy' ? 3 : 5);
       return { d, a, k, n: a * k, dims: [d, a, k], prompt: `小安每天喝 ${a}/${d} 瓶牛奶，${k} 天一共喝了幾瓶？` }; },
     planFigure: ctx => barSVG(ctx.problem.d, ctx.problem.n, { aria: `${ctx.problem.k} 個 ${ctx.problem.a}/${ctx.problem.d}` }),
     steps: [
@@ -320,7 +320,7 @@
     { op: 'sub', t: (a, b, d) => `一條繩子長 ${a}/${d} 公尺，剪掉 ${b}/${d} 公尺。還剩幾公尺？`, u: '公尺' }
   ];
   A.register('frWord', {
-    methods, makeProblem: (level, i, rand = Math.random) => { const w = WORD[(i + rnd(rand, 0, WORD.length - 1)) % WORD.length], d = any(rand, fromLevel({ easy: [3, 4, 5], standard: [4, 5, 6, 8], challenge: [6, 7, 8, 9, 10, 12] }, level)), k = rnd(rand, 2, 4);
+    methods, makeProblem: (level, i, rand = Math.random) => { const w = WORD[(i + rnd(rand, 0, WORD.length - 1)) % WORD.length], d = any(rand, fromLevel({ easy: [3, 4], standard: [4, 5, 6, 8], challenge: [6, 7, 8, 9, 10, 12] }, level)), k = rnd(rand, 2, 4);
       let a, b; do { a = rnd(rand, 2, 2 * d - 1); b = rnd(rand, 1, d - 1); } while (w.op === 'sub' ? a <= b : w.op === 'mul' ? a >= d : false);
       const n = w.op === 'add' ? a + b : w.op === 'sub' ? a - b : a * k;
       return { w, d, a, b, k, n, op: w.op, dims: [d, a, b], prompt: w.t(a, b, d, k) }; },
@@ -404,7 +404,7 @@
   { const pl = A.get('frDecimal');
     const toDec = nStep(1, { title: '寫成小數', ask: '小數點放對了嗎？', id: 'dec', hints: ['幾個 0.1，就是 0.幾。', '幾個 0.01，就是 0.幾幾。', '可以看數線對一對。'], think: '老師寫：幾個 0.1 就是 0.幾。', together: '一起寫：小數是多少？', figure: ctx => pl.planFigure(ctx),
       label: ctx => `${ctx.problem.a}/${ctx.problem.d} 寫成小數是多少？`, ans: ctx => ctx.problem.dec,
-      wrong: (ctx, v) => Math.abs(v - Number('0.' + ctx.problem.a)) < 1e-9 ? { obs: 'fracDecDigit', msg: `不是把分子直接寫在小數點後面。先換成分母 ${ctx.problem.T}。` } : null, say: ex => `${ex.problem.a}/${ex.problem.d} ＝ ${ex.problem.dec.toFixed(ex.problem.T === 100 ? 2 : 1)}。` });
+      wrong: (ctx, v) => Math.abs(v - Number('0.' + ctx.problem.a)) < 1e-9 ? { obs: 'fracDecDigit', msg: `不是把分子直接寫在小數點後面。先換成分母 ${ctx.problem.T}。` } : (Math.abs(v - ctx.problem.dec * 10) < 1e-9 || Math.abs(v - ctx.problem.dec / 10) < 1e-9) ? { obs: 'fracDecDigit', msg: `小數點的位置錯了：幾個 ${ctx.problem.T === 100 ? '0.01' : '0.1'}，要從十分位開始寫。` } : null, say: ex => `${ex.problem.a}/${ex.problem.d} ＝ ${ex.problem.dec.toFixed(ex.problem.T === 100 ? 2 : 1)}。` });
     const toFrac = fStep(1, { title: '寫成分數', ask: '分母是 10 還是 100？', id: 'f', hints: ['小數一位：分母是 10。', '小數兩位：分母是 100。', '幾個 0.1，分子就是幾。'], think: '老師寫：幾個 0.1，就是幾/10。', together: '一起寫：分數是多少？', figure: ctx => pl.planFigure(ctx),
       label: ctx => `${ctx.problem.dec.toFixed(ctx.problem.T === 100 ? 2 : 1)} 寫成分數是多少？`, ans: ctx => [ctx.problem.t, ctx.problem.T], equiv: true, say: ex => `${ex.problem.dec.toFixed(ex.problem.T === 100 ? 2 : 1)} ＝ ${ex.problem.t}/${ex.problem.T}。` });
     const pick = ctx => ctx.problem.toDec ? toDec : toFrac;

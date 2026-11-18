@@ -1088,7 +1088,11 @@
         startQuestion(); focus();
       };
       $('retry').onclick = () => finish(false); $('new').onclick = () => finish(true); $('toMap').onclick = () => finish(true, true);
-      document.querySelector('.map-link')?.addEventListener('click', e => { e.preventDefault(); if (finish(true, true) === false) location.href = mapUrl(); });   // 反思還沒選完：直接回地圖（這題不算完成）
+      // 第 33 版：反思還沒選完時，上面的地圖連結和頁尾按鈕一樣先留在這頁提醒；再按一次才離開（這題不算完成）
+      let mapAsked = false;
+      document.querySelector('.map-link')?.addEventListener('click', e => { e.preventDefault(); if (finish(true, true) !== false) return;
+        if (mapAsked) { location.href = mapUrl(); return; }
+        mapAsked = true; const fb = $('reflectFeedback'); if (fb) { showStatus(fb, fb.innerText.trim() + '　選完才算完成這一題；不選也要離開，再按一次「學習地圖」。'); fb.scrollIntoView?.({ block: 'center' }); } });
     }
     $('back').onclick = () => { returnTo = 'reflect'; goPage(pages().length - 1); };
   }

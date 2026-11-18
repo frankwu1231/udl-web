@@ -11,7 +11,7 @@
   const reasons = [['look', '先看圖'], ['same', '分子分母乘或除以同一個數'], ['hint', '看提示']];
   const ft = (a, b) => `${a}/${b}`;
   // 課綱 N-5-4 的分母組合：入門一分母是另一分母的倍數；一般兩個一位數；挑戰乘以 2～5 找得到公倍數
-  const PAIRS = { easy: [[2, 4], [3, 6], [2, 6], [4, 8], [3, 9], [2, 8], [5, 10]], standard: [[2, 3], [3, 4], [4, 6], [2, 5], [6, 8], [3, 5], [4, 5], [6, 9], [2, 7]], challenge: [[6, 8], [8, 12], [6, 10], [9, 12], [12, 18], [10, 15], [4, 10], [6, 15]] };
+  const PAIRS = { easy: [[2, 4], [3, 6], [2, 6], [4, 8], [2, 8]], standard: [[2, 3], [3, 4], [4, 6], [2, 5], [6, 8], [3, 5], [4, 5], [6, 9], [2, 7]], challenge: [[6, 8], [8, 12], [6, 10], [9, 12], [4, 10], [6, 9], [4, 6], [10, 12]] };
   const pairOf = (level, rand) => U.shuffle(any(rand, fromLevel(PAIRS, level)), rand);
 
   // 找公分母的一步：兩個分母的公倍數都可以（最小的最好）。分母直接相乘、又不是最小的，會記一筆「通分用分母相乘」
@@ -31,7 +31,7 @@
 
   // =============== 8-1 擴分和約分 ===============
   A.register('frScale', {
-    methods, makeProblem: (level, i, rand = Math.random) => { let a, b; do { b = rnd(rand, 2, level === 'easy' ? 5 : 9); a = rnd(rand, 1, b - 1); } while (gcd(a, b) > 1);
+    methods, makeProblem: (level, i, rand = Math.random) => { let a, b; do { b = rnd(rand, 2, level === 'easy' ? 4 : 9); a = rnd(rand, 1, b - 1); } while (gcd(a, b) > 1);
       const m = rnd(rand, 2, level === 'challenge' ? 6 : 4), up = i % 2 === 0;
       return { a, b, m, up, dims: [a, b, m], prompt: up ? `把 ${a}/${b} 擴分成分母是 ${b * m} 的分數。` : `把 ${a * m}/${b * m} 約成最簡分數。` }; },
     planFigure: ctx => { const p = ctx.problem; return barSVG(p.b * p.m, p.a * p.m, { aria: `${p.a * p.m}/${p.b * p.m}` }); },
@@ -164,7 +164,7 @@
 
   // =============== 9-3 會變大還是變小 ===============
   A.register('frBigger', {
-    methods, makeProblem: (level, i, rand = Math.random) => { const b = any(rand, [2, 3, 4, 5]), kind = ['lt', 'gt', 'eq'][i % 3], a = kind === 'lt' ? rnd(rand, 1, b - 1) : kind === 'eq' ? b : rnd(rand, b + 1, 2 * b - 1), n = b * rnd(rand, 2, level === 'easy' ? 4 : 6);
+    methods, makeProblem: (level, i, rand = Math.random) => { const b = any(rand, level === 'easy' ? [2, 3, 4] : [2, 3, 4, 5]), kind = ['lt', 'gt', 'eq'][i % 3], a = kind === 'lt' ? rnd(rand, 1, b - 1) : kind === 'eq' ? b : rnd(rand, b + 1, 2 * b - 1), n = b * rnd(rand, 2, level === 'easy' ? 4 : 6);
       return { a, b, n, kind, ans: n * a / b, dims: [n, a, b], prompt: `${n} × ${a}/${b}，答案會比 ${n} 大、比 ${n} 小，還是一樣？` }; },
     planFigure: ctx => big(`${ctx.problem.n} × ${fracHtml(ctx.problem.a, ctx.problem.b)}`),
     steps: [
@@ -201,7 +201,7 @@
 
   // =============== 10-2 分數除以整數 ===============
   A.register('frDivInt', {
-    methods, makeProblem: (level, i, rand = Math.random) => { const b = any(rand, fromLevel({ easy: [3, 4, 5], standard: [3, 4, 5, 6, 8], challenge: [5, 6, 7, 8, 9] }, level)), k = rnd(rand, 2, level === 'easy' ? 3 : 4);
+    methods, makeProblem: (level, i, rand = Math.random) => { const b = any(rand, fromLevel({ easy: [2, 3, 4], standard: [3, 4, 5, 6, 8], challenge: [5, 6, 7, 8, 9] }, level)), k = rnd(rand, 2, level === 'easy' ? 3 : 4);
       const all = Array.from({ length: b - 1 }, (_, j) => j + 1), mult = all.filter(x => x % k === 0), a = any(rand, (level === 'easy' || i % 2 === 0) && mult.length ? mult : all), [sn, sd] = simp(a, b * k);
       return { a, b, k, sn, sd, dims: [a, b, k], prompt: `${a}/${b} 公升果汁，平分倒進 ${k} 個杯子。每杯幾公升？` }; },
     planFigure: ctx => barSVG(ctx.problem.b, ctx.problem.a, { aria: `${ctx.problem.a}/${ctx.problem.b} 公升` }),
