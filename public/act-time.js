@@ -66,12 +66,21 @@
   function lineSVG(from, to, o = {}) {
     const L = 30, W = 560, span = Math.max(to - from, 1), X = t => L + (t - from) / span * (W - 2 * L), y = 92, parts = [`<path d="M${L - 10} ${y}H${W - L + 10}" class="ln-axis"/>`];
     for (let t = Math.ceil(from / 60) * 60; t <= to; t += 60) parts.push(`<path d="M${X(t).toFixed(1)} ${y - 9}V${y + 9}" class="ln-axis"/>`);
-    (o.marks || []).forEach((t, i) => parts.push(`<circle cx="${X(t).toFixed(1)}" cy="${y}" r="6" class="tm-mark${i === 0 ? ' s' : i === (o.marks.length - 1) ? ' e' : ''}"/><text x="${X(t).toFixed(1)}" y="${y + 30}" text-anchor="middle" class="tm-lab">${esc(o.fmt ? o.fmt(t) : digital(...split(t)))}</text>`));
-    (o.jumps || []).slice(0, o.show ?? 99).forEach(([a, b, t]) => { const xa = X(a), xb = X(b), mid = (xa + xb) / 2; parts.push(`<path d="M${xa.toFixed(1)} ${y}Q${mid.toFixed(1)} ${y - 62} ${xb.toFixed(1)} ${y}" class="tm-jump"/><text x="${mid.toFixed(1)}" y="${y - 40}" text-anchor="middle" class="tm-lab tm-jl">${esc(t)}</text>`); });
+    // 第 32 版修正：兩個時刻很近（例如 60 分和 63 分）時，字會疊在一起 → 估字寬，疊到就換到下一排
+    const textW = t => [...String(t)].reduce((w, c) => w + (/[\u2e80-\uffff]/.test(c) ? 14 : 8.4), 0);
+    const place = (items, rows) => { const right = rows.map(() => -Infinity); return items.map(it => ({ ...it, w: textW(it.t) })).sort((a, b) => a.x - b.x).map(it => {
+      const x = Math.min(Math.max(it.x, it.w / 2 + 2), W - it.w / 2 - 2); let r = right.findIndex(v => x - it.w / 2 > v + 6); if (r < 0) r = right.indexOf(Math.min(...right));
+      right[r] = x + it.w / 2; return { ...it, x, y: rows[r] }; }); };
+    const marks = o.marks || [], jumps = (o.jumps || []).slice(0, o.show ?? 99);
+    marks.forEach((t, i) => parts.push(`<circle cx="${X(t).toFixed(1)}" cy="${y}" r="6" class="tm-mark${i === 0 ? ' s' : i === (marks.length - 1) ? ' e' : ''}"/>`));
+    jumps.forEach(([a, b]) => { const xa = X(a), xb = X(b), mid = (xa + xb) / 2; parts.push(`<path d="M${xa.toFixed(1)} ${y}Q${mid.toFixed(1)} ${y - 62} ${xb.toFixed(1)} ${y}" class="tm-jump"/>`); });
+    let H = y + 44;
+    place(marks.map(t => ({ x: X(t), t: o.fmt ? o.fmt(t) : digital(...split(t)) })), [y + 30, y + 50, y + 70]).forEach(l => (H = Math.max(H, l.y + 14), parts.push(`<text x="${l.x.toFixed(1)}" y="${l.y}" text-anchor="middle" class="tm-lab">${esc(l.t)}</text>`)));
+    place(jumps.map(([a, b, t]) => ({ x: (X(a) + X(b)) / 2, t })), [y - 40, y - 60, y - 78]).forEach(l => parts.push(`<text x="${l.x.toFixed(1)}" y="${l.y}" text-anchor="middle" class="tm-lab tm-jl">${esc(l.t)}</text>`));
     // 第 32 版第 2 輪：手機上時間線縮小，字太小；另外用一般字級列出端點和每一段（只在窄螢幕顯示）
     const lab = t => o.fmt ? o.fmt(t) : digital(...split(t)), segs = (o.jumps || []).slice(0, o.show ?? 99).map(j => `${lab(j[0])} → ${lab(j[1])}：${j[2]}`);
     const text = `<ul class="tm-line-text" aria-hidden="true">${(segs.length ? segs : [(o.marks || []).map(lab).join(' → ')]).map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
-    return `<svg class="ac-svg tm-line" viewBox="0 0 ${W} ${y + 44}" role="img" aria-label="${esc(o.aria || '時間線')}">${parts.join('')}</svg>${text}`;
+    return `<svg class="ac-svg tm-line" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria || '時間線')}">${parts.join('')}</svg>${text}`;
   }
   // 月曆：y 年 mo 月；o.mark 圈起來的日；o.hint 提示框起來的日
   const WEEK = ['日', '一', '二', '三', '四', '五', '六'];
