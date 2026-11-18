@@ -34,7 +34,7 @@ node scripts/preview-feedback.mjs         # 本機預覽：http://127.0.0.1:4173
 - 單元 0 是先測（0-1 一樣大嗎、0-2 切成一樣大），照順序時全對才打開後面。
 - 新增 16 個觀察代碼（`public/observations.js`）：unequalOK、numDenSwap、partToPart、bigDenBig、addDen、mixedConvert、borrowWhole、equivAdd、countTicks、fracDecDigit、wrongWhole、addAcross、notSimplest、multBigger、divFlipWrong、remainderFrac。分小數互換寫錯小數位數記 fracDecDigit。
 - 探試題組四份，各 10 題、3 個複本：`scenarios/frac-early-probe.json`、`frac-g4-probe.json`、`frac-g56-probe.json`、`frac-life-probe.json`，由 `scripts/make-frac-probes.mjs` 產生。最後一步都是選擇題，錯誤選項不會和正確答案等值（例如不會同時出現 1/4 和 2/8）。
-- 單元 11 的跨領域課綱代碼（特殊需求領域生活管理、綜合活動）目前是暫定，等研究資料核對後再改。
+- 單元 11 的跨領域課綱代碼已對照特殊需求領域課綱（生活管理）與綜合活動領綱原文（見大綱單元 11）。
 - 版本號 v33。
 
 ## 三、要測的功能

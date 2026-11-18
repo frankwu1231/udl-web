@@ -6,6 +6,8 @@
 // 課綱（已對照教育部數學領綱原文）：N-2-10（n-I-6）；N-3-9、N-4-5、N-4-6（n-II-6）；N-4-8（n-II-8）；N-5-4（n-III-4）；N-5-5、N-5-7、N-6-3（n-III-6）；N-5-6（n-III-5）。
 // 課綱備註：二年級只用連續量、摺紙只摺半（長方形 2、4、8，圓 2、4）；三年級結果不超過 2、不教帶分數；N-4-6 異分母限一分母是另一分母的倍數、與小數互換限分母 2、5、10、100；
 // N-4-8 數線分母不大於 5；N-5-4 通分不鼓勵分母直接相乘。
+// 跨領域（108 年特殊需求領域課綱、107 年綜合活動領綱原文，Codex 查證）：特生1-sA-2、特生A-sA-1、特生A-sP-4、特生A-sP-8、特生A-sP-9、特生3-sP-4、特生K-sP-5；
+// 綜合活動 2b-Ⅱ-1、2b-Ⅲ-1、2c-Ⅱ-1、2c-Ⅲ-1、Bc-Ⅱ-3。課綱沒有量杯、量匙或分數的專屬條目，以上是課程對應，分數本身仍連結數學 N 代碼。
 (() => {
   const UNITS = [
     { id: 'r0', title: '準備好了嗎（先測）', icon: '🧭', code: 'N-2-9' },
@@ -19,7 +21,7 @@
     { id: 'r8', title: '擴分、約分與異分母加減（五年級）', icon: '🔀', code: 'N-5-4' },
     { id: 'r9', title: '分數乘法（五年級）', icon: '✖️', code: 'N-5-5' },
     { id: 'r10', title: '整數相除與分數除法（五、六年級）', icon: '➗', code: 'N-5-6、N-5-7、N-6-3' },
-    { id: 'r11', title: '分數小幫手（生活應用）', icon: '🧑‍🍳', code: '數學各條目＋生活管理' }
+    { id: 'r11', title: '分數小幫手（生活管理、綜合活動）', icon: '🧑‍🍳', code: 'N-4-6、特生1-sA-2、2c-Ⅱ-1' }
   ];
   const LIST = [
     { id: 'frSame', unit: 'r0', no: '0-1', title: '一樣多嗎', code: 'N-2-9', icon: '🍪', kind: 'plugin', pretest: true },
@@ -55,13 +57,13 @@
     { id: 'frDivInt', unit: 'r10', no: '10-2', title: '分數除以整數', code: 'N-5-7', icon: '🧃', kind: 'plugin' },
     { id: 'frHowMany', unit: 'r10', no: '10-3', title: '可以剪幾段', code: 'N-6-3', icon: '🎀', kind: 'plugin' },
     { id: 'frDivFrac', unit: 'r10', no: '10-4', title: '分數除以分數', code: 'N-6-3、n-III-6', icon: '🥄', kind: 'plugin' },
-    { id: 'frPizza', unit: 'r11', no: '11-1', title: '分食物', code: 'N-2-10、N-3-9', icon: '🍕', kind: 'plugin' },
-    { id: 'frRecipe', unit: 'r11', no: '11-2', title: '照食譜做', code: 'N-3-9、N-4-6', icon: '🥣', kind: 'plugin', core: true },
-    { id: 'frLeft', unit: 'r11', no: '11-3', title: '飲料還剩多少', code: 'N-3-9、N-4-5', icon: '🧋', kind: 'plugin' },
-    { id: 'frClock', unit: 'r11', no: '11-4', title: '半小時和一刻鐘', code: 'N-4-5、N-5-16', icon: '⏰', kind: 'plugin' },
-    { id: 'frShop', unit: 'r11', no: '11-5', title: '買東西', code: 'N-5-5', icon: '🛒', kind: 'plugin' },
-    { id: 'frDouble', unit: 'r11', no: '11-6', title: '食譜加倍或減半', code: 'N-5-5', icon: '👩‍🍳', kind: 'plugin' },
-    { id: 'frPour', unit: 'r11', no: '11-7', title: '分裝飲料', code: 'N-5-6', icon: '🫗', kind: 'plugin' }
+    { id: 'frPizza', unit: 'r11', no: '11-1', title: '分食物', code: 'N-2-10、N-3-9、特生A-sP-8、2b-Ⅱ-1', icon: '🍕', kind: 'plugin' },
+    { id: 'frRecipe', unit: 'r11', no: '11-2', title: '照食譜做', code: 'N-4-6、特生1-sA-2、特生A-sA-1、2c-Ⅱ-1', icon: '🥣', kind: 'plugin', core: true },
+    { id: 'frLeft', unit: 'r11', no: '11-3', title: '飲料還剩多少', code: 'N-3-9、N-4-5、特生A-sP-4、2c-Ⅱ-1', icon: '🧋', kind: 'plugin' },
+    { id: 'frClock', unit: 'r11', no: '11-4', title: '半小時和一刻鐘', code: 'N-5-16、Bc-Ⅱ-3', icon: '⏰', kind: 'plugin' },
+    { id: 'frShop', unit: 'r11', no: '11-5', title: '買東西', code: 'N-5-5、特生3-sP-4、特生K-sP-5', icon: '🛒', kind: 'plugin' },
+    { id: 'frDouble', unit: 'r11', no: '11-6', title: '食譜加倍或減半', code: 'N-4-5、N-5-5、特生A-sP-9、2c-Ⅲ-1', icon: '👩‍🍳', kind: 'plugin' },
+    { id: 'frPour', unit: 'r11', no: '11-7', title: '分裝飲料', code: 'N-5-6、N-6-3、特生A-sP-9、2b-Ⅲ-1', icon: '🫗', kind: 'plugin' }
   ];
   const ids = from => LIST.filter(a => from.includes(a.unit)).map(a => a.id);
   const PATHS = {
