@@ -412,7 +412,7 @@
 
   // =============== 7-3 誰走得比較遠（數線上比分數和小數） ===============
   A.register('frFar', {
-    methods, makeProblem: (level, i, rand = Math.random) => { const d = any(rand, fromLevel({ easy: [2, 5], standard: [2, 5, 10], challenge: [2, 4, 5, 10] }, level)), max = level === 'easy' ? 1 : 2;
+    methods, makeProblem: (level, i, rand = Math.random) => { const d = any(rand, fromLevel({ easy: [2, 5], standard: [2, 5, 10], challenge: [2, 5, 10] }, level)), max = level === 'easy' ? 1 : 2;
       let a, t; do { a = rnd(rand, 1, max * d - 1); t = rnd(rand, 1, max * 10 - 1); } while (a % d === 0 || Math.abs(a / d - t / 10) < 1e-9 || (d === 4 && a % 2 === 0));
       return { d, a, t, max, dims: [d, a, t], prompt: `小安走了 ${a}/${d} 公里，小明走了 ${(t / 10).toFixed(1)} 公里。誰走得比較遠？` }; },
     planFigure: ctx => lineSVG(ctx.problem.max, 10, { labels: 'dec' }),

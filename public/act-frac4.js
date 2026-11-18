@@ -11,7 +11,7 @@
 
   // =============== 11-1 分食物 ===============
   A.register('frPizza', {
-    methods, makeProblem: (level, i, rand = Math.random) => { let n, s, p; do { n = level === 'easy' ? 1 : rnd(rand, 1, 2); s = any(rand, [4, 6, 8]); p = any(rand, fromLevel({ easy: [2, 4], standard: [2, 3, 4, 6], challenge: [3, 4, 5, 6] }, level)); } while ((n * s) % p || p > n * s);
+    methods, makeProblem: (level, i, rand = Math.random) => { let n, s, p; do { n = level === 'easy' ? 1 : rnd(rand, 1, 2); s = any(rand, level === 'easy' ? [2, 4] : [4, 6, 8]); p = any(rand, fromLevel({ easy: [2, 4], standard: [2, 3, 4, 6], challenge: [3, 4, 5, 6] }, level)); } while ((n * s) % p || p > n * s);
       const each = n * s / p, [sn, sd] = simp(each, s);
       return { n, s, p, each, sn, sd, dims: [n, s, p], prompt: `同學生日，買了 ${n} 個披薩，每個切成 ${s} 片。${p} 個人平分。每人分到幾片？是幾個披薩？` }; },
     planFigure: ctx => pieSVG(ctx.problem.s, 0, { wholes: ctx.problem.n, aria: `${ctx.problem.n} 個披薩，每個 ${ctx.problem.s} 片` }),
