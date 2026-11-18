@@ -63,7 +63,7 @@
 
   // 第 26 版：班級設定，再套上這位學生的個別設定（老師在「教師觀察」調整、存在網站資料庫）
   function ownSettings() { return { ...F.settings(L()), ...(window.areaResearch?.overrides?.(type) || {}), ...(window.areaResearch?.phasePatch?.(type) || {}) }; }   // 第 26 版第四階段：研究階段（B、BC 關閉 AI；BC 由小老師小方取代小幫手；示範階段用老師示範模式）
-  const SITE_VERSION = 'v32';
+  const SITE_VERSION = 'v33';
   function log(event, extra = {}) {
     const st = extra.activity && phase !== 'plan' ? (titles()[extra.activity - 1] || '') : '';
     const r = { time: new Date().toISOString(), siteVersion: SITE_VERSION, shape: nameOf(), shapeKey: type, actId: type, stepTitle: st, cycle, activity: extra.activity ?? null, event, support: settings.support, response, method, flow: settings.flow, difficulty: settings.difficulty, mode: mode(), studyPhase, ...(window.areaTutor?.stage?.() ? { tutorStage: window.areaTutor.stage() } : {}), ...extra };
@@ -121,7 +121,7 @@
   const DRAFT_KEY = 'act-draft-v28', OWN_KEY = 'line-record-v28';
   let resumed = false;
   addEventListener('pagehide', () => saveDraft());   // 打字還沒按檢查就重新整理，也存起來
-  const draftable = () => !!(P() && ['line', 'factor', 'time'].includes(ACT?.pkgOf(type)?.id) && mode() !== 'probe' && mode() !== 'demo');
+  const draftable = () => !!(P() && ['line', 'factor', 'time', 'frac'].includes(ACT?.pkgOf(type)?.id) && mode() !== 'probe' && mode() !== 'demo');
   function saveDraft() {
     if (!draftable()) return;
     try { if (phase === 'solve') sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ type, index, cycle, problem: pProblem, state: pState, answers, checked: [...checked], page, hintLevel, goal, method, errors, hintsUsed, tried2: [...tried2], nudged: [...nudged], startedAt })); else sessionStorage.removeItem(DRAFT_KEY); } catch { /* 無法暫存就算了 */ }
@@ -1088,7 +1088,11 @@
         startQuestion(); focus();
       };
       $('retry').onclick = () => finish(false); $('new').onclick = () => finish(true); $('toMap').onclick = () => finish(true, true);
-      document.querySelector('.map-link')?.addEventListener('click', e => { e.preventDefault(); if (finish(true, true) === false) location.href = mapUrl(); });   // 反思還沒選完：直接回地圖（這題不算完成）
+      // 第 33 版：反思還沒選完時，上面的地圖連結和頁尾按鈕一樣先留在這頁提醒；再按一次才離開（這題不算完成）
+      let mapAsked = false;
+      document.querySelector('.map-link')?.addEventListener('click', e => { e.preventDefault(); if (finish(true, true) !== false) return;
+        if (mapAsked) { location.href = mapUrl(); return; }
+        mapAsked = true; const fb = $('reflectFeedback'); if (fb) { showStatus(fb, fb.innerText.trim() + '　選完才算完成這一題；不選也要離開，再按一次「學習地圖」。'); fb.scrollIntoView?.({ block: 'center' }); } });
     }
     $('back').onclick = () => { returnTo = 'reflect'; goPage(pages().length - 1); };
   }
