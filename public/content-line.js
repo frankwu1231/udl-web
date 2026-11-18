@@ -4,6 +4,9 @@
 // 四、五年級都做；7 個單元（0～6）、18 個活動；讀圖、畫圖兩套七步驟（2-1、5-1 是核心）；
 // 兩條線與波浪線：四年級「讀」（挑戰級），五年級「畫」；單元 0 當先測，全對就可以往下。
 // 課綱（已對照教育部數學領綱原文）：D-4-1、D-5-1；學習表現 d-II-1、d-III-1；先備 D-3-1、N-3-11。
+// 第 34 版：單元 6 擴充成跨領域單元「生活小觀察家」（act-life2.js）。跨領域代碼依 Codex 查證：自然 INd-Ⅱ-7（天氣資料）；
+// 健體 4a-Ⅱ-2、Aa-Ⅱ-1（五年級對應 4a-Ⅲ-2、Aa-Ⅲ-1）；特生L-sP-4 自我管理技巧；社會 Ad-Ⅱ-2（五年級可用 Db-Ⅲ-1）。
+// 四年級 D-4-1 只讀圖；6-5 身高圖用波浪線，放五年級版。
 (() => {
   const UNITS = [
     { id: 'l0', title: '準備好了嗎（先測）', icon: '🧭', code: 'D-3-1、N-3-11' },
@@ -12,7 +15,7 @@
     { id: 'l3', title: '看出變化', icon: '↗️', code: 'd-II-1、d-III-1' },
     { id: 'l4', title: '選對圖', icon: '🧩', code: 'D-4-1、D-5-1、D-6-1' },
     { id: 'l5', title: '畫折線圖（五年級）', icon: '✏️', code: 'D-5-1、d-III-1' },
-    { id: 'l6', title: '小小調查員（五年級）', icon: '🕵️', code: 'D-5-1、d-III-1' }
+    { id: 'l6', title: '生活小觀察家（生活應用）', icon: '🕵️', code: 'D-4-1、D-5-1、d-II-1、自然INd-Ⅱ-7、健體4a-Ⅱ-2' }
   ];
   const LIST = [
     { id: 'lnTable', unit: 'l0', no: '0-1', title: '表格找資料', code: 'D-3-1', icon: '📋', kind: 'plugin', pretest: true },
@@ -32,17 +35,24 @@
     { id: 'lnBreak', unit: 'l5', no: '5-3', title: '波浪線省略', code: 'D-5-1', icon: '〰️', kind: 'plugin' },
     { id: 'lnDrawTwo', unit: 'l5', no: '5-4', title: '兩條線一起畫', code: 'D-5-1、d-III-1', icon: '🌱', kind: 'plugin' },
     { id: 'lnRecord', unit: 'l6', no: '6-1', title: '記錄一週', code: 'D-5-1', icon: '🗓️', kind: 'plugin' },
-    { id: 'lnTell', unit: 'l6', no: '6-2', title: '用圖說話', code: 'd-III-1', icon: '💬', kind: 'plugin' }
+    { id: 'lnTell', unit: 'l6', no: '6-2', title: '用圖說話', code: 'd-III-1', icon: '💬', kind: 'plugin' },
+    { id: 'lnWeather', unit: 'l6', no: '6-3', title: '生活決策五步：看氣溫決定穿什麼', code: 'D-4-1、d-II-1、自然INd-Ⅱ-7', icon: '🧥', kind: 'plugin', core: true },
+    { id: 'lnHealth', unit: 'l6', no: '6-4', title: '我的睡眠和喝水', code: 'd-II-1、健體4a-Ⅱ-2、特生L-sP-4', icon: '😴', kind: 'plugin' },
+    { id: 'lnGrow', unit: 'l6', no: '6-5', title: '我長高了嗎（五年級）', code: 'D-5-1、健體Aa-Ⅱ-1', icon: '📏', kind: 'plugin' },
+    { id: 'lnMoney', unit: 'l6', no: '6-6', title: '存錢圖', code: 'd-II-1、社會Ad-Ⅱ-2', icon: '🐷', kind: 'plugin' }
   ];
   const PATHS = {
-    grade4: { title: '四年級版（讀圖）', ids: ['lnTable', 'lnScale', 'lnParts', 'lnMatch', 'lnRead', 'lnFind', 'lnBetween', 'lnTrend', 'lnMost', 'lnTwo', 'lnChoose'] },
-    grade5: { title: '五年級版（複習讀圖，再畫圖）', ids: ['lnRead', 'lnFind', 'lnBetween', 'lnTrend', 'lnMost', 'lnTwo', 'lnChoose', 'lnThree', 'lnDraw', 'lnSetScale', 'lnBreak', 'lnDrawTwo', 'lnRecord', 'lnTell'] },
+    grade4: { title: '四年級版（讀圖）', ids: ['lnTable', 'lnScale', 'lnParts', 'lnMatch', 'lnRead', 'lnFind', 'lnBetween', 'lnTrend', 'lnMost', 'lnTwo', 'lnChoose', 'lnWeather', 'lnHealth', 'lnMoney'] },
+    grade5: { title: '五年級版（複習讀圖，再畫圖）', ids: ['lnRead', 'lnFind', 'lnBetween', 'lnTrend', 'lnMost', 'lnTwo', 'lnChoose', 'lnThree', 'lnDraw', 'lnSetScale', 'lnBreak', 'lnDrawTwo', 'lnRecord', 'lnTell', 'lnWeather', 'lnHealth', 'lnGrow', 'lnMoney'] },
+    life: { title: '生活小觀察家（生活應用，可當類化探測）', ids: ['lnWeather', 'lnHealth', 'lnGrow', 'lnMoney'] },
     all: { title: '全部', ids: LIST.map(a => a.id) }
   };
   // 探試題組：讀圖、畫圖分成兩份，各 10 題（吳老師 2026-11-14 決定）。題組 JSON 寫 "package": "line"、"variant": "read" 或 "draw"
   const PROBE_VARIANTS = {
     read: { read: 4, findTime: 1, change: 2, twoLine: 1, breakRead: 1, chooseChart: 1 },
-    draw: { plot: 4, scale: 2, twoLineDraw: 1, breakDraw: 1, chooseChart: 1, explain: 1 }
+    draw: { plot: 4, scale: 2, twoLineDraw: 1, breakDraw: 1, chooseChart: 1, explain: 1 },
+    // 第 34 版：生活應用題組
+    life: { lifeWeather: 3, lifeHealth: 3, lifeGrow: 2, lifeMoney: 2 }
   };
   const pkg = { id: 'line', title: '折線圖（四、五年級）', units: UNITS, activities: LIST, paths: PATHS, probeTypes: PROBE_VARIANTS.read, probeVariants: PROBE_VARIANTS };
   window.lessonPackages = window.lessonPackages || {};

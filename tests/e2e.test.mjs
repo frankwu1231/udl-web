@@ -935,7 +935,7 @@ test('現場試用：開始前老師點選代號（不用打字）；沒選齊�
   assert.match(await p.text('#researchBar .who'), /T02-S05/);
   await p.page.click('#researchFlush'); await p.page.waitForTimeout(300);
   const start = p.rows('場次')[0];
-  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v33'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
+  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v34'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
   assert.ok(p.rows('教師設定').some(r => r.actId === 'rectangle' && r.buddy === '開'), '記下老師這次的設定');
   assert.ok(!JSON.stringify(p.posts).match(/姓名/), '不傳姓名欄位');
 
@@ -1239,7 +1239,7 @@ test('第 26 版：研究紀錄存網站資料庫：開始本節編節次、錯�
   const ev = await events();
   const wrong = ev.find(r => r.event === '步驟檢核' && r.correct === '否');
   assert.ok(wrong, '錯誤存進網站資料庫');
-  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v33');
+  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v34');
   const d = JSON.parse(wrong.detail); assert.equal(d.obs, 'chosePerimeter'); assert.equal(d.outcome, 'wrong'); assert.equal(d.firstTry, true);
   assert.ok(ev.some(r => r.event === '無法判定'), '老師按「這題無法判定」');
   // 老師調整支持：沒選理由不能存；減少支持存成這位學生的設定，記下方向
@@ -1654,7 +1654,7 @@ test('第 27 版：3-2 正方體與教師頁換成表面積教材', { skip: skip
   await publish({});   // 換回面積，免得影響後面的測試
 });
 
-test('第 27 版：表面積 15 個活動都能出題、畫圖，照示範做完每一步都對；錯的答案會被擋下', { skip: skip || !distReady }, async () => {
+test('第 27 版：表面積 19 個活動（第 34 版加 4 個生活應用）都能出題、畫圖，照示範做完每一步都對；錯的答案會被擋下', { skip: skip || !distReady }, async () => {
   const p = await act('sOpenBox', { difficulty: 'standard', ...SURFACE_MAP });
   const out = await p.page.evaluate(() => {
     const A = window.areaActs, bad = [];
@@ -1676,7 +1676,7 @@ test('第 27 版：表面積 15 個活動都能出題、畫圖，照示範做完
     }
     return { bad, n: ids.length };
   });
-  assert.equal(out.n, 15); assert.deepEqual(out.bad, []);
+  assert.equal(out.n, 19); assert.deepEqual(out.bad, []);
   // 4-1 沒有蓋子：實際操作，算成有蓋子的會被擋下
   const q = await p.page.evaluate(() => document.querySelector('.lesson-prompt')?.innerText || '');
   const [l, w, h] = q.match(/\d+/g).map(Number);
@@ -1722,7 +1722,7 @@ test('第 27 版第 1 輪修正：換教材再換回保留指派；2-1 依實際
     return { k322: k({ l: 3, w: 2, h: 2 }), k432: k({ l: 4, w: 3, h: 2 }), k222: k({ l: 2, w: 2, h: 2 }), faces: (net.match(/class="sf-net/g) || []).length, none: /沒有上面/.test(net), front: />前面</.test(label) && !/>上面</.test(label) }; });
   assert.deepEqual(r, { k322: '2', k432: '3', k222: '1', faces: 5, none: true, front: true });
   const rec = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16') || '[]').find(x => x.event === '整題定標'));
-  assert.equal(rec.siteVersion, 'v33'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
+  assert.equal(rec.siteVersion, 'v34'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
   assert.match(await p.page.title(), /表面積/); assert.match(await p.text('header .brand'), /表面積/);
   assert.deepEqual(p.errors, []);
   await publish({});
@@ -1777,7 +1777,7 @@ test('第 27 版（柱體）：5-2 三角柱打開數面、底面忘了除以 2 
 // ---------- 第 28 版：折線圖教材包 ----------
 const LINE_IDS = ['lnTable', 'lnScale', 'lnParts', 'lnMatch', 'lnRead', 'lnFind', 'lnBetween', 'lnTrend', 'lnMost', 'lnTwo', 'lnChoose', 'lnThree', 'lnDraw', 'lnSetScale', 'lnBreak', 'lnDrawTwo', 'lnRecord', 'lnTell'];
 const LINE_MAP = { __map: { pkg: 'line', assigned: LINE_IDS, path: 'all' } };
-test('第 28 版：折線圖 18 個活動都能出題、畫圖，照示範做完每一步都對；空白的不會過', { skip: skip || !distReady }, async () => {
+test('第 28 版：折線圖 22 個活動（第 34 版加 4 個生活應用）都能出題、畫圖，照示範做完每一步都對；空白的不會過', { skip: skip || !distReady }, async () => {
   const p = await act('lnRead', { difficulty: 'standard', ...LINE_MAP });
   const out = await p.page.evaluate(() => {
     const A = window.areaActs, bad = [];
@@ -1797,7 +1797,7 @@ test('第 28 版：折線圖 18 個活動都能出題、畫圖，照示範做完
     }
     return { bad, n: ids.length, paths: Object.keys(A.packages.line.paths) };
   });
-  assert.equal(out.n, 18); assert.deepEqual(out.bad, []); assert.deepEqual(out.paths, ['grade4', 'grade5', 'all']);
+  assert.equal(out.n, 22); assert.deepEqual(out.bad, []); assert.deepEqual(out.paths, ['grade4', 'grade5', 'life', 'all']);
   assert.deepEqual(p.errors, []);
 });
 
@@ -2081,7 +2081,7 @@ const FACTOR_IDS = ['fmTimes', 'fmShare', 'fmArray', 'fmIsFactor', 'fmFactors', 
 const FACTOR_MAP = { __map: { pkg: 'factor', assigned: FACTOR_IDS, path: 'all' } };
 const records = p => p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || '');
 
-test('第 31 版：因數與倍數 20 個活動都能出題、畫圖，照示範做完每一步都對；空白的不會過；題目、答案、數線、選項都在等級上限內（24／50／100）', { skip: skip || !distReady }, async () => {
+test('第 31 版：因數與倍數 25 個活動（第 34 版加 5 個生活應用）都能出題、畫圖，照示範做完每一步都對；空白的不會過；題目、答案、數線、選項都在等級上限內（24／50／100）', { skip: skip || !distReady }, async () => {
   const p = await act('fmFactors', { difficulty: 'standard', ...FACTOR_MAP });
   const out = await p.page.evaluate(() => {
     const A = window.areaActs, bad = [];
@@ -2104,7 +2104,7 @@ test('第 31 版：因數與倍數 20 個活動都能出題、畫圖，照示範
     }
     return { bad, n: ids.length, paths: Object.keys(A.packages.factor.paths), core: A.packages.factor.activities.filter(a => a.core).map(a => a.id) };
   });
-  assert.equal(out.n, 20); assert.deepEqual(out.bad, []); assert.deepEqual(out.paths, ['grade5', 'grade6', 'all']); assert.deepEqual(out.core, ['fmFactors', 'fmGcd']);
+  assert.equal(out.n, 25); assert.deepEqual(out.bad, []); assert.deepEqual(out.paths, ['grade5', 'grade6', 'life', 'all']); assert.deepEqual(out.core, ['fmFactors', 'fmGcd', 'fmPack']);
   assert.deepEqual(p.errors, []);
 });
 
@@ -2391,4 +2391,74 @@ test('第 32 版修正：時間線上兩個時刻很近時（例如 60 分和 63
     host.remove(); return [...new Set(bad)].slice(0, 10);
   });
   assert.deepEqual(out, []); assert.deepEqual(p.errors, []);
+});
+
+// ---------- 第 34 版：各教材包的跨領域生活單元 ----------
+const LIFE_IDS = { area: ['arMat', 'arBorder', 'arRoom', 'arGarden'], surface: ['sGift', 'sPaint', 'sSave', 'sLabel'], line: ['lnWeather', 'lnHealth', 'lnGrow', 'lnMoney'], factor: ['fmGroup', 'fmPack', 'fmBags', 'fmDuty', 'fmDesk'] };
+test('第 34 版：四個教材包的 17 個生活應用活動都能出題、畫圖，照示範做完每一步都對；空白的不會過；畫面沒有 undefined；因數倍數不超過等級上限', { skip: skip || !distReady }, async () => {
+  const p = await act('arMat', { difficulty: 'standard' });
+  const out = await p.page.evaluate(L => {
+    const A = window.areaActs, bad = [], seen = {};
+    for (const [pkg, ids] of Object.entries(L)) for (const id of ids) {
+      const pl = A.get(id); if (!pl) { bad.push(id + ' 沒有註冊'); continue; }
+      if (A.pkgOf(id).id !== pkg) bad.push(`${id} 不在 ${pkg}`);
+      for (const level of ['easy', 'standard', 'challenge']) for (let i = 0; i < 10; i++) for (const h of [0, 3]) {
+        const problem = pl.makeProblem(level, i, Math.random), answers = {}, state = {};
+        seen[id] = (seen[id] || new Set()).add(JSON.stringify(problem.dims));
+        if (/undefined|NaN/.test(problem.prompt || '')) bad.push(`${id} 題目有 undefined/NaN`);
+        if (pkg === 'factor') { const cap = { easy: 24, standard: 50, challenge: 100 }[level], nums = [], walk = v => { if (typeof v === 'number') nums.push(v); else if (v && typeof v === 'object') Object.values(v).forEach(walk); }; walk(problem); if (nums.some(n => n > cap)) bad.push(`${id} ${level} 超過 ${cap}：${Math.max(...nums)}`); }
+        const ctx = { answers, state, problem, plugin: pl, settings: {}, method: 'mark', level, hint: () => h, checked: () => false, invalidate() {}, refreshFigure() {}, rerender() {}, log() {}, choice: (k, t, items) => { if (new Set(items.map(x => x[0])).size !== items.length) bad.push(`${id} ${k} 選項代號重複`); if (new Set(items.map(x => x[1])).size !== items.length) bad.push(`${id} ${k} 選項文字重複：${items.map(x => x[1])}`); return t + items.map(x => x[1]).join('|'); } };
+        try { const f = pl.planFigure && pl.planFigure(ctx); if (/undefined|NaN/.test(f || '')) bad.push(`${id} planFigure 有 undefined/NaN`); } catch (e) { bad.push(`${id} planFigure ${e.message}`); }
+        pl.steps.forEach((st, s) => {
+          if (!/^[一-鿿0-9A-Za-z ，、（）？]{1,16}$/.test(st.title)) bad.push(`${id} 第${s + 1}步標題不合格式：${st.title}`);
+          if (st.hints.length !== 3 || st.hints.some(x => typeof x !== 'string')) bad.push(`${id} 第${s + 1}步提示不是三層文字`);
+          try { const html = (st.figure ? st.figure(ctx) : '') + st.answer(ctx); if (/undefined|NaN|Infinity/.test(html)) bad.push(`${id} 第${s + 1}步畫面有 undefined/NaN`); } catch (e) { bad.push(`${id} 第${s + 1}步畫面 ${e.message}`); }
+          try { if (!st.check(ctx)) bad.push(`${id} 第${s + 1}步沒作答也過`); st.solve(ctx); const r = st.check(ctx); if (r) bad.push(`${id} ${level} ${i} 第${s + 1}步照示範做卻沒過：${r.msg}`); if (typeof st.say === 'function' && /undefined|NaN/.test(st.say({ problem }))) bad.push(`${id} 第${s + 1}步示範的話有 undefined`); } catch (e) { bad.push(`${id} 第${s + 1}步 ${e.message}`); }
+        });
+        try { if (/undefined|NaN/.test(pl.done(ctx))) bad.push(`${id} done 有 undefined`); } catch (e) { bad.push(`${id} done ${e.message}`); }
+      }
+    }
+    const few = Object.entries(seen).filter(([, s]) => s.size < 5).map(([k, s]) => `${k}:${s.size}`);
+    const P = A.packages;
+    return { bad, few, paths: { area: Object.keys(P.area.paths), surface: Object.keys(P.surface.paths) }, core: Object.fromEntries(Object.keys(L).map(k => [k, P[k].activities.filter(a => a.core && L[k].includes(a.id)).map(a => a.id)])), units: [P.area, P.surface, P.line, P.factor].map(p => p.units.find(u => p.activities.some(a => a.id === L[p.id][0] && a.unit === u.id)).title) };
+  }, LIFE_IDS);
+  assert.deepEqual(out.bad, []); assert.deepEqual(out.few, [], '每個活動的題目要有變化');
+  assert.deepEqual(out.paths, { area: ['g3', 'g4', 'life', 'g5', 'all'], surface: ['basic', 'grade6', 'life', 'all'] });
+  assert.deepEqual(out.core, { area: ['arMat'], surface: ['sGift'], line: ['lnWeather'], factor: ['fmPack'] });
+  assert.deepEqual(out.units, ['家裡的小設計師（生活應用）', '包裝小達人（生活應用）', '生活小觀察家（生活應用）', '分組分裝小幫手（生活應用）']);
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 34 版：5-2 鋪地墊（生活決策五步）：選周長記 chosePerimeter、算成周長記 eqPerimeter、少買一包記 roundDown；做完說出買幾包', { skip: skip || !distReady }, async () => {
+  const p = await act('arMat', { difficulty: 'standard' });
+  let t = await p.page.innerText('.lesson-prompt'), [w, h, k] = t.match(/長 (\d+) 公尺、寬 (\d+) 公尺.*一包有 (\d+) 塊/s).slice(1).map(Number);
+  await p.choose('goal', 'per'); await p.check(); assert.match(await p.text('#feedback0'), /鋪滿/);
+  await p.choose('goal', 'area'); await p.check(); await p.next();
+  await p.page.fill('#need', String(2 * (w + h))); await p.check(); assert.match(await p.text('#feedback1'), /一圈/);
+  await p.page.fill('#need', String(w * h)); await p.check(); await p.next();
+  await p.choose('how', 'div'); await p.check(); await p.next();
+  const need = w * h, packs = Math.ceil(need / k);
+  if (need % k) { await p.page.fill('#packs', String(Math.floor(need / k))); await p.check(); assert.match(await p.text('#feedback3'), /多買一包/); }
+  await p.page.fill('#packs', String(packs)); await p.check(); await p.next();
+  await p.choose('enough', packs * k === need ? 'just' : 'more'); await p.check(); await p.next();
+  assert.match(await p.text('.done-banner'), new RegExp(`買 ${packs} 包`));
+  const rec = await records(p);
+  for (const code of ['chosePerimeter', 'eqPerimeter', ...(need % k ? ['roundDown'] : [])]) assert.match(rec, new RegExp(code));
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 34 版：學習地圖有四個新的生活單元；因數倍數換成生活應用路徑；手機 390px 開注音，生活單元的圖和輸入格不跑出畫面', { skip: skip || !distReady }, async () => {
+  await setup(); await publish({ __map: { pkg: 'factor', assigned: LIFE_IDS.factor, path: 'life' } });
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } }); const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.goto(base + '/seven.html'); await page.waitForSelector('.map-card');
+  assert.match(await page.$$eval('.map-unit h2', h => h.map(x => x.innerText).join('|')), /分組分裝小幫手/);
+  await page.evaluate(() => sessionStorage.setItem('area-reading-v18', JSON.stringify({ zhuyin: true })));
+  for (const [id, pkg] of [['fmPack', 'factor'], ['arRoom', 'area'], ['sSave', 'surface'], ['lnWeather', 'line']]) {
+    await publish({ __map: { pkg, assigned: [id], path: 'all' } });
+    await page.goto(`${base}/seven.html?a=${id}`); await page.waitForSelector('#start');
+    await begin({ page, choose: (k, v) => page.click(`[data-choice="${k}"][data-value="${v}"]`) });
+    const fit = await page.evaluate(() => { const vw = document.documentElement.clientWidth, bad = []; for (const el of document.querySelectorAll('svg, input, .options button, .lf-pair')) { const r = el.getBoundingClientRect(); if (r.width && (r.right > vw + 1 || r.left < -1)) bad.push(el.tagName + '.' + el.className.baseVal + el.className + ' ' + Math.round(r.right)); } return { bad, scroll: document.documentElement.scrollWidth > vw + 1 }; });
+    assert.deepEqual(fit.bad, [], `${id} 有東西跑出畫面`); assert.equal(fit.scroll, false, `${id} 沒有橫向捲動`);
+  }
+  assert.deepEqual(errs, []); await ctx.close(); await publish({});
 });

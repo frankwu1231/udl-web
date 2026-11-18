@@ -2,6 +2,8 @@
 // 教材包：面積（第一個教材包）。網站依教材包畫出學習地圖、活動清單與課綱路徑；
 // 伺服器在建置時也讀這個檔，取得活動代號與探試題型比例。換教材時，換一個教材包。
 // 第 27 版：從 act-core.js 搬出來，內容不變。
+// 第 34 版：單元 5 擴充成跨領域單元「家裡的小設計師」（act-life.js）。跨領域代碼依 Codex 查證（108 特需課綱、綜合活動領綱原文）：
+// 特生F-sA-3 環境美化的知能；綜合 2d-Ⅱ-2（四年級）／2d-Ⅲ-1（五年級）。找不到貼切條目的活動只標數學代碼。
 (() => {
   // 學習地圖：單元 → 活動。kind: shape（原本的圖形解題）｜plugin（新活動）
   const UNITS = [
@@ -9,7 +11,7 @@
     { id: 'u2', title: '周長和面積', icon: '📏', code: 'S-4-3' },
     { id: 'u3', title: '長方形和正方形', icon: '▭', code: 'S-4-3、R-4-3、N-4-11' },
     { id: 'u4', title: '三角形和四邊形', icon: '△', code: 'S-5-2' },
-    { id: 'u5', title: '用在生活', icon: '🏠', code: 'R-4-3、N-4-11' }
+    { id: 'u5', title: '家裡的小設計師（生活應用）', icon: '🏠', code: 'R-4-3、N-4-11、特生F-sA-3' }
   ];
   const LIST = [
     { id: 'compare', unit: 'u1', no: '1-1', title: '比一比，哪個比較大', code: 'N-2-12', icon: '⚖️', kind: 'plugin' },
@@ -28,18 +30,25 @@
     { id: 'parallelogram', unit: 'u4', no: '4-1', title: '平行四邊形的面積', code: 'S-5-2', icon: '▱', kind: 'shape' },
     { id: 'triangle', unit: 'u4', no: '4-2', title: '三角形的面積', code: 'S-5-2', icon: '△', kind: 'shape' },
     { id: 'trapezoid', unit: 'u4', no: '4-3', title: '梯形的面積', code: 'S-5-2、s-III-1', icon: '⏢', kind: 'plugin' },
-    { id: 'word', unit: 'u5', no: '5-1', title: '生活應用題', code: 'R-4-3、N-4-11', icon: '🏠', kind: 'plugin' }
+    { id: 'word', unit: 'u5', no: '5-1', title: '生活應用題', code: 'R-4-3、N-4-11', icon: '🏠', kind: 'plugin' },
+    { id: 'arMat', unit: 'u5', no: '5-2', title: '生活決策五步：鋪地墊要幾包', code: 'S-4-3、R-4-3、特生F-sA-3', icon: '🧩', kind: 'plugin', core: true },
+    { id: 'arBorder', unit: 'u5', no: '5-3', title: '貼邊條還是貼滿', code: 'S-4-3、綜合2d-Ⅱ-2', icon: '🎀', kind: 'plugin' },
+    { id: 'arRoom', unit: 'u5', no: '5-4', title: '哪個房間比較大', code: 'S-4-3、特生F-sA-3', icon: '🚪', kind: 'plugin' },
+    { id: 'arGarden', unit: 'u5', no: '5-5', title: '菜園分一分', code: 'S-4-3、N-4-11', icon: '🥬', kind: 'plugin' }
   ];
   // 課綱路徑（老師一鍵套用，再依 IEP 增減）
   const PATHS = {
     g3: { title: '三年級版', ids: ['compare', 'tile', 'conserve', 'estimate', 'rectangle', 'square'] },
-    g4: { title: '四年級版', ids: ['compare', 'tile', 'conserve', 'estimate', 'perimeter', 'which', 'samePerimeter', 'rectangle', 'square', 'inverse', 'arrange', 'composite', 'squareMeter', 'word'] },
+    g4: { title: '四年級版', ids: ['compare', 'tile', 'conserve', 'estimate', 'perimeter', 'which', 'samePerimeter', 'rectangle', 'square', 'inverse', 'arrange', 'composite', 'squareMeter', 'word', 'arMat', 'arBorder', 'arRoom', 'arGarden'] },
+    life: { title: '家裡的小設計師（生活應用，可當類化探測）', ids: ['word', 'arMat', 'arBorder', 'arRoom', 'arGarden'] },
     g5: { title: '五年級延伸', ids: LIST.map(a => a.id) },
     all: { title: '全部', ids: LIST.map(a => a.id) }
   };
   // 正式探試題組：一份 10 題的題型比例（伺服器驗證匯入的題組時用）
   const PROBE_TYPES = { count: 2, rectangle: 3, square: 2, inverse: 1, composite: 2 };
-  const pkg = { id: 'area', title: '四種圖形面積', units: UNITS, activities: LIST, paths: PATHS, probeTypes: PROBE_TYPES };
+  // 第 34 版：生活應用題組（題組 JSON 寫 "variant": "life"）；沒寫 variant 的還是上面的比例
+  const PROBE_VARIANTS = { life: { lifeMat: 3, lifeBorder: 3, lifeRoom: 2, lifeGarden: 2 } };
+  const pkg = { id: 'area', title: '四種圖形面積', units: UNITS, activities: LIST, paths: PATHS, probeTypes: PROBE_TYPES, probeVariants: PROBE_VARIANTS };
   window.lessonPackages = window.lessonPackages || {};
   window.lessonPackages[pkg.id] = pkg;
   if (!window.lessonPackage) window.lessonPackage = pkg;   // 目前使用中的教材包

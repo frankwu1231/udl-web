@@ -706,11 +706,33 @@ test('第 33 版：分數四份題組依 variant 驗證題型，答案選項不�
   assert.equal(rows.find(x=>x.run===st.data.run&&x.itemId===it.id).result.correct,true);
 });
 
+test('第 34 版：面積、表面積、折線圖、因數倍數的生活應用題組（variant life）依各自題型驗證；沒寫 variant 的舊題組照舊',async()=>{
+  const login=async teacher=>(await call('/api/test-login',{method:'POST',body:{username:'test',password:'test-pass',teacher}})).headers.get('set-cookie').split(';')[0];
+  const t13=await login('T12');
+  const pk=['area','surface','line','factor'],sets=pk.map(v=>JSON.parse(fs.readFileSync(new URL(`../scenarios/${v}-life-probe.json`,import.meta.url),'utf8')));
+  for(const [i,s] of sets.entries()){assert.equal(s.package,pk[i]);assert.equal(s.variant,'life');assert.equal(s.forms.length,3);}
+  const noVariant=structuredClone(sets[0]);delete noVariant.variant;
+  assert.equal((await call('/api/study/probe-sets',{method:'POST',user:owner,body:noVariant})).status,400,'生活應用的題目不能當面積的一般題組');
+  const wrongPkg=structuredClone(sets[1]);wrongPkg.package='area';
+  assert.equal((await call('/api/study/probe-sets',{method:'POST',user:owner,body:wrongPkg})).status,400,'表面積的生活題不能當面積的');
+  const ids=['areaLifeProbe@1','surfaceLifeProbe@1','lineLifeProbe@1','factorLifeProbe@1'];
+  for(let i=0;i<4;i++)assert.equal((await call('/api/study/probe-sets',{method:'POST',user:owner,body:sets[i]})).data.id,ids[i]);
+  const st=await call('/api/probe/start',{method:'POST',cookie:t13,body:{student:'T12-S05',set:'areaLifeProbe@1',sessionNo:1}});
+  assert.equal(st.status,200);assert.doesNotMatch(JSON.stringify(st.data.items),/"answer":/);
+  const form=sets[0].forms.find(f=>f.items.every((it,k)=>it.id===st.data.items[k].id)),it=form.items.find(x=>x.type==='lifeMat');
+  const c=(...x)=>({confirms:x.map((y,i)=>({v:y,t:i,n:i+1}))}),need=it.steps[0].answer,box=it.steps[1].answer;
+  // 塊數對、包數少買一包 → 整題錯
+  await call(`/api/probe/${st.data.run}/item`,{method:'POST',cookie:t13,body:{itemId:it.id,steps:{need:c(need),box:c(box-1)},secs:30}});
+  await call(`/api/probe/${st.data.run}/finish`,{method:'POST',cookie:t13,body:{reason:'done'}});
+  const rows=(await call('/api/study/export?type=probeItems',{user:owner})).data.rows,r=rows.find(x=>x.run===st.data.run&&x.itemId===it.id).result;
+  assert.equal(r.steps.find(s=>s.key==='need').finalCorrect,true);assert.equal(r.correct,false);
+});
+
 test('第 29 版：實驗參數鎖定（判準不能改、AI 工具和快照不同就用固定內容、解鎖要理由）',async()=>{
   const login=async teacher=>(await call('/api/test-login',{method:'POST',body:{username:'test',password:'test-pass',teacher}})).headers.get('set-cookie').split(';')[0];
   const t11=await login('T11');
   assert.equal((await call('/api/study/lock',{cookie:t11})).status,403,'只有主持人');
-  const g=(await call('/api/study/lock',{user:owner})).data;assert.equal(g.lock.locked,false);assert.equal(g.current.provider,'deepseek');assert.equal(g.current.siteVersion,'v33');
+  const g=(await call('/api/study/lock',{user:owner})).data;assert.equal(g.lock.locked,false);assert.equal(g.current.provider,'deepseek');assert.equal(g.current.siteVersion,'v34');
   const locked=await call('/api/study/lock',{method:'POST',user:owner,body:{action:'lock',reason:'前導試做結束'}});
   assert.equal(locked.status,200);assert.equal(locked.data.lock.snapshot.model,'deepseek-flash');assert.equal(locked.data.lock.snapshot.rules.lowAcc,60);assert.deepEqual(Object.keys(locked.data.lock.snapshot.promptVersions),['hint','summary','tutor']);
   assert.equal((await call('/api/study/lock',{method:'POST',user:owner,body:{action:'lock'}})).status,409);
