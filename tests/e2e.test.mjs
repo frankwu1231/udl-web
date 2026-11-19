@@ -2692,7 +2692,13 @@ test('第 36 版：錢幣與購物 32 個活動都能出題、畫圖，照示範
           if (opts) { const keys = opts.map(o => o[0]), labels = opts.map(o => o[1]); if (new Set(keys).size !== keys.length || new Set(labels).size !== labels.length) bad.push(`${id} ${level} 第${s + 1}步選項重複：${labels.join('／')}`); }
           try { if (!st.check(ctx)) bad.push(`${id} 第${s + 1}步沒作答也過`); st.solve(ctx); const r = st.check(ctx); if (r) bad.push(`${id} ${level} ${i} 第${s + 1}步照示範做卻沒過：${r.msg}`);
             if (opts && !opts.some(o => o[0] === answers[st.ids[0]])) bad.push(`${id} ${level} 第${s + 1}步正確答案不在選項裡`);
-            if (opts && Array.isArray(st.hints)) { const lab = (opts.find(o => o[0] === answers[st.ids[0]]) || [])[1]; if (lab && lab.length > 2 && st.hints.some(h => typeof h === 'string' && h.includes(lab))) bad.push(`${id} 第${s + 1}步提示直接說出答案：${lab}`); }
+            if (opts && Array.isArray(st.hints)) { const right = answers[st.ids[0]], lab = (opts.find(o => o[0] === right) || [])[1];
+              // 第 3 輪複測：提示和選錯的回饋都不能說出答案（含已知的改寫說法）
+              const msgs = opts.filter(o => o[0] !== right).map(o => { answers[st.ids[0]] = o[0]; const w = st.check(ctx); return w && w.msg || ''; }); answers[st.ids[0]] = right;
+              const said = [...st.hints, ...msgs].filter(h => typeof h === 'string');
+              if (lab && lab.length > 2 && said.some(h => h.includes(lab))) bad.push(`${id} 第${s + 1}步提示或回饋直接說出答案：${lab}`);
+              const NO = { moTrade: { 2: ['還是一樣多'] }, moBarter: { 1: ['要換兩次'], 2: ['剛好想要你東西的人。'], 3: ['再用錢買'] }, moHistory: { 1: ['下面是「貝」', '這個部件是「貝」'] }, moWork: { 0: ['工作才有薪水'], 1: ['用錢互相買'], 2: ['要先把錢存進'], 3: ['工作很辛苦，錢會用完', '用完就沒有了'] }, moCard: { 0: ['要先把錢存進卡片'], 3: ['要先加值'] }, moNextUp: { 0: ['湊不出個位', '沒有零錢，就'] }, moChangeSub: { 0: ['減掉價錢', '付的錢 －'] }, moShopFlow: { 0: ['寫清單'], 4: ['拿發票'] }, moBudgetChoice: { 3: ['先存起來'] }, moWait: { 0: ['錢就變少了'], 2: ['先停下來想三個問題'] }, moLedger: { 2: ['用加的'] }, moSavePlan: { 1: ['一週一週加', '加到夠'], 3: ['多存一點'] }, moSpendSave: { 0: ['以後需要時才有', '更想要'] }, moPlanner: { 3: ['先不買想要的', '先拿掉想要的'] } };
+              for (const w of ((NO[id] || {})[s] || [])) if (said.some(h => h.includes(w))) bad.push(`${id} 第${s + 1}步提示或回饋又說出答案：${w}`); }
             if (['moPassbook', 'moBank'].includes(id) && st.ids.length === 1 && /^b\d$/.test(st.ids[0]) && /^\d+$/.test(String(answers[st.ids[0]]))) { const keep = answers[st.ids[0]]; answers[st.ids[0]] = String(Number(keep) + 1); const w = st.check(ctx); if (!w || w.obs !== 'balanceWrong') bad.push(`${id} 第${s + 1}步餘額算錯沒記 balanceWrong：${w && w.obs}`); answers[st.ids[0]] = keep; }
             for (const k of st.ids) if (/^\d/.test(String(answers[k])) && (!Number.isInteger(Number(answers[k])) || Number(answers[k]) < 0)) bad.push(`${id} ${level} 第${s + 1}步答案不是 0 以上的整數：${answers[k]}`);
           } catch (e) { bad.push(`${id} 第${s + 1}步 ${e.message}`); }

@@ -115,8 +115,8 @@
       const t = any(rand, level === 'challenge' ? BIGS : ITEMS); return { price, wallet: { ...wallet }, t, dims: [price], prompt: `${t[0]}賣 ${price} 元。錢包裡只有${kinds(wallet).map(d => ` ${d} 元`).join('、')}。` }; },
     planFigure: ctx => `${tag(ctx.problem.t[1] + ' ' + ctx.problem.t[0], ctx.problem.price)}<p class="lf-tag">錢包裡有</p>${pile(ctx.problem.wallet)}`,
     steps: [
-      cStep(0, { title: '付得剛好嗎', ask: '錢包裡的錢，可以剛好付嗎？', id: 'exact', fixed: true, hints: ['看價錢的個位。', '錢包裡有 1 元、5 元嗎？', '沒有零錢，就湊不出個位。'], think: '老師看：價錢的個位不是 0，錢包裡又沒有 1 元、5 元，剛好付不出來。', together: '一起想：可以剛好付嗎？', pre: prompt, figure: ctx => A.get('moNextUp').planFigure(ctx),
-        q: ctx => `可以剛好付 ${ctx.problem.price} 元嗎？`, opts: () => [['no', '不行，沒有零錢'], ['yes', '可以']], ans: () => 'no', wrong: () => ({ msg: '錢包裡沒有 1 元和 5 元，個位湊不出來。' }), say: () => '不行，沒有零錢。' }),
+      cStep(0, { title: '付得剛好嗎', ask: '錢包裡的錢，可以剛好付嗎？', id: 'exact', fixed: true, hints: ['看價錢的個位是幾。', '看錢包裡有哪幾種錢。', '用錢包裡的錢，湊得出價錢的個位嗎？'], think: '老師看：價錢的個位不是 0，錢包裡又沒有 1 元、5 元，剛好付不出來。', together: '一起想：可以剛好付嗎？', pre: prompt, figure: ctx => A.get('moNextUp').planFigure(ctx),
+        q: ctx => `可以剛好付 ${ctx.problem.price} 元嗎？`, opts: () => [['no', '不行，沒有零錢'], ['yes', '可以']], ans: () => 'no', wrong: () => ({ msg: '試著湊一湊：錢包裡的錢，湊得出價錢的個位嗎？' }), say: () => '不行，沒有零錢。' }),
       payStep(1, { title: '多付一點', ask: '付夠的錢，可是不要多拿。', id: 'pay', hints: ['比價錢多一點就好。', '想一想：再多一個 10 元就夠了嗎？', '拿掉一個也還夠，就是拿太多了。'], think: '老師付比價錢多一點的錢：拿掉任何一個就不夠，才是剛剛好。', together: '一起付：付夠，不要多拿。',
         figure: ctx => tag(ctx.problem.t[1] + ' ' + ctx.problem.t[0], ctx.problem.price), label: ctx => `付夠 ${ctx.problem.price} 元，但是不要多拿。`, opts: ctx => ({ wallet: ctx.problem.wallet, denoms: kinds(ctx.problem.wallet) }), target: ctx => ctx.problem.price, rule: 'enough',
         solveWith: ctx => greedy(ceil10(ctx.problem.price), kinds(ctx.problem.wallet), ctx.problem.wallet), say: e => `付 ${ceil10(e.problem.price)} 元。` }),
@@ -180,7 +180,7 @@
     planFigure: ctx => `${tag(ctx.problem.t[1] + ' ' + ctx.problem.t[0], ctx.problem.p)}<div class="mo-show">${coin(ctx.problem.B)}</div>`,
     steps: [
       cStep(0, { title: '選方法', ask: '找錢用什麼算？', id: 'op', fixed: true, hints: ['付的錢比價錢多。', '多出來的要找回來。', '找回來的錢，比付的錢多還是少？'], think: '老師想：找錢是付的錢減掉價錢。', together: '一起選：用什麼算？', pre: prompt, figure: ctx => A.get('moChangeSub').planFigure(ctx),
-        q: () => '找錢用什麼算？', opts: () => OPN, ans: () => '-', wrong: () => ({ obs: 'opWrong', msg: '找錢：付的錢減掉價錢。' }), say: () => '用減的。' }),
+        q: () => '找錢用什麼算？', opts: () => OPN, ans: () => '-', wrong: () => ({ obs: 'opWrong', msg: '想一想：找回來的錢，比付的錢多還是少？' }), say: () => '用減的。' }),
       nStep(1, { title: '算出來', ask: '付的錢 － 價錢。', id: 'ch', hints: ['用直式減，個位對個位。', '不夠減要向左邊借。', '也可以從價錢往上數到付的錢。'], think: '老師用直式減；也可以從價錢往上數。', together: '一起算：要找多少？', pre: placeAid, figure: ctx => colHtml(ctx.problem.B, ctx.problem.p, '-'),
         label: ctx => `${ctx.problem.B} － ${ctx.problem.p} ＝ ？`, ans: ctx => ctx.problem.ch, wrong: (ctx, v) => v === I.bigMinusSmall(ctx.problem.B, ctx.problem.p) ? { obs: 'subSmallFromBig', msg: '不夠減要借，不能倒過來減。' } : { obs: 'changeWrong', msg: '再算一次，或從價錢往上數。' }, say: e => `${e.problem.B} － ${e.problem.p} ＝ ${e.problem.ch}。` }),
       nStep(2, { title: '檢查', ask: '找的錢 ＋ 價錢 ＝ 付的錢嗎？', id: 'back', hints: ['用加法驗算。', '找的錢加上價錢。', '要等於付的錢。'], think: '老師驗算：找的錢加價錢，要等於付的錢。', together: '一起驗算：是多少？', figure: ctx => colHtml(ctx.problem.ch, ctx.problem.p, '+', { head: false }),
@@ -262,7 +262,7 @@
     planFigure: ctx => `<div class="mo-list" aria-label="購物清單"><p>📝 購物清單</p><ul><li>${esc(ctx.problem.a[0])}</li><li>${esc(ctx.problem.b[0])}</li></ul></div>`,
     steps: [
       cStep(0, { title: '列清單', ask: '出門前先做什麼？', id: 'list', hints: ['要買的東西很多時，容易忘記。', '想一想：出門以前可以先做什麼，才不會忘？', '還要記得帶什麼出門？'], think: '老師出門前先把要買的東西寫成清單。', together: '一起想：出門前先做什麼？', pre: prompt, figure: ctx => A.get('moShopFlow').planFigure(ctx),
-        q: () => '出門前先做什麼？', opts: () => [['list', '把要買的東西寫成清單，帶好錢'], ['go', '什麼都不用想，直接去'], ['more', '看到喜歡的都買']], ans: () => 'list', wrong: () => ({ msg: '先寫清單、帶好錢，就不會忘記，也不會亂買。' }), say: () => '先寫清單、帶好錢。' }),
+        q: () => '出門前先做什麼？', opts: () => [['list', '把要買的東西寫成清單，帶好錢'], ['go', '什麼都不用想，直接去'], ['more', '看到喜歡的都買']], ans: () => 'list', wrong: () => ({ msg: '想一想：這樣出門，會不會忘了買什麼，或買太多？' }), say: () => '先寫清單、帶好錢。' }),
       nStep(1, { title: '找東西、看價錢', ask: '清單上的東西一共多少錢？', id: 's', hints: ['在架子上找到清單上的東西。', '看價目牌，兩樣加起來。', '個位對個位，滿 10 要進位。'], think: '老師找到東西、看價目牌，把兩樣的錢加起來。', together: '一起加：一共多少錢？',
         figure: ctx => tags([[ctx.problem.a[1] + ' ' + ctx.problem.a[0], ctx.problem.p1], [ctx.problem.b[1] + ' ' + ctx.problem.b[0], ctx.problem.p2]]), label: () => '一共多少元？', ans: ctx => ctx.problem.s, wrong: (ctx, v) => v === I.noCarrySum(ctx.problem.p1, ctx.problem.p2) ? { obs: 'noCarry', msg: '滿 10 要進位。' } : null, say: e => `一共 ${e.problem.s} 元。` }),
       cStep(2, { title: '錢夠不夠', ask: '帶的錢夠不夠？', id: 'ok', fixed: true, hints: ['帶的錢和一共的錢比一比。', '帶的錢比較多（或一樣）就夠。', '不夠就要少買一樣。'], think: '老師把帶的錢和一共的錢比一比。', together: '一起比：夠不夠？', figure: ctx => `<div class="mo-show">${coin(ctx.problem.B)}</div>`,
@@ -270,7 +270,7 @@
       nStep(3, { title: '付錢', ask: '付了錢，要找多少？', id: 'ch', hints: ['付的錢 － 一共的錢。', '也可以從一共的錢往上數。', '算好再等店員找錢。'], think: '老師排隊付錢，先算好要找多少。', together: '一起算：要找多少？', figure: ctx => colHtml(ctx.problem.B, ctx.problem.s, '-', { head: false }),
         label: ctx => `付 ${ctx.problem.B} 元，要找幾元？`, ans: ctx => ctx.problem.ch, wrong: (ctx, v) => v === I.bigMinusSmall(ctx.problem.B, ctx.problem.s) ? { obs: 'subSmallFromBig', msg: '不夠減要借，不能倒過來減。' } : { obs: 'changeWrong', msg: '從一共的錢往上數到付的錢。' }, say: e => `要找 ${e.problem.ch} 元。` }),
       cStep(4, { title: '收好', ask: '拿到找錢以後，要做什麼？', id: 'after', fixed: true, hints: ['店員找錢以後，要做什麼？', '想一想：找的錢可能會算錯嗎？還有什麼要拿？', '要怎麼收，錢才不會掉？'], think: '老師點一點找的錢、拿發票，再收進錢包。', together: '一起想：拿到找錢以後做什麼？', figure: () => big('🧾 👛'),
-        q: () => '拿到找錢以後，要做什麼？', opts: () => AFTER, ans: () => 'ok', wrong: () => ({ msg: '要點一點、拿發票，收好才不會掉。' }), say: () => '點一點找的錢、拿發票，收進錢包。' })
+        q: () => '拿到找錢以後，要做什麼？', opts: () => AFTER, ans: () => 'ok', wrong: () => ({ msg: '想一想：如果店員找錯了，你會知道嗎？錢沒收好會怎樣？' }), say: () => '點一點找的錢、拿發票，收進錢包。' })
     ],
     done: ctx => `買${ctx.problem.a[0]}和${ctx.problem.b[0]}，一共 ${ctx.problem.s} 元，付 ${ctx.problem.B} 元，找 ${ctx.problem.ch} 元，收好了。`, chant: '購物流程：列清單、看價錢、錢夠不夠、付錢算找錢、點一點收好。', transfer: '想一想：下次去超市，你會怎麼準備？'
   });

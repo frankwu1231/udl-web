@@ -209,7 +209,7 @@
         opts: ctx => ({ denoms: ctx.problem.mix ? DEN.filter(d => d < ctx.problem.B) : [ctx.problem.s] }), target: ctx => ctx.problem.B, rule: 'exact',
         solveWith: ctx => ctx.problem.mix ? greedy(ctx.problem.B, DEN.filter(d => d < ctx.problem.B)) : { [ctx.problem.s]: ctx.problem.k }, say: e => `湊出 ${e.problem.B} 元了。` }),
       cStep(2, { title: '想一想', ask: '換了以後，錢變多了嗎？', id: 'same', fixed: true, hints: ['換以前是幾元？', '換以後一共幾元？', '個數變多，錢不一定變多。'], think: '老師想：個數變多了，可是一共還是一樣多元。', together: '一起想：錢變多了嗎？', figure: ctx => A.get('moTrade').planFigure(ctx),
-        q: () => '換成零錢以後，錢有沒有變多？', opts: () => [['same', '一樣多，只是個數變多'], ['more', '變多了'], ['less', '變少了']], ans: () => 'same', wrong: () => ({ obs: 'coinsAsMoney', msg: '個數變多，可是合起來還是一樣多元。' }), say: () => '一樣多，只是個數變多。' })
+        q: () => '換成零錢以後，錢有沒有變多？', opts: () => [['same', '一樣多，只是個數變多'], ['more', '變多了'], ['less', '變少了']], ans: () => 'same', wrong: () => ({ obs: 'coinsAsMoney', msg: '先算一算：換以前一共幾元？換以後一共幾元？再比一比。' }), say: () => '一樣多，只是個數變多。' })
     ],
     reasons: [['count', '用小的錢數一數'], ['hint', '看提示']], done: ctx => `1 ${unitOf(ctx.problem.B)} ${ctx.problem.B} 元 ＝ ${ctx.problem.k} 個 ${ctx.problem.s} 元，一樣多。`, chant: '換錢：換以前、換以後，錢一樣多。', transfer: '想一想：要投 5 元的機器，只有 10 元怎麼辦？'
   });
@@ -228,14 +228,14 @@
     steps: [
       cStep(0, { title: '換得成嗎', ask: `對方要不要你的東西？`, id: 'want', fixed: true, hints: ['看對方想要什麼。', '對方想要的和你有的一樣嗎？', '不一樣就換不成。'], think: '老師看：對方想要的東西，和我有的東西一樣嗎？', together: '一起看：對方要不要？', pre: prompt, figure: ctx => A.get('moBarter').planFigure(ctx),
         q: ctx => `${ctx.problem.s.b}要不要${ctx.problem.s.a}的${ctx.problem.s.x}？`, opts: () => [['no', '不要，他想要的是別的東西'], ['yes', '要']], ans: () => 'no', wrong: ctx => ({ msg: `${ctx.problem.s.b}想要的是${ctx.problem.s.z}。` }), say: e => `不要，${e.problem.s.b}想要${e.problem.s.z}。` }),
-      cStep(1, { title: '怎麼換', ask: '沒有錢，要怎麼換到？', id: 'how', hints: ['要先有對方想要的東西。', '誰有對方想要的東西？', '要換兩次。'], think: '老師想：要先換到對方想要的東西，再去換。', together: '一起想：要怎麼換？', figure: ctx => A.get('moBarter').planFigure(ctx),
+      cStep(1, { title: '怎麼換', ask: '沒有錢，要怎麼換到？', id: 'how', hints: ['對方想要的，是你手上的東西嗎？', '想一想：誰有對方想要的東西？', '怎樣才能讓自己手上有對方想要的東西？'], think: '老師想：要先換到對方想要的東西，再去換。', together: '一起想：要怎麼換？', figure: ctx => A.get('moBarter').planFigure(ctx),
         q: ctx => `${ctx.problem.s.a}要怎麼換到${ctx.problem.s.y}？`, opts: ctx => { const s = ctx.problem.s; return [['two', `先找想要${s.x}的${s.c}換到${s.z}，再拿${s.z}去換${s.y}`], ['take', `直接把${s.y}拿走`], ['give', '放棄，不吃了']]; },
         ans: () => 'two', wrong: () => ({ msg: '拿走別人的東西不可以。想一想：要先換到對方想要的東西。' }), say: e => `先換到${e.problem.s.z}，再去換${e.problem.s.y}。` }),
-      cStep(2, { title: '麻煩在哪裡', ask: '這樣換來換去，有什麼麻煩？', id: 'trouble', hints: ['要換幾次？', '每次都要找到剛好想要你東西的人。', '如果找不到呢？'], think: '老師想：每次都要找到剛好想要我東西的人，很花時間。', together: '一起想：麻煩在哪裡？', figure: ctx => A.get('moBarter').planFigure(ctx),
+      cStep(2, { title: '麻煩在哪裡', ask: '這樣換來換去，有什麼麻煩？', id: 'trouble', hints: ['剛剛要換幾次，才拿到想要的東西？', '每換一次，都要先做什麼？', '如果一直找不到要跟你換的人，會怎樣？'], think: '老師想：每次都要找到剛好想要我東西的人，很花時間。', together: '一起想：麻煩在哪裡？', figure: ctx => A.get('moBarter').planFigure(ctx),
         q: () => '用東西換東西，有什麼麻煩？', opts: () => [['find', '要找到剛好想要你東西的人，很花時間'], ['none', '一點也不麻煩'], ['more', '東西會越換越多']], ans: () => 'find', wrong: () => ({ msg: '想一想：如果找不到想要你東西的人呢？' }), say: () => '要找到剛好想要你東西的人，很花時間。' }),
-      cStep(3, { title: '有錢以後', ask: '大家都用錢以後，可以怎麼做？', id: 'money', hints: ['錢是大家都想要的。', '有了錢，還要找剛好想要碗的人嗎？', '想一想：錢可以先換到手，再拿來做什麼？'], think: '老師想：先把東西賣掉拿到錢，再用錢買，一次就好。', together: '一起想：有錢以後怎麼做？', figure: ctx => A.get('moBarter').planFigure(ctx),
+      cStep(3, { title: '有錢以後', ask: '大家都用錢以後，可以怎麼做？', id: 'money', hints: ['錢是大家都想要的。', '有了錢，還要找剛好想要你東西的人嗎？', '想一想：錢可以先換到手，再拿來做什麼？'], think: '老師想：先把東西賣掉拿到錢，再用錢買，一次就好。', together: '一起想：有錢以後怎麼做？', figure: ctx => A.get('moBarter').planFigure(ctx),
         q: ctx => `有了錢以後，${ctx.problem.s.a}可以怎麼做？`, opts: ctx => { const s = ctx.problem.s; return [['sell', `把${s.x}賣掉拿到錢，再用錢買${s.y}`], ['still', `還是要找想要${s.x}的人`], ['keep', '錢沒有用']]; }, ans: () => 'sell',
-        wrong: () => ({ msg: '錢是大家都想要的，可以先拿到錢，再用錢買。' }), say: e => `把${e.problem.s.x}賣掉拿到錢，再用錢買${e.problem.s.y}。` })
+        wrong: () => ({ msg: '想一想：大家都想要錢，那你的東西可以先換成什麼？' }), say: e => `把${e.problem.s.x}賣掉拿到錢，再用錢買${e.problem.s.y}。` })
     ],
     done: ctx => `有了錢，${ctx.problem.s.a}不用換來換去，賣${ctx.problem.s.x}、買${ctx.problem.s.y}就好。`, chant: '為什麼要有錢：用東西換東西很麻煩，用錢比較方便。', transfer: '想一想：如果現在沒有錢，你要怎麼得到午餐？'
   });
@@ -247,10 +247,10 @@
     makeProblem: (level, i, rand = Math.random) => ({ v: rnd(rand, 0, 1), dims: [0], prompt: '錢是怎麼變成現在這個樣子的？不同的地方用過不同的方法，這裡看幾個例子。' }),
     planFigure: () => histFig(-1),
     steps: [
-      cStep(0, { title: '還沒有錢', ask: '最早，人們怎麼得到需要的東西？', id: 'h0', hints: ['那時候還沒有錢，也沒有商店。', '想一想上一個活動：漁夫和農夫是怎麼拿到想要的東西的？', '看一看：自己手上有什麼？別人手上有什麼？'], think: '老師想：還沒有錢的時候，人們用東西換東西。', together: '一起想：怎麼得到東西？', pre: prompt, figure: ctx => histFig(shown(ctx, 0) ? 0 : -1),
+      cStep(0, { title: '還沒有錢', ask: '最早，人們怎麼得到需要的東西？', id: 'h0', hints: ['那時候還沒有錢，也沒有商店。', '想一想上一個活動。', '想一想：漁夫有魚、農夫有米，沒有錢，他們怎麼拿到對方的東西？'], think: '老師想：還沒有錢的時候，人們用東西換東西。', together: '一起想：怎麼得到東西？', pre: prompt, figure: ctx => histFig(shown(ctx, 0) ? 0 : -1),
         q: () => '還沒有錢的時候，人們怎麼得到需要的東西？', opts: () => [['trade', '用東西換東西'], ['card', '刷卡'], ['shop', '去便利商店買']], ans: () => 'trade', wrong: () => ({ msg: '那時候還沒有錢，也沒有商店和卡片。' }), say: () => '用東西換東西。' }),
       cStep(1, { title: '最早的錢', ask: '後來，古時候的人用什麼當作錢？', id: 'h1', hints: ['「買、賣、貨、財」這幾個字裡面，都有同一個部件。', '看「買」這個字，下面是什麼？', '那個部件，是海邊撿得到的東西。'], think: '老師看「買、賣、貨、財」，裡面都有「貝」，古時候用貝殼當錢。', together: '一起找：用什麼當錢？', figure: () => histFig(0),
-        q: () => '古時候的中國，有人用什麼當作錢？（提示：「買、賣、貨、財」都有這個字）', opts: () => [['shell', '貝殼（貝）'], ['card', '塑膠卡片'], ['phone', '手機']], ans: () => 'shell', wrong: () => ({ msg: '看「買」這個字，下面是「貝」。' }), say: () => '用貝殼當作錢。' }),
+        q: () => '古時候的中國，有人用什麼當作錢？（提示：「買、賣、貨、財」都有這個字）', opts: () => [['shell', '貝殼（貝）'], ['card', '塑膠卡片'], ['phone', '手機']], ans: () => 'shell', wrong: () => ({ msg: '看「買」這個字，下面的部件是什麼？那是海邊撿得到的東西。' }), say: () => '用貝殼當作錢。' }),
       cStep(2, { title: '先有哪一個', ask: '金屬錢幣和紙鈔，哪一個比較早？', id: 'h2', fixed: true, hints: ['想一想：這兩種錢，哪一種帶很多出門比較不方便？', '很多錢幣放在一起，拿起來會怎樣？', '人們常常是覺得舊方法不方便，才想出新的辦法。'], think: '老師想：先有金屬錢幣；後來為了方便帶著走、方便買賣，才有紙鈔。', together: '一起排：哪一個比較早？', figure: () => histFig(1),
         q: () => '金屬做的錢幣和紙鈔，哪一個比較早出現？', opts: () => [['metal', '金屬做的錢幣'], ['paper', '紙鈔']], ans: () => 'metal', wrong: () => ({ msg: '人們常常是覺得舊方法不方便，才想出新方法。想一想：哪一種是為了更方便才想出來的？' }), say: () => '金屬錢幣比較早，後來才有紙鈔。' }),
       cStep(3, { title: '現在', ask: '現在還可以用什麼付錢？', id: 'h3', hints: ['搭公車時，很多人拿什麼刷一下？', '看看家人結帳時，手上拿的是什麼？', '想一想：不用拿出錢幣和紙鈔，也能付錢的方法。'], think: '老師想：現在除了錢幣和紙鈔，還可以用卡片、手機付錢。', together: '一起想：現在還可以用什麼？', figure: () => histFig(3),
@@ -266,14 +266,14 @@
     planFigure: ctx => big(`👩‍🍳 → 💰 → 🛒`),
     steps: [
       cStep(0, { title: '錢從哪裡來', ask: '家裡的錢大多是怎麼來的？', id: 'from', hints: ['大人每天去哪裡？', '大人工作以後，會拿到什麼？', '想一想：提款機裡的錢，是誰先存進去的？'], think: '老師想：家裡的錢，通常是家人工作拿到的薪水。', together: '一起想：錢從哪裡來？', pre: prompt, figure: () => big('👩‍💼 工作 → 💰'),
-        q: () => '家裡的錢，大多是怎麼來的？', opts: () => [['work', '家人工作賺來的'], ['atm', '提款機自己變出來的'], ['free', '商店送的']], ans: () => 'work', wrong: () => ({ msg: '提款機和商店不會送錢。大人工作才有薪水。' }), say: () => '家人工作賺來的。' }),
+        q: () => '家裡的錢，大多是怎麼來的？', opts: () => [['work', '家人工作賺來的'], ['atm', '提款機自己變出來的'], ['free', '商店送的']], ans: () => 'work', wrong: () => ({ msg: '想一想：提款機和商店會把錢送給你嗎？大人每天出門去做什麼？' }), say: () => '家人工作賺來的。' }),
       cStep(1, { title: '大家分工', ask: '他想要的東西，怎麼拿到？', id: 'trade', hints: ['他不會自己做那樣東西。', '他會做自己的工作，可以賺到錢。', '想一想：他賺到的錢，可以拿來做什麼？'], think: '老師想：每個人做自己的工作賺錢，再用錢向別人買需要的東西。', together: '一起想：怎麼拿到？', figure: () => big('🧑‍🔧 🧑‍🌾 👩‍🍳 大家分工'),
         q: ctx => `${ctx.problem.j[0]}想要${ctx.problem.j[2]}，可以怎麼做？`, opts: ctx => { const j = ctx.problem.j; return [['buy', `${j[1]}賺錢，再用錢向${j[3]}買${j[2]}`], ['self', `不工作了，自己學著種（做）${j[2]}`], ['take', `直接拿${j[3]}的${j[2]}`]]; }, ans: () => 'buy',
-        wrong: () => ({ msg: '每個人做自己會做的工作，再用錢互相買東西，這就是分工合作。' }), say: e => `${e.problem.j[1]}賺錢，再用錢買${e.problem.j[2]}。` }),
-      cStep(2, { title: '提款機的錢', ask: '提款機領出來的錢，是誰的？', id: 'atm', hints: ['提款機不會自己生出錢。', '要先把錢存進銀行（或郵局）。', '想一想：提款機裡的錢，是誰、什麼時候放進去的？'], think: '老師想：提款機領出來的錢，是自己以前存進去的錢，不是送的。', together: '一起想：是誰的錢？', figure: () => big('🏧'),
-        q: () => '從提款機領出來的錢，是誰的錢？', opts: () => [['mine', '自己（家人）以前存進去的錢'], ['bank', '銀行送的，領不完'], ['machine', '機器自己做出來的']], ans: () => 'mine', wrong: () => ({ msg: '錢要先存進去，才領得出來；存的錢用完就沒有了。' }), say: () => '是自己以前存進去的錢。' }),
-      cStep(3, { title: '想一想', ask: '所以花錢的時候要想一想，為什麼？', id: 'why', hints: ['錢是怎麼來的？', '錢會不會用完？', '想一想：大人工作一天累不累？錢花掉了還會在嗎？'], think: '老師想：錢是辛苦工作換來的，也會用完，所以花錢前要想一想。', together: '一起想：為什麼要想一想？', figure: () => '',
-        q: () => '花錢的時候要先想一想，因為：', opts: () => [['care', '錢是辛苦工作換來的，也會用完'], ['never', '錢用不完'], ['no', '不用想，喜歡就買']], ans: () => 'care', wrong: () => ({ msg: '錢是工作換來的，用完就沒有了。' }), say: () => '錢是辛苦工作換來的，也會用完。' })
+        wrong: () => ({ msg: '想一想：他自己會做嗎？直接拿別人的東西可以嗎？他有什麼方法拿到錢？' }), say: e => `${e.problem.j[1]}賺錢，再用錢買${e.problem.j[2]}。` }),
+      cStep(2, { title: '提款機的錢', ask: '提款機領出來的錢，是誰的？', id: 'atm', hints: ['提款機會自己做出錢嗎？', '想一想：去銀行、郵局，除了領錢，還可以做什麼？', '想一想：提款機裡的錢，是誰、什麼時候放進去的？'], think: '老師想：提款機領出來的錢，是自己以前存進去的錢，不是送的。', together: '一起想：是誰的錢？', figure: () => big('🏧'),
+        q: () => '從提款機領出來的錢，是誰的錢？', opts: () => [['mine', '自己（家人）以前存進去的錢'], ['bank', '銀行送的，領不完'], ['machine', '機器自己做出來的']], ans: () => 'mine', wrong: () => ({ msg: '想一想：銀行會一直送錢給大家嗎？如果從來沒有存錢，領得出來嗎？' }), say: () => '是自己以前存進去的錢。' }),
+      cStep(3, { title: '想一想', ask: '所以花錢的時候要想一想，為什麼？', id: 'why', hints: ['想一想前面學的：錢是怎麼來的？', '想一想：錢花掉以後，還會在嗎？', '比一比三個選項，哪一個和前面學的一樣？'], think: '老師想：錢是辛苦工作換來的，也會用完，所以花錢前要想一想。', together: '一起想：為什麼要想一想？', figure: () => '',
+        q: () => '花錢的時候要先想一想，因為：', opts: () => [['care', '錢是辛苦工作換來的，也會用完'], ['never', '錢用不完'], ['no', '不用想，喜歡就買']], ans: () => 'care', wrong: () => ({ msg: '想一想前面學的：錢是怎麼來的？會不會用完？' }), say: () => '錢是辛苦工作換來的，也會用完。' })
     ],
     done: () => '錢是工作換來的；大家分工合作，再用錢互相買東西。', chant: '錢從哪裡來：工作賺錢，分工合作，存了才領得到。', transfer: '想一想：你的家人做什麼工作？'
   });
@@ -285,14 +285,14 @@
       return { f, B, after: B - f, ok2: B - f >= f, dims: [B, f], prompt: `小安的悠遊卡裡有 ${B} 元，搭一次公車要 ${f} 元。` }; },
     planFigure: ctx => big(`💳 ${ctx.problem.B} 元　🚌 ${ctx.problem.f} 元`),
     steps: [
-      cStep(0, { title: '用的是誰的錢', ask: '刷卡、用手機付錢，用的是誰的錢？', id: 'whose', hints: ['卡片裡的錢是怎麼來的？', '要先把錢存進卡片（加值）。', '想一想：沒有加值，卡片可以刷嗎？'], think: '老師想：卡片裡的錢，是先存進去的自己的錢。', together: '一起想：用的是誰的錢？', pre: prompt, figure: ctx => A.get('moCard').planFigure(ctx),
-        q: () => '刷悠遊卡、用手機付錢，用的是誰的錢？', opts: () => [['mine', '自己先存進去的錢'], ['free', '不用錢，免費的'], ['bus', '公車公司的錢']], ans: () => 'mine', wrong: () => ({ msg: '卡片裡的錢要先存進去（加值），刷一次就少一些。' }), say: () => '自己先存進去的錢。' }),
+      cStep(0, { title: '用的是誰的錢', ask: '刷卡、用手機付錢，用的是誰的錢？', id: 'whose', hints: ['卡片裡的錢是怎麼來的？', '想一想：新的卡片，裡面一開始有錢嗎？', '想一想：卡片裡的錢，是誰放進去的？'], think: '老師想：卡片裡的錢，是先存進去的自己的錢。', together: '一起想：用的是誰的錢？', pre: prompt, figure: ctx => A.get('moCard').planFigure(ctx),
+        q: () => '刷悠遊卡、用手機付錢，用的是誰的錢？', opts: () => [['mine', '自己先存進去的錢'], ['free', '不用錢，免費的'], ['bus', '公車公司的錢']], ans: () => 'mine', wrong: () => ({ msg: '想一想：刷了以後，卡片裡的錢會變少嗎？那些錢是誰的？' }), say: () => '自己先存進去的錢。' }),
       nStep(1, { title: '刷一次', ask: '刷一次以後，卡裡還剩幾元？', id: 'after', hints: ['卡裡的錢會變少。', '用減的。', '卡裡的錢 － 車錢。'], think: '老師算：卡裡的錢減掉車錢。', together: '一起算：還剩幾元？', pre: placeAid, figure: ctx => colHtml(ctx.problem.B, ctx.problem.f, '-', { head: false }),
         label: ctx => `${ctx.problem.B} － ${ctx.problem.f} ＝ ？`, ans: ctx => ctx.problem.after, wrong: (ctx, v) => v === ctx.problem.B + ctx.problem.f ? { obs: 'opWrong', msg: '刷卡以後錢變少，用減的。' } : v === I.bigMinusSmall(ctx.problem.B, ctx.problem.f) ? { obs: 'subSmallFromBig', msg: '不夠減要借，不能倒過來減。' } : null, say: e => `還剩 ${e.problem.after} 元。` }),
       cStep(2, { title: '還夠嗎', ask: '回家還要再搭一次，夠不夠？', id: 'ok', fixed: true, hints: ['剩下的錢和車錢比一比。', '剩下的比車錢多（或一樣）就夠。', '比車錢少就不夠。'], think: '老師把剩下的錢和車錢比一比。', together: '一起比：夠不夠？', figure: ctx => big(`💳 ${shown(ctx, 1) || ctx.checked(1) ? ctx.problem.after : '？'} 元　🚌 ${ctx.problem.f} 元`),
         q: ctx => `卡裡剩 ${ctx.problem.after} 元，再搭一次要 ${ctx.problem.f} 元。夠不夠？`, opts: () => [['yes', '夠'], ['no', '不夠']], ans: ctx => ctx.problem.ok2 ? 'yes' : 'no', wrong: () => ({ obs: 'compareWrong', msg: '再比一次兩個數。' }), say: e => e.problem.ok2 ? '夠。' : '不夠。' }),
       cStep(3, { title: '快用完了', ask: '卡裡的錢快用完了，要怎麼辦？', id: 'fix', hints: ['卡片裡的錢會用完。', '用完了，還可以刷嗎？', '想一想：卡片裡的錢要怎麼變多？'], think: '老師想：卡片的錢快用完，要先加值。', together: '一起想：怎麼辦？', figure: () => big('💳 ＋ 💰'),
-        q: () => '卡片裡的錢快用完了，要怎麼辦？', opts: () => [['top', '先去加值（把錢存進卡片）'], ['go', '不管它，直接上車'], ['new', '再拿一張別人的卡']], ans: () => 'top', wrong: () => ({ msg: '錢不夠刷不過；也不能用別人的卡。要先加值。' }), say: () => '先去加值。' })
+        q: () => '卡片裡的錢快用完了，要怎麼辦？', opts: () => [['top', '先去加值（把錢存進卡片）'], ['go', '不管它，直接上車'], ['new', '再拿一張別人的卡']], ans: () => 'top', wrong: (ctx, v) => ({ msg: v === 'new' ? '想一想：別人的卡，裡面是誰的錢？' : '想一想：錢不夠的時候，上車刷得過嗎？卡片的錢要怎麼變多？' }), say: () => '先去加值。' })
     ],
     done: ctx => `刷一次剩 ${ctx.problem.after} 元，${ctx.problem.ok2 ? '還夠再搭一次' : '不夠再搭一次，要先加值'}。`, chant: '電子支付：用的是自己存進去的錢，刷一次少一些，快用完要加值。', transfer: '想一想：家人用手機付錢時，錢是從哪裡扣的？'
   });
