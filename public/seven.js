@@ -749,7 +749,9 @@
     for (const b of boxes) { const id = b.dataset.answer, f = typeof answers[id] === 'string' ? formatMsg(answers[id]) : null; if (f) { const { soft, ...rest } = r; return { ...rest, code: id, obs: 'format', msg: f }; } }
     // 有一格（看得到的數字格）還是空的（只有空白也算）：提醒要填，記成沒作答，不算答錯
     const empty = boxes.find(b => b.offsetParent !== null && String(answers[b.dataset.answer] ?? '').trim() === '');
-    if (empty && boxes.some(b => String(answers[b.dataset.answer] ?? '').trim() !== '')) { const { soft, ...rest } = r; return { ...rest, code: empty.dataset.answer, obs: undefined, blank: true }; }
+    // （這一步已經開始作答：別格有填，或已經選了選項，例如正方體選好算式、面積還沒填）
+    const started = boxes.some(b => String(answers[b.dataset.answer] ?? '').trim() !== '') || !!sec?.querySelector('[data-choice][aria-pressed="true"]');
+    if (empty && started) { const { soft, ...rest } = r; return { ...rest, code: empty.dataset.answer, obs: undefined, blank: true, msg: '還有一格沒填，先把它填好。' }; }
     return r;
   }
   function issueRaw(s) {
