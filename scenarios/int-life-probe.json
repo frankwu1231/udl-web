@@ -1,0 +1,771 @@
+{
+  "id": "intLifeProbe",
+  "version": "1",
+  "kind": "probe",
+  "package": "int",
+  "variant": "life",
+  "title": "整數小測驗：算數小幫手（生活應用）",
+  "itemSecs": 150,
+  "totalSecs": 1500,
+  "forms": [
+    {
+      "id": "A",
+      "items": [
+        {
+          "id": "A01",
+          "type": "enough",
+          "prompt": "夜市：想買烤玉米 56 元、珍珠奶茶 50 元、雞蛋糕 34 元。帶了 150 元，夠不夠？",
+          "steps": [
+            {
+              "key": "tot",
+              "label": "一共要多少元",
+              "role": "measure",
+              "input": "number",
+              "answer": 140
+            },
+            {
+              "key": "ok",
+              "label": "夠不夠",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "夠",
+                "不夠"
+              ],
+              "answer": "夠"
+            }
+          ]
+        },
+        {
+          "id": "A02",
+          "type": "enough",
+          "prompt": "書展：想買故事書 206 元、書套 31 元、書籤 19 元。帶了 251 元，夠不夠？",
+          "steps": [
+            {
+              "key": "tot",
+              "label": "一共要多少元",
+              "role": "measure",
+              "input": "number",
+              "answer": 256
+            },
+            {
+              "key": "ok",
+              "label": "夠不夠",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "夠",
+                "不夠"
+              ],
+              "answer": "不夠"
+            }
+          ]
+        },
+        {
+          "id": "A03",
+          "type": "change",
+          "prompt": "在市場買一把青菜，一共 69 元，付了 100 元。要找多少元？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "100 ＋ 69",
+                "100 － 69",
+                "69 － 100"
+              ],
+              "answer": "100 － 69"
+            },
+            {
+              "key": "ch",
+              "label": "要找多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 31
+            }
+          ]
+        },
+        {
+          "id": "A04",
+          "type": "change",
+          "prompt": "在藥局買一盒OK繃和乳液，一共 254 元，付了 500 元。要找多少元？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "254 － 500",
+                "500 － 254",
+                "500 ＋ 254"
+              ],
+              "answer": "500 － 254"
+            },
+            {
+              "key": "ch",
+              "label": "要找多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 246
+            }
+          ]
+        },
+        {
+          "id": "A05",
+          "type": "buy",
+          "prompt": "運動會要買 3 瓶運動飲料，一瓶 15 元。一共多少元？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "15 ＋ 3",
+                "15 × 3",
+                "15 ÷ 3"
+              ],
+              "answer": "15 × 3"
+            },
+            {
+              "key": "tot",
+              "label": "一共多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 45
+            }
+          ]
+        },
+        {
+          "id": "A06",
+          "type": "share",
+          "prompt": "19 顆粽子平分給 6 戶鄰居。每戶幾顆？剩幾顆？",
+          "steps": [
+            {
+              "key": "q",
+              "label": "每戶幾顆",
+              "role": "answer",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "r",
+              "label": "剩幾顆",
+              "role": "part",
+              "input": "number",
+              "answer": 1
+            }
+          ]
+        },
+        {
+          "id": "A07",
+          "type": "howmany",
+          "prompt": "73 位家長來參觀，一張長椅坐 8 人。至少要幾張長椅？",
+          "steps": [
+            {
+              "key": "q",
+              "label": "商是多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 9
+            },
+            {
+              "key": "need",
+              "label": "至少要幾張長椅",
+              "role": "answer",
+              "input": "number",
+              "answer": 10
+            }
+          ]
+        },
+        {
+          "id": "A08",
+          "type": "howmany",
+          "prompt": "109 位同學搭電梯，一次最多 24 人。至少要搭幾趟？",
+          "steps": [
+            {
+              "key": "q",
+              "label": "商是多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 4
+            },
+            {
+              "key": "need",
+              "label": "至少要搭幾趟",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "A09",
+          "type": "better",
+          "prompt": "水餃小包 4 盒 40 元，大包 13 盒 104 元。哪一種一盒比較便宜？",
+          "steps": [
+            {
+              "key": "ua",
+              "label": "小包一盒多少元",
+              "role": "measure",
+              "input": "number",
+              "answer": 10
+            },
+            {
+              "key": "ub",
+              "label": "大包一盒多少元",
+              "role": "part",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "which",
+              "label": "哪一種一盒比較便宜",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "小包",
+                "大包"
+              ],
+              "answer": "大包"
+            }
+          ]
+        },
+        {
+          "id": "A10",
+          "type": "budget",
+          "prompt": "班上 24 人去看表演，門票每人 30 元，車費一共 237 元。班費 1000 元，夠不夠？",
+          "steps": [
+            {
+              "key": "tot",
+              "label": "一共要多少元",
+              "role": "measure",
+              "input": "number",
+              "answer": 957
+            },
+            {
+              "key": "ok",
+              "label": "夠不夠",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "夠",
+                "不夠"
+              ],
+              "answer": "夠"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "items": [
+        {
+          "id": "B01",
+          "type": "enough",
+          "prompt": "夜市：想買烤玉米 47 元、珍珠奶茶 54 元、雞蛋糕 32 元。帶了 150 元，夠不夠？",
+          "steps": [
+            {
+              "key": "tot",
+              "label": "一共要多少元",
+              "role": "measure",
+              "input": "number",
+              "answer": 133
+            },
+            {
+              "key": "ok",
+              "label": "夠不夠",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "夠",
+                "不夠"
+              ],
+              "answer": "夠"
+            }
+          ]
+        },
+        {
+          "id": "B02",
+          "type": "enough",
+          "prompt": "書展：想買故事書 183 元、書套 32 元、書籤 12 元。帶了 220 元，夠不夠？",
+          "steps": [
+            {
+              "key": "tot",
+              "label": "一共要多少元",
+              "role": "measure",
+              "input": "number",
+              "answer": 227
+            },
+            {
+              "key": "ok",
+              "label": "夠不夠",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "夠",
+                "不夠"
+              ],
+              "answer": "不夠"
+            }
+          ]
+        },
+        {
+          "id": "B03",
+          "type": "change",
+          "prompt": "在市場買一把青菜，一共 31 元，付了 100 元。要找多少元？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "100 ＋ 31",
+                "100 － 31",
+                "31 － 100"
+              ],
+              "answer": "100 － 31"
+            },
+            {
+              "key": "ch",
+              "label": "要找多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 69
+            }
+          ]
+        },
+        {
+          "id": "B04",
+          "type": "change",
+          "prompt": "在藥局買一盒OK繃和乳液，一共 446 元，付了 500 元。要找多少元？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "446 － 500",
+                "500 － 446",
+                "500 ＋ 446"
+              ],
+              "answer": "500 － 446"
+            },
+            {
+              "key": "ch",
+              "label": "要找多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 54
+            }
+          ]
+        },
+        {
+          "id": "B05",
+          "type": "buy",
+          "prompt": "運動會要買 6 瓶運動飲料，一瓶 33 元。一共多少元？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "33 ＋ 6",
+                "33 ÷ 6",
+                "33 × 6"
+              ],
+              "answer": "33 × 6"
+            },
+            {
+              "key": "tot",
+              "label": "一共多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 198
+            }
+          ]
+        },
+        {
+          "id": "B06",
+          "type": "share",
+          "prompt": "25 顆粽子平分給 9 戶鄰居。每戶幾顆？剩幾顆？",
+          "steps": [
+            {
+              "key": "q",
+              "label": "每戶幾顆",
+              "role": "answer",
+              "input": "number",
+              "answer": 2
+            },
+            {
+              "key": "r",
+              "label": "剩幾顆",
+              "role": "part",
+              "input": "number",
+              "answer": 7
+            }
+          ]
+        },
+        {
+          "id": "B07",
+          "type": "howmany",
+          "prompt": "29 位家長來參觀，一張長椅坐 4 人。至少要幾張長椅？",
+          "steps": [
+            {
+              "key": "q",
+              "label": "商是多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 7
+            },
+            {
+              "key": "need",
+              "label": "至少要幾張長椅",
+              "role": "answer",
+              "input": "number",
+              "answer": 8
+            }
+          ]
+        },
+        {
+          "id": "B08",
+          "type": "howmany",
+          "prompt": "208 位同學搭電梯，一次最多 28 人。至少要搭幾趟？",
+          "steps": [
+            {
+              "key": "q",
+              "label": "商是多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 7
+            },
+            {
+              "key": "need",
+              "label": "至少要搭幾趟",
+              "role": "answer",
+              "input": "number",
+              "answer": 8
+            }
+          ]
+        },
+        {
+          "id": "B09",
+          "type": "better",
+          "prompt": "水餃小包 3 盒 75 元，大包 10 盒 270 元。哪一種一盒比較便宜？",
+          "steps": [
+            {
+              "key": "ua",
+              "label": "小包一盒多少元",
+              "role": "measure",
+              "input": "number",
+              "answer": 25
+            },
+            {
+              "key": "ub",
+              "label": "大包一盒多少元",
+              "role": "part",
+              "input": "number",
+              "answer": 27
+            },
+            {
+              "key": "which",
+              "label": "哪一種一盒比較便宜",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "小包",
+                "大包"
+              ],
+              "answer": "小包"
+            }
+          ]
+        },
+        {
+          "id": "B10",
+          "type": "budget",
+          "prompt": "班上 29 人去看表演，門票每人 23 元，車費一共 217 元。班費 800 元，夠不夠？",
+          "steps": [
+            {
+              "key": "tot",
+              "label": "一共要多少元",
+              "role": "measure",
+              "input": "number",
+              "answer": 884
+            },
+            {
+              "key": "ok",
+              "label": "夠不夠",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "夠",
+                "不夠"
+              ],
+              "answer": "不夠"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "items": [
+        {
+          "id": "C01",
+          "type": "enough",
+          "prompt": "夜市：想買烤玉米 56 元、珍珠奶茶 65 元、雞蛋糕 43 元。帶了 200 元，夠不夠？",
+          "steps": [
+            {
+              "key": "tot",
+              "label": "一共要多少元",
+              "role": "measure",
+              "input": "number",
+              "answer": 164
+            },
+            {
+              "key": "ok",
+              "label": "夠不夠",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "夠",
+                "不夠"
+              ],
+              "answer": "夠"
+            }
+          ]
+        },
+        {
+          "id": "C02",
+          "type": "enough",
+          "prompt": "書展：想買故事書 138 元、書套 35 元、書籤 15 元。帶了 172 元，夠不夠？",
+          "steps": [
+            {
+              "key": "tot",
+              "label": "一共要多少元",
+              "role": "measure",
+              "input": "number",
+              "answer": 188
+            },
+            {
+              "key": "ok",
+              "label": "夠不夠",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "夠",
+                "不夠"
+              ],
+              "answer": "不夠"
+            }
+          ]
+        },
+        {
+          "id": "C03",
+          "type": "change",
+          "prompt": "在市場買一把青菜，一共 35 元，付了 100 元。要找多少元？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "100 － 35",
+                "35 － 100",
+                "100 ＋ 35"
+              ],
+              "answer": "100 － 35"
+            },
+            {
+              "key": "ch",
+              "label": "要找多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 65
+            }
+          ]
+        },
+        {
+          "id": "C04",
+          "type": "change",
+          "prompt": "在藥局買一盒OK繃和乳液，一共 154 元，付了 500 元。要找多少元？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "500 － 154",
+                "500 ＋ 154",
+                "154 － 500"
+              ],
+              "answer": "500 － 154"
+            },
+            {
+              "key": "ch",
+              "label": "要找多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 346
+            }
+          ]
+        },
+        {
+          "id": "C05",
+          "type": "buy",
+          "prompt": "運動會要買 8 瓶運動飲料，一瓶 37 元。一共多少元？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "37 × 8",
+                "37 ÷ 8",
+                "37 ＋ 8"
+              ],
+              "answer": "37 × 8"
+            },
+            {
+              "key": "tot",
+              "label": "一共多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 296
+            }
+          ]
+        },
+        {
+          "id": "C06",
+          "type": "share",
+          "prompt": "39 顆粽子平分給 9 戶鄰居。每戶幾顆？剩幾顆？",
+          "steps": [
+            {
+              "key": "q",
+              "label": "每戶幾顆",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            },
+            {
+              "key": "r",
+              "label": "剩幾顆",
+              "role": "part",
+              "input": "number",
+              "answer": 3
+            }
+          ]
+        },
+        {
+          "id": "C07",
+          "type": "howmany",
+          "prompt": "77 位家長來參觀，一張長椅坐 8 人。至少要幾張長椅？",
+          "steps": [
+            {
+              "key": "q",
+              "label": "商是多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 9
+            },
+            {
+              "key": "need",
+              "label": "至少要幾張長椅",
+              "role": "answer",
+              "input": "number",
+              "answer": 10
+            }
+          ]
+        },
+        {
+          "id": "C08",
+          "type": "howmany",
+          "prompt": "402 位同學搭電梯，一次最多 42 人。至少要搭幾趟？",
+          "steps": [
+            {
+              "key": "q",
+              "label": "商是多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 9
+            },
+            {
+              "key": "need",
+              "label": "至少要搭幾趟",
+              "role": "answer",
+              "input": "number",
+              "answer": 10
+            }
+          ]
+        },
+        {
+          "id": "C09",
+          "type": "better",
+          "prompt": "水餃小包 2 盒 46 元，大包 9 盒 225 元。哪一種一盒比較便宜？",
+          "steps": [
+            {
+              "key": "ua",
+              "label": "小包一盒多少元",
+              "role": "measure",
+              "input": "number",
+              "answer": 23
+            },
+            {
+              "key": "ub",
+              "label": "大包一盒多少元",
+              "role": "part",
+              "input": "number",
+              "answer": 25
+            },
+            {
+              "key": "which",
+              "label": "哪一種一盒比較便宜",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "小包",
+                "大包"
+              ],
+              "answer": "小包"
+            }
+          ]
+        },
+        {
+          "id": "C10",
+          "type": "budget",
+          "prompt": "班上 25 人去看表演，門票每人 29 元，車費一共 165 元。班費 900 元，夠不夠？",
+          "steps": [
+            {
+              "key": "tot",
+              "label": "一共要多少元",
+              "role": "measure",
+              "input": "number",
+              "answer": 890
+            },
+            {
+              "key": "ok",
+              "label": "夠不夠",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "夠",
+                "不夠"
+              ],
+              "answer": "夠"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

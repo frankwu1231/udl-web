@@ -1,0 +1,723 @@
+{
+  "id": "intWordProbe",
+  "version": "1",
+  "kind": "probe",
+  "package": "int",
+  "variant": "word",
+  "title": "整數小測驗：應用題（二到五年級）",
+  "itemSecs": 150,
+  "totalSecs": 1500,
+  "forms": [
+    {
+      "id": "A",
+      "items": [
+        {
+          "id": "A01",
+          "type": "two",
+          "prompt": "72 張貼紙平分給 3 班，每班再平分給 4 組。每組幾張？",
+          "steps": [
+            {
+              "key": "s1",
+              "label": "先算：每班幾張",
+              "role": "part",
+              "input": "number",
+              "answer": 24
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 6
+            }
+          ]
+        },
+        {
+          "id": "A02",
+          "type": "two",
+          "prompt": "哥哥有 25 顆彈珠，弟弟有 17 顆，合起來平分給 7 個人。每人幾顆？",
+          "steps": [
+            {
+              "key": "s1",
+              "label": "先算：合起來有幾顆",
+              "role": "part",
+              "input": "number",
+              "answer": 42
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 6
+            }
+          ]
+        },
+        {
+          "id": "A03",
+          "type": "two",
+          "prompt": "一個麵包 7 元，買 3 個，付 100 元。要找回多少元？",
+          "steps": [
+            {
+              "key": "s1",
+              "label": "先算：3 個要多少元",
+              "role": "part",
+              "input": "number",
+              "answer": 21
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 79
+            }
+          ]
+        },
+        {
+          "id": "A04",
+          "type": "two",
+          "prompt": "78 顆蘋果，每 6 顆裝一袋，每袋賣 23 元。全部可以賣多少元？",
+          "steps": [
+            {
+              "key": "s1",
+              "label": "先算：可以裝幾袋",
+              "role": "part",
+              "input": "number",
+              "answer": 13
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 299
+            }
+          ]
+        },
+        {
+          "id": "A05",
+          "type": "merge",
+          "prompt": "一枝筆 7 元，買 4 枝，付 100 元。找回的錢，併成一個算式是哪一個？",
+          "steps": [
+            {
+              "key": "f",
+              "label": "併式",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "(100 － 7) × 4",
+                "100 － 7 × 4",
+                "100 － 7 ＋ 4"
+              ],
+              "answer": "100 － 7 × 4"
+            },
+            {
+              "key": "v",
+              "label": "找回多少元",
+              "role": "part",
+              "input": "number",
+              "answer": 72
+            }
+          ]
+        },
+        {
+          "id": "A06",
+          "type": "merge",
+          "prompt": "男生 12 人、女生 11 人，每人發 3 張紙。一共發幾張？併成一個算式是哪一個？",
+          "steps": [
+            {
+              "key": "f",
+              "label": "併式",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "12 × 11 ＋ 3",
+                "(12 ＋ 11) × 3",
+                "12 ＋ 11 × 3"
+              ],
+              "answer": "(12 ＋ 11) × 3"
+            },
+            {
+              "key": "v",
+              "label": "一共幾張",
+              "role": "part",
+              "input": "number",
+              "answer": 69
+            }
+          ]
+        },
+        {
+          "id": "A07",
+          "type": "order",
+          "prompt": "算算看：46 ＋ 2 × 6 ＝ ？",
+          "steps": [
+            {
+              "key": "first",
+              "label": "先算哪一段",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "46 ＋ 2",
+                "2 × 6"
+              ],
+              "answer": "2 × 6"
+            },
+            {
+              "key": "v",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 58
+            }
+          ]
+        },
+        {
+          "id": "A08",
+          "type": "order",
+          "prompt": "算算看：(42 － 18) ÷ 6 ＝ ？",
+          "steps": [
+            {
+              "key": "first",
+              "label": "先算哪一段",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "42 － 18",
+                "18 ÷ 6"
+              ],
+              "answer": "42 － 18"
+            },
+            {
+              "key": "v",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            }
+          ]
+        },
+        {
+          "id": "A09",
+          "type": "avg",
+          "prompt": "小美四天看書的頁數是 45、41、41、29 頁。平均每天看幾頁？",
+          "steps": [
+            {
+              "key": "s",
+              "label": "四天一共幾頁",
+              "role": "measure",
+              "input": "number",
+              "answer": 156
+            },
+            {
+              "key": "avg",
+              "label": "平均每天幾頁",
+              "role": "answer",
+              "input": "number",
+              "answer": 39
+            }
+          ]
+        },
+        {
+          "id": "A10",
+          "type": "distrib",
+          "prompt": "一個玩具 101 元，買 8 個。用比較快的方法算，一共多少元？",
+          "steps": [
+            {
+              "key": "how",
+              "label": "和哪一個一樣大",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "100 × 8 ＋ 1",
+                "100 × 8 ＋ 1 × 8"
+              ],
+              "answer": "100 × 8 ＋ 1 × 8"
+            },
+            {
+              "key": "ans",
+              "label": "一共多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 808
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "items": [
+        {
+          "id": "B01",
+          "type": "two",
+          "prompt": "30 顆蘋果，每 5 顆裝一袋，每袋賣 29 元。全部可以賣多少元？",
+          "steps": [
+            {
+              "key": "s1",
+              "label": "先算：可以裝幾袋",
+              "role": "part",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 174
+            }
+          ]
+        },
+        {
+          "id": "B02",
+          "type": "two",
+          "prompt": "54 張貼紙平分給 3 班，每班再平分給 2 組。每組幾張？",
+          "steps": [
+            {
+              "key": "s1",
+              "label": "先算：每班幾張",
+              "role": "part",
+              "input": "number",
+              "answer": 18
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 9
+            }
+          ]
+        },
+        {
+          "id": "B03",
+          "type": "two",
+          "prompt": "圖書館有 66 個人，走了 8 個人，又來了 24 個人。現在有幾人？",
+          "steps": [
+            {
+              "key": "s1",
+              "label": "先算：走了以後剩幾人",
+              "role": "part",
+              "input": "number",
+              "answer": 58
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 82
+            }
+          ]
+        },
+        {
+          "id": "B04",
+          "type": "two",
+          "prompt": "一個麵包 6 元，買 5 個，付 100 元。要找回多少元？",
+          "steps": [
+            {
+              "key": "s1",
+              "label": "先算：5 個要多少元",
+              "role": "part",
+              "input": "number",
+              "answer": 30
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 70
+            }
+          ]
+        },
+        {
+          "id": "B05",
+          "type": "merge",
+          "prompt": "一枝筆 5 元，買 4 枝，付 100 元。找回的錢，併成一個算式是哪一個？",
+          "steps": [
+            {
+              "key": "f",
+              "label": "併式",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "100 － 5 ＋ 4",
+                "(100 － 5) × 4",
+                "100 － 5 × 4"
+              ],
+              "answer": "100 － 5 × 4"
+            },
+            {
+              "key": "v",
+              "label": "找回多少元",
+              "role": "part",
+              "input": "number",
+              "answer": 80
+            }
+          ]
+        },
+        {
+          "id": "B06",
+          "type": "merge",
+          "prompt": "男生 15 人、女生 11 人，平均分成 2 隊。每隊幾人？併成一個算式是哪一個？",
+          "steps": [
+            {
+              "key": "f",
+              "label": "併式",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "(15 ＋ 11) ÷ 2",
+                "15 ÷ 2 ＋ 11",
+                "15 ＋ 11 ÷ 2"
+              ],
+              "answer": "(15 ＋ 11) ÷ 2"
+            },
+            {
+              "key": "v",
+              "label": "每隊幾人",
+              "role": "part",
+              "input": "number",
+              "answer": 13
+            }
+          ]
+        },
+        {
+          "id": "B07",
+          "type": "order",
+          "prompt": "算算看：34 ＋ 2 × 5 ＝ ？",
+          "steps": [
+            {
+              "key": "first",
+              "label": "先算哪一段",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "34 ＋ 2",
+                "2 × 5"
+              ],
+              "answer": "2 × 5"
+            },
+            {
+              "key": "v",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 44
+            }
+          ]
+        },
+        {
+          "id": "B08",
+          "type": "order",
+          "prompt": "算算看：(40 － 5) ÷ 5 ＝ ？",
+          "steps": [
+            {
+              "key": "first",
+              "label": "先算哪一段",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "40 － 5",
+                "5 ÷ 5"
+              ],
+              "answer": "40 － 5"
+            },
+            {
+              "key": "v",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 7
+            }
+          ]
+        },
+        {
+          "id": "B09",
+          "type": "avg",
+          "prompt": "小美四天看書的頁數是 33、34、50、51 頁。平均每天看幾頁？",
+          "steps": [
+            {
+              "key": "s",
+              "label": "四天一共幾頁",
+              "role": "measure",
+              "input": "number",
+              "answer": 168
+            },
+            {
+              "key": "avg",
+              "label": "平均每天幾頁",
+              "role": "answer",
+              "input": "number",
+              "answer": 42
+            }
+          ]
+        },
+        {
+          "id": "B10",
+          "type": "distrib",
+          "prompt": "一個玩具 199 元，買 3 個。用比較快的方法算，一共多少元？",
+          "steps": [
+            {
+              "key": "how",
+              "label": "和哪一個一樣大",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "200 × 3 － 1 × 3",
+                "200 × 3 － 1"
+              ],
+              "answer": "200 × 3 － 1 × 3"
+            },
+            {
+              "key": "ans",
+              "label": "一共多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 597
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "items": [
+        {
+          "id": "C01",
+          "type": "two",
+          "prompt": "哥哥有 29 顆彈珠，弟弟有 7 顆，合起來平分給 6 個人。每人幾顆？",
+          "steps": [
+            {
+              "key": "s1",
+              "label": "先算：合起來有幾顆",
+              "role": "part",
+              "input": "number",
+              "answer": 36
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 6
+            }
+          ]
+        },
+        {
+          "id": "C02",
+          "type": "two",
+          "prompt": "圖書館有 31 個人，走了 10 個人，又來了 26 個人。現在有幾人？",
+          "steps": [
+            {
+              "key": "s1",
+              "label": "先算：走了以後剩幾人",
+              "role": "part",
+              "input": "number",
+              "answer": 21
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 47
+            }
+          ]
+        },
+        {
+          "id": "C03",
+          "type": "two",
+          "prompt": "一個麵包 7 元，買 5 個，付 100 元。要找回多少元？",
+          "steps": [
+            {
+              "key": "s1",
+              "label": "先算：5 個要多少元",
+              "role": "part",
+              "input": "number",
+              "answer": 35
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 65
+            }
+          ]
+        },
+        {
+          "id": "C04",
+          "type": "two",
+          "prompt": "120 顆蘋果，每 6 顆裝一袋，每袋賣 31 元。全部可以賣多少元？",
+          "steps": [
+            {
+              "key": "s1",
+              "label": "先算：可以裝幾袋",
+              "role": "part",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 620
+            }
+          ]
+        },
+        {
+          "id": "C05",
+          "type": "merge",
+          "prompt": "一枝筆 6 元，買 9 枝，付 100 元。找回的錢，併成一個算式是哪一個？",
+          "steps": [
+            {
+              "key": "f",
+              "label": "併式",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "(100 － 6) × 9",
+                "100 － 6 × 9",
+                "100 － 6 ＋ 9"
+              ],
+              "answer": "100 － 6 × 9"
+            },
+            {
+              "key": "v",
+              "label": "找回多少元",
+              "role": "part",
+              "input": "number",
+              "answer": 46
+            }
+          ]
+        },
+        {
+          "id": "C06",
+          "type": "merge",
+          "prompt": "男生 14 人、女生 10 人，平均分成 3 隊。每隊幾人？併成一個算式是哪一個？",
+          "steps": [
+            {
+              "key": "f",
+              "label": "併式",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "14 ÷ 3 ＋ 10",
+                "14 ＋ 10 ÷ 3",
+                "(14 ＋ 10) ÷ 3"
+              ],
+              "answer": "(14 ＋ 10) ÷ 3"
+            },
+            {
+              "key": "v",
+              "label": "每隊幾人",
+              "role": "part",
+              "input": "number",
+              "answer": 8
+            }
+          ]
+        },
+        {
+          "id": "C07",
+          "type": "order",
+          "prompt": "算算看：18 ＋ 8 × 7 ＝ ？",
+          "steps": [
+            {
+              "key": "first",
+              "label": "先算哪一段",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "18 ＋ 8",
+                "8 × 7"
+              ],
+              "answer": "8 × 7"
+            },
+            {
+              "key": "v",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 74
+            }
+          ]
+        },
+        {
+          "id": "C08",
+          "type": "order",
+          "prompt": "算算看：(45 － 27) ÷ 9 ＝ ？",
+          "steps": [
+            {
+              "key": "first",
+              "label": "先算哪一段",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "45 － 27",
+                "27 ÷ 9"
+              ],
+              "answer": "45 － 27"
+            },
+            {
+              "key": "v",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 2
+            }
+          ]
+        },
+        {
+          "id": "C09",
+          "type": "avg",
+          "prompt": "小美四天看書的頁數是 46、43、45、34 頁。平均每天看幾頁？",
+          "steps": [
+            {
+              "key": "s",
+              "label": "四天一共幾頁",
+              "role": "measure",
+              "input": "number",
+              "answer": 168
+            },
+            {
+              "key": "avg",
+              "label": "平均每天幾頁",
+              "role": "answer",
+              "input": "number",
+              "answer": 42
+            }
+          ]
+        },
+        {
+          "id": "C10",
+          "type": "distrib",
+          "prompt": "一個玩具 101 元，買 7 個。用比較快的方法算，一共多少元？",
+          "steps": [
+            {
+              "key": "how",
+              "label": "和哪一個一樣大",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "100 × 7 ＋ 1 × 7",
+                "100 × 7 ＋ 1"
+              ],
+              "answer": "100 × 7 ＋ 1 × 7"
+            },
+            {
+              "key": "ans",
+              "label": "一共多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 707
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

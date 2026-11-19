@@ -1,0 +1,757 @@
+{
+  "id": "intAddsubProbe",
+  "version": "1",
+  "kind": "probe",
+  "package": "int",
+  "variant": "addsub",
+  "title": "整數小測驗：加減（一到三年級）",
+  "itemSecs": 150,
+  "totalSecs": 1500,
+  "forms": [
+    {
+      "id": "A",
+      "items": [
+        {
+          "id": "A01",
+          "type": "meaning",
+          "prompt": "桌上有 4 枝筆，拿走 2 枝。還剩幾枝？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "要用加的還是減的",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "加（＋）",
+                "減（－）"
+              ],
+              "answer": "減（－）"
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 2
+            }
+          ]
+        },
+        {
+          "id": "A02",
+          "type": "meaning",
+          "prompt": "魚缸有 5 條紅魚和 3 條黃魚。一共幾條？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "要用加的還是減的",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "加（＋）",
+                "減（－）"
+              ],
+              "answer": "加（＋）"
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 8
+            }
+          ]
+        },
+        {
+          "id": "A03",
+          "type": "addcol",
+          "prompt": "用直式算：255 ＋ 273 ＝ ？",
+          "steps": [
+            {
+              "key": "u",
+              "label": "個位寫幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 528
+            }
+          ]
+        },
+        {
+          "id": "A04",
+          "type": "addcol",
+          "prompt": "用直式算：174 ＋ 147 ＝ ？",
+          "steps": [
+            {
+              "key": "u",
+              "label": "個位寫幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 1
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 321
+            }
+          ]
+        },
+        {
+          "id": "A05",
+          "type": "subcol",
+          "prompt": "用直式算：144 － 106 ＝ ？",
+          "steps": [
+            {
+              "key": "enough",
+              "label": "個位夠不夠減",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "夠減",
+                "不夠減，要借"
+              ],
+              "answer": "不夠減，要借"
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 38
+            }
+          ]
+        },
+        {
+          "id": "A06",
+          "type": "subcol",
+          "prompt": "用直式算：571 － 68 ＝ ？",
+          "steps": [
+            {
+              "key": "enough",
+              "label": "個位夠不夠減",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "夠減",
+                "不夠減，要借"
+              ],
+              "answer": "不夠減，要借"
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 503
+            }
+          ]
+        },
+        {
+          "id": "A07",
+          "type": "subcol",
+          "prompt": "用直式算：5002 － 3710 ＝ ？",
+          "steps": [
+            {
+              "key": "enough",
+              "label": "個位夠不夠減",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "夠減",
+                "不夠減，要借"
+              ],
+              "answer": "夠減"
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 1292
+            }
+          ]
+        },
+        {
+          "id": "A08",
+          "type": "missing",
+          "prompt": "小安原本有 57 顆彈珠，又贏了一些，現在有 72 顆。他贏了幾顆？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "72 ＋ 57",
+                "57 － 72",
+                "72 － 57"
+              ],
+              "answer": "72 － 57"
+            },
+            {
+              "key": "ans",
+              "label": "贏了幾顆",
+              "role": "answer",
+              "input": "number",
+              "answer": 15
+            }
+          ]
+        },
+        {
+          "id": "A09",
+          "type": "missing",
+          "prompt": "存錢筒原本有一些錢，拿出 91 元，還剩 85 元。原本有幾元？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "85 ＋ 91",
+                "91 － 85"
+              ],
+              "answer": "85 ＋ 91"
+            },
+            {
+              "key": "ans",
+              "label": "原本有幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 176
+            }
+          ]
+        },
+        {
+          "id": "A10",
+          "type": "compare",
+          "prompt": "紅隊收集 396 個瓶蓋，藍隊收集 313 個。哪一隊多？多幾個？",
+          "steps": [
+            {
+              "key": "who",
+              "label": "哪一隊多",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "紅隊",
+                "藍隊"
+              ],
+              "answer": "紅隊"
+            },
+            {
+              "key": "ans",
+              "label": "多幾個",
+              "role": "answer",
+              "input": "number",
+              "answer": 83
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "items": [
+        {
+          "id": "B01",
+          "type": "meaning",
+          "prompt": "小華有 3 張卡，小芬有 2 張。小華比小芬多幾張？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "要用加的還是減的",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "加（＋）",
+                "減（－）"
+              ],
+              "answer": "減（－）"
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 1
+            }
+          ]
+        },
+        {
+          "id": "B02",
+          "type": "meaning",
+          "prompt": "籃子裡有 3 顆橘子，又放進 5 顆。現在有幾顆？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "要用加的還是減的",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "加（＋）",
+                "減（－）"
+              ],
+              "answer": "加（＋）"
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 8
+            }
+          ]
+        },
+        {
+          "id": "B03",
+          "type": "addcol",
+          "prompt": "用直式算：364 ＋ 216 ＝ ？",
+          "steps": [
+            {
+              "key": "u",
+              "label": "個位寫幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 0
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 580
+            }
+          ]
+        },
+        {
+          "id": "B04",
+          "type": "addcol",
+          "prompt": "用直式算：226 ＋ 295 ＝ ？",
+          "steps": [
+            {
+              "key": "u",
+              "label": "個位寫幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 1
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 521
+            }
+          ]
+        },
+        {
+          "id": "B05",
+          "type": "subcol",
+          "prompt": "用直式算：181 － 162 ＝ ？",
+          "steps": [
+            {
+              "key": "enough",
+              "label": "個位夠不夠減",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "夠減",
+                "不夠減，要借"
+              ],
+              "answer": "不夠減，要借"
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 19
+            }
+          ]
+        },
+        {
+          "id": "B06",
+          "type": "subcol",
+          "prompt": "用直式算：992 － 189 ＝ ？",
+          "steps": [
+            {
+              "key": "enough",
+              "label": "個位夠不夠減",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "夠減",
+                "不夠減，要借"
+              ],
+              "answer": "不夠減，要借"
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 803
+            }
+          ]
+        },
+        {
+          "id": "B07",
+          "type": "subcol",
+          "prompt": "用直式算：1620 － 89 ＝ ？",
+          "steps": [
+            {
+              "key": "enough",
+              "label": "個位夠不夠減",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "夠減",
+                "不夠減，要借"
+              ],
+              "answer": "不夠減，要借"
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 1531
+            }
+          ]
+        },
+        {
+          "id": "B08",
+          "type": "missing",
+          "prompt": "小安原本有 73 顆彈珠，又贏了一些，現在有 88 顆。他贏了幾顆？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "88 － 73",
+                "88 ＋ 73",
+                "73 － 88"
+              ],
+              "answer": "88 － 73"
+            },
+            {
+              "key": "ans",
+              "label": "贏了幾顆",
+              "role": "answer",
+              "input": "number",
+              "answer": 15
+            }
+          ]
+        },
+        {
+          "id": "B09",
+          "type": "missing",
+          "prompt": "存錢筒原本有一些錢，拿出 60 元，還剩 64 元。原本有幾元？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "64 － 60",
+                "64 ＋ 60",
+                "60 － 64"
+              ],
+              "answer": "64 ＋ 60"
+            },
+            {
+              "key": "ans",
+              "label": "原本有幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 124
+            }
+          ]
+        },
+        {
+          "id": "B10",
+          "type": "compare",
+          "prompt": "紅隊收集 305 個瓶蓋，藍隊收集 313 個。哪一隊多？多幾個？",
+          "steps": [
+            {
+              "key": "who",
+              "label": "哪一隊多",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "紅隊",
+                "藍隊"
+              ],
+              "answer": "藍隊"
+            },
+            {
+              "key": "ans",
+              "label": "多幾個",
+              "role": "answer",
+              "input": "number",
+              "answer": 8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "items": [
+        {
+          "id": "C01",
+          "type": "meaning",
+          "prompt": "桌上有 8 枝筆，拿走 4 枝。還剩幾枝？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "要用加的還是減的",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "加（＋）",
+                "減（－）"
+              ],
+              "answer": "減（－）"
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            }
+          ]
+        },
+        {
+          "id": "C02",
+          "type": "meaning",
+          "prompt": "魚缸有 5 條紅魚和 2 條黃魚。一共幾條？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "要用加的還是減的",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "加（＋）",
+                "減（－）"
+              ],
+              "answer": "加（＋）"
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 7
+            }
+          ]
+        },
+        {
+          "id": "C03",
+          "type": "addcol",
+          "prompt": "用直式算：136 ＋ 109 ＝ ？",
+          "steps": [
+            {
+              "key": "u",
+              "label": "個位寫幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 245
+            }
+          ]
+        },
+        {
+          "id": "C04",
+          "type": "addcol",
+          "prompt": "用直式算：619 ＋ 194 ＝ ？",
+          "steps": [
+            {
+              "key": "u",
+              "label": "個位寫幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 813
+            }
+          ]
+        },
+        {
+          "id": "C05",
+          "type": "subcol",
+          "prompt": "用直式算：171 － 166 ＝ ？",
+          "steps": [
+            {
+              "key": "enough",
+              "label": "個位夠不夠減",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "夠減",
+                "不夠減，要借"
+              ],
+              "answer": "不夠減，要借"
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "C06",
+          "type": "subcol",
+          "prompt": "用直式算：245 － 216 ＝ ？",
+          "steps": [
+            {
+              "key": "enough",
+              "label": "個位夠不夠減",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "夠減",
+                "不夠減，要借"
+              ],
+              "answer": "不夠減，要借"
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 29
+            }
+          ]
+        },
+        {
+          "id": "C07",
+          "type": "subcol",
+          "prompt": "用直式算：4307 － 3392 ＝ ？",
+          "steps": [
+            {
+              "key": "enough",
+              "label": "個位夠不夠減",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "夠減",
+                "不夠減，要借"
+              ],
+              "answer": "夠減"
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 915
+            }
+          ]
+        },
+        {
+          "id": "C08",
+          "type": "missing",
+          "prompt": "小安原本有 48 顆彈珠，又贏了一些，現在有 87 顆。他贏了幾顆？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "48 － 87",
+                "87 － 48",
+                "87 ＋ 48"
+              ],
+              "answer": "87 － 48"
+            },
+            {
+              "key": "ans",
+              "label": "贏了幾顆",
+              "role": "answer",
+              "input": "number",
+              "answer": 39
+            }
+          ]
+        },
+        {
+          "id": "C09",
+          "type": "missing",
+          "prompt": "存錢筒原本有一些錢，拿出 70 元，還剩 65 元。原本有幾元？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "65 ＋ 70",
+                "70 － 65"
+              ],
+              "answer": "65 ＋ 70"
+            },
+            {
+              "key": "ans",
+              "label": "原本有幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 135
+            }
+          ]
+        },
+        {
+          "id": "C10",
+          "type": "compare",
+          "prompt": "紅隊收集 205 個瓶蓋，藍隊收集 250 個。哪一隊多？多幾個？",
+          "steps": [
+            {
+              "key": "who",
+              "label": "哪一隊多",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "紅隊",
+                "藍隊"
+              ],
+              "answer": "藍隊"
+            },
+            {
+              "key": "ans",
+              "label": "多幾個",
+              "role": "answer",
+              "input": "number",
+              "answer": 45
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
