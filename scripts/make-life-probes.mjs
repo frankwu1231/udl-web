@@ -63,11 +63,12 @@ function surfaceForm(id, rand, k0) {
     items.push({ id: n(k), type: 'lifePaint', prompt: `儲藏室長 ${l} 公尺、寬 ${w} 公尺、高 ${h} 公尺。只漆四面牆，門 ${door} 平方公尺、窗 ${win} 平方公尺不漆。一桶漆可以漆 ${can} 平方公尺，要買幾桶？`,
       steps: [num('walls', '四面牆幾平方公尺', walls, 'measure'), num('paint', '要漆幾平方公尺', paint, 'part'), num('cans', '至少要買幾桶', Math.ceil(paint / can), 'answer')] });
   }
-  const SAVE = [[[4, 1, 1], [2, 2, 1]], [[6, 1, 1], [3, 2, 1]], [[8, 1, 1], [2, 2, 2]]];
+  // 和網站 4-5 一樣：長、寬、高都在 9 公分以內；6 個排一排時用 1 公分的小積木
+  const SAVE = [[[4, 1, 1], [2, 2, 1]], [[6, 1, 1], [3, 2, 1]], [[4, 2, 1], [2, 2, 2]]];
   for (const k of [7, 8]) {
-    const [x, y] = SAVE[(k + k0) % 3], e = Math.max(1, Math.min(pick(rand, [2, 3]), Math.floor(9 / Math.max(...x, ...y)))), sa = d => 2 * (d[0] * d[1] + d[0] * d[2] + d[1] * d[2]) * e * e, dim = d => d.map(v => v * e).join('、');
+    const [x, y] = SAVE[(k + k0) % 3], e = Math.max(1, Math.min(2, Math.floor(9 / Math.max(...x, ...y)))), sa = d => 2 * (d[0] * d[1] + d[0] * d[2] + d[1] * d[2]) * e * e, dim = d => d.map(v => v * e).join('、');
     const cnt = x[0] * x[1] * x[2];
-    items.push({ id: n(k), type: 'lifeSave', prompt: `${cnt} 個邊長 ${e} 公分的正方體肥皂要包在一起。甲排法長、寬、高是 ${dim(x)} 公分；乙排法是 ${dim(y)} 公分。哪一種比較省紙？`,
+    items.push({ id: n(k), type: 'lifeSave', prompt: `${e === 1 ? `美勞課把 ${cnt} 個邊長 1 公分的正方體小積木黏成長方體，再用色紙包起來。` : `${cnt} 個邊長 ${e} 公分的正方體肥皂要包在一起。`}甲排法長、寬、高是 ${dim(x)} 公分；乙排法是 ${dim(y)} 公分。哪一種比較省紙？`,
       steps: [num('a', '甲的表面積', sa(x), 'measure'), num('b', '乙的表面積', sa(y), 'measure'), fixedChoice('pick', '哪一種比較省紙', sa(x) < sa(y) ? '甲' : '乙', ['甲', '乙'])] });
   }
   for (const k of [9, 10]) {

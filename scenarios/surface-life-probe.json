@@ -182,7 +182,7 @@
         {
           "id": "A07",
           "type": "lifeSave",
-          "prompt": "6 個邊長 1 公分的正方體肥皂要包在一起。甲排法長、寬、高是 6、1、1 公分；乙排法是 3、2、1 公分。哪一種比較省紙？",
+          "prompt": "美勞課把 6 個邊長 1 公分的正方體小積木黏成長方體，再用色紙包起來。甲排法長、寬、高是 6、1、1 公分；乙排法是 3、2、1 公分。哪一種比較省紙？",
           "steps": [
             {
               "key": "a",
@@ -214,21 +214,21 @@
         {
           "id": "A08",
           "type": "lifeSave",
-          "prompt": "8 個邊長 1 公分的正方體肥皂要包在一起。甲排法長、寬、高是 8、1、1 公分；乙排法是 2、2、2 公分。哪一種比較省紙？",
+          "prompt": "8 個邊長 2 公分的正方體肥皂要包在一起。甲排法長、寬、高是 8、4、2 公分；乙排法是 4、4、4 公分。哪一種比較省紙？",
           "steps": [
             {
               "key": "a",
               "label": "甲的表面積",
               "role": "measure",
               "input": "number",
-              "answer": 34
+              "answer": 112
             },
             {
               "key": "b",
               "label": "乙的表面積",
               "role": "measure",
               "input": "number",
-              "answer": 24
+              "answer": 96
             },
             {
               "key": "pick",
@@ -245,6 +245,32 @@
         },
         {
           "id": "A09",
+          "type": "lifeLabel",
+          "prompt": "茶葉罐是圓柱，用繩子量一圈長 12 公分，罐子高 5 公分。要做一張剛好繞一圈的標籤，標籤紙要幾平方公分？",
+          "steps": [
+            {
+              "key": "shape",
+              "label": "標籤攤開是什麼形狀",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "長方形",
+                "圓形",
+                "三角形"
+              ],
+              "answer": "長方形"
+            },
+            {
+              "key": "area",
+              "label": "標籤紙幾平方公分",
+              "role": "answer",
+              "input": "number",
+              "answer": 60
+            }
+          ]
+        },
+        {
+          "id": "A10",
           "type": "lifeLabel",
           "prompt": "茶葉罐是圓柱，用繩子量一圈長 20 公分，罐子高 5 公分。要做一張剛好繞一圈的標籤，標籤紙要幾平方公分？",
           "steps": [
@@ -268,32 +294,6 @@
               "answer": 100
             }
           ]
-        },
-        {
-          "id": "A10",
-          "type": "lifeLabel",
-          "prompt": "茶葉罐是圓柱，用繩子量一圈長 18 公分，罐子高 9 公分。要做一張剛好繞一圈的標籤，標籤紙要幾平方公分？",
-          "steps": [
-            {
-              "key": "shape",
-              "label": "標籤攤開是什麼形狀",
-              "role": "part",
-              "input": "choice",
-              "options": [
-                "長方形",
-                "圓形",
-                "三角形"
-              ],
-              "answer": "長方形"
-            },
-            {
-              "key": "area",
-              "label": "標籤紙幾平方公分",
-              "role": "answer",
-              "input": "number",
-              "answer": 162
-            }
-          ]
         }
       ]
     },
@@ -303,133 +303,105 @@
         {
           "id": "B01",
           "type": "lifeGift",
-          "prompt": "要包一個玩具盒送朋友。盒子長 5 公分、寬 2 公分、高 2 公分，包的時候多留 20 平方公分重疊。至少要幾平方公分的紙？",
+          "prompt": "要包一個玩具盒送朋友。盒子長 6 公分、寬 5 公分、高 4 公分，包的時候多留 10 平方公分重疊。至少要幾平方公分的紙？",
           "steps": [
             {
               "key": "half",
               "label": "三種面各一個加起來",
               "role": "part",
               "input": "number",
-              "answer": 24
+              "answer": 74
             },
             {
               "key": "surf",
               "label": "盒子的表面積",
               "role": "measure",
               "input": "number",
-              "answer": 48
+              "answer": 148
             },
             {
               "key": "need",
               "label": "至少要幾平方公分的紙",
               "role": "answer",
               "input": "number",
-              "answer": 68
+              "answer": 158
             }
           ]
         },
         {
           "id": "B02",
           "type": "lifeGift",
-          "prompt": "要包一盒拼圖送朋友。盒子長 6 公分、寬 5 公分、高 6 公分，包的時候多留 20 平方公分重疊。至少要幾平方公分的紙？",
+          "prompt": "要包一盒拼圖送朋友。盒子長 3 公分、寬 6 公分、高 4 公分，包的時候多留 20 平方公分重疊。至少要幾平方公分的紙？",
           "steps": [
             {
               "key": "half",
               "label": "三種面各一個加起來",
               "role": "part",
               "input": "number",
-              "answer": 96
+              "answer": 54
             },
             {
               "key": "surf",
               "label": "盒子的表面積",
               "role": "measure",
               "input": "number",
-              "answer": 192
+              "answer": 108
             },
             {
               "key": "need",
               "label": "至少要幾平方公分的紙",
               "role": "answer",
               "input": "number",
-              "answer": 212
+              "answer": 128
             }
           ]
         },
         {
           "id": "B03",
           "type": "lifeGift",
-          "prompt": "要包一盒蠟筆送朋友。盒子長 4 公分、寬 5 公分、高 3 公分，包的時候多留 20 平方公分重疊。至少要幾平方公分的紙？",
+          "prompt": "要包一盒蠟筆送朋友。盒子長 8 公分、寬 5 公分、高 3 公分，包的時候多留 20 平方公分重疊。至少要幾平方公分的紙？",
           "steps": [
             {
               "key": "half",
               "label": "三種面各一個加起來",
               "role": "part",
               "input": "number",
-              "answer": 47
+              "answer": 79
             },
             {
               "key": "surf",
               "label": "盒子的表面積",
               "role": "measure",
               "input": "number",
-              "answer": 94
+              "answer": 158
             },
             {
               "key": "need",
               "label": "至少要幾平方公分的紙",
               "role": "answer",
               "input": "number",
-              "answer": 114
+              "answer": 178
             }
           ]
         },
         {
           "id": "B04",
           "type": "lifePaint",
-          "prompt": "儲藏室長 5 公尺、寬 5 公尺、高 3 公尺。只漆四面牆，門 2 平方公尺、窗 4 平方公尺不漆。一桶漆可以漆 10 平方公尺，要買幾桶？",
+          "prompt": "儲藏室長 4 公尺、寬 4 公尺、高 3 公尺。只漆四面牆，門 2 平方公尺、窗 4 平方公尺不漆。一桶漆可以漆 10 平方公尺，要買幾桶？",
           "steps": [
             {
               "key": "walls",
               "label": "四面牆幾平方公尺",
               "role": "measure",
-              "input": "number",
-              "answer": 60
-            },
-            {
-              "key": "paint",
-              "label": "要漆幾平方公尺",
-              "role": "part",
-              "input": "number",
-              "answer": 54
-            },
-            {
-              "key": "cans",
-              "label": "至少要買幾桶",
-              "role": "answer",
-              "input": "number",
-              "answer": 6
-            }
-          ]
-        },
-        {
-          "id": "B05",
-          "type": "lifePaint",
-          "prompt": "儲藏室長 5 公尺、寬 4 公尺、高 3 公尺。只漆四面牆，門 2 平方公尺、窗 4 平方公尺不漆。一桶漆可以漆 10 平方公尺，要買幾桶？",
-          "steps": [
-            {
-              "key": "walls",
-              "label": "四面牆幾平方公尺",
-              "role": "measure",
-              "input": "number",
-              "answer": 54
-            },
-            {
-              "key": "paint",
-              "label": "要漆幾平方公尺",
-              "role": "part",
               "input": "number",
               "answer": 48
+            },
+            {
+              "key": "paint",
+              "label": "要漆幾平方公尺",
+              "role": "part",
+              "input": "number",
+              "answer": 42
             },
             {
               "key": "cans",
@@ -441,51 +413,79 @@
           ]
         },
         {
-          "id": "B06",
+          "id": "B05",
           "type": "lifePaint",
-          "prompt": "儲藏室長 3 公尺、寬 3 公尺、高 3 公尺。只漆四面牆，門 2 平方公尺、窗 4 平方公尺不漆。一桶漆可以漆 10 平方公尺，要買幾桶？",
+          "prompt": "儲藏室長 6 公尺、寬 5 公尺、高 3 公尺。只漆四面牆，門 2 平方公尺、窗 4 平方公尺不漆。一桶漆可以漆 10 平方公尺，要買幾桶？",
           "steps": [
             {
               "key": "walls",
               "label": "四面牆幾平方公尺",
               "role": "measure",
               "input": "number",
-              "answer": 36
+              "answer": 66
             },
             {
               "key": "paint",
               "label": "要漆幾平方公尺",
               "role": "part",
               "input": "number",
-              "answer": 30
+              "answer": 60
             },
             {
               "key": "cans",
               "label": "至少要買幾桶",
               "role": "answer",
               "input": "number",
-              "answer": 3
+              "answer": 6
+            }
+          ]
+        },
+        {
+          "id": "B06",
+          "type": "lifePaint",
+          "prompt": "儲藏室長 4 公尺、寬 4 公尺、高 3 公尺。只漆四面牆，門 2 平方公尺、窗 2 平方公尺不漆。一桶漆可以漆 10 平方公尺，要買幾桶？",
+          "steps": [
+            {
+              "key": "walls",
+              "label": "四面牆幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 48
+            },
+            {
+              "key": "paint",
+              "label": "要漆幾平方公尺",
+              "role": "part",
+              "input": "number",
+              "answer": 44
+            },
+            {
+              "key": "cans",
+              "label": "至少要買幾桶",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
             }
           ]
         },
         {
           "id": "B07",
           "type": "lifeSave",
-          "prompt": "8 個邊長 1 公分的正方體肥皂要包在一起。甲排法長、寬、高是 8、1、1 公分；乙排法是 2、2、2 公分。哪一種比較省紙？",
+          "prompt": "8 個邊長 2 公分的正方體肥皂要包在一起。甲排法長、寬、高是 8、4、2 公分；乙排法是 4、4、4 公分。哪一種比較省紙？",
           "steps": [
             {
               "key": "a",
               "label": "甲的表面積",
               "role": "measure",
               "input": "number",
-              "answer": 34
+              "answer": 112
             },
             {
               "key": "b",
               "label": "乙的表面積",
               "role": "measure",
               "input": "number",
-              "answer": 24
+              "answer": 96
             },
             {
               "key": "pick",
@@ -561,7 +561,7 @@
         {
           "id": "B10",
           "type": "lifeLabel",
-          "prompt": "茶葉罐是圓柱，用繩子量一圈長 24 公分，罐子高 6 公分。要做一張剛好繞一圈的標籤，標籤紙要幾平方公分？",
+          "prompt": "茶葉罐是圓柱，用繩子量一圈長 15 公分，罐子高 6 公分。要做一張剛好繞一圈的標籤，標籤紙要幾平方公分？",
           "steps": [
             {
               "key": "shape",
@@ -580,7 +580,7 @@
               "label": "標籤紙幾平方公分",
               "role": "answer",
               "input": "number",
-              "answer": 144
+              "answer": 90
             }
           ]
         }
@@ -592,7 +592,35 @@
         {
           "id": "C01",
           "type": "lifeGift",
-          "prompt": "要包一盒拼圖送朋友。盒子長 4 公分、寬 5 公分、高 4 公分，包的時候多留 20 平方公分重疊。至少要幾平方公分的紙？",
+          "prompt": "要包一盒拼圖送朋友。盒子長 5 公分、寬 5 公分、高 6 公分，包的時候多留 10 平方公分重疊。至少要幾平方公分的紙？",
+          "steps": [
+            {
+              "key": "half",
+              "label": "三種面各一個加起來",
+              "role": "part",
+              "input": "number",
+              "answer": 85
+            },
+            {
+              "key": "surf",
+              "label": "盒子的表面積",
+              "role": "measure",
+              "input": "number",
+              "answer": 170
+            },
+            {
+              "key": "need",
+              "label": "至少要幾平方公分的紙",
+              "role": "answer",
+              "input": "number",
+              "answer": 180
+            }
+          ]
+        },
+        {
+          "id": "C02",
+          "type": "lifeGift",
+          "prompt": "要包一盒蠟筆送朋友。盒子長 4 公分、寬 5 公分、高 4 公分，包的時候多留 20 平方公分重疊。至少要幾平方公分的紙？",
           "steps": [
             {
               "key": "half",
@@ -618,9 +646,9 @@
           ]
         },
         {
-          "id": "C02",
+          "id": "C03",
           "type": "lifeGift",
-          "prompt": "要包一盒蠟筆送朋友。盒子長 5 公分、寬 5 公分、高 3 公分，包的時候多留 20 平方公分重疊。至少要幾平方公分的紙？",
+          "prompt": "要包一個玩具盒送朋友。盒子長 5 公分、寬 5 公分、高 3 公分，包的時候多留 20 平方公分重疊。至少要幾平方公分的紙？",
           "steps": [
             {
               "key": "half",
@@ -646,91 +674,35 @@
           ]
         },
         {
-          "id": "C03",
-          "type": "lifeGift",
-          "prompt": "要包一個玩具盒送朋友。盒子長 7 公分、寬 5 公分、高 6 公分，包的時候多留 20 平方公分重疊。至少要幾平方公分的紙？",
-          "steps": [
-            {
-              "key": "half",
-              "label": "三種面各一個加起來",
-              "role": "part",
-              "input": "number",
-              "answer": 107
-            },
-            {
-              "key": "surf",
-              "label": "盒子的表面積",
-              "role": "measure",
-              "input": "number",
-              "answer": 214
-            },
-            {
-              "key": "need",
-              "label": "至少要幾平方公分的紙",
-              "role": "answer",
-              "input": "number",
-              "answer": 234
-            }
-          ]
-        },
-        {
           "id": "C04",
           "type": "lifePaint",
-          "prompt": "儲藏室長 4 公尺、寬 4 公尺、高 3 公尺。只漆四面牆，門 2 平方公尺、窗 4 平方公尺不漆。一桶漆可以漆 10 平方公尺，要買幾桶？",
+          "prompt": "儲藏室長 6 公尺、寬 6 公尺、高 3 公尺。只漆四面牆，門 2 平方公尺、窗 4 平方公尺不漆。一桶漆可以漆 10 平方公尺，要買幾桶？",
           "steps": [
             {
               "key": "walls",
               "label": "四面牆幾平方公尺",
               "role": "measure",
               "input": "number",
-              "answer": 48
+              "answer": 72
             },
             {
               "key": "paint",
               "label": "要漆幾平方公尺",
               "role": "part",
               "input": "number",
-              "answer": 42
+              "answer": 66
             },
             {
               "key": "cans",
               "label": "至少要買幾桶",
               "role": "answer",
               "input": "number",
-              "answer": 5
+              "answer": 7
             }
           ]
         },
         {
           "id": "C05",
-          "type": "lifePaint",
-          "prompt": "儲藏室長 5 公尺、寬 3 公尺、高 3 公尺。只漆四面牆，門 2 平方公尺、窗 2 平方公尺不漆。一桶漆可以漆 10 平方公尺，要買幾桶？",
-          "steps": [
-            {
-              "key": "walls",
-              "label": "四面牆幾平方公尺",
-              "role": "measure",
-              "input": "number",
-              "answer": 48
-            },
-            {
-              "key": "paint",
-              "label": "要漆幾平方公尺",
-              "role": "part",
-              "input": "number",
-              "answer": 44
-            },
-            {
-              "key": "cans",
-              "label": "至少要買幾桶",
-              "role": "answer",
-              "input": "number",
-              "answer": 5
-            }
-          ]
-        },
-        {
-          "id": "C06",
           "type": "lifePaint",
           "prompt": "儲藏室長 5 公尺、寬 4 公尺、高 3 公尺。只漆四面牆，門 2 平方公尺、窗 4 平方公尺不漆。一桶漆可以漆 10 平方公尺，要買幾桶？",
           "steps": [
@@ -747,6 +719,34 @@
               "role": "part",
               "input": "number",
               "answer": 48
+            },
+            {
+              "key": "cans",
+              "label": "至少要買幾桶",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "C06",
+          "type": "lifePaint",
+          "prompt": "儲藏室長 5 公尺、寬 4 公尺、高 3 公尺。只漆四面牆，門 2 平方公尺、窗 2 平方公尺不漆。一桶漆可以漆 10 平方公尺，要買幾桶？",
+          "steps": [
+            {
+              "key": "walls",
+              "label": "四面牆幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 54
+            },
+            {
+              "key": "paint",
+              "label": "要漆幾平方公尺",
+              "role": "part",
+              "input": "number",
+              "answer": 50
             },
             {
               "key": "cans",
@@ -792,7 +792,7 @@
         {
           "id": "C08",
           "type": "lifeSave",
-          "prompt": "6 個邊長 1 公分的正方體肥皂要包在一起。甲排法長、寬、高是 6、1、1 公分；乙排法是 3、2、1 公分。哪一種比較省紙？",
+          "prompt": "美勞課把 6 個邊長 1 公分的正方體小積木黏成長方體，再用色紙包起來。甲排法長、寬、高是 6、1、1 公分；乙排法是 3、2、1 公分。哪一種比較省紙？",
           "steps": [
             {
               "key": "a",
@@ -824,7 +824,7 @@
         {
           "id": "C09",
           "type": "lifeLabel",
-          "prompt": "茶葉罐是圓柱，用繩子量一圈長 18 公分，罐子高 6 公分。要做一張剛好繞一圈的標籤，標籤紙要幾平方公分？",
+          "prompt": "茶葉罐是圓柱，用繩子量一圈長 18 公分，罐子高 8 公分。要做一張剛好繞一圈的標籤，標籤紙要幾平方公分？",
           "steps": [
             {
               "key": "shape",
@@ -843,14 +843,14 @@
               "label": "標籤紙幾平方公分",
               "role": "answer",
               "input": "number",
-              "answer": 108
+              "answer": 144
             }
           ]
         },
         {
           "id": "C10",
           "type": "lifeLabel",
-          "prompt": "茶葉罐是圓柱，用繩子量一圈長 24 公分，罐子高 9 公分。要做一張剛好繞一圈的標籤，標籤紙要幾平方公分？",
+          "prompt": "茶葉罐是圓柱，用繩子量一圈長 18 公分，罐子高 9 公分。要做一張剛好繞一圈的標籤，標籤紙要幾平方公分？",
           "steps": [
             {
               "key": "shape",
@@ -869,7 +869,7 @@
               "label": "標籤紙幾平方公分",
               "role": "answer",
               "input": "number",
-              "answer": 216
+              "answer": 162
             }
           ]
         }

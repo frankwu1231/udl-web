@@ -284,10 +284,10 @@
   A.register('sSave', { draft: true,
     methods, makeProblem: makeSave, planFigure: ctx => `<div class="lf-pair"><div><p class="lf-tag">A</p>${boxFig(ctx.problem.a)}</div><div><p class="lf-tag">B</p>${boxFig(ctx.problem.b)}</div></div>`,
     steps: [
-      cStep(0, { title: '要比什麼', ask: '包裝紙看哪裡？', id: 'what', fixed: true, hints: ['兩種排法用的個數一樣。', '裡面裝的一樣多，體積一樣。', '包裝紙碰到的是盒子的裡面，還是外面？'],
-        think: '老師想：盒子數一樣，體積一樣；包裝紙包外面，要比表面積。', together: '一起想：要比什麼？', pre: prompt, figure: ctx => A.get('sSave').planFigure(ctx),
+      cStep(0, { title: '要比什麼', ask: '包的紙看哪裡？', id: 'what', fixed: true, hints: ['兩種排法用的個數一樣。', '一樣多個、一樣大的正方體，體積一樣。', '紙包住的是排好以後的裡面，還是外面？'],
+        think: '老師想：正方體一樣多、一樣大，體積一樣；紙包住的是排好以後的外面，要比表面積。', together: '一起想：要比什麼？', pre: prompt, figure: ctx => A.get('sSave').planFigure(ctx),
         q: () => '比哪一種比較省紙，要比什麼？', opts: () => [['surf', '外面的表面積'], ['vol', '裡面裝多少（體積）'], ['long', '哪一種比較長']], ans: () => 'surf',
-        wrong: (ctx, a) => a === 'vol' ? { obs: 'choseVolume', msg: '盒子數一樣，體積一樣。包裝紙要看外面。' } : { msg: '比較長不一定比較費紙，要算表面積。' }, say: () => '要比表面積。' }),
+        wrong: (ctx, a) => a === 'vol' ? { obs: 'choseVolume', msg: '正方體一樣多、一樣大，體積一樣。紙要看排好以後的外面。' } : { msg: '比較長不一定比較費紙，要算表面積。' }, say: () => '要比表面積。' }),
       nStep(1, { title: 'A 的表面積', ask: 'A 排法要多少紙？', id: 'A', hints: ['A 是一個長方體。', '三種面各一個加起來，再 × 2。', '看清楚 A 的長、寬、高。'],
         think: '老師算 A 這個長方體的表面積。', together: '一起算：A 的表面積？', figure: ctx => boxFig(ctx.problem.a, { colorAll: shown(ctx, 1) }),
         label: () => 'A 排法的表面積是幾平方公分？', ans: ctx => ctx.problem.A,
