@@ -192,7 +192,7 @@
 
   // ---------- 表面積：盒子的圖 ----------
   const S = () => window.surfaceFig;
-  const boxFig = (p, o = {}) => S().boxSVG({ l: p.l, w: p.w, h: p.h, cube: p.l === p.w && p.w === p.h }, { edges: ['l', 'w', 'h'], ...o });
+  const boxFig = (p, o = {}) => S().boxSVG({ l: p.l, w: p.w, h: p.h, cube: p.l === p.w && p.w === p.h }, { edges: ['l', 'w', 'h'], name: p.name, ...o });
 
   // =============== 表面積 4-3 包禮物要多少紙（核心：生活決策五步） ===============
   const PAPER = ['舊月曆紙', '舊海報', '舊包裝紙', '舊報紙'];
@@ -277,16 +277,16 @@
     const [x, y] = rand() < 0.5 ? pickW : [pickW[1], pickW[0]];
     e = Math.max(1, Math.min(e, Math.floor(9 / Math.max(...x, ...y))));   // 排好的長、寬、高都在 9 公分以內（九九範圍）；6 個排一排時只能用 1 公分的小積木
     const sa = d => 2 * (d[0] * d[1] + d[0] * d[2] + d[1] * d[2]) * e * e, A1 = sa(x), B1 = sa(y);
-    const toDim = d => ({ l: d[0] * e, w: d[1] * e, h: d[2] * e });
+    const toDim = d => ({ l: d[0] * e, w: d[1] * e, h: d[2] * e, name: e === 1 ? '小積木排成的長方體' : '' });
     return { n, e, a: toDim(x), b: toDim(y), A: A1, B: B1, best: A1 < B1 ? 'A' : 'B', dims: [n, e, ...x, ...y], prompt: `${e === 1 ? `美勞課要把 ${n} 個邊長 1 公分的正方體小積木黏成一個長方體，再用色紙包起來。` : `園遊會要把 ${n} 盒餅乾包成一大包。每一盒都是邊長 ${e} 公分的正方體。`}A 排法：長 ${toDim(x).l}、寬 ${toDim(x).w}、高 ${toDim(x).h} 公分；B 排法：長 ${toDim(y).l}、寬 ${toDim(y).w}、高 ${toDim(y).h} 公分。哪一種${e === 1 ? '排法' : '包法'}比較省紙？` };
   }
   const sa3 = d => 2 * (d.l * d.w + d.l * d.h + d.w * d.h);
   A.register('sSave', { draft: true,
     methods, makeProblem: makeSave, planFigure: ctx => `<div class="lf-pair"><div><p class="lf-tag">A</p>${boxFig(ctx.problem.a)}</div><div><p class="lf-tag">B</p>${boxFig(ctx.problem.b)}</div></div>`,
     steps: [
-      cStep(0, { title: '要比什麼', ask: '包的紙看哪裡？', id: 'what', fixed: true, hints: ['兩種排法用的個數一樣。', '一樣多個、一樣大的正方體，體積一樣。', '紙包住的是排好以後的裡面，還是外面？'],
+      cStep(0, { title: '要比什麼', ask: '要省紙，該看哪裡？', id: 'what', fixed: true, hints: ['兩種排法用的個數一樣。', '一樣多個、一樣大的正方體，體積一樣。', '紙包住的是排好以後的裡面，還是外面？'],
         think: '老師想：正方體一樣多、一樣大，體積一樣；紙包住的是排好以後的外面，要比表面積。', together: '一起想：要比什麼？', pre: prompt, figure: ctx => A.get('sSave').planFigure(ctx),
-        q: () => '比哪一種比較省紙，要比什麼？', opts: () => [['surf', '外面的表面積'], ['vol', '裡面裝多少（體積）'], ['long', '哪一種比較長']], ans: () => 'surf',
+        q: () => '比哪一種比較省紙，要比什麼？', opts: () => [['surf', '外面的表面積'], ['vol', '占多少空間（體積）'], ['long', '哪一種比較長']], ans: () => 'surf',
         wrong: (ctx, a) => a === 'vol' ? { obs: 'choseVolume', msg: '正方體一樣多、一樣大，體積一樣。紙要看排好以後的外面。' } : { msg: '比較長不一定比較費紙，要算表面積。' }, say: () => '要比表面積。' }),
       nStep(1, { title: 'A 的表面積', ask: 'A 排法要多少紙？', id: 'A', hints: ['A 是一個長方體。', '三種面各一個加起來，再 × 2。', '看清楚 A 的長、寬、高。'],
         think: '老師算 A 這個長方體的表面積。', together: '一起算：A 的表面積？', figure: ctx => boxFig(ctx.problem.a, { colorAll: shown(ctx, 1) }),
