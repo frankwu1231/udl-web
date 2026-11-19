@@ -49,7 +49,7 @@
         q: ctx => `剩 ${ctx.problem.r} 元，${ctx.problem.w[0]} ${ctx.problem.pw} 元。夠不夠？`, opts: () => [['yes', '夠'], ['no', '不夠']], ans: ctx => ctx.problem.ok ? 'yes' : 'no', wrong: () => ({ obs: 'compareWrong', msg: '再比一次兩個數。' }), say: e => e.problem.ok ? '夠。' : '不夠。' }),
       cStep(3, { title: '做決定', ask: '想要的東西，怎麼辦？', id: 'plan', fixed: true, hints: ['先看：剩下的錢夠不夠？', '錢夠的時候，有幾種做法？', '想一想：買了以後，或存起來以後，會怎樣？'], think: '老師想：夠的話可以買或存；不夠就先存起來。', together: '一起決定：怎麼辦？', figure: () => '',
         q: () => '想要的東西，怎麼辦？', opts: () => [['buy', '錢夠了，可以買，也可以存起來'], ['save', '錢不夠，先存起來，下次再買'], ['borrow', '跟同學借錢買']], ans: ctx => ctx.problem.ok ? 'buy' : 'save',
-        wrong: (ctx, v) => ({ obs: v === 'borrow' ? 'needWant' : 'compareWrong', msg: v === 'borrow' ? '想一想：借來的錢要還嗎？為了想要的東西借錢，好不好？' : '先看剩下的錢夠不夠。' }), say: e => e.problem.ok ? '錢夠了，可以買，也可以存起來。' : '錢不夠，先存起來。' })
+        wrong: (ctx, v) => ({ obs: v === 'borrow' ? 'needWant' : 'compareWrong', msg: v === 'borrow' ? '想一想：借來的錢要還給別人嗎？為了想要的東西借錢，好不好？' : '先看剩下的錢夠不夠。' }), say: e => e.problem.ok ? '錢夠了，可以買，也可以存起來。' : '錢不夠，先存起來。' })
     ],
     done: ctx => `先買需要的${ctx.problem.n[0]}，剩 ${ctx.problem.r} 元，${ctx.problem.ok ? '夠買' : '不夠買'}${ctx.problem.w[0]}。`, chant: '錢有限：需要的先買，想要的有剩錢再想，不夠就先存。', transfer: '想一想：如果只有 50 元，你會先買什麼？'
   });

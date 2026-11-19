@@ -2775,3 +2775,17 @@ test('第 36 版：學習地圖換成錢幣與購物、單元 0 是先測、有�
   assert.ok(await mp.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), '手機沒有橫向捲動');
   await m.close(); await publish({});
 });
+
+test('第 36 版第 4 輪：這一步沒有圖時，選錯不亮空圖框，改說「先看題目和選項再選」；有圖照舊', { skip: skip || !distReady }, async () => {
+  const p = await act('moWork', { difficulty: 'standard', ...MONEY_MAP(['moWork']) });
+  await p.choose('from', 'atm'); await p.check();
+  assert.match(await p.text('#feedback0'), /先看圖再選/, '有圖的步驟照舊');
+  await p.choose('from', 'work'); await p.check(); await p.next();
+  await p.choose('trade', 'buy'); await p.check(); await p.next();
+  await p.choose('atm', 'mine'); await p.check(); await p.next();
+  await p.choose('why', 'never'); await p.check();
+  assert.match(await p.text('#feedback3'), /先看題目和選項再選/);
+  assert.doesNotMatch(await p.text('#feedback3'), /先看圖再選/);
+  assert.equal(await p.page.$('#figure3.look-here'), null, '空圖框不亮');
+  assert.deepEqual(p.errors, []); await p.page.context().close();
+});

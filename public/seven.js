@@ -879,8 +879,10 @@
       if (!msgs[s] || msgs[s].partial || msgs[s].soft || msgs[s].blank || blankStep(s, msgs[s])) continue;
       if (!document.querySelector(`.activity[data-stage="${s}"] [data-choice]`)) continue;
       const fig = $('figure' + s), box = $('feedback' + s);
-      if (fig) { fig.classList.add('look-here'); setTimeout(() => fig.classList.remove('look-here'), 3000); }
-      if (box) box.insertAdjacentHTML('beforeend', `<span class="look-note" data-read data-say>　先看圖再選：${esc(hintFor(s, 1))}</span>`);
+      // 第 36 版：這一步沒有圖（圖區空白）就不亮框，改請學生看題目和選項
+      const hasFig = !!fig && (fig.textContent.trim() !== '' || !!fig.querySelector('img, svg, canvas, table, .mo-coin, .mo-bill'));
+      if (hasFig) { fig.classList.add('look-here'); setTimeout(() => fig.classList.remove('look-here'), 3000); }
+      if (box) box.insertAdjacentHTML('beforeend', `<span class="look-note" data-read data-say>　${hasFig ? '先看圖再選' : '先看題目和選項再選'}：${esc(hintFor(s, 1))}</span>`);
     }
     if (ok) { showStatus(groupBox(), phase === 'reflect' ? '單位答對了！' : '全部答對了，可以按「下一步」。', true); if (phase !== 'reflect') celebrate(); window.areaBuddy?.right(list[list.length - 1]); window.areaTutor?.right(list[list.length - 1]); }
     else if (partial) showStatus(groupBox(), '找到高了！再填它的長度。', true);
