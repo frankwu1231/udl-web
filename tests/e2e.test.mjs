@@ -2563,7 +2563,7 @@ test('第 35 版：整數四則運算 43 個活動都能出題、畫圖，照示
   const code = ['act-int.js', 'act-int2.js', 'act-int3.js', 'act-int4.js'].map(f => fs.readFileSync(new URL('../public/' + f, import.meta.url), 'utf8')).join('\n');
   const used = [...new Set([...code.matchAll(/obs: '([a-zA-Z0-9]+)'/g)].map(m => m[1]))];
   assert.deepEqual(used.filter(k => !out.obsKeys.includes(k)), [], '錯誤觀察代碼都要寫在 observations.js');
-  assert.deepEqual(p.errors, []);
+  assert.deepEqual(p.errors, []); await p.page.context().close();
 });
 
 test('第 35 版：學習地圖換成整數四則運算、單元 0 是先測、有算數小幫手；教師頁可以換成整數教材', { skip: skip || !distReady }, async () => {
@@ -2638,18 +2638,19 @@ test('第 35 版第 2 輪：商寫在對的位上、提示不露出答案、退�
   assert.deepEqual(out.dec[0], [true, true, true, true], '有小數點的都不算對'); assert.equal(out.dec[1], null); assert.equal(out.dec[2], null, '全形數字也算對'); assert.equal(out.dec[3], null);
   assert.equal(out.fw0[0], null, '餘數填全形 ０ 算對');
   assert.equal(out.bus[0], 0);
-  assert.deepEqual(p.errors, []);
+  assert.deepEqual(p.errors, []); await p.page.context().close();
 });
 
 test('第 35 版第 3 輪：原本的面積圖形也接受全形數字；填負號、逗號、中間空格會說哪裡要改，不說「沒填」', { skip: skip || !distReady }, async () => {
-  await setup(); await publish({ flow: 'custom', keep: [] });
+  await setup(); await publish({ flow: 'custom', keep: [], difficulty: 'standard', practice: false, tryFirst: false, confidence: true, guide: false });   // 前面的測試可能套用過「輕度智能障礙建議」，這裡寫清楚
   const ctx = await browser.newContext({ viewport: { width: 820, height: 1180 } }); const s = await ctx.newPage(); const errs = []; s.on('pageerror', e => errs.push(e.message));
   await s.goto(`${base}/seven.html?shape=square`); await s.waitForSelector('#start');
   await s.click('[data-choice="goal"][data-value="g1"]'); await s.click('[data-choice="confidence"][data-value="high"]'); await s.click('[data-choice="method"][data-value="self"]'); await s.click('#start');
-  await s.click('[data-choice="formula"][data-value="product"]'); await s.fill('#a', '３'); await s.fill('#b', '　３　'); await s.click('#check');
-  assert.ok(await s.$('#next:not([disabled])'), '全形邊長可以過'); await s.click('#next');
+  const side = Number((await s.textContent('.activity')).match(/(\d+) 公分/)[1]), fw = n => String(n).replace(/[0-9]/g, c => String.fromCharCode(c.charCodeAt(0) + 0xFEE0));
+  await s.click('[data-choice="formula"][data-value="product"]'); await s.fill('#a', fw(side)); await s.fill('#b', `　${fw(side)}　`); await s.click('#check');
+  await s.waitForTimeout(80); assert.equal(await s.$('#next.locked'), null, '全形邊長可以過'); await s.click('#next');
   const fb = async v => { await s.fill('#total', v); await s.click('#check'); await s.waitForTimeout(60); return s.textContent('.activity:last-of-type .feedback, [id^="feedback"]:not([hidden])'); };
-  assert.match(await fb('-9'), /負號/); assert.match(await fb('9,0'), /逗號/); assert.match(await fb('9 9'), /空格/);
-  assert.match(await fb('９'), /答對/);
+  assert.match(await fb('-9'), /負號/); assert.match(await fb('9,0'), /不要加「，」/); assert.match(await fb('9 9'), /空格/);
+  assert.match(await fb(fw(side * side)), /答對/);
   assert.deepEqual(errs, []); await ctx.close();
 });
