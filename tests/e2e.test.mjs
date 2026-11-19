@@ -2640,3 +2640,16 @@ test('第 35 版第 2 輪：商寫在對的位上、提示不露出答案、退�
   assert.equal(out.bus[0], 0);
   assert.deepEqual(p.errors, []);
 });
+
+test('第 35 版第 3 輪：原本的面積圖形也接受全形數字；填負號、逗號、中間空格會說哪裡要改，不說「沒填」', { skip: skip || !distReady }, async () => {
+  await setup(); await publish({ flow: 'custom', keep: [] });
+  const ctx = await browser.newContext({ viewport: { width: 820, height: 1180 } }); const s = await ctx.newPage(); const errs = []; s.on('pageerror', e => errs.push(e.message));
+  await s.goto(`${base}/seven.html?shape=square`); await s.waitForSelector('#start');
+  await s.click('[data-choice="goal"][data-value="g1"]'); await s.click('[data-choice="confidence"][data-value="high"]'); await s.click('[data-choice="method"][data-value="self"]'); await s.click('#start');
+  await s.click('[data-choice="formula"][data-value="product"]'); await s.fill('#a', '３'); await s.fill('#b', '　３　'); await s.click('#check');
+  assert.ok(await s.$('#next:not([disabled])'), '全形邊長可以過'); await s.click('#next');
+  const fb = async v => { await s.fill('#total', v); await s.click('#check'); await s.waitForTimeout(60); return s.textContent('.activity:last-of-type .feedback, [id^="feedback"]:not([hidden])'); };
+  assert.match(await fb('-9'), /負號/); assert.match(await fb('9,0'), /逗號/); assert.match(await fb('9 9'), /空格/);
+  assert.match(await fb('９'), /答對/);
+  assert.deepEqual(errs, []); await ctx.close();
+});

@@ -46,7 +46,13 @@
   let doneBase = 0;
   const doneAll = () => records.filter(r => r.event === '整題完成' && (r.actId || r.shapeKey) === type).length;
   const doneHere = () => doneAll() - doneBase;
-  const number = id => { const v = String(answers[id] ?? '').trim(); return /^\d+(\.\d+)?$/.test(v) ? Number(v) : null; };
+  // 第 35 版：全形數字、全形小數點、全形空白也接受（和 act-core.js 的 num 一樣）
+  const halfNum = v => String(v ?? '').trim().replace(/[０-９．]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+  const number = id => { const v = halfNum(answers[id]); return /^\d+(\.\d+)?$/.test(v) ? Number(v) : null; };
+  // 有填東西、但不是數字（負號、逗號、中間有空格……）：說清楚哪裡要改，不要說「沒填」
+  const formatMsg = raw => { const v = halfNum(raw); if (!v || /^\d+(\.\d+)?$/.test(v)) return null;
+    if (/^[-－−‐]/.test(v)) return '答案是 0 以上的數，不用加負號。'; if (/^[+＋]/.test(v)) return '只要填數字，不用加「＋」。';
+    if (/[,，、]/.test(v)) return '數字中間不要加逗號。'; if (/\s/.test(v)) return '數字中間不要空格。'; return '只要填數字就好（0、1、2……）。'; };
   const button = (id, text, cls = '', extra = '') => `<button id="${id}" class="${cls}" ${extra}>${text}</button>`;
   const field = (id, label, cls = '') => `<label class="field ${cls}"><span data-read data-say>${label}</span><input id="${id}" data-answer="${id}" inputmode="decimal" autocomplete="off" value="${esc(answers[id] ?? '')}"></label>`;
   const hint1 = s => (L().hints && L().hints[s]) || C.tier1[type][s];
@@ -735,6 +741,10 @@
   // ---------- 檢查 ----------
   const ob = (...a) => window.areaObs ? window.areaObs.numeric(...a) : 'other';   // 第 26 版：錯誤的觀察代碼（看得到的事實）
   function issue(s) {
+    const r = issueRaw(s), f = r && (!r.obs || r.obs === 'unfinished') && r.code && typeof answers[r.code] === 'string' ? formatMsg(answers[r.code]) : null;
+    return f ? { ...r, obs: 'format', msg: f } : r;
+  }
+  function issueRaw(s) {
     if (P()) return P().steps[s].check(ctx());
     const D = dims(), [a, b] = D, fb = C.choiceFeedback, key = C.answerKey(type);
     if (s === 0) { if (!answers.target) return { code: 'target', msg: '請先選一個答案。' }; return answers.target === key.target ? null : { code: 'target', obs: answers.target === 'border' ? 'chosePerimeter' : 'wrongChoice', msg: fb.target[answers.target] }; }
