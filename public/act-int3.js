@@ -36,7 +36,7 @@
           ['c2', () => '要再進幾？', ctx => mulDigits(ctx.problem.a, ctx.problem.b)[1][1]]],
         say: e => { const [w, c] = mulDigits(e.problem.a, e.problem.b)[1]; return `十位寫 ${w}，進 ${c}。`; } }),
       nStep(2, { title: '一列算出答案', ask: '每一位都乘完了嗎？', id: 'v', hints: ['百位也乘，加上進位。', '最後的進位寫在最左邊。', '把每一位寫在同一列。'],
-        think: '老師把每一位都乘完，答案寫成一列。', together: '一起寫：答案是多少？', figure: ctx => colHtml(ctx.problem.a, ctx.problem.b, '*', { res: shown(ctx, 2) ? ctx.problem.v : null }),
+        think: '老師把每一位都乘完，答案寫成一列。', together: '一起寫：答案是多少？', figure: ctx => colHtml(ctx.problem.a, ctx.problem.b, '*', { res: ctx.checked(2) ? ctx.problem.v : null }),
         label: ctx => `${ctx.problem.a} × ${ctx.problem.b} ＝ ？`, ans: ctx => ctx.problem.v, wrong: (ctx, v) => v === noCarryMul(ctx.problem.a, ctx.problem.b) ? { obs: 'noCarry', msg: '進位的數忘了加。' } : null, say: e => `${e.problem.a} × ${e.problem.b} ＝ ${e.problem.v}。` }),
       cStep(3, { title: '估一估', ask: '答案大約多少？合理嗎？', id: 'est', hints: ['把被乘數想成整十或整百。', '再乘乘數。', '選最接近的。'],
         think: '老師估一估：被乘數想成整十（整百），再乘。', together: '一起估：大約多少？', figure: ctx => colHtml(ctx.problem.a, ctx.problem.b, '*', { res: ctx.problem.v }),
@@ -86,7 +86,7 @@
         think: '老師用十位乘：十位代表幾十，答案往左一格寫。', together: '一起算：第二列代表多少？', figure: ctx => colHtml(ctx.problem.a, ctx.problem.b, '*', { hl: 1 }),
         label: ctx => `${ctx.problem.a} × ${ctx.problem.t * 10} ＝ ？`, ans: ctx => ctx.problem.p2, wrong: (ctx, v) => v === ctx.problem.p2 / 10 ? { obs: 'noShift', msg: `十位的 ${ctx.problem.t} 是 ${ctx.problem.t * 10}，答案要再往左一格（後面多一個 0）。` } : null, say: e => `${e.problem.a} × ${e.problem.t * 10} ＝ ${e.problem.p2}。` }),
       nStep(2, { title: '加起來', ask: '兩列加起來。', id: 'v', hints: ['第一列 ＋ 第二列。', '個位對個位。', '滿 10 進 1。'],
-        think: '老師把兩列加起來。', together: '一起加：一共是多少？', pre: placeAid, figure: ctx => colHtml(ctx.problem.p1, ctx.problem.p2, '+', { head: false, res: shown(ctx, 2) ? ctx.problem.v : null }),
+        think: '老師把兩列加起來。', together: '一起加：一共是多少？', pre: placeAid, figure: ctx => colHtml(ctx.problem.p1, ctx.problem.p2, '+', { head: false, res: ctx.checked(2) ? ctx.problem.v : null }),
         label: ctx => `${ctx.problem.p1} ＋ ${ctx.problem.p2} ＝ ？`, ans: ctx => ctx.problem.v, wrong: (ctx, v) => v === ctx.problem.p1 + ctx.problem.p2 / 10 ? { obs: 'noShift', msg: '第二列沒有往左一格。' } : null, say: e => `${e.problem.p1} ＋ ${e.problem.p2} ＝ ${e.problem.v}。` }),
       cStep(3, { title: '估一估', ask: '把兩個數都想成整十。', id: 'est', hints: ['被乘數、乘數都想成最接近的整十（整百）。', '整十乘整十：先乘前面的數，再補 0。', '選最接近的。'],
         think: '老師估一估：兩個數都想成整十，再乘。', together: '一起估：大約多少？', figure: ctx => colHtml(ctx.problem.a, ctx.problem.b, '*', { res: ctx.problem.v }),
@@ -115,7 +115,7 @@
         ans: ctx => ctx.problem.e > ctx.problem.q ? 'big' : ctx.problem.e < ctx.problem.q ? 'small' : 'ok', wrong: () => ({ obs: 'estTooBig', msg: '乘回去比被除數大是太大；減完剩的比除數大是太小。' }),
         say: e => e.problem.e > e.problem.q ? '太大了，要小 1。' : e.problem.e < e.problem.q ? '太小了，要大 1。' : '剛好。' }),
       mStep(3, { title: '調整、寫答案', ask: '商和餘數是多少？', hints: ['照上一步調整商。', '餘數 ＝ 被除數 － 商 × 除數。', '餘數要比除數小。'],
-        think: '老師調整商，再算餘數。', together: '一起寫：商和餘數？', figure: ctx => divHtml(ctx.problem.n, ctx.problem.d, { q: shown(ctx, 3) ? String(ctx.problem.q) : null }),
+        think: '老師調整商，再算餘數。', together: '一起寫：商和餘數？', figure: ctx => divHtml(ctx.problem.n, ctx.problem.d, { q: ctx.checked(3) ? String(ctx.problem.q) : null }),
         fields: [['q', () => '商（坐滿幾輛）', ctx => ctx.problem.q, (ctx, v) => v === ctx.problem.e && v !== ctx.problem.q ? { obs: 'estTooBig', msg: '估的商還要調整。' } : null], ['r', () => '餘數（剩幾人）', ctx => ctx.problem.r, (ctx, v) => v >= ctx.problem.d ? { obs: 'remBig', msg: '餘數要比除數小。' } : null]],
         say: e => `商 ${e.problem.q}，餘 ${e.problem.r}。` })
     ],
@@ -135,7 +135,7 @@
         think: '老師先看前面幾位夠不夠除，決定商有幾位。', together: '一起想：商是幾位數？', pre: prompt, figure: ctx => A.get('inDiv2').planFigure(ctx),
         q: () => '商是幾位數？', opts: () => [['1', '一位數'], ['2', '二位數'], ['3', '三位數']], ans: ctx => String(ctx.problem.qLen), wrong: () => ({ obs: 'startWrong', msg: '從被除數最左邊開始，看到夠除的那一位，商就從那一位寫起。' }), say: e => `商是 ${['', '一', '二', '三'][e.problem.qLen]}位數。` }),
       mStep(1, { title: '估商、算出來', ask: '每一位都估商、乘回去、減。', hints: ['除數想成整十（整百）來估商。', '乘回去太大就小 1，剩的比除數大就大 1。', '不夠除的那一位，商寫 0。'],
-        think: '老師一位一位估商、乘回去、減。', together: '一起算：商和餘數？', figure: ctx => divHtml(ctx.problem.n, ctx.problem.d, { q: shown(ctx, 1) ? String(ctx.problem.q) : null }),
+        think: '老師一位一位估商、乘回去、減。', together: '一起算：商和餘數？', figure: ctx => divHtml(ctx.problem.n, ctx.problem.d, { q: ctx.checked(1) ? String(ctx.problem.q) : null }),
         fields: [['q', () => '商', ctx => ctx.problem.q, (ctx, v) => String(v) === String(ctx.problem.q).replace(/0/g, '') ? { obs: 'zeroQuotient', msg: '不夠除的那一位，商要寫 0。' } : null], ['r', () => '餘數', ctx => ctx.problem.r, (ctx, v) => v >= ctx.problem.d ? { obs: 'remBig', msg: '餘數要比除數小。' } : null]],
         say: e => `商 ${e.problem.q}，餘 ${e.problem.r}。` }),
       nStep(2, { title: '驗算', ask: '商 × 除數 ＋ 餘數 ＝ ？', id: 'chk', hints: ['先算商 × 除數。', '再加餘數。', '要等於被除數。'],
@@ -151,7 +151,9 @@
     // 二年級（N-2-8）：加與乘、減與乘、加減混合；不連乘
     addMul: (r, lv) => { const n = rnd(r, 2, 9), k = rnd(r, 2, lv === 'easy' ? 5 : 9), e = rnd(r, 1, 9); return { p: `每盒有 ${n} 顆蛋，買了 ${k} 盒，又多買了 ${e} 顆。一共有幾顆蛋？`, find: '一共有幾顆蛋', s1q: `${k} 盒有幾顆`, s1: [`${n} × ${k}`, n * k], s2: [`${n * k} ＋ ${e}`, n * k + e], merged: `${n} × ${k} ＋ ${e}`, bad: `${n} × (${k} ＋ ${e})`, badV: n * (k + e), u: '顆', distract: [`一盒有幾顆`, `多買了幾顆`] }; },
     subMul: (r, lv) => { const p = rnd(r, 3, 9), k = rnd(r, 2, lv === 'easy' ? 5 : 9), m = p * k < 50 && lv === 'easy' ? 50 : 100; return { p: `一枝筆 ${p} 元，買 ${k} 枝，付了 ${m} 元。要找回多少元？`, find: '要找回多少元', s1q: `${k} 枝筆要多少元`, s1: [`${p} × ${k}`, p * k], s2: [`${m} － ${p * k}`, m - p * k], merged: `${m} － ${p} × ${k}`, bad: `(${m} － ${p}) × ${k}`, badV: (m - p) * k, u: '元', distract: [`付了多少元`, `一枝多少元`] }; },
-    addSub: (r, lv) => { const top = lv === 'easy' ? 50 : 300; let a, b, c; do { a = rnd(r, 20, top); b = rnd(r, 5, a - 5); c = rnd(r, 5, top); } while (a - b + c > 999); return { p: `公車上有 ${a} 人，到站下車 ${b} 人，又上車 ${c} 人。現在車上有幾人？`, find: '現在車上有幾人', s1q: '下車以後剩幾人', s1: [`${a} － ${b}`, a - b], s2: [`${a - b} ＋ ${c}`, a - b + c], merged: `${a} － ${b} ＋ ${c}`, bad: `${a} － (${b} ＋ ${c})`, badV: a - b - c, u: '人', distract: ['上車的有幾人', '一開始有幾人'] }; },
+    addSub: (r, lv) => { const bus = lv === 'easy', top = bus ? 40 : 300; let a, b, c; do { a = rnd(r, 20, top); b = rnd(r, 5, a - 5); c = rnd(r, 5, bus ? 30 : top); } while (a - b + c > (bus ? 45 : 999));   // 公車最多 45 人；人多的用體育館
+      return bus ? { p: `公車上有 ${a} 人，到站下車 ${b} 人，又上車 ${c} 人。現在車上有幾人？`, find: '現在車上有幾人', s1q: '下車以後剩幾人', s1: [`${a} － ${b}`, a - b], s2: [`${a - b} ＋ ${c}`, a - b + c], merged: `${a} － ${b} ＋ ${c}`, bad: `${a} － (${b} ＋ ${c})`, badV: a - b - c, u: '人', distract: ['上車的有幾人', '一開始有幾人'] }
+        : { p: `體育館裡有 ${a} 人看球賽，中場走了 ${b} 人，又進來 ${c} 人。現在有幾人？`, find: '現在有幾人', s1q: '走了以後剩幾人', s1: [`${a} － ${b}`, a - b], s2: [`${a - b} ＋ ${c}`, a - b + c], merged: `${a} － ${b} ＋ ${c}`, bad: `${a} － (${b} ＋ ${c})`, badV: a - b - c, u: '人', distract: ['進來的有幾人', '一開始有幾人'] }; },
     // 三年級（N-3-7）：連乘、加與除、減與除
     mulMul: (r, lv) => { const a = rnd(r, 2, lv === 'easy' ? 4 : 9), b = rnd(r, 2, 9), k = rnd(r, 2, lv === 'easy' ? 4 : 9); return { p: `一箱有 ${a} 盒餅乾，一盒有 ${b} 片。${k} 箱一共有幾片？`, find: `${k} 箱一共有幾片`, s1q: '一箱有幾片', s1: [`${b} × ${a}`, a * b], s2: [`${a * b} × ${k}`, a * b * k], merged: `${b} × ${a} × ${k}`, bad: `${b} × ${a} ＋ ${k}`, badV: a * b + k, u: '片', distract: ['一盒有幾片', '有幾箱'] }; },
     addDiv: (r, lv) => { const k = rnd(r, 2, lv === 'easy' ? 5 : 9), each = rnd(r, 3, 9), t = k * each, a = rnd(r, 2, t - 2), b = t - a; return { p: `小安有 ${a} 張貼紙，媽媽又給他 ${b} 張。他把貼紙平分給 ${k} 個朋友，每人幾張？`, find: '每人分到幾張', s1q: '一共有幾張', s1: [`${a} ＋ ${b}`, t], s2: [`${t} ÷ ${k}`, each], merged: `(${a} ＋ ${b}) ÷ ${k}`, bad: `${a} ＋ ${b} ÷ ${k}`, badV: a + b / k, u: '張', distract: ['媽媽給幾張', '有幾個朋友'] }; },
@@ -203,7 +205,7 @@
         q: () => '併成一個算式是哪一個？', opts: ctx => uniq([['ok', ctx.problem.merged], ['bad', ctx.problem.bad]]), ans: () => 'ok', wrong: () => ({ obs: 'leftToRight', msg: '照「括號先算、先乘除後加減」算這個式子，和題目的順序一樣嗎？' }), say: e => `${e.problem.merged}。` }),
       nStep(2, { title: '算出來', ask: '照順序算出答案。', id: 'v', hints: ['括號先算。', '再先乘除後加減。', '一步一步寫下來。'],
         think: '老師照順序算出來。', together: '一起算：答案是多少？', pre: timesAid, figure: ctx => big(esc(ctx.problem.merged)),
-        label: ctx => `${ctx.problem.merged} ＝ ？`, ans: ctx => ctx.problem.ans, wrong: (ctx, v) => v === ctx.problem.badV ? { obs: 'leftToRight', msg: '算的順序不對。' } : null, say: e => `${e.problem.merged} ＝ ${e.problem.ans}。` })
+        label: ctx => `${ctx.problem.merged} ＝ ？`, ans: ctx => ctx.problem.ans, wrong: (ctx, v) => v === ctx.problem.s1[1] ? { obs: 'skipStep', msg: '這是第一步的答案，還要再算一步。' } : v === ctx.problem.badV ? { obs: 'leftToRight', msg: '算的順序不對。' } : null, say: e => `${e.problem.merged} ＝ ${e.problem.ans}。` })
     ],
     reasons: rWord, done: ctx => `${ctx.problem.merged} ＝ ${ctx.problem.ans}。`, chant: '併式：兩步寫成一式，先算的加減要加括號。', transfer: '想一想：(20 － 5) × 3 和 20 － 5 × 3 一樣嗎？'
   });

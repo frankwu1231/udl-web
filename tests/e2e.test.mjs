@@ -2550,7 +2550,7 @@ test('第 35 版：整數四則運算 43 個活動都能出題、畫圖，照示
         if ((id === 'inMissAdd' || id === 'inMissSub') && P.c > 999) bad.push(`${id} 超過三位數：${P.c}`);
         if (['inGroups', 'inTimes', 'inArray', 'inPack', 'inShare'].includes(id) && (P.n || P.a || P.r) > 9) bad.push(`${id} 超過九九範圍`);
         if (id === 'inDivCol' && (P.n > 999 || P.n < 10)) bad.push(`${id} 被除數不是二、三位數：${P.n}`);
-        if (id === 'inDivCol' && level === 'challenge' && !/0/.test(String(P.q).slice(1))) bad.push(`${id} 挑戰的商中間沒有 0：${P.q}`);
+        if (id === 'inDivCol' && level === 'challenge' && !/0/.test(String(P.q).slice(1, -1))) bad.push(`${id} 挑戰的商中間沒有 0：${P.q}`);
         if ((id === 'inDiv2' || id === 'inEstQ') && P.d > 999) bad.push(`${id} 除數超過三位`);
         if (id === 'inOrder' && (!Number.isInteger(P.v) || P.v < 0 || !Number.isInteger(P.fv))) bad.push(`${id} 不是整數：${P.text}`);
       }
@@ -2578,4 +2578,61 @@ test('第 35 版：學習地圖換成整數四則運算、單元 0 是先測、�
   assert.match(await tp.innerText('[data-pkg="int"]'), /整數/);
   assert.deepEqual(errs, []); await ctx.close(); await tp.close();
   await publish({});
+});
+
+test('第 35 版第 2 輪：商寫在對的位上、提示不露出答案、退位小格、商中間的 0、9-1 漏算、整數才算對、公車人數合理', { skip: skip || !distReady }, async () => {
+  const p = await act('inDivCol', { difficulty: 'standard', ...INT_MAP(['inDivCol']) });
+  const out = await p.page.evaluate(() => {
+    const A = window.areaActs, I = window.intFig, r = [];
+    const mk = (pl, problem, o = {}) => ({ answers: {}, state: {}, problem, plugin: pl, settings: {}, method: 'mark', level: o.level || 'standard', hint: () => o.hint ?? 0, checked: s => (o.checked || []).includes(s), invalidate() {}, refreshFigure() {}, rerender() {}, log() {}, choice: (k, t, items) => items.map(x => x[1]).join('|') });
+    const cells = html => { const d = document.createElement('div'); d.innerHTML = html; return [...d.querySelectorAll('tr')].map(tr => [...tr.children].map(td => td.textContent.trim())); };
+    // 1. 39 ÷ 3：第一個商 1 寫在十位（3）上面
+    const dv = A.get('inDivCol'), dp = { n: 39, d: 3, q: 13, r: 0, startLen: 1, q1: 1, r1: 0 };
+    r.push(['div2', cells(dv.steps[2].figure(mk(dv, dp)))[0]]);
+    r.push(['div3', cells(dv.steps[3].figure(mk(dv, dp)))[0]]);
+    r.push(['div3done', cells(dv.steps[3].figure(mk(dv, dp, { checked: [3] })))[0]]);
+    const dp2 = { n: 680, d: 4, q: 170, r: 0, startLen: 1, q1: 1, r1: 2 };
+    r.push(['div680', cells(dv.steps[2].figure(mk(dv, dp2)))[0]]);
+    // 2、4. 681 － 444：提示第三層也不露答案；退位小格 7、11，原來的 8、1 劃掉
+    const sb = A.get('inSubCol'), sp = { a: 681, b: 444, d: 237, t: ['跳繩', '下'] };
+    const h3 = sb.steps[3].figure(mk(sb, sp, { hint: 3 }));
+    r.push(['subHint', /237/.test(h3)]);
+    r.push(['subDone', /237/.test(sb.steps[3].figure(mk(sb, sp, { checked: [3] })))]);
+    r.push(['borrow', cells(h3).find(row => row.includes('11')), (h3.match(/in-x/g) || []).length]);
+    r.push(['borrow0', I.borrowRow(503, 127).join(',')]);
+    r.push(['step2before', /11/.test(sb.steps[2].figure(mk(sb, sp)))]);
+    // 第三層提示用了 shown 的其他直式也不露答案
+    const leak = [];
+    for (const id of ['inAddCol', 'inMulti', 'inMul1', 'inMul2', 'inEstQ', 'inDiv2', 'inDivCol', 'inSubCol']) { const pl = A.get(id); for (let i = 0; i < 6; i++) { const pr = pl.makeProblem('standard', i, Math.random), ans = String(pr.v ?? pr.q ?? pr.d ?? pr.s);
+      pl.steps.forEach(st => { if (!st.figure) return; const c2 = mk(pl, pr); st.solve(c2); if (!Object.values(c2.answers).map(String).includes(ans)) return; const d = document.createElement('div'); d.innerHTML = st.figure(mk(pl, pr, { hint: 3 })); const res = d.querySelector('tr.in-res'); if (res && res.textContent.replace(/\s/g, '') === ans) leak.push(`${id} 第${pl.steps.indexOf(st) + 1}步`); }); } }
+    r.push(['leak', [...new Set(leak)]]);
+    // 3. 挑戰：商中間有 0
+    const qs = Array.from({ length: 300 }, (_, i) => dv.makeProblem('challenge', i, Math.random).q);
+    r.push(['mid0', qs.filter(q => !/0/.test(String(q).slice(1, -1))).length]);
+    // 5. 9-1 只算第一步
+    const mg = A.get('inMerge'), mp = mg.makeProblem('standard', 2, Math.random), mc = mk(mg, mp); mc.answers.v = String(mp.s1[1]);
+    r.push(['merge', mp.s1[1] === mp.ans ? 'skipStep' : (mg.steps[2].check(mc) || {}).obs]);
+    // 6. 小數不算對
+    const ct = A.get('inCount'), cp = ct.makeProblem('standard', 0, Math.random), cc = mk(ct, cp); const st = ct.steps.find(s => s.ids && s.ids.length === 1 && /^\d+$/.test(String((() => { const c2 = mk(ct, cp); s.solve(c2); return c2.answers[s.ids[0]]; })())));
+    st.solve(cc); const okv = cc.answers[st.ids[0]]; cc.answers[st.ids[0]] = okv + '.0000000001';
+    r.push(['dec', st.check(cc) !== null, (() => { cc.answers[st.ids[0]] = okv; return st.check(cc); })()]);
+    // 7. 公車最多 45 人；人多的不是公車
+    let bus = 0;
+    for (const lv of ['easy', 'standard', 'challenge']) for (let i = 0; i < 300; i++) { const q = A.get('inTwoStep').makeProblem(lv, i, Math.random); if (/公車/.test(q.prompt) && Math.max(q.s1[1], q.ans, ...(q.prompt.match(/\d+/g) || []).map(Number)) > 45) bus++; }
+    for (let i = 0; i < 300; i++) { const q = mg.makeProblem('standard', i, Math.random); if (/公車/.test(q.prompt) && Math.max(q.ans, ...(q.prompt.match(/\d+/g) || []).map(Number)) > 45) bus++; }
+    r.push(['bus', bus]);
+    return Object.fromEntries(r.map(x => [x[0], x.slice(1)]));
+  });
+  assert.deepEqual(out.div2[0], ['', '1', ''], '39 ÷ 3 第一個商在十位上面');
+  assert.deepEqual(out.div3[0], ['', '1', ''], '答對前第三步還是只有第一個商');
+  assert.deepEqual(out.div3done[0], ['', '1', '3']);
+  assert.deepEqual(out.div680[0], ['', '1', '', ''], '680 ÷ 4 第一個商在百位上面');
+  assert.equal(out.subHint[0], false, '第三層提示不顯示 237'); assert.equal(out.subDone[0], true);
+  assert.ok(out.borrow[0] && out.borrow[0].includes('7') && out.borrow[0].includes('11'), JSON.stringify(out.borrow)); assert.equal(out.borrow[1], 2);
+  assert.equal(out.borrow0[0], '13,9,4'); assert.equal(out.step2before[0], false, '借位小格是第 2 步的答案，答對前不顯示');
+  assert.deepEqual(out.leak[0], [], '答對前直式不顯示答案'); assert.equal(out.mid0[0], 0);
+  assert.equal(out.merge[0], 'skipStep');
+  assert.equal(out.dec[0], true, '16.0000000001 不算對'); assert.equal(out.dec[1], null);
+  assert.equal(out.bus[0], 0);
+  assert.deepEqual(p.errors, []);
 });

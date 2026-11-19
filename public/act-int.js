@@ -8,7 +8,11 @@
 // 課綱備註：一年級 10 以內；N-2-2 加法最多二次進位、減法限一次退位；R-2-4 只用加法驗算減法；N-3-5 被除數二、三位數、須處理商中有 0；R-4-1 併式限整數。
 (() => {
   const A = window.areaActs, U = A.util, { esc } = U, R = window.fracFig;
-  const { rnd, any, fromLevel, big, nStep, cStep, mStep, prompt, shown } = R;
+  const { rnd, any, fromLevel, big, cStep, prompt, shown } = R;
+  // 整數教材：答案一定是 0 以上的整數，填小數（例如 16.0000000001）不算對
+  const notInt = (ctx, ids) => ids.find(id => { const raw = ctx.answers[id]; if (raw == null || String(raw).trim() === '') return false; const v = Number(String(raw).trim()); return Number.isFinite(v) && !Number.isInteger(v); });
+  const intOnly = st => { const base = st.check; st.check = ctx => { const bad = notInt(ctx, st.ids); return bad ? { code: bad, obs: 'other', msg: '答案是整數，不會有小數點。' } : base(ctx); }; return st; };
+  const nStep = (n, o) => intOnly(R.nStep(n, o)), mStep = (n, o) => intOnly(R.mStep(n, o));
   const timesAid = ctx => window.factorFig ? window.factorFig.timesAid(ctx) : '';
 
   // ---------- 計算 ----------
@@ -42,14 +46,17 @@
     const T = String(top), B = String(bot), Rs = o.res == null ? '' : String(o.res), sh = o.shift || 0;
     const W = Math.max(T.length, B.length + sh, Rs.length) + 1;
     const cell = (s, i, cls = '') => `<td class="${cls}${o.hl != null && W - 1 - i === o.hl ? ' hl' : ''}">${s}</td>`;
-    const line = (str, pad, lead = '', cls = '') => { const arr = Array.from({ length: W }, (_, i) => { const k = i - (W - pad - str.length); return k >= 0 && k < str.length ? str[k] : ''; }); if (lead) arr[0] = lead; return `<tr>${arr.map((s, i) => cell(s, i, cls)).join('')}</tr>`; };
+    const line = (str, pad, lead = '', cls = '', strike) => { const arr = Array.from({ length: W }, (_, i) => { const k = i - (W - pad - str.length); return k >= 0 && k < str.length ? str[k] : ''; }); if (lead) arr[0] = lead; return `<tr>${arr.map((s, i) => cell(s, i, `${cls}${strike && strike.includes(W - 1 - i) ? ' in-x' : ''}`)).join('')}</tr>`; };
     const carry = o.carry ? `<tr class="in-carry">${Array.from({ length: W }, (_, i) => cell(o.carry[W - 1 - i] ?? '', i)).join('')}</tr>` : '';
     const names = ['個', '十', '百', '千', '萬'], head = o.head === false ? '' : `<tr class="in-head">${Array.from({ length: W }, (_, i) => `<th scope="col">${i === 0 ? '' : names[W - 1 - i] || ''}</th>`).join('')}</tr>`;
-    return `<table class="in-col" role="img" aria-label="${esc(o.aria || `直式：${T} ${OPS[op]} ${B}${Rs ? `，答案 ${Rs}` : ''}`)}">${head}${carry}${line(T, 0)}${line(B, sh, OPS[op])}<tr class="in-line"><td colspan="${W}"></td></tr>${Rs ? line(Rs, 0, '', 'in-res') : ''}</table>`;
+    return `<table class="in-col" role="img" aria-label="${esc(o.aria || `直式：${T} ${OPS[op]} ${B}${Rs ? `，答案 ${Rs}` : ''}`)}">${head}${carry}${line(T, 0, '', '', o.strike)}${line(B, sh, OPS[op])}<tr class="in-line"><td colspan="${W}"></td></tr>${Rs ? line(Rs, 0, '', 'in-res') : ''}</table>`;
   }
+  // 減法退位：每一位借位以後的數（從個位算起；沒有變的是空字串），例如 681－444 → ['11', '7', '']；503－127 → ['13', '9', '4']
+  function borrowRow(a, b) { const out = []; let c = 0; while (a > 0) { const d = a % 10 - c, need = d < b % 10, v = d + (need ? 10 : 0); out.push(v !== a % 10 ? String(v) : ''); c = need ? 1 : 0; a = Math.floor(a / 10); b = Math.floor(b / 10); } return out; }
+  const borrowFig = (a, b) => { const row = borrowRow(a, b); return { carry: row, strike: row.map((v, k) => v ? k : -1).filter(k => k >= 0) }; };
   // 直式除法：被除數 n、除數 d；o.q：商（字串，可以有「？」）；o.hl：被除數要發亮的位數（從左邊數幾位）
   function divHtml(n, d, o = {}) {
-    const N = String(n), Q = o.q == null ? '' : String(o.q).padStart(N.length, ' ');
+    const N = String(n), end = o.qEnd == null ? N.length - 1 : o.qEnd, Q = o.q == null ? '' : String(o.q).padStart(end + 1, ' ').padEnd(N.length, ' ');   // o.qEnd：商的最後一位寫在被除數第幾位（從左邊 0 算）上面，算到一半時用
     const qRow = Array.from({ length: N.length }, (_, i) => `<td>${(Q[i] || '').trim()}</td>`).join('');
     const nRow = N.split('').map((c, i) => `<td class="${o.hl && i < o.hl ? 'hl' : ''}">${c}</td>`).join('');
     return `<table class="in-col in-div" role="img" aria-label="${esc(o.aria || `直式除法：${N} ÷ ${d}${o.q ? `，商 ${o.q}` : ''}`)}"><tr class="in-res"><td></td>${qRow}</tr><tr><td class="in-d">${d}</td>${nRow}</tr></table>`;
@@ -141,12 +148,12 @@
       q: ctx => `個位：${ctx.problem.a % 10} 減 ${ctx.problem.b % 10}，夠不夠減？`, opts: () => [['no', '不夠減，要借'], ['yes', '夠減']], ans: () => 'no',
       wrong: () => ({ obs: 'subSmallFromBig', msg: '上面的數比較小，不能倒過來用下面減上面。要向十位借。' }), say: ex => `${ex.problem.a % 10} 不夠減 ${ex.problem.b % 10}，要借。` }),
     mStep(2, { title: '借 1 個十', ask: '借了以後，十位剩幾？個位變幾？', hints: ['十位借走 1 個，十位的數少 1。', '借來的 1 個十換成 10 個一，加到個位。', '個位變成「10 ＋ 原來的數」。'],
-      think: '老師向十位借 1 個十：十位少 1，個位多 10。', together: '一起借：十位剩幾？個位變幾？', figure: ctx => subFig(ctx, { hl: 1 }), pre: placeAid,
+      think: '老師向十位借 1 個十：十位少 1，個位多 10。', together: '一起借：十位剩幾？個位變幾？', figure: ctx => subFig(ctx, ctx.checked(2) ? { hl: 1, ...borrowFig(ctx.problem.a, ctx.problem.b) } : { hl: 1 }), pre: placeAid,
       fields: [['tens', () => '十位借走 1 個以後，十位的數是幾？', ctx => tensAfter(ctx.problem.a), (ctx, v) => v === Math.floor(ctx.problem.a / 10) % 10 ? { obs: 'noBorrowDec', msg: '借走了 1 個十，十位要少 1。' } : null],
         ['ones', () => '個位現在是幾？', ctx => ctx.problem.a % 10 + 10, (ctx, v) => v === ctx.problem.a % 10 + 1 ? { msg: '借來的是 1 個十，等於 10 個一，要加 10。' } : null]],
       say: ex => `十位剩 ${tensAfter(ex.problem.a)}，個位變成 ${ex.problem.a % 10 + 10}。` }),
     nStep(3, { title: '一位一位算', ask: '從個位往左，一位一位減。', id: 'd', hints: ['先算個位，再算十位，再往左。', '十位要用借走以後的數。', `每一位都減完，就是答案。`],
-      think: '老師從個位開始，一位一位往左減。', together: '一起算：答案是多少？', figure: ctx => subFig(ctx, { res: shown(ctx, 3) ? ctx.problem.d : null }),
+      think: '老師從個位開始，一位一位往左減。', together: '一起算：答案是多少？', figure: ctx => subFig(ctx, { ...borrowFig(ctx.problem.a, ctx.problem.b), res: ctx.checked(3) ? ctx.problem.d : null }),
       label: ctx => `${ctx.problem.a} － ${ctx.problem.b} ＝ ？`, ans: ctx => ctx.problem.d,
       wrong: (ctx, v) => { const p = ctx.problem; return v === bigMinusSmall(p.a, p.b) ? { obs: 'subSmallFromBig', msg: '個位不夠減時，不能用大的減小的。要先借。' } : v === p.d + 10 || v === p.d + 100 || v === p.d + 1000 ? { obs: 'noBorrowDec', msg: '借走的那一位要少 1。' } : null; },
       say: ex => `${ex.problem.a} － ${ex.problem.b} ＝ ${ex.problem.d}。` }),
@@ -172,7 +179,7 @@
       const d = rnd(rand, 2, 9), n = rnd(rand, lo, hi), q = Math.floor(n / d), r = n % d, lead = Number(String(n)[0]);
       if (q < 10) continue;
       if (level === 'easy' && r !== 0 && i % 2 === 0) continue;
-      if (level === 'challenge' && !/0/.test(String(q).slice(1))) continue;   // 挑戰：商中間有 0
+      if (level === 'challenge' && !/0/.test(String(q).slice(1, -1))) continue;   // 挑戰：商中間有 0（末尾的 0 不算）
       if (level === 'standard' && i % 3 === 2 && !/0/.test(String(q).slice(1))) continue;
       const startLen = lead >= d ? 1 : 2, q1 = Math.floor(Number(String(n).slice(0, startLen)) / d), r1 = Number(String(n).slice(0, startLen)) % d;
       return { n, d, q, r, startLen, q1, r1, dims: [n, d], prompt: `有 ${n} 片餅乾，每 ${d} 片裝一袋。可以裝幾袋？剩幾片？` };
@@ -191,11 +198,11 @@
       label: ctx => `${String(ctx.problem.n).slice(0, ctx.problem.startLen)} ÷ ${ctx.problem.d}，商是幾？`, ans: ctx => ctx.problem.q1,
       wrong: (ctx, v) => v === ctx.problem.q1 + 1 ? { obs: 'estTooBig', msg: `${ctx.problem.d} × ${v} 超過了，要小 1。` } : null, say: ex => `${String(ex.problem.n).slice(0, ex.problem.startLen)} ÷ ${ex.problem.d}，商 ${ex.problem.q1}。` }),
     nStep(2, { title: '乘回去、減', ask: '乘回去，再減，剩幾？', id: 'r1', hints: ['商 × 除數，寫在下面。', '上面的數減掉它。', '剩下的要比除數小。'],
-      think: '老師把商乘回去，再相減，看剩幾。', together: '一起算：剩幾？', figure: ctx => divFig(ctx, { hl: ctx.problem.startLen, q: String(ctx.problem.q1) }),
+      think: '老師把商乘回去，再相減，看剩幾。', together: '一起算：剩幾？', figure: ctx => divFig(ctx, { hl: ctx.problem.startLen, q: String(ctx.problem.q1), qEnd: ctx.problem.startLen - 1 }),
       label: ctx => `${String(ctx.problem.n).slice(0, ctx.problem.startLen)} － ${ctx.problem.d} × ${ctx.problem.q1} ＝ ？`, ans: ctx => ctx.problem.r1,
       wrong: (ctx, v) => v >= ctx.problem.d ? { obs: 'remBig', msg: '剩下的比除數大（或一樣），表示商可以再大一點。' } : null, say: ex => `剩 ${ex.problem.r1}。` }),
     mStep(3, { title: '下一位拿下來', ask: '每一位都要寫商，不夠分寫 0。', hints: ['把下一位拿下來，和剩下的合起來再分。', '不夠分，商要寫 0，不能跳過。', '一直做到個位。'],
-      think: '老師把下一位拿下來，繼續分；不夠分的那一位商寫 0。', together: '一起算：商和餘數是多少？', figure: ctx => divFig(ctx, { q: shown(ctx, 3) ? String(ctx.problem.q) : String(ctx.problem.q1) }), pre: timesAid,
+      think: '老師把下一位拿下來，繼續分；不夠分的那一位商寫 0。', together: '一起算：商和餘數是多少？', figure: ctx => divFig(ctx, ctx.checked(3) ? { q: String(ctx.problem.q) } : { q: String(ctx.problem.q1), qEnd: ctx.problem.startLen - 1 }), pre: timesAid,
       fields: [['q', () => '商是多少？', ctx => ctx.problem.q, (ctx, v) => String(v) === String(ctx.problem.q).replace(/0/g, '') ? { obs: 'zeroQuotient', msg: '不夠分的那一位，商要寫 0。' } : null],
         ['r', () => '餘數是多少？', ctx => ctx.problem.r, (ctx, v) => v >= ctx.problem.d ? { obs: 'remBig', msg: '餘數要比除數小。' } : null]],
       say: ex => `商 ${ex.problem.q}，餘 ${ex.problem.r}。` }),
@@ -255,5 +262,5 @@
   });
 
   window.intFig = { rnd, any, fromLevel, big, nStep, cStep, mStep, prompt, shown, esc, timesAid, placeAid, digits, carries, borrows, bigMinusSmall, noCarrySum, round10, round100, OPS, calc, ex, opOpts, sayN,
-    chips, groups, rows, blocks, colHtml, divHtml, tapeSVG, STORY, THING1, tensAfter };
+    chips, groups, rows, blocks, colHtml, divHtml, borrowRow, borrowFig, tapeSVG, STORY, THING1, tensAfter };
 })();
