@@ -16,3 +16,11 @@ test('學生頁用到的國字，注音讀音表都有', () => {
   }
   assert.deepEqual([...missing], [], '沒有注音的字：' + [...missing].join(''));
 });
+
+// 第 36 版第 2 輪：字表分段相接時漏了空白，讀音會黏到下一個字（「伴ㄅㄢˋ板ㄅㄢˇ」）
+test('注音字表每一筆的讀音都只有注音，沒有黏到國字', () => {
+  const src = read('zhuyin.js'), i = src.indexOf('const CHARS'), body = src.slice(i, src.indexOf("';", i) + 2);
+  const all = body.replace(/\/\/[^\n]*/g, '').replace(/'\s*\+\s*'/g, '').match(/'([^']*)'/)[1];
+  const bad = all.split(' ').filter(Boolean).filter(e => /[一-鿿]/.test(e.slice(1)));
+  assert.deepEqual(bad, []);
+});

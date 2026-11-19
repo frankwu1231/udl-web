@@ -47,7 +47,7 @@
         label: ctx => `${ctx.problem.B} － ${ctx.problem.pn} ＝ ？`, ans: ctx => ctx.problem.r, wrong: (ctx, v) => v === I.bigMinusSmall(ctx.problem.B, ctx.problem.pn) ? { obs: 'subSmallFromBig', msg: '不夠減要借，不能倒過來減。' } : null, say: e => `還剩 ${e.problem.r} 元。` }),
       cStep(2, { title: '還夠買想要的嗎', ask: '剩下的錢，夠買想要的嗎？', id: 'ok', fixed: true, hints: ['剩下的錢和想要的價錢比一比。', '剩下的比較多（或一樣）：夠。', '剩下的比較少：不夠。'], think: '老師把剩下的錢和想要的價錢比一比。', together: '一起比：夠不夠？', figure: ctx => A.get('moBudgetChoice').planFigure(ctx),
         q: ctx => `剩 ${ctx.problem.r} 元，${ctx.problem.w[0]} ${ctx.problem.pw} 元。夠不夠？`, opts: () => [['yes', '夠'], ['no', '不夠']], ans: ctx => ctx.problem.ok ? 'yes' : 'no', wrong: () => ({ obs: 'compareWrong', msg: '再比一次兩個數。' }), say: e => e.problem.ok ? '夠。' : '不夠。' }),
-      cStep(3, { title: '做決定', ask: '想要的東西，怎麼辦？', id: 'plan', fixed: true, hints: ['錢夠，可以買，也可以存起來。', '錢不夠，先存起來。', '不可以向別人借錢買想要的東西。'], think: '老師想：夠的話可以買或存；不夠就先存起來。', together: '一起決定：怎麼辦？', figure: () => '',
+      cStep(3, { title: '做決定', ask: '想要的東西，怎麼辦？', id: 'plan', fixed: true, hints: ['先看：剩下的錢夠不夠？', '錢夠的時候，有幾種做法？', '想一想：買了以後，或存起來以後，會怎樣？'], think: '老師想：夠的話可以買或存；不夠就先存起來。', together: '一起決定：怎麼辦？', figure: () => '',
         q: () => '想要的東西，怎麼辦？', opts: () => [['buy', '錢夠了，可以買，也可以存起來'], ['save', '錢不夠，先存起來，下次再買'], ['borrow', '跟同學借錢買']], ans: ctx => ctx.problem.ok ? 'buy' : 'save',
         wrong: (ctx, v) => ({ obs: v === 'borrow' ? 'needWant' : 'compareWrong', msg: v === 'borrow' ? '想要的東西不用借錢買，可以先存起來。' : '看剩下的錢夠不夠。' }), say: e => e.problem.ok ? '錢夠了，可以買，也可以存起來。' : '錢不夠，先存起來。' })
     ],
@@ -66,7 +66,7 @@
       nStep(1, { title: '存起來要多久', ask: '不買小的，每週存起來，要幾週？', id: 'k', hints: ['先算還差多少錢。', '每週存的錢，一週一週加上去。', '加到和大的價錢一樣多，數一數幾週。'], think: '老師先算還差多少，再一週一週加，看要幾週。', together: '一起算：要幾週？', pre: timesAid, figure: ctx => A.get('moWait').planFigure(ctx),
         label: ctx => `有 ${ctx.problem.H} 元，每週存 ${ctx.problem.W} 元，幾週後可以買${ctx.problem.it[0]}？`, ans: ctx => ctx.problem.k, wrong: (ctx, v) => v === ctx.problem.T - ctx.problem.H ? { obs: 'skipStep', msg: '這是還差的錢。再算要存幾週。' } : null,
         say: e => `還差 ${e.problem.T - e.problem.H} 元，${Array.from({ length: e.problem.k }, (_, j) => e.problem.H + (j + 1) * e.problem.W).join('、')}，要 ${e.problem.k} 週。` }),
-      cStep(2, { title: '看到廣告', ask: '看到廣告好想買，先怎麼做？', id: 'ad', fixed: true, hints: ['廣告會讓人很想買。', '先想想要需要三問。', '不吵、不馬上買。'], think: '老師看到廣告，先想三個問題，再決定。', together: '一起想：看到廣告怎麼做？', figure: () => big('📺 🛍️'),
+      cStep(2, { title: '看到廣告', ask: '看到廣告好想買，先怎麼做？', id: 'ad', fixed: true, hints: ['廣告會讓人很想買。', '想一想：學過的三個問題是什麼？', '不吵、不馬上買。'], think: '老師看到廣告，先想三個問題，再決定。', together: '一起想：看到廣告怎麼做？', figure: () => big('📺 🛍️'),
         q: () => '看到廣告，好想馬上買，先怎麼做？', opts: () => [['ask', '先想：需要嗎？現在一定要嗎？錢夠嗎？'], ['buy', '馬上買'], ['cry', '吵著要大人買']], ans: () => 'ask', wrong: () => ({ obs: 'needWant', msg: '先停下來想三個問題，再決定。' }), say: () => '先想三個問題，再決定。' })
     ],
     done: ctx => `不買${ctx.problem.sm[0]}，存 ${ctx.problem.k} 週就可以買${ctx.problem.it[0]}。`, chant: '等一等：想要的先存起來，看到廣告先想三問。', transfer: '想一想：有沒有什麼東西，你願意存錢等一等再買？'
@@ -103,9 +103,9 @@
         return { dep, place, m, b0, b1, cash, who, dims: [b0, m], prompt: dep ? `${who}把 ${m} 元的紅包錢，拿到${place[0]}存起來。存摺上原來有 ${b0} 元。` : `${who}要從${place[0]}領 ${m} 元繳費。存摺上原來有 ${b0} 元。` }; } },
     planFigure: ctx => big(ctx.problem.place[1] === 'atm' ? '🏧' : '🏦'),
     steps: [
-      cStep(0, { title: '存還是領', ask: '要存錢還是領錢？', id: 'kind', fixed: true, hints: ['錢是放進去，還是拿出來？', '放進去叫「存款」。', '拿出來叫「提款」（領錢）。'], think: '老師想：錢是放進去，還是拿出來？', together: '一起想：存還是領？', pre: prompt, figure: ctx => A.get('moBank').planFigure(ctx),
+      cStep(0, { title: '存還是領', ask: '要存錢還是領錢？', id: 'kind', fixed: true, hints: ['錢是放進去，還是拿出來？', '看選項括號裡的說明。', '想一想：題目裡的人是帶錢去，還是要拿錢回家？'], think: '老師想：錢是放進去，還是拿出來？', together: '一起想：存還是領？', pre: prompt, figure: ctx => A.get('moBank').planFigure(ctx),
         q: () => '這次要做什麼？', opts: () => [['dep', '存款（把錢放進去）'], ['wd', '提款（把錢領出來）']], ans: ctx => ctx.problem.dep ? 'dep' : 'wd', wrong: () => ({ obs: 'bankWrong', msg: '再讀一次：錢是放進去，還是拿出來？' }), say: e => e.problem.dep ? '要存款。' : '要提款。' }),
-      cStep(1, { title: '填單或按鍵', ask: '在櫃台或提款機要怎麼做？', id: 'how', hints: ['先想：這次是要存錢，還是領錢？', '看單子或按鍵上的字，哪一個和你要做的事一樣？', '用提款機時，密碼只有自己知道，要保護好。'], think: '老師想：存錢用存款單，領錢用提款單；提款機的密碼要遮住，不給別人看。', together: '一起選：要怎麼做？', figure: ctx => A.get('moBank').planFigure(ctx),
+      cStep(1, { title: '填單或按鍵', ask: '在櫃台或提款機要怎麼做？', id: 'how', hints: ['先想：這次是要存錢，還是領錢？', '看單子或按鍵上的字，哪一個和你要做的事一樣？', '在櫃台看單子上的字；在提款機看按鍵上的字。'], think: '老師想：存錢用存款單，領錢用提款單；提款機的密碼要遮住，不給別人看。', together: '一起選：要怎麼做？', figure: ctx => A.get('moBank').planFigure(ctx),
         q: ctx => ctx.problem.place[1] === 'atm' ? '在提款機要怎麼做？' : `在${ctx.problem.place[0]}櫃台，要填哪一張單子？`,
         opts: ctx => ctx.problem.place[1] === 'atm' ? [['wd', '按「提款」，輸入密碼時用手遮住'], ['tell', '按「提款」，把密碼說給旁邊的人聽'], ['dep', '按「存款」']] : [['dep', '存款單'], ['wd', '提款單']],
         ans: ctx => ctx.problem.dep ? 'dep' : 'wd', wrong: (ctx, v) => ({ obs: v === 'tell' ? 'wrongChoice' : 'bankWrong', msg: v === 'tell' ? '密碼只有自己知道，不能說給別人聽。' : '存錢和領錢用的不一樣。' }), say: e => e.problem.place[1] === 'atm' ? '按「提款」，輸入密碼時用手遮住。' : `填${e.problem.dep ? '存款單' : '提款單'}。` }),
@@ -151,11 +151,11 @@
         return { a, sp, out, left, X, goal, ok: left >= X, dims: [a, out, X], prompt: `小安這週的零用錢是 ${a} 元，記帳本上寫著花了這些錢。下週想買${goal}（${X} 元）。` }; } },
     planFigure: ctx => ledger([['零用錢', ctx.problem.a, 0], ...ctx.problem.sp.map(([w, p]) => [w, 0, p])]),
     steps: [
-      cStep(0, { title: '看情境', ask: '我要知道什麼？', id: 'goal', hints: ['讀題目：小安想做什麼？', '想知道錢夠不夠買。', '要先知道還剩多少錢。'], think: '老師先想：要知道剩下的錢夠不夠買。', together: '一起想：要知道什麼？', pre: prompt, figure: ctx => A.get('moLedger').planFigure(ctx),
-        q: () => '要知道什麼？', opts: () => [['left', '這週還剩多少錢、夠不夠買'], ['most', '哪一樣最貴'], ['count', '記了幾行']], ans: () => 'left', wrong: () => ({ msg: '題目想知道：剩下的錢夠不夠買。' }), say: () => '要知道還剩多少、夠不夠買。' }),
-      cStep(1, { title: '找出要算什麼', ask: '要先算什麼？', id: 'need', hints: ['剩下的錢 ＝ 零用錢 － 花掉的錢。', '花掉的錢有好幾筆。', '先算花掉的一共多少。'], think: '老師想：先算花掉的一共多少，再從零用錢減掉。', together: '一起想：先算什麼？', figure: ctx => A.get('moLedger').planFigure(ctx),
-        q: () => '要先算什麼？', opts: () => [['out', '花掉的錢一共多少'], ['one', '早餐多少錢'], ['add', '零用錢加上花掉的錢']], ans: () => 'out', wrong: () => ({ obs: 'opWrong', msg: '零用錢會越花越少，不是加上去。先算花掉的一共多少。' }), say: () => '先算花掉的一共多少。' }),
-      cStep(2, { title: '選方法', ask: '花掉的錢一共多少，用什麼算？', id: 'op', fixed: true, hints: ['好幾筆花掉的錢合起來。', '合起來用加的。', '一筆一筆加。'], think: '老師選加法：花掉的錢合起來。', together: '一起選：用什麼算？', figure: ctx => A.get('moLedger').planFigure(ctx),
+      cStep(0, { title: '看情境', ask: '我要知道什麼？', id: 'goal', hints: ['讀題目最後一句：小安在問什麼？', '題目問的是東西的價錢，還是自己的錢？', '想一想：要決定買不買以前，要先知道什麼？'], think: '老師先想：要知道剩下的錢夠不夠買。', together: '一起想：要知道什麼？', pre: prompt, figure: ctx => A.get('moLedger').planFigure(ctx),
+        q: () => '要知道什麼？', opts: () => [['left', '這週還剩多少錢、夠不夠買'], ['most', '哪一樣最貴'], ['count', '記了幾行']], ans: () => 'left', wrong: () => ({ msg: '再讀一次題目最後一句：小安在問什麼？' }), say: () => '要知道還剩多少、夠不夠買。' }),
+      cStep(1, { title: '找出要算什麼', ask: '要先算什麼？', id: 'need', hints: ['剩下的錢 ＝ 零用錢 － 花掉的錢。', '看記帳本：花掉的錢有幾筆？', '好幾筆要一筆一筆減，還是可以先合起來？'], think: '老師想：先算花掉的一共多少，再從零用錢減掉。', together: '一起想：先算什麼？', figure: ctx => A.get('moLedger').planFigure(ctx),
+        q: () => '要先算什麼？', opts: () => [['out', '花掉的錢一共多少'], ['one', '早餐多少錢'], ['add', '零用錢加上花掉的錢']], ans: () => 'out', wrong: () => ({ obs: 'opWrong', msg: '零用錢會越花越少，不是加上去。看看記帳本裡花掉的有幾筆。' }), say: () => '先算花掉的一共多少。' }),
+      cStep(2, { title: '選方法', ask: '花掉的錢一共多少，用什麼算？', id: 'op', fixed: true, hints: ['好幾筆花掉的錢要合起來。', '合起來以後，數目會變多還是變少？', '變多的時候，用哪一種算法？'], think: '老師選加法：花掉的錢合起來。', together: '一起選：用什麼算？', figure: ctx => A.get('moLedger').planFigure(ctx),
         q: () => '用什麼算？', opts: () => OPN, ans: () => '+', wrong: () => ({ obs: 'opWrong', msg: '好幾筆合起來，用加的。' }), say: () => '用加的。' }),
       mStep(3, { title: '算出來', ask: '花掉多少？還剩多少？', hints: ['支出一筆一筆加起來。', '零用錢 － 花掉的錢。', '不夠減要借。'], think: '老師先加花掉的，再從零用錢減掉。', together: '一起算：花掉多少、還剩多少？', pre: placeAid, figure: ctx => A.get('moLedger').planFigure(ctx),
         fields: [['out', () => '花掉一共幾元？', ctx => ctx.problem.out], ['left', () => '還剩幾元？', ctx => ctx.problem.left, (ctx, v) => v === ctx.problem.a + ctx.problem.out ? { obs: 'opWrong', msg: '花掉的錢要減掉。' } : v === I.bigMinusSmall(ctx.problem.a, ctx.problem.out) ? { obs: 'subSmallFromBig', msg: '不夠減要借，不能倒過來減。' } : null]],
@@ -193,7 +193,7 @@
         return { A0, S, H, sp, half, dims: [A0, S, H], prompt: `小安這個月有 ${A0} 元零用錢。他把錢分成三份：${half ? '一半存起來' : `存起來 ${S} 元`}、分享 ${H} 元（買小禮物送家人或捐出去），剩下的可以花。` }; } },
     planFigure: ctx => `<div class="mo-jars"><div>🏦<br>存起來</div><div>🎁<br>分享</div><div>🛍️<br>花用</div></div>`,
     steps: [
-      cStep(0, { title: '為什麼要存', ask: '為什麼要存一些起來？', id: 'why', hints: ['錢花完就沒有了。', '以後可能有需要的時候。', '也可以存起來買更想要的東西。'], think: '老師想：存起來，以後需要的時候才有錢。', together: '一起想：為什麼要存？', pre: prompt, figure: ctx => A.get('moSpendSave').planFigure(ctx),
+      cStep(0, { title: '為什麼要存', ask: '為什麼要存一些起來？', id: 'why', hints: ['錢花完就沒有了。', '想一想：如果明天需要用錢呢？', '想一想：有沒有更想要、要存一陣子才買得起的東西？'], think: '老師想：存起來，以後需要的時候才有錢。', together: '一起想：為什麼要存？', pre: prompt, figure: ctx => A.get('moSpendSave').planFigure(ctx),
         q: () => '為什麼要存一些起來？', opts: () => [['future', '留給以後需要的時候，或存起來買更想要的東西'], ['none', '不用存，全部花掉最好'], ['show', '存起來給同學看']], ans: () => 'future', wrong: () => ({ msg: '錢花完就沒有了，存一些，以後需要時才有。' }), say: () => '留給以後需要的時候。' }),
       nStep(1, { title: '存和分享', ask: '存起來和分享的，一共幾元？', id: 'sh', hints: ['先找出存起來的錢。', '一半就是平分成兩份的一份。', '再加上分享的錢。'], think: '老師先找出存的錢，再加分享的錢。', together: '一起算：一共幾元？', figure: ctx => A.get('moSpendSave').planFigure(ctx),
         label: () => '存起來 ＋ 分享 ＝ 幾元？', ans: ctx => ctx.problem.S + ctx.problem.H, wrong: (ctx, v) => ctx.problem.half && v === ctx.problem.A0 + ctx.problem.H ? { obs: 'other', msg: '存的是一半，不是全部。' } : null, say: e => `${e.problem.S} ＋ ${e.problem.H} ＝ ${e.problem.S + e.problem.H} 元。` }),
