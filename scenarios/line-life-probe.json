@@ -1,0 +1,1989 @@
+{
+  "id": "lineLifeProbe",
+  "version": "1",
+  "kind": "probe",
+  "package": "line",
+  "variant": "life",
+  "title": "折線圖小測驗：生活小觀察家（生活應用）",
+  "itemSecs": 150,
+  "totalSecs": 1500,
+  "forms": [
+    {
+      "id": "A",
+      "items": [
+        {
+          "id": "A01",
+          "type": "lifeWeather",
+          "prompt": "看天氣預報。媽媽說：最高氣溫比 22 度低，要穿長袖。星期四要穿長袖嗎？",
+          "figure": {
+            "chart": {
+              "title": "一週每天的最高氣溫",
+              "xs": [
+                "一",
+                "二",
+                "三",
+                "四",
+                "五",
+                "六",
+                "日"
+              ],
+              "series": [
+                {
+                  "name": "氣溫",
+                  "v": [
+                    26,
+                    30,
+                    16,
+                    20,
+                    14,
+                    28,
+                    12
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 2,
+              "rows": 20,
+              "every": 5,
+              "brk": false,
+              "yName": "氣溫（度）",
+              "xName": "星期"
+            }
+          },
+          "steps": [
+            {
+              "key": "v",
+              "label": "星期四是幾度",
+              "role": "measure",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "wear",
+              "label": "要穿長袖嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "要",
+                "不用"
+              ],
+              "answer": "要"
+            },
+            {
+              "key": "next",
+              "label": "隔天變熱還是變冷",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "變熱",
+                "變冷"
+              ],
+              "answer": "變冷"
+            }
+          ]
+        },
+        {
+          "id": "A02",
+          "type": "lifeWeather",
+          "prompt": "看天氣預報。媽媽說：最高氣溫比 22 度低，要穿長袖。星期三要穿長袖嗎？",
+          "figure": {
+            "chart": {
+              "title": "一週每天的最高氣溫",
+              "xs": [
+                "一",
+                "二",
+                "三",
+                "四",
+                "五",
+                "六",
+                "日"
+              ],
+              "series": [
+                {
+                  "name": "氣溫",
+                  "v": [
+                    22,
+                    26,
+                    12,
+                    20,
+                    20,
+                    22,
+                    26
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 2,
+              "rows": 15,
+              "every": 5,
+              "brk": false,
+              "yName": "氣溫（度）",
+              "xName": "星期"
+            }
+          },
+          "steps": [
+            {
+              "key": "v",
+              "label": "星期三是幾度",
+              "role": "measure",
+              "input": "number",
+              "answer": 12
+            },
+            {
+              "key": "wear",
+              "label": "要穿長袖嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "要",
+                "不用"
+              ],
+              "answer": "要"
+            },
+            {
+              "key": "next",
+              "label": "隔天變熱還是變冷",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "變熱",
+                "變冷"
+              ],
+              "answer": "變熱"
+            }
+          ]
+        },
+        {
+          "id": "A03",
+          "type": "lifeWeather",
+          "prompt": "看天氣預報。媽媽說：最高氣溫比 22 度低，要穿長袖。星期四要穿長袖嗎？",
+          "figure": {
+            "chart": {
+              "title": "一週每天的最高氣溫",
+              "xs": [
+                "一",
+                "二",
+                "三",
+                "四",
+                "五",
+                "六",
+                "日"
+              ],
+              "series": [
+                {
+                  "name": "氣溫",
+                  "v": [
+                    18,
+                    22,
+                    28,
+                    18,
+                    22,
+                    28,
+                    16
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 2,
+              "rows": 15,
+              "every": 5,
+              "brk": false,
+              "yName": "氣溫（度）",
+              "xName": "星期"
+            }
+          },
+          "steps": [
+            {
+              "key": "v",
+              "label": "星期四是幾度",
+              "role": "measure",
+              "input": "number",
+              "answer": 18
+            },
+            {
+              "key": "wear",
+              "label": "要穿長袖嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "要",
+                "不用"
+              ],
+              "answer": "要"
+            },
+            {
+              "key": "next",
+              "label": "隔天變熱還是變冷",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "變熱",
+                "變冷"
+              ],
+              "answer": "變熱"
+            }
+          ]
+        },
+        {
+          "id": "A04",
+          "type": "lifeHealth",
+          "prompt": "目標是每天閱讀至少 20 分鐘。看折線圖回答。",
+          "figure": {
+            "chart": {
+              "title": "小宇每天閱讀的分鐘數",
+              "xs": [
+                "一",
+                "二",
+                "三",
+                "四",
+                "五",
+                "六",
+                "日"
+              ],
+              "series": [
+                {
+                  "name": "閱讀",
+                  "v": [
+                    15,
+                    15,
+                    40,
+                    35,
+                    35,
+                    10,
+                    25
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 5,
+              "rows": 10,
+              "every": 2,
+              "brk": false,
+              "yName": "時間（分）",
+              "xName": "星期"
+            }
+          },
+          "steps": [
+            {
+              "key": "below",
+              "label": "有幾天比目標少",
+              "role": "answer",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "least",
+              "label": "哪一天最少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "星期六",
+                "星期一",
+                "星期二",
+                "星期三"
+              ],
+              "answer": "星期六"
+            },
+            {
+              "key": "gap",
+              "label": "那一天差目標幾分鐘",
+              "role": "part",
+              "input": "number",
+              "answer": 10
+            }
+          ]
+        },
+        {
+          "id": "A05",
+          "type": "lifeHealth",
+          "prompt": "目標是每天運動至少 30 分鐘。看折線圖回答。",
+          "figure": {
+            "chart": {
+              "title": "小芳每天運動的分鐘數",
+              "xs": [
+                "一",
+                "二",
+                "三",
+                "四",
+                "五",
+                "六",
+                "日"
+              ],
+              "series": [
+                {
+                  "name": "運動",
+                  "v": [
+                    20,
+                    15,
+                    15,
+                    35,
+                    35,
+                    10,
+                    35
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 5,
+              "rows": 8,
+              "every": 2,
+              "brk": false,
+              "yName": "時間（分）",
+              "xName": "星期"
+            }
+          },
+          "steps": [
+            {
+              "key": "below",
+              "label": "有幾天比目標少",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            },
+            {
+              "key": "least",
+              "label": "哪一天最少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "星期二",
+                "星期三",
+                "星期一",
+                "星期六"
+              ],
+              "answer": "星期六"
+            },
+            {
+              "key": "gap",
+              "label": "那一天差目標幾分鐘",
+              "role": "part",
+              "input": "number",
+              "answer": 20
+            }
+          ]
+        },
+        {
+          "id": "A06",
+          "type": "lifeHealth",
+          "prompt": "目標是每天運動至少 30 分鐘。看折線圖回答。",
+          "figure": {
+            "chart": {
+              "title": "小芳每天運動的分鐘數",
+              "xs": [
+                "一",
+                "二",
+                "三",
+                "四",
+                "五",
+                "六",
+                "日"
+              ],
+              "series": [
+                {
+                  "name": "運動",
+                  "v": [
+                    40,
+                    35,
+                    20,
+                    35,
+                    10,
+                    20,
+                    25
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 5,
+              "rows": 10,
+              "every": 2,
+              "brk": false,
+              "yName": "時間（分）",
+              "xName": "星期"
+            }
+          },
+          "steps": [
+            {
+              "key": "below",
+              "label": "有幾天比目標少",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            },
+            {
+              "key": "least",
+              "label": "哪一天最少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "星期三",
+                "星期一",
+                "星期二",
+                "星期五"
+              ],
+              "answer": "星期五"
+            },
+            {
+              "key": "gap",
+              "label": "那一天差目標幾分鐘",
+              "role": "part",
+              "input": "number",
+              "answer": 20
+            }
+          ]
+        },
+        {
+          "id": "A07",
+          "type": "lifeGrow",
+          "prompt": "這是妹妹每年量的身高（縱軸有波浪線）。",
+          "figure": {
+            "chart": {
+              "title": "妹妹每年的身高",
+              "xs": [
+                "1年",
+                "2年",
+                "3年",
+                "4年",
+                "5年"
+              ],
+              "series": [
+                {
+                  "name": "身高",
+                  "v": [
+                    115,
+                    120,
+                    125,
+                    130,
+                    140
+                  ]
+                }
+              ],
+              "min": 100,
+              "step": 5,
+              "rows": 9,
+              "every": 1,
+              "brk": true,
+              "yName": "身高（公分）",
+              "xName": "年"
+            }
+          },
+          "steps": [
+            {
+              "key": "h",
+              "label": "第 3 年的身高",
+              "role": "measure",
+              "input": "number",
+              "answer": 125
+            },
+            {
+              "key": "g",
+              "label": "第 2 年到第 3 年長高幾公分",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "A08",
+          "type": "lifeGrow",
+          "prompt": "這是妹妹每年量的身高（縱軸有波浪線）。",
+          "figure": {
+            "chart": {
+              "title": "妹妹每年的身高",
+              "xs": [
+                "1年",
+                "2年",
+                "3年",
+                "4年",
+                "5年"
+              ],
+              "series": [
+                {
+                  "name": "身高",
+                  "v": [
+                    110,
+                    115,
+                    125,
+                    130,
+                    135
+                  ]
+                }
+              ],
+              "min": 100,
+              "step": 5,
+              "rows": 8,
+              "every": 1,
+              "brk": true,
+              "yName": "身高（公分）",
+              "xName": "年"
+            }
+          },
+          "steps": [
+            {
+              "key": "h",
+              "label": "第 4 年的身高",
+              "role": "measure",
+              "input": "number",
+              "answer": 130
+            },
+            {
+              "key": "g",
+              "label": "第 3 年到第 4 年長高幾公分",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "A09",
+          "type": "lifeMoney",
+          "prompt": "阿德想買一個 110 元的水壺。看撲滿的折線圖回答。",
+          "figure": {
+            "chart": {
+              "title": "阿德撲滿裡的錢",
+              "xs": [
+                "1月",
+                "2月",
+                "3月",
+                "4月",
+                "5月"
+              ],
+              "series": [
+                {
+                  "name": "金額",
+                  "v": [
+                    40,
+                    50,
+                    70,
+                    60,
+                    80
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 10,
+              "rows": 10,
+              "every": 2,
+              "brk": false,
+              "yName": "金額（元）",
+              "xName": "月份"
+            }
+          },
+          "steps": [
+            {
+              "key": "last",
+              "label": "5月有幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 80
+            },
+            {
+              "key": "down",
+              "label": "哪一個月錢變少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "3月",
+                "4月",
+                "2月",
+                "5月"
+              ],
+              "answer": "4月"
+            },
+            {
+              "key": "gap",
+              "label": "還差幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 30
+            }
+          ]
+        },
+        {
+          "id": "A10",
+          "type": "lifeMoney",
+          "prompt": "阿德想買一個 110 元的水壺。看撲滿的折線圖回答。",
+          "figure": {
+            "chart": {
+              "title": "阿德撲滿裡的錢",
+              "xs": [
+                "1月",
+                "2月",
+                "3月",
+                "4月",
+                "5月"
+              ],
+              "series": [
+                {
+                  "name": "金額",
+                  "v": [
+                    40,
+                    60,
+                    80,
+                    90,
+                    80
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 10,
+              "rows": 10,
+              "every": 2,
+              "brk": false,
+              "yName": "金額（元）",
+              "xName": "月份"
+            }
+          },
+          "steps": [
+            {
+              "key": "last",
+              "label": "5月有幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 80
+            },
+            {
+              "key": "down",
+              "label": "哪一個月錢變少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "2月",
+                "3月",
+                "5月",
+                "4月"
+              ],
+              "answer": "5月"
+            },
+            {
+              "key": "gap",
+              "label": "還差幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 30
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "items": [
+        {
+          "id": "B01",
+          "type": "lifeWeather",
+          "prompt": "看天氣預報。媽媽說：最高氣溫比 22 度低，要穿長袖。星期五要穿長袖嗎？",
+          "figure": {
+            "chart": {
+              "title": "一週每天的最高氣溫",
+              "xs": [
+                "一",
+                "二",
+                "三",
+                "四",
+                "五",
+                "六",
+                "日"
+              ],
+              "series": [
+                {
+                  "name": "氣溫",
+                  "v": [
+                    12,
+                    16,
+                    26,
+                    24,
+                    14,
+                    26,
+                    18
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 2,
+              "rows": 15,
+              "every": 5,
+              "brk": false,
+              "yName": "氣溫（度）",
+              "xName": "星期"
+            }
+          },
+          "steps": [
+            {
+              "key": "v",
+              "label": "星期五是幾度",
+              "role": "measure",
+              "input": "number",
+              "answer": 14
+            },
+            {
+              "key": "wear",
+              "label": "要穿長袖嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "要",
+                "不用"
+              ],
+              "answer": "要"
+            },
+            {
+              "key": "next",
+              "label": "隔天變熱還是變冷",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "變熱",
+                "變冷"
+              ],
+              "answer": "變熱"
+            }
+          ]
+        },
+        {
+          "id": "B02",
+          "type": "lifeWeather",
+          "prompt": "看天氣預報。媽媽說：最高氣溫比 22 度低，要穿長袖。星期四要穿長袖嗎？",
+          "figure": {
+            "chart": {
+              "title": "一週每天的最高氣溫",
+              "xs": [
+                "一",
+                "二",
+                "三",
+                "四",
+                "五",
+                "六",
+                "日"
+              ],
+              "series": [
+                {
+                  "name": "氣溫",
+                  "v": [
+                    12,
+                    22,
+                    26,
+                    12,
+                    16,
+                    22,
+                    16
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 2,
+              "rows": 15,
+              "every": 5,
+              "brk": false,
+              "yName": "氣溫（度）",
+              "xName": "星期"
+            }
+          },
+          "steps": [
+            {
+              "key": "v",
+              "label": "星期四是幾度",
+              "role": "measure",
+              "input": "number",
+              "answer": 12
+            },
+            {
+              "key": "wear",
+              "label": "要穿長袖嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "要",
+                "不用"
+              ],
+              "answer": "要"
+            },
+            {
+              "key": "next",
+              "label": "隔天變熱還是變冷",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "變熱",
+                "變冷"
+              ],
+              "answer": "變熱"
+            }
+          ]
+        },
+        {
+          "id": "B03",
+          "type": "lifeWeather",
+          "prompt": "看天氣預報。媽媽說：最高氣溫比 22 度低，要穿長袖。星期六要穿長袖嗎？",
+          "figure": {
+            "chart": {
+              "title": "一週每天的最高氣溫",
+              "xs": [
+                "一",
+                "二",
+                "三",
+                "四",
+                "五",
+                "六",
+                "日"
+              ],
+              "series": [
+                {
+                  "name": "氣溫",
+                  "v": [
+                    14,
+                    24,
+                    26,
+                    26,
+                    28,
+                    12,
+                    22
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 2,
+              "rows": 15,
+              "every": 5,
+              "brk": false,
+              "yName": "氣溫（度）",
+              "xName": "星期"
+            }
+          },
+          "steps": [
+            {
+              "key": "v",
+              "label": "星期六是幾度",
+              "role": "measure",
+              "input": "number",
+              "answer": 12
+            },
+            {
+              "key": "wear",
+              "label": "要穿長袖嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "要",
+                "不用"
+              ],
+              "answer": "要"
+            },
+            {
+              "key": "next",
+              "label": "隔天變熱還是變冷",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "變熱",
+                "變冷"
+              ],
+              "answer": "變熱"
+            }
+          ]
+        },
+        {
+          "id": "B04",
+          "type": "lifeHealth",
+          "prompt": "目標是每天運動至少 30 分鐘。看折線圖回答。",
+          "figure": {
+            "chart": {
+              "title": "小芳每天運動的分鐘數",
+              "xs": [
+                "一",
+                "二",
+                "三",
+                "四",
+                "五",
+                "六",
+                "日"
+              ],
+              "series": [
+                {
+                  "name": "運動",
+                  "v": [
+                    10,
+                    30,
+                    15,
+                    15,
+                    35,
+                    30,
+                    30
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 5,
+              "rows": 8,
+              "every": 2,
+              "brk": false,
+              "yName": "時間（分）",
+              "xName": "星期"
+            }
+          },
+          "steps": [
+            {
+              "key": "below",
+              "label": "有幾天比目標少",
+              "role": "answer",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "least",
+              "label": "哪一天最少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "星期四",
+                "星期二",
+                "星期三",
+                "星期一"
+              ],
+              "answer": "星期一"
+            },
+            {
+              "key": "gap",
+              "label": "那一天差目標幾分鐘",
+              "role": "part",
+              "input": "number",
+              "answer": 20
+            }
+          ]
+        },
+        {
+          "id": "B05",
+          "type": "lifeHealth",
+          "prompt": "目標是每天運動至少 30 分鐘。看折線圖回答。",
+          "figure": {
+            "chart": {
+              "title": "小芳每天運動的分鐘數",
+              "xs": [
+                "一",
+                "二",
+                "三",
+                "四",
+                "五",
+                "六",
+                "日"
+              ],
+              "series": [
+                {
+                  "name": "運動",
+                  "v": [
+                    35,
+                    40,
+                    15,
+                    40,
+                    20,
+                    10,
+                    30
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 5,
+              "rows": 10,
+              "every": 2,
+              "brk": false,
+              "yName": "時間（分）",
+              "xName": "星期"
+            }
+          },
+          "steps": [
+            {
+              "key": "below",
+              "label": "有幾天比目標少",
+              "role": "answer",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "least",
+              "label": "哪一天最少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "星期三",
+                "星期一",
+                "星期六",
+                "星期二"
+              ],
+              "answer": "星期六"
+            },
+            {
+              "key": "gap",
+              "label": "那一天差目標幾分鐘",
+              "role": "part",
+              "input": "number",
+              "answer": 20
+            }
+          ]
+        },
+        {
+          "id": "B06",
+          "type": "lifeHealth",
+          "prompt": "目標是每天閱讀至少 20 分鐘。看折線圖回答。",
+          "figure": {
+            "chart": {
+              "title": "小宇每天閱讀的分鐘數",
+              "xs": [
+                "一",
+                "二",
+                "三",
+                "四",
+                "五",
+                "六",
+                "日"
+              ],
+              "series": [
+                {
+                  "name": "閱讀",
+                  "v": [
+                    25,
+                    10,
+                    25,
+                    15,
+                    25,
+                    35,
+                    40
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 5,
+              "rows": 10,
+              "every": 2,
+              "brk": false,
+              "yName": "時間（分）",
+              "xName": "星期"
+            }
+          },
+          "steps": [
+            {
+              "key": "below",
+              "label": "有幾天比目標少",
+              "role": "answer",
+              "input": "number",
+              "answer": 2
+            },
+            {
+              "key": "least",
+              "label": "哪一天最少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "星期一",
+                "星期四",
+                "星期三",
+                "星期二"
+              ],
+              "answer": "星期二"
+            },
+            {
+              "key": "gap",
+              "label": "那一天差目標幾分鐘",
+              "role": "part",
+              "input": "number",
+              "answer": 10
+            }
+          ]
+        },
+        {
+          "id": "B07",
+          "type": "lifeGrow",
+          "prompt": "這是妹妹每年量的身高（縱軸有波浪線）。",
+          "figure": {
+            "chart": {
+              "title": "妹妹每年的身高",
+              "xs": [
+                "1年",
+                "2年",
+                "3年",
+                "4年",
+                "5年"
+              ],
+              "series": [
+                {
+                  "name": "身高",
+                  "v": [
+                    115,
+                    120,
+                    125,
+                    135,
+                    140
+                  ]
+                }
+              ],
+              "min": 100,
+              "step": 5,
+              "rows": 9,
+              "every": 1,
+              "brk": true,
+              "yName": "身高（公分）",
+              "xName": "年"
+            }
+          },
+          "steps": [
+            {
+              "key": "h",
+              "label": "第 2 年的身高",
+              "role": "measure",
+              "input": "number",
+              "answer": 120
+            },
+            {
+              "key": "g",
+              "label": "第 1 年到第 2 年長高幾公分",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "B08",
+          "type": "lifeGrow",
+          "prompt": "這是妹妹每年量的身高（縱軸有波浪線）。",
+          "figure": {
+            "chart": {
+              "title": "妹妹每年的身高",
+              "xs": [
+                "1年",
+                "2年",
+                "3年",
+                "4年",
+                "5年"
+              ],
+              "series": [
+                {
+                  "name": "身高",
+                  "v": [
+                    120,
+                    125,
+                    130,
+                    135,
+                    145
+                  ]
+                }
+              ],
+              "min": 100,
+              "step": 5,
+              "rows": 10,
+              "every": 1,
+              "brk": true,
+              "yName": "身高（公分）",
+              "xName": "年"
+            }
+          },
+          "steps": [
+            {
+              "key": "h",
+              "label": "第 4 年的身高",
+              "role": "measure",
+              "input": "number",
+              "answer": 135
+            },
+            {
+              "key": "g",
+              "label": "第 3 年到第 4 年長高幾公分",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "B09",
+          "type": "lifeMoney",
+          "prompt": "阿德想買一個 110 元的水壺。看撲滿的折線圖回答。",
+          "figure": {
+            "chart": {
+              "title": "阿德撲滿裡的錢",
+              "xs": [
+                "1月",
+                "2月",
+                "3月",
+                "4月",
+                "5月"
+              ],
+              "series": [
+                {
+                  "name": "金額",
+                  "v": [
+                    40,
+                    60,
+                    50,
+                    60,
+                    80
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 10,
+              "rows": 10,
+              "every": 2,
+              "brk": false,
+              "yName": "金額（元）",
+              "xName": "月份"
+            }
+          },
+          "steps": [
+            {
+              "key": "last",
+              "label": "5月有幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 80
+            },
+            {
+              "key": "down",
+              "label": "哪一個月錢變少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "4月",
+                "2月",
+                "5月",
+                "3月"
+              ],
+              "answer": "3月"
+            },
+            {
+              "key": "gap",
+              "label": "還差幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 30
+            }
+          ]
+        },
+        {
+          "id": "B10",
+          "type": "lifeMoney",
+          "prompt": "阿德想買一個 90 元的水壺。看撲滿的折線圖回答。",
+          "figure": {
+            "chart": {
+              "title": "阿德撲滿裡的錢",
+              "xs": [
+                "1月",
+                "2月",
+                "3月",
+                "4月",
+                "5月"
+              ],
+              "series": [
+                {
+                  "name": "金額",
+                  "v": [
+                    20,
+                    40,
+                    50,
+                    70,
+                    60
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 10,
+              "rows": 8,
+              "every": 2,
+              "brk": false,
+              "yName": "金額（元）",
+              "xName": "月份"
+            }
+          },
+          "steps": [
+            {
+              "key": "last",
+              "label": "5月有幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 60
+            },
+            {
+              "key": "down",
+              "label": "哪一個月錢變少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "5月",
+                "3月",
+                "2月",
+                "4月"
+              ],
+              "answer": "5月"
+            },
+            {
+              "key": "gap",
+              "label": "還差幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 30
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "items": [
+        {
+          "id": "C01",
+          "type": "lifeWeather",
+          "prompt": "看天氣預報。媽媽說：最高氣溫比 22 度低，要穿長袖。星期五要穿長袖嗎？",
+          "figure": {
+            "chart": {
+              "title": "一週每天的最高氣溫",
+              "xs": [
+                "一",
+                "二",
+                "三",
+                "四",
+                "五",
+                "六",
+                "日"
+              ],
+              "series": [
+                {
+                  "name": "氣溫",
+                  "v": [
+                    30,
+                    28,
+                    26,
+                    24,
+                    12,
+                    16,
+                    22
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 2,
+              "rows": 20,
+              "every": 5,
+              "brk": false,
+              "yName": "氣溫（度）",
+              "xName": "星期"
+            }
+          },
+          "steps": [
+            {
+              "key": "v",
+              "label": "星期五是幾度",
+              "role": "measure",
+              "input": "number",
+              "answer": 12
+            },
+            {
+              "key": "wear",
+              "label": "要穿長袖嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "要",
+                "不用"
+              ],
+              "answer": "要"
+            },
+            {
+              "key": "next",
+              "label": "隔天變熱還是變冷",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "變熱",
+                "變冷"
+              ],
+              "answer": "變熱"
+            }
+          ]
+        },
+        {
+          "id": "C02",
+          "type": "lifeWeather",
+          "prompt": "看天氣預報。媽媽說：最高氣溫比 22 度低，要穿長袖。星期四要穿長袖嗎？",
+          "figure": {
+            "chart": {
+              "title": "一週每天的最高氣溫",
+              "xs": [
+                "一",
+                "二",
+                "三",
+                "四",
+                "五",
+                "六",
+                "日"
+              ],
+              "series": [
+                {
+                  "name": "氣溫",
+                  "v": [
+                    30,
+                    20,
+                    18,
+                    20,
+                    12,
+                    22,
+                    18
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 2,
+              "rows": 20,
+              "every": 5,
+              "brk": false,
+              "yName": "氣溫（度）",
+              "xName": "星期"
+            }
+          },
+          "steps": [
+            {
+              "key": "v",
+              "label": "星期四是幾度",
+              "role": "measure",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "wear",
+              "label": "要穿長袖嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "要",
+                "不用"
+              ],
+              "answer": "要"
+            },
+            {
+              "key": "next",
+              "label": "隔天變熱還是變冷",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "變熱",
+                "變冷"
+              ],
+              "answer": "變冷"
+            }
+          ]
+        },
+        {
+          "id": "C03",
+          "type": "lifeWeather",
+          "prompt": "看天氣預報。媽媽說：最高氣溫比 22 度低，要穿長袖。星期二要穿長袖嗎？",
+          "figure": {
+            "chart": {
+              "title": "一週每天的最高氣溫",
+              "xs": [
+                "一",
+                "二",
+                "三",
+                "四",
+                "五",
+                "六",
+                "日"
+              ],
+              "series": [
+                {
+                  "name": "氣溫",
+                  "v": [
+                    18,
+                    20,
+                    22,
+                    20,
+                    20,
+                    16,
+                    18
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 2,
+              "rows": 15,
+              "every": 5,
+              "brk": false,
+              "yName": "氣溫（度）",
+              "xName": "星期"
+            }
+          },
+          "steps": [
+            {
+              "key": "v",
+              "label": "星期二是幾度",
+              "role": "measure",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "wear",
+              "label": "要穿長袖嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "要",
+                "不用"
+              ],
+              "answer": "要"
+            },
+            {
+              "key": "next",
+              "label": "隔天變熱還是變冷",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "變熱",
+                "變冷"
+              ],
+              "answer": "變熱"
+            }
+          ]
+        },
+        {
+          "id": "C04",
+          "type": "lifeHealth",
+          "prompt": "目標是每天運動至少 30 分鐘。看折線圖回答。",
+          "figure": {
+            "chart": {
+              "title": "小芳每天運動的分鐘數",
+              "xs": [
+                "一",
+                "二",
+                "三",
+                "四",
+                "五",
+                "六",
+                "日"
+              ],
+              "series": [
+                {
+                  "name": "運動",
+                  "v": [
+                    25,
+                    40,
+                    25,
+                    25,
+                    30,
+                    40,
+                    20
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 5,
+              "rows": 10,
+              "every": 2,
+              "brk": false,
+              "yName": "時間（分）",
+              "xName": "星期"
+            }
+          },
+          "steps": [
+            {
+              "key": "below",
+              "label": "有幾天比目標少",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            },
+            {
+              "key": "least",
+              "label": "哪一天最少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "星期日",
+                "星期二",
+                "星期三",
+                "星期一"
+              ],
+              "answer": "星期日"
+            },
+            {
+              "key": "gap",
+              "label": "那一天差目標幾分鐘",
+              "role": "part",
+              "input": "number",
+              "answer": 10
+            }
+          ]
+        },
+        {
+          "id": "C05",
+          "type": "lifeHealth",
+          "prompt": "目標是每天閱讀至少 20 分鐘。看折線圖回答。",
+          "figure": {
+            "chart": {
+              "title": "小宇每天閱讀的分鐘數",
+              "xs": [
+                "一",
+                "二",
+                "三",
+                "四",
+                "五",
+                "六",
+                "日"
+              ],
+              "series": [
+                {
+                  "name": "閱讀",
+                  "v": [
+                    35,
+                    15,
+                    10,
+                    20,
+                    40,
+                    40,
+                    30
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 5,
+              "rows": 10,
+              "every": 2,
+              "brk": false,
+              "yName": "時間（分）",
+              "xName": "星期"
+            }
+          },
+          "steps": [
+            {
+              "key": "below",
+              "label": "有幾天比目標少",
+              "role": "answer",
+              "input": "number",
+              "answer": 2
+            },
+            {
+              "key": "least",
+              "label": "哪一天最少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "星期四",
+                "星期一",
+                "星期三",
+                "星期二"
+              ],
+              "answer": "星期三"
+            },
+            {
+              "key": "gap",
+              "label": "那一天差目標幾分鐘",
+              "role": "part",
+              "input": "number",
+              "answer": 10
+            }
+          ]
+        },
+        {
+          "id": "C06",
+          "type": "lifeHealth",
+          "prompt": "目標是每天運動至少 30 分鐘。看折線圖回答。",
+          "figure": {
+            "chart": {
+              "title": "小芳每天運動的分鐘數",
+              "xs": [
+                "一",
+                "二",
+                "三",
+                "四",
+                "五",
+                "六",
+                "日"
+              ],
+              "series": [
+                {
+                  "name": "運動",
+                  "v": [
+                    15,
+                    15,
+                    30,
+                    35,
+                    15,
+                    10,
+                    20
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 5,
+              "rows": 8,
+              "every": 2,
+              "brk": false,
+              "yName": "時間（分）",
+              "xName": "星期"
+            }
+          },
+          "steps": [
+            {
+              "key": "below",
+              "label": "有幾天比目標少",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            },
+            {
+              "key": "least",
+              "label": "哪一天最少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "星期六",
+                "星期一",
+                "星期二",
+                "星期三"
+              ],
+              "answer": "星期六"
+            },
+            {
+              "key": "gap",
+              "label": "那一天差目標幾分鐘",
+              "role": "part",
+              "input": "number",
+              "answer": 20
+            }
+          ]
+        },
+        {
+          "id": "C07",
+          "type": "lifeGrow",
+          "prompt": "這是妹妹每年量的身高（縱軸有波浪線）。",
+          "figure": {
+            "chart": {
+              "title": "妹妹每年的身高",
+              "xs": [
+                "1年",
+                "2年",
+                "3年",
+                "4年",
+                "5年"
+              ],
+              "series": [
+                {
+                  "name": "身高",
+                  "v": [
+                    115,
+                    120,
+                    125,
+                    130,
+                    140
+                  ]
+                }
+              ],
+              "min": 100,
+              "step": 5,
+              "rows": 9,
+              "every": 1,
+              "brk": true,
+              "yName": "身高（公分）",
+              "xName": "年"
+            }
+          },
+          "steps": [
+            {
+              "key": "h",
+              "label": "第 2 年的身高",
+              "role": "measure",
+              "input": "number",
+              "answer": 120
+            },
+            {
+              "key": "g",
+              "label": "第 1 年到第 2 年長高幾公分",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "C08",
+          "type": "lifeGrow",
+          "prompt": "這是妹妹每年量的身高（縱軸有波浪線）。",
+          "figure": {
+            "chart": {
+              "title": "妹妹每年的身高",
+              "xs": [
+                "1年",
+                "2年",
+                "3年",
+                "4年",
+                "5年"
+              ],
+              "series": [
+                {
+                  "name": "身高",
+                  "v": [
+                    120,
+                    125,
+                    130,
+                    135,
+                    145
+                  ]
+                }
+              ],
+              "min": 100,
+              "step": 5,
+              "rows": 10,
+              "every": 1,
+              "brk": true,
+              "yName": "身高（公分）",
+              "xName": "年"
+            }
+          },
+          "steps": [
+            {
+              "key": "h",
+              "label": "第 3 年的身高",
+              "role": "measure",
+              "input": "number",
+              "answer": 130
+            },
+            {
+              "key": "g",
+              "label": "第 2 年到第 3 年長高幾公分",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "C09",
+          "type": "lifeMoney",
+          "prompt": "阿德想買一個 90 元的水壺。看撲滿的折線圖回答。",
+          "figure": {
+            "chart": {
+              "title": "阿德撲滿裡的錢",
+              "xs": [
+                "2月",
+                "3月",
+                "4月",
+                "5月",
+                "6月"
+              ],
+              "series": [
+                {
+                  "name": "金額",
+                  "v": [
+                    30,
+                    40,
+                    60,
+                    50,
+                    60
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 10,
+              "rows": 8,
+              "every": 2,
+              "brk": false,
+              "yName": "金額（元）",
+              "xName": "月份"
+            }
+          },
+          "steps": [
+            {
+              "key": "last",
+              "label": "6月有幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 60
+            },
+            {
+              "key": "down",
+              "label": "哪一個月錢變少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "6月",
+                "5月",
+                "4月",
+                "3月"
+              ],
+              "answer": "5月"
+            },
+            {
+              "key": "gap",
+              "label": "還差幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 30
+            }
+          ]
+        },
+        {
+          "id": "C10",
+          "type": "lifeMoney",
+          "prompt": "阿德想買一個 110 元的水壺。看撲滿的折線圖回答。",
+          "figure": {
+            "chart": {
+              "title": "阿德撲滿裡的錢",
+              "xs": [
+                "1月",
+                "2月",
+                "3月",
+                "4月",
+                "5月"
+              ],
+              "series": [
+                {
+                  "name": "金額",
+                  "v": [
+                    30,
+                    50,
+                    40,
+                    60,
+                    80
+                  ]
+                }
+              ],
+              "min": 0,
+              "step": 10,
+              "rows": 10,
+              "every": 2,
+              "brk": false,
+              "yName": "金額（元）",
+              "xName": "月份"
+            }
+          },
+          "steps": [
+            {
+              "key": "last",
+              "label": "5月有幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 80
+            },
+            {
+              "key": "down",
+              "label": "哪一個月錢變少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "2月",
+                "5月",
+                "3月",
+                "4月"
+              ],
+              "answer": "3月"
+            },
+            {
+              "key": "gap",
+              "label": "還差幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 30
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

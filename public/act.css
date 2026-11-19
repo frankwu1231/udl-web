@@ -231,3 +231,6 @@ html.contrast .tm-jl{fill:#000;font-weight:900}html.contrast .tm-jump{stroke:#00
 .fr-wall-row:first-child>span{background:#cfe0ff;font-weight:700}
 html.contrast .fr-part.fr-on{fill:#000}html.contrast .fr-part.fr-off{fill:#fff;stroke:#000}html.contrast .fr-part.fr-on.b{fill:#666}html.contrast .fr-part.fr-on.lite{fill:url(#fr-hatch);stroke:#000}html.contrast .fr-part.fr-on.dark{fill:#000;stroke:#fff;stroke-width:3}html.contrast .fr-wall-row>span{border-color:#000;background:#fff;color:#000}
 @media (max-width:480px){.fr-wall-row>span{font-size:.65rem}.fr-fs{min-width:7rem}}
+/* 第 34 版：跨領域生活單元（兩個盒子並排） */
+.lf-pair{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:flex-end}.lf-pair>div{flex:1 1 220px;min-width:0;max-width:340px}
+.lf-tag{text-align:center;font-weight:700;font-size:1.2rem;margin:0}

@@ -1,0 +1,855 @@
+{
+  "id": "factorLifeProbe",
+  "version": "1",
+  "kind": "probe",
+  "package": "factor",
+  "variant": "life",
+  "title": "因數與倍數小測驗：分組分裝小幫手（生活應用）",
+  "itemSecs": 150,
+  "totalSecs": 1500,
+  "forms": [
+    {
+      "id": "A",
+      "items": [
+        {
+          "id": "A01",
+          "type": "lifeGroup",
+          "prompt": "社團有 18 人要分組，每組人數一樣多，沒有人落單。",
+          "steps": [
+            {
+              "key": "cnt",
+              "label": "18 有幾個因數",
+              "role": "part",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "each",
+              "label": "分成 6 組，每組幾人",
+              "role": "answer",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "bad",
+              "label": "分成 8 組會怎樣",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "有人落單",
+                "剛好分完"
+              ],
+              "answer": "有人落單"
+            }
+          ]
+        },
+        {
+          "id": "A02",
+          "type": "lifeGroup",
+          "prompt": "社團有 18 人要分組，每組人數一樣多，沒有人落單。",
+          "steps": [
+            {
+              "key": "cnt",
+              "label": "18 有幾個因數",
+              "role": "part",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "each",
+              "label": "分成 6 組，每組幾人",
+              "role": "answer",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "bad",
+              "label": "分成 7 組會怎樣",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "有人落單",
+                "剛好分完"
+              ],
+              "answer": "有人落單"
+            }
+          ]
+        },
+        {
+          "id": "A03",
+          "type": "lifePack",
+          "prompt": "郊遊要準備麵包，30 人每人一個。一包 4 個，只能整包買。至少要買幾包？",
+          "steps": [
+            {
+              "key": "top",
+              "label": "4 的倍數裡，第一個不比 30 少的",
+              "role": "part",
+              "input": "number",
+              "answer": 32
+            },
+            {
+              "key": "packs",
+              "label": "至少要買幾包",
+              "role": "answer",
+              "input": "number",
+              "answer": 8
+            }
+          ]
+        },
+        {
+          "id": "A04",
+          "type": "lifePack",
+          "prompt": "郊遊要準備果汁，29 人每人一瓶。一包 4 瓶，只能整包買。至少要買幾包？",
+          "steps": [
+            {
+              "key": "top",
+              "label": "4 的倍數裡，第一個不比 29 少的",
+              "role": "part",
+              "input": "number",
+              "answer": 32
+            },
+            {
+              "key": "packs",
+              "label": "至少要買幾包",
+              "role": "answer",
+              "input": "number",
+              "answer": 8
+            }
+          ]
+        },
+        {
+          "id": "A05",
+          "type": "lifePack",
+          "prompt": "郊遊要準備原子筆，32 人每人一枝。一包 8 枝，只能整包買。至少要買幾包？",
+          "steps": [
+            {
+              "key": "top",
+              "label": "8 的倍數裡，第一個不比 32 少的",
+              "role": "part",
+              "input": "number",
+              "answer": 32
+            },
+            {
+              "key": "packs",
+              "label": "至少要買幾包",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            }
+          ]
+        },
+        {
+          "id": "A06",
+          "type": "lifeBags",
+          "prompt": "有 16 個貼紙、24 個書籤，要全部分完裝成禮物袋，每袋一樣。最多可以裝幾袋？",
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要找公因數還是公倍數",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "公因數",
+                "公倍數"
+              ],
+              "answer": "公因數"
+            },
+            {
+              "key": "g",
+              "label": "最多幾袋",
+              "role": "answer",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "ea",
+              "label": "每袋幾個貼紙",
+              "role": "part",
+              "input": "number",
+              "answer": 2
+            }
+          ]
+        },
+        {
+          "id": "A07",
+          "type": "lifeBags",
+          "prompt": "有 18 個糖果、27 個巧克力，要全部分完裝成禮物袋，每袋一樣。最多可以裝幾袋？",
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要找公因數還是公倍數",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "公因數",
+                "公倍數"
+              ],
+              "answer": "公因數"
+            },
+            {
+              "key": "g",
+              "label": "最多幾袋",
+              "role": "answer",
+              "input": "number",
+              "answer": 9
+            },
+            {
+              "key": "ea",
+              "label": "每袋幾個糖果",
+              "role": "part",
+              "input": "number",
+              "answer": 2
+            }
+          ]
+        },
+        {
+          "id": "A08",
+          "type": "lifeDuty",
+          "prompt": "阿明每 2 天擦一次窗戶，小琪每 5 天倒一次回收。今天是 4 月 4 日，兩人都做了。最少再過幾天又在同一天做？",
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要找公因數還是公倍數",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "公因數",
+                "公倍數"
+              ],
+              "answer": "公倍數"
+            },
+            {
+              "key": "days",
+              "label": "最少再過幾天",
+              "role": "answer",
+              "input": "number",
+              "answer": 10
+            },
+            {
+              "key": "day",
+              "label": "那天是 4 月幾日",
+              "role": "part",
+              "input": "number",
+              "answer": 14
+            }
+          ]
+        },
+        {
+          "id": "A09",
+          "type": "lifeDuty",
+          "prompt": "阿明每 3 天擦一次窗戶，小琪每 5 天倒一次回收。今天是 4 月 1 日，兩人都做了。最少再過幾天又在同一天做？",
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要找公因數還是公倍數",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "公因數",
+                "公倍數"
+              ],
+              "answer": "公倍數"
+            },
+            {
+              "key": "days",
+              "label": "最少再過幾天",
+              "role": "answer",
+              "input": "number",
+              "answer": 15
+            },
+            {
+              "key": "day",
+              "label": "那天是 4 月幾日",
+              "role": "part",
+              "input": "number",
+              "answer": 16
+            }
+          ]
+        },
+        {
+          "id": "A10",
+          "type": "lifeDesk",
+          "prompt": "12 張椅子要排成長方形，每排一樣多，至少 2 排、每排至少 2 張（3 排 4 張和 4 排 3 張算兩種）。",
+          "steps": [
+            {
+              "key": "cnt",
+              "label": "12 有幾個因數",
+              "role": "part",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "ways",
+              "label": "可以排成幾種",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "items": [
+        {
+          "id": "B01",
+          "type": "lifeGroup",
+          "prompt": "社團有 36 人要分組，每組人數一樣多，沒有人落單。",
+          "steps": [
+            {
+              "key": "cnt",
+              "label": "36 有幾個因數",
+              "role": "part",
+              "input": "number",
+              "answer": 9
+            },
+            {
+              "key": "each",
+              "label": "分成 18 組，每組幾人",
+              "role": "answer",
+              "input": "number",
+              "answer": 2
+            },
+            {
+              "key": "bad",
+              "label": "分成 7 組會怎樣",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "有人落單",
+                "剛好分完"
+              ],
+              "answer": "有人落單"
+            }
+          ]
+        },
+        {
+          "id": "B02",
+          "type": "lifeGroup",
+          "prompt": "社團有 18 人要分組，每組人數一樣多，沒有人落單。",
+          "steps": [
+            {
+              "key": "cnt",
+              "label": "18 有幾個因數",
+              "role": "part",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "each",
+              "label": "分成 6 組，每組幾人",
+              "role": "answer",
+              "input": "number",
+              "answer": 3
+            },
+            {
+              "key": "bad",
+              "label": "分成 5 組會怎樣",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "有人落單",
+                "剛好分完"
+              ],
+              "answer": "有人落單"
+            }
+          ]
+        },
+        {
+          "id": "B03",
+          "type": "lifePack",
+          "prompt": "郊遊要準備果汁，36 人每人一瓶。一包 5 瓶，只能整包買。至少要買幾包？",
+          "steps": [
+            {
+              "key": "top",
+              "label": "5 的倍數裡，第一個不比 36 少的",
+              "role": "part",
+              "input": "number",
+              "answer": 40
+            },
+            {
+              "key": "packs",
+              "label": "至少要買幾包",
+              "role": "answer",
+              "input": "number",
+              "answer": 8
+            }
+          ]
+        },
+        {
+          "id": "B04",
+          "type": "lifePack",
+          "prompt": "郊遊要準備原子筆，15 人每人一枝。一包 4 枝，只能整包買。至少要買幾包？",
+          "steps": [
+            {
+              "key": "top",
+              "label": "4 的倍數裡，第一個不比 15 少的",
+              "role": "part",
+              "input": "number",
+              "answer": 16
+            },
+            {
+              "key": "packs",
+              "label": "至少要買幾包",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            }
+          ]
+        },
+        {
+          "id": "B05",
+          "type": "lifePack",
+          "prompt": "郊遊要準備麵包，24 人每人一個。一包 4 個，只能整包買。至少要買幾包？",
+          "steps": [
+            {
+              "key": "top",
+              "label": "4 的倍數裡，第一個不比 24 少的",
+              "role": "part",
+              "input": "number",
+              "answer": 24
+            },
+            {
+              "key": "packs",
+              "label": "至少要買幾包",
+              "role": "answer",
+              "input": "number",
+              "answer": 6
+            }
+          ]
+        },
+        {
+          "id": "B06",
+          "type": "lifeBags",
+          "prompt": "有 20 個蘋果、30 個梨子，要全部分完裝成禮物袋，每袋一樣。最多可以裝幾袋？",
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要找公因數還是公倍數",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "公因數",
+                "公倍數"
+              ],
+              "answer": "公因數"
+            },
+            {
+              "key": "g",
+              "label": "最多幾袋",
+              "role": "answer",
+              "input": "number",
+              "answer": 10
+            },
+            {
+              "key": "ea",
+              "label": "每袋幾個蘋果",
+              "role": "part",
+              "input": "number",
+              "answer": 2
+            }
+          ]
+        },
+        {
+          "id": "B07",
+          "type": "lifeBags",
+          "prompt": "有 24 個餅乾、36 個糖果，要全部分完裝成禮物袋，每袋一樣。最多可以裝幾袋？",
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要找公因數還是公倍數",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "公因數",
+                "公倍數"
+              ],
+              "answer": "公因數"
+            },
+            {
+              "key": "g",
+              "label": "最多幾袋",
+              "role": "answer",
+              "input": "number",
+              "answer": 12
+            },
+            {
+              "key": "ea",
+              "label": "每袋幾個餅乾",
+              "role": "part",
+              "input": "number",
+              "answer": 2
+            }
+          ]
+        },
+        {
+          "id": "B08",
+          "type": "lifeDuty",
+          "prompt": "阿明每 3 天擦一次窗戶，小琪每 5 天倒一次回收。今天是 4 月 6 日，兩人都做了。最少再過幾天又在同一天做？",
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要找公因數還是公倍數",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "公因數",
+                "公倍數"
+              ],
+              "answer": "公倍數"
+            },
+            {
+              "key": "days",
+              "label": "最少再過幾天",
+              "role": "answer",
+              "input": "number",
+              "answer": 15
+            },
+            {
+              "key": "day",
+              "label": "那天是 4 月幾日",
+              "role": "part",
+              "input": "number",
+              "answer": 21
+            }
+          ]
+        },
+        {
+          "id": "B09",
+          "type": "lifeDuty",
+          "prompt": "阿明每 2 天擦一次窗戶，小琪每 3 天倒一次回收。今天是 4 月 9 日，兩人都做了。最少再過幾天又在同一天做？",
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要找公因數還是公倍數",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "公因數",
+                "公倍數"
+              ],
+              "answer": "公倍數"
+            },
+            {
+              "key": "days",
+              "label": "最少再過幾天",
+              "role": "answer",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "day",
+              "label": "那天是 4 月幾日",
+              "role": "part",
+              "input": "number",
+              "answer": 15
+            }
+          ]
+        },
+        {
+          "id": "B10",
+          "type": "lifeDesk",
+          "prompt": "18 張椅子要排成長方形，每排一樣多，至少 2 排、每排至少 2 張（3 排 4 張和 4 排 3 張算兩種）。",
+          "steps": [
+            {
+              "key": "cnt",
+              "label": "18 有幾個因數",
+              "role": "part",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "ways",
+              "label": "可以排成幾種",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "items": [
+        {
+          "id": "C01",
+          "type": "lifeGroup",
+          "prompt": "社團有 18 人要分組，每組人數一樣多，沒有人落單。",
+          "steps": [
+            {
+              "key": "cnt",
+              "label": "18 有幾個因數",
+              "role": "part",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "each",
+              "label": "分成 3 組，每組幾人",
+              "role": "answer",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "bad",
+              "label": "分成 4 組會怎樣",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "有人落單",
+                "剛好分完"
+              ],
+              "answer": "有人落單"
+            }
+          ]
+        },
+        {
+          "id": "C02",
+          "type": "lifeGroup",
+          "prompt": "社團有 20 人要分組，每組人數一樣多，沒有人落單。",
+          "steps": [
+            {
+              "key": "cnt",
+              "label": "20 有幾個因數",
+              "role": "part",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "each",
+              "label": "分成 5 組，每組幾人",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            },
+            {
+              "key": "bad",
+              "label": "分成 9 組會怎樣",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "有人落單",
+                "剛好分完"
+              ],
+              "answer": "有人落單"
+            }
+          ]
+        },
+        {
+          "id": "C03",
+          "type": "lifePack",
+          "prompt": "郊遊要準備原子筆，18 人每人一枝。一包 8 枝，只能整包買。至少要買幾包？",
+          "steps": [
+            {
+              "key": "top",
+              "label": "8 的倍數裡，第一個不比 18 少的",
+              "role": "part",
+              "input": "number",
+              "answer": 24
+            },
+            {
+              "key": "packs",
+              "label": "至少要買幾包",
+              "role": "answer",
+              "input": "number",
+              "answer": 3
+            }
+          ]
+        },
+        {
+          "id": "C04",
+          "type": "lifePack",
+          "prompt": "郊遊要準備麵包，34 人每人一個。一包 8 個，只能整包買。至少要買幾包？",
+          "steps": [
+            {
+              "key": "top",
+              "label": "8 的倍數裡，第一個不比 34 少的",
+              "role": "part",
+              "input": "number",
+              "answer": 40
+            },
+            {
+              "key": "packs",
+              "label": "至少要買幾包",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "C05",
+          "type": "lifePack",
+          "prompt": "郊遊要準備果汁，32 人每人一瓶。一包 4 瓶，只能整包買。至少要買幾包？",
+          "steps": [
+            {
+              "key": "top",
+              "label": "4 的倍數裡，第一個不比 32 少的",
+              "role": "part",
+              "input": "number",
+              "answer": 32
+            },
+            {
+              "key": "packs",
+              "label": "至少要買幾包",
+              "role": "answer",
+              "input": "number",
+              "answer": 8
+            }
+          ]
+        },
+        {
+          "id": "C06",
+          "type": "lifeBags",
+          "prompt": "有 12 個鉛筆、18 個橡皮擦，要全部分完裝成禮物袋，每袋一樣。最多可以裝幾袋？",
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要找公因數還是公倍數",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "公因數",
+                "公倍數"
+              ],
+              "answer": "公因數"
+            },
+            {
+              "key": "g",
+              "label": "最多幾袋",
+              "role": "answer",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "ea",
+              "label": "每袋幾個鉛筆",
+              "role": "part",
+              "input": "number",
+              "answer": 2
+            }
+          ]
+        },
+        {
+          "id": "C07",
+          "type": "lifeBags",
+          "prompt": "有 16 個貼紙、24 個書籤，要全部分完裝成禮物袋，每袋一樣。最多可以裝幾袋？",
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要找公因數還是公倍數",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "公因數",
+                "公倍數"
+              ],
+              "answer": "公因數"
+            },
+            {
+              "key": "g",
+              "label": "最多幾袋",
+              "role": "answer",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "ea",
+              "label": "每袋幾個貼紙",
+              "role": "part",
+              "input": "number",
+              "answer": 2
+            }
+          ]
+        },
+        {
+          "id": "C08",
+          "type": "lifeDuty",
+          "prompt": "阿明每 2 天擦一次窗戶，小琪每 3 天倒一次回收。今天是 4 月 10 日，兩人都做了。最少再過幾天又在同一天做？",
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要找公因數還是公倍數",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "公因數",
+                "公倍數"
+              ],
+              "answer": "公倍數"
+            },
+            {
+              "key": "days",
+              "label": "最少再過幾天",
+              "role": "answer",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "day",
+              "label": "那天是 4 月幾日",
+              "role": "part",
+              "input": "number",
+              "answer": 16
+            }
+          ]
+        },
+        {
+          "id": "C09",
+          "type": "lifeDuty",
+          "prompt": "阿明每 3 天擦一次窗戶，小琪每 4 天倒一次回收。今天是 4 月 12 日，兩人都做了。最少再過幾天又在同一天做？",
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要找公因數還是公倍數",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "公因數",
+                "公倍數"
+              ],
+              "answer": "公倍數"
+            },
+            {
+              "key": "days",
+              "label": "最少再過幾天",
+              "role": "answer",
+              "input": "number",
+              "answer": 12
+            },
+            {
+              "key": "day",
+              "label": "那天是 4 月幾日",
+              "role": "part",
+              "input": "number",
+              "answer": 24
+            }
+          ]
+        },
+        {
+          "id": "C10",
+          "type": "lifeDesk",
+          "prompt": "20 張椅子要排成長方形，每排一樣多，至少 2 排、每排至少 2 張（3 排 4 張和 4 排 3 張算兩種）。",
+          "steps": [
+            {
+              "key": "cnt",
+              "label": "20 有幾個因數",
+              "role": "part",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "ways",
+              "label": "可以排成幾種",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
