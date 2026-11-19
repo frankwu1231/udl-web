@@ -76,8 +76,8 @@
   A.register('moPiggy', {
     methods, reasons,
     makeProblem: (level, i, rand = Math.random) => { const d = any(rand, fromLevel({ easy: [1, 5], standard: [5, 10], challenge: [10, 50] }, level)), k = rnd(rand, 2, fromLevel({ easy: 5, standard: 7, challenge: 9 }, level)), s = d * k;
-      const ok = i % 2 === 0, X = ok ? rnd(rand, Math.max(1, s - 2 * d), s) : rnd(rand, s + 1, s + 2 * d), bk = any(rand, ['故事書', '圖畫書', '著色本']);
-      return { d, k, s, X, ok: s >= X, bk, dims: [d, k, X], prompt: `小安每天放 1 個 ${d} 元到存錢筒，存了 ${k} 天。想買一本${bk}（${X} 元）。` }; },
+      const ok = i % 2 === 0, X = ok ? rnd(rand, Math.max(1, s - 2 * d), s) : rnd(rand, s + 1, s + 2 * d), bk = X < 20 ? any(rand, ['一張貼紙', '一枝鉛筆']) : any(rand, ['一本故事書', '一本圖畫書', '一本著色本']);
+      return { d, k, s, X, ok: s >= X, bk, dims: [d, k, X], prompt: `小安每天放 1 個 ${d} 元到存錢筒，存了 ${k} 天。想買${bk}（${X} 元）。` }; },
     planFigure: ctx => `<div class="mo-days">${Array.from({ length: ctx.problem.k }, (_, j) => `<div class="mo-day"><span>第${j + 1}天</span>${coin(ctx.problem.d, { small: true })}</div>`).join('')}</div>`,
     steps: [
       cStep(0, { title: '一天存多少', ask: '一天存幾元？', id: 'd', fixed: true, hints: ['看每天放的錢。', '錢上面的數字是幾？', '每天都一樣。'], think: '老師看每天放的是幾元。', together: '一起看：一天存幾元？', pre: prompt, figure: ctx => A.get('moPiggy').planFigure(ctx),
@@ -95,7 +95,7 @@
   const BANKS = [['郵局', 'counter'], ['銀行', 'counter'], ['提款機', 'atm']];
   A.register('moBank', {
     methods: [['mark', '🏦 一步一步做'], ['self', '🧠 先自己想，需要時看提示']], reasons,
-    makeProblem: (level, i, rand = Math.random) => { const dep = i % 2 === 0, place = dep ? any(rand, BANKS.slice(0, 2)) : any(rand, BANKS);
+    makeProblem: (level, i, rand = Math.random) => { const dep = i % 2 === 0, place = dep || level === 'easy' ? any(rand, BANKS.slice(0, 2)) : any(rand, BANKS);   // 提款機只出百元以上的鈔票，入門的小錢到櫃台領
       const [set, maxM, b0r] = fromLevel({ easy: [[100, 50, 10], 100, [100, 500]], standard: [[1000, 500, 100], 1000, [300, 2000]], challenge: [[1000, 500, 100], 3000, [1000, 5000]] }, level);
       for (;;) { const m = rnd(rand, 1, maxM / (level === 'easy' ? 10 : 100)) * (level === 'easy' ? 10 : 100), b0 = rnd(rand, b0r[0] / 10, b0r[1] / 10) * 10, b1 = dep ? b0 + m : b0 - m;
         if (b1 < 0 || (!dep && m > b0) || (level !== 'challenge' && !dep && borrows(b0, m) > 1)) continue; const cash = greedy(m, set); if (!cash || pieces(cash) > 12) continue;
@@ -105,7 +105,7 @@
     steps: [
       cStep(0, { title: '存還是領', ask: '要存錢還是領錢？', id: 'kind', fixed: true, hints: ['錢是放進去，還是拿出來？', '放進去叫「存款」。', '拿出來叫「提款」（領錢）。'], think: '老師想：錢是放進去，還是拿出來？', together: '一起想：存還是領？', pre: prompt, figure: ctx => A.get('moBank').planFigure(ctx),
         q: () => '這次要做什麼？', opts: () => [['dep', '存款（把錢放進去）'], ['wd', '提款（把錢領出來）']], ans: ctx => ctx.problem.dep ? 'dep' : 'wd', wrong: () => ({ obs: 'bankWrong', msg: '再讀一次：錢是放進去，還是拿出來？' }), say: e => e.problem.dep ? '要存款。' : '要提款。' }),
-      cStep(1, { title: '填單或按鍵', ask: '在櫃台或提款機要怎麼做？', id: 'how', hints: ['存錢填存款單，領錢填提款單。', '用提款機，要按「提款」。', '密碼只有自己知道，輸入時用手遮住。'], think: '老師想：存錢用存款單，領錢用提款單；提款機的密碼要遮住，不給別人看。', together: '一起選：要怎麼做？', figure: ctx => A.get('moBank').planFigure(ctx),
+      cStep(1, { title: '填單或按鍵', ask: '在櫃台或提款機要怎麼做？', id: 'how', hints: ['先想：這次是要存錢，還是領錢？', '看單子或按鍵上的字，哪一個和你要做的事一樣？', '用提款機時，密碼只有自己知道，要保護好。'], think: '老師想：存錢用存款單，領錢用提款單；提款機的密碼要遮住，不給別人看。', together: '一起選：要怎麼做？', figure: ctx => A.get('moBank').planFigure(ctx),
         q: ctx => ctx.problem.place[1] === 'atm' ? '在提款機要怎麼做？' : `在${ctx.problem.place[0]}櫃台，要填哪一張單子？`,
         opts: ctx => ctx.problem.place[1] === 'atm' ? [['wd', '按「提款」，輸入密碼時用手遮住'], ['tell', '按「提款」，把密碼說給旁邊的人聽'], ['dep', '按「存款」']] : [['dep', '存款單'], ['wd', '提款單']],
         ans: ctx => ctx.problem.dep ? 'dep' : 'wd', wrong: (ctx, v) => ({ obs: v === 'tell' ? 'wrongChoice' : 'bankWrong', msg: v === 'tell' ? '密碼只有自己知道，不能說給別人聽。' : '存錢和領錢用的不一樣。' }), say: e => e.problem.place[1] === 'atm' ? '按「提款」，輸入密碼時用手遮住。' : `填${e.problem.dep ? '存款單' : '提款單'}。` }),
@@ -113,7 +113,7 @@
         label: ctx => ctx.problem.dep ? '要存進去的錢，一共幾元？' : '領出來的錢，一共幾元？', ans: ctx => ctx.problem.m, wrong: (ctx, v) => v === pieces(ctx.problem.cash) ? { obs: 'coinsAsMoney', msg: '這是有幾張。照錢上的數字數。' } : { obs: 'mixCount', msg: '先數大的，再接著數小的。' }, say: e => `一共 ${e.problem.m} 元。` }),
       nStep(3, { title: '看存摺', ask: '存摺上現在有幾元？', id: 'b1', hints: ['存進去，存摺上的錢變多。', '領出來，存摺上的錢變少。', '原來的錢 ＋ 存的錢，或 原來的錢 － 領的錢。'], think: '老師想：存進去變多用加的，領出來變少用減的。', together: '一起算：存摺上現在有幾元？', pre: placeAid,
         figure: ctx => colHtml(ctx.problem.b0, ctx.problem.m, ctx.problem.dep ? '+' : '-', { head: false }), label: () => '存摺上現在有幾元？', ans: ctx => ctx.problem.b1,
-        wrong: (ctx, v) => v === (ctx.problem.dep ? ctx.problem.b0 - ctx.problem.m : ctx.problem.b0 + ctx.problem.m) ? { obs: 'balanceWrong', msg: ctx.problem.dep ? '存進去，錢會變多。' : '領出來，錢會變少。' } : null, say: e => `${e.problem.b0} ${e.problem.dep ? '＋' : '－'} ${e.problem.m} ＝ ${e.problem.b1} 元。` })
+        wrong: (ctx, v) => v === (ctx.problem.dep ? ctx.problem.b0 - ctx.problem.m : ctx.problem.b0 + ctx.problem.m) ? { obs: 'balanceWrong', msg: ctx.problem.dep ? '存進去，錢會變多。' : '領出來，錢會變少。' } : { obs: 'balanceWrong', msg: '再算一次：位數對齊，一位一位算。' }, say: e => `${e.problem.b0} ${e.problem.dep ? '＋' : '－'} ${e.problem.m} ＝ ${e.problem.b1} 元。` })
     ],
     done: ctx => `${ctx.problem.dep ? '存進' : '領出'} ${ctx.problem.m} 元，存摺上現在有 ${ctx.problem.b1} 元。`, chant: '存提款四步：存還是領、填單或按鍵、數一數錢、看存摺。', transfer: '想一想：家附近的郵局或銀行在哪裡？'
   });
@@ -130,9 +130,9 @@
       <tr><td>3/1</td><td>上期餘額</td><td></td><td></td><td>${p.b0}</td></tr><tr><td>3/5</td><td>存入</td><td>${p.d1}</td><td></td><td>${s1 ? p.b1 : '？'}</td></tr><tr><td>3/20</td><td>提款</td><td></td><td>${p.w2}</td><td>${s2 ? p.b2 : '？'}</td></tr></tbody></table>`; },
     steps: [
       nStep(0, { title: '存入以後', ask: '3/5 存入以後，餘額是多少？', id: 'b1', hints: ['餘額是存摺裡剩下的錢。', '存入，錢變多。', '上一行的餘額 ＋ 存入的錢。'], think: '老師看：存入會變多，上一行的餘額加存入的錢。', together: '一起算：餘額多少？', pre: ctx => `${prompt(ctx)}${placeAid(ctx)}`, figure: ctx => A.get('moPassbook').book(ctx, false, false),
-        label: () => '3/5 的餘額是幾元？', ans: ctx => ctx.problem.b1, wrong: (ctx, v) => v === ctx.problem.b0 - ctx.problem.d1 ? { obs: 'balanceWrong', msg: '存入，錢會變多，用加的。' } : null, say: e => `${e.problem.b0} ＋ ${e.problem.d1} ＝ ${e.problem.b1}。` }),
+        label: () => '3/5 的餘額是幾元？', ans: ctx => ctx.problem.b1, wrong: (ctx, v) => v === ctx.problem.b0 - ctx.problem.d1 ? { obs: 'balanceWrong', msg: '存入，錢會變多，用加的。' } : { obs: 'balanceWrong', msg: '再算一次：上一行的餘額加存入的錢。' }, say: e => `${e.problem.b0} ＋ ${e.problem.d1} ＝ ${e.problem.b1}。` }),
       nStep(1, { title: '提款以後', ask: '3/20 提款以後，餘額是多少？', id: 'b2', hints: ['提款，錢變少。', '上一行的餘額 － 提出的錢。', '不夠減要借。'], think: '老師看：提款會變少，上一行的餘額減提出的錢。', together: '一起算：餘額多少？', figure: ctx => A.get('moPassbook').book(ctx, true, false),
-        label: () => '3/20 的餘額是幾元？', ans: ctx => ctx.problem.b2, wrong: (ctx, v) => v === ctx.problem.b1 + ctx.problem.w2 ? { obs: 'balanceWrong', msg: '提款，錢會變少，用減的。' } : v === ctx.problem.b0 - ctx.problem.w2 ? { obs: 'skipStep', msg: '要從上一行（3/5）的餘額減。' } : v === I.bigMinusSmall(ctx.problem.b1, ctx.problem.w2) ? { obs: 'subSmallFromBig', msg: '不夠減要借，不能倒過來減。' } : null, say: e => `${e.problem.b1} － ${e.problem.w2} ＝ ${e.problem.b2}。` }),
+        label: () => '3/20 的餘額是幾元？', ans: ctx => ctx.problem.b2, wrong: (ctx, v) => v === ctx.problem.b1 + ctx.problem.w2 ? { obs: 'balanceWrong', msg: '提款，錢會變少，用減的。' } : v === ctx.problem.b0 - ctx.problem.w2 ? { obs: 'skipStep', msg: '要從上一行（3/5）的餘額減。' } : v === I.bigMinusSmall(ctx.problem.b1, ctx.problem.w2) ? { obs: 'subSmallFromBig', msg: '不夠減要借，不能倒過來減。' } : { obs: 'balanceWrong', msg: '再算一次：上一行的餘額減提出的錢。' }, say: e => `${e.problem.b1} － ${e.problem.w2} ＝ ${e.problem.b2}。` }),
       cStep(2, { title: '比一比', ask: '這個月，存的多還是領的多？', id: 'more', fixed: true, hints: ['看存入那一欄和提出那一欄。', '比一比兩個數。', '也可以看：最後的餘額比一開始多還是少？'], think: '老師比一比存入和提出的錢。', together: '一起比：存的多還是領的多？', figure: ctx => A.get('moPassbook').book(ctx, true, true),
         q: () => '這個月，存進去的多，還是領出來的多？', opts: () => [['in', '存進去的多'], ['out', '領出來的多']], ans: ctx => ctx.problem.more, wrong: () => ({ obs: 'compareWrong', msg: '比一比存入和提出的數。' }), say: e => e.problem.more === 'in' ? '存進去的多，錢變多了。' : '領出來的多，錢變少了。' })
     ],
@@ -180,8 +180,8 @@
       nStep(2, { title: '要幾週', ask: '至少要存幾週？', id: 'k', hints: ['一週一週加：第 1 週、第 2 週……', '加到和差的錢一樣多，或超過。', '還差一點點，也要再存一週。'], think: '老師一週一週加，看第幾週夠了；差一點也要多存一週。', together: '一起數：要幾週？', pre: timesAid, figure: ctx => big(`還差 ${ctx.problem.diff} 元　每週 ${ctx.problem.W} 元`),
         label: () => '至少要存幾週？', ans: ctx => ctx.problem.k, wrong: (ctx, v) => v === ctx.problem.k - 1 && ctx.problem.diff % ctx.problem.W ? { obs: 'roundDown', msg: '這時候還差一點點，要再存一週。' } : null,
         say: e => `${Array.from({ length: e.problem.k }, (_, j) => (j + 1) * e.problem.W).join('、')}，要 ${e.problem.k} 週。` }),
-      cStep(3, { title: '想快一點', ask: '想早一點買到，可以怎麼做？', id: 'fast', fixed: true, hints: ['錢是自己存的。', '少花一點，就能多存一點。', '不可以借錢或拿家裡的錢不說。'], think: '老師想：少買想要的東西，每週多存一點。', together: '一起想：可以怎麼做？', figure: () => '',
-        q: () => '想早一點買到，可以怎麼做？', opts: () => [['more', '少買想要的東西，每週多存一點'], ['borrow', '跟同學借錢'], ['take', '拿家裡的錢，不跟家人說']], ans: () => 'more', wrong: () => ({ msg: '借錢、拿家裡的錢不說，都不是好方法。少花一點、多存一點。' }), say: () => '少買想要的東西，每週多存一點。' })
+      cStep(3, { title: '想快一點', ask: '想早一點買到，可以怎麼做？', id: 'fast', fixed: true, hints: ['錢是自己存的。', '想一想：每週花的錢和存的錢，哪一個可以調整？', '每週多存一點，要存的週數會怎麼變？'], think: '老師想：少買想要的東西，每週多存一點。', together: '一起想：可以怎麼做？', figure: () => '',
+        q: () => '想早一點買到，可以怎麼做？', opts: () => [['more', '少買想要的東西，每週多存一點'], ['borrow', '跟同學借錢'], ['take', '拿家裡的錢，不跟家人說']], ans: () => 'more', wrong: () => ({ msg: '為了買想要的東西去借錢，不是好方法；用家裡的錢，一定要先問家人。' }), say: () => '少買想要的東西，每週多存一點。' })
     ],
     done: ctx => `還差 ${ctx.problem.diff} 元，每週存 ${ctx.problem.W} 元，要 ${ctx.problem.k} 週。`, chant: '存錢計畫：先算還差多少，再一週一週加到夠。', transfer: '想一想：你想存錢買什麼？要存多久？'
   });
@@ -199,7 +199,7 @@
         label: () => '存起來 ＋ 分享 ＝ 幾元？', ans: ctx => ctx.problem.S + ctx.problem.H, wrong: (ctx, v) => ctx.problem.half && v === ctx.problem.A0 + ctx.problem.H ? { obs: 'other', msg: '存的是一半，不是全部。' } : null, say: e => `${e.problem.S} ＋ ${e.problem.H} ＝ ${e.problem.S + e.problem.H} 元。` }),
       nStep(2, { title: '可以花多少', ask: '剩下可以花的有幾元？', id: 'sp', hints: ['全部的零用錢 － 存和分享的。', '用減的。', '算完加回去檢查。'], think: '老師用全部減掉存和分享的，就是可以花的。', together: '一起算：可以花幾元？', pre: placeAid, figure: ctx => colHtml(ctx.problem.A0, ctx.problem.S + ctx.problem.H, '-', { head: false }),
         label: () => '可以花的有幾元？', ans: ctx => ctx.problem.sp, wrong: (ctx, v) => v === ctx.problem.A0 - ctx.problem.S || v === ctx.problem.A0 - ctx.problem.H ? { obs: 'skipStep', msg: '存起來和分享的都要減掉。' } : null, say: e => `${e.problem.A0} － ${e.problem.S + e.problem.H} ＝ ${e.problem.sp} 元。` }),
-      cStep(3, { title: '分享', ask: '分享的錢可以怎麼用？', id: 'share', fixed: true, hints: ['分享是想到別人。', '可以送家人小禮物。', '也可以捐給需要幫助的人。'], think: '老師想：分享的錢，是用來關心別人的。', together: '一起想：分享的錢怎麼用？', figure: () => big('🎁 ❤️'),
+      cStep(3, { title: '分享', ask: '分享的錢可以怎麼用？', id: 'share', fixed: true, hints: ['分享是想到別人。', '分享的錢，可以讓誰開心？', '分享不一定要花錢，也可以用時間和幫忙。'], think: '老師想：分享的錢，是用來關心別人的；不花錢的時候，也可以幫忙做事、陪伴別人。', together: '一起想：分享的錢怎麼用？', figure: () => big('🎁 ❤️'),
         q: () => '分享的錢可以怎麼用？', opts: () => [['help', '送家人小禮物，或捐給需要幫助的人'], ['self', '買更多零食給自己'], ['lose', '丟掉']], ans: () => 'help', wrong: () => ({ msg: '分享是想到別人，不是給自己。' }), say: () => '送家人小禮物，或捐給需要幫助的人。' })
     ],
     done: ctx => `存 ${ctx.problem.S} 元、分享 ${ctx.problem.H} 元、可以花 ${ctx.problem.sp} 元。`, chant: '零用錢分三份：存起來、分享、花用。', transfer: '想一想：如果你有零用錢，你會怎麼分？'

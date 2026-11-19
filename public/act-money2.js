@@ -217,7 +217,7 @@
     methods, reasons,
     makeProblem: (level, i, rand = Math.random) => { const [set, maxT] = fromLevel({ easy: [[10, 5, 1], 50], standard: [[50, 10, 5, 1], 100], challenge: [[500, 100, 50, 10], 1000] }, level);
       for (;;) { const c = {}; set.forEach(d => { const k = rnd(rand, 0, d >= 50 ? 1 : 4); if (k) c[d] = k; }); const w = total(c); if (kinds(c).length < 2 || w > maxT || w < 10) continue;
-        const enough = i % 2 === 0, p = enough ? rnd(rand, Math.max(2, Math.floor(w / 2)), w) : rnd(rand, w + 1, Math.min(maxT, w + Math.max(5, Math.floor(w / 3)))); if (p === w && rand() < 0.7) continue;
+        const enough = i % 2 === 0; if (!enough && w >= maxT) continue; const p = enough ? rnd(rand, Math.max(2, Math.floor(w / 2)), w) : rnd(rand, w + 1, Math.min(maxT, w + Math.max(5, Math.floor(w / 3)))); if (p === w && rand() < 0.7) continue;
         const t = any(rand, level === 'challenge' ? BIGS : ITEMS); return { c, w, p, t, ok: w >= p, d: Math.abs(w - p), dims: [w, p], prompt: `錢包裡有這些錢，想買${t[0]} ${p} 元。錢夠不夠？` }; } },
     planFigure: ctx => `${tag(ctx.problem.t[1] + ' ' + ctx.problem.t[0], ctx.problem.p)}<p class="lf-tag">錢包裡有</p>${pile(ctx.problem.c)}`,
     steps: [

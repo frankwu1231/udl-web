@@ -2692,6 +2692,8 @@ test('第 36 版：錢幣與購物 32 個活動都能出題、畫圖，照示範
           if (opts) { const keys = opts.map(o => o[0]), labels = opts.map(o => o[1]); if (new Set(keys).size !== keys.length || new Set(labels).size !== labels.length) bad.push(`${id} ${level} 第${s + 1}步選項重複：${labels.join('／')}`); }
           try { if (!st.check(ctx)) bad.push(`${id} 第${s + 1}步沒作答也過`); st.solve(ctx); const r = st.check(ctx); if (r) bad.push(`${id} ${level} ${i} 第${s + 1}步照示範做卻沒過：${r.msg}`);
             if (opts && !opts.some(o => o[0] === answers[st.ids[0]])) bad.push(`${id} ${level} 第${s + 1}步正確答案不在選項裡`);
+            if (opts && Array.isArray(st.hints)) { const lab = (opts.find(o => o[0] === answers[st.ids[0]]) || [])[1]; if (lab && lab.length > 2 && st.hints.some(h => typeof h === 'string' && h.includes(lab))) bad.push(`${id} 第${s + 1}步提示直接說出答案：${lab}`); }
+            if (['moPassbook', 'moBank'].includes(id) && st.ids.length === 1 && /^b\d$/.test(st.ids[0]) && /^\d+$/.test(String(answers[st.ids[0]]))) { const keep = answers[st.ids[0]]; answers[st.ids[0]] = String(Number(keep) + 1); const w = st.check(ctx); if (!w || w.obs !== 'balanceWrong') bad.push(`${id} 第${s + 1}步餘額算錯沒記 balanceWrong：${w && w.obs}`); answers[st.ids[0]] = keep; }
             for (const k of st.ids) if (/^\d/.test(String(answers[k])) && (!Number.isInteger(Number(answers[k])) || Number(answers[k]) < 0)) bad.push(`${id} ${level} 第${s + 1}步答案不是 0 以上的整數：${answers[k]}`);
           } catch (e) { bad.push(`${id} 第${s + 1}步 ${e.message}`); }
           try { if (st.say) st.say({ problem, answers, state }); } catch (e) { bad.push(`${id} 第${s + 1}步 say ${e.message}`); }
@@ -2705,6 +2707,10 @@ test('第 36 版：錢幣與購物 32 個活動都能出題、畫圖，照示範
         if (['moChangeSub', 'moTwo', 'moShopFlow'].includes(id) && level !== 'challenge') { const [a, b] = id === 'moChangeSub' ? [P.B, P.p] : [P.B, P.s]; if (I.borrows(a, b) > 1) bad.push(`${id} ${level} 二年級減法退位超過一次：${a}-${b}`); }
         if (id === 'moEstimate' && (P.e <= P.B) !== (P.s <= P.B)) bad.push(`${id} 估的和真的結果不一樣：${P.e}/${P.s}/${P.B}`);
         if (id === 'moNextUp' && M.greedy(P.price, M.kinds(P.wallet), P.wallet)) bad.push(`${id} 錢包竟然可以剛好付：${P.price}`);
+        // 第 1 輪複測：入門不在提款機領小錢；不夠題的價錢不超過該程度上限；小金額不買書
+        if (id === 'moBank' && level === 'easy' && P.place && P.place[1] === 'atm') bad.push(`${id} 入門出現提款機領 ${P.m} 元`);
+        if (id === 'moEnough' && P.p > { easy: 50, standard: 100, challenge: 1000 }[level]) bad.push(`${id} ${level} 價錢超過上限：${P.p}`);
+        if (id === 'moPiggy' && P.X < 20 && /本/.test(P.bk)) bad.push(`${id} ${P.X} 元買${P.bk}`);
         void nums;
       }
     }

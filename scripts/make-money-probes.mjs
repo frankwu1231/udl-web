@@ -54,7 +54,7 @@ function payForm(id, rand, k0) {
 // ---------- 找錢購物 ----------
 function shopForm(id, rand, k0) {
   const items = [], n = k => `${id}${p2(k)}`;
-  const BUY = [['一瓶麥茶', 15, 45], ['一包海苔', 21, 46], ['一枝螢光筆', 12, 39], ['一個髮夾', 23, 48], ['一顆飯糰', 25, 42], ['一包衛生紙', 18, 44], ['一本著色本', 31, 47], ['一盒蠟筆', 52, 89], ['一個便當', 61, 95]];
+  const BUY = [['一瓶麥茶', 15, 45], ['一包海苔', 21, 46], ['一枝螢光筆', 12, 39], ['一個髮夾', 23, 48], ['一顆飯糰', 25, 42], ['一包衛生紙', 18, 44], ['一個削鉛筆機', 31, 47], ['一盒蠟筆', 52, 89], ['一個便當', 61, 95]];
   // 往上數找錢
   for (const k of [1, 2, 3]) { const [thing, lo, hi] = BUY[(k0 * 3 + k - 1) % BUY.length], bill = hi < 50 ? 50 : 100; let p; do p = int(rand, lo, hi); while (p % 10 === 0);
     const up = Math.ceil(p / 10) * 10;
@@ -69,7 +69,7 @@ function shopForm(id, rand, k0) {
   // 錢夠不夠
   for (const k of [7, 8]) { const c = k === 7 ? { 50: int(rand, 1, 2), 10: int(rand, 2, 5), 1: int(rand, 0, 4) } : { 100: int(rand, 1, 3), 10: int(rand, 2, 8) }; const have = total(c);
     const ok = (k0 + k) % 2 === 0, p = ok ? have - int(rand, 1, 9) : have + int(rand, 1, 9);
-    items.push({ id: n(k), type: 'enough', prompt: `錢包裡有 ${say(c)}。想買 ${p} 元的${k === 7 ? '盆栽' : '跳繩'}，錢夠不夠？`, steps: [num('have', '錢包裡一共幾元', have, 'measure'), fixedChoice('ok', '錢夠不夠', ok ? '夠' : '不夠', ['夠', '不夠'])] }); }
+    items.push({ id: n(k), type: 'enough', prompt: `錢包裡有 ${say(c)}。想買 ${p} 元的${k === 7 ? '盆栽' : '風箏'}，錢夠不夠？`, steps: [num('have', '錢包裡一共幾元', have, 'measure'), fixedChoice('ok', '錢夠不夠', ok ? '夠' : '不夠', ['夠', '不夠'])] }); }
   // 買兩樣
   { let a, b; do { a = int(rand, 12, 45); b = int(rand, 12, 45); } while (a + b > 95 || (a + b) % 10 === 0);
     items.push({ id: n(9), type: 'two', prompt: `在麵包店買菠蘿麵包 ${a} 元和牛奶 ${b} 元，付 100 元。要找多少元？`, steps: [num('tot', '兩樣一共多少元', a + b, 'measure'), num('ch', '要找多少元', 100 - a - b, 'answer')] }); }
@@ -79,13 +79,14 @@ function shopForm(id, rand, k0) {
 }
 
 // ---------- 理財 ----------
-const NW = [['下雨天要走路上學，家裡沒有雨傘。買一把雨傘', 'need'], ['家裡已經有三台玩具車，看到新的玩具車', 'want'], ['鉛筆都用完了，明天要考試。買鉛筆', 'need'], ['看到同學有亮亮的貼紙，也想買一包', 'want'], ['牙刷的毛都開花了。買新牙刷', 'need'], ['夾娃娃機裡有好可愛的娃娃', 'want']];
+// 和網站 7-1 的情境不重複（網站用過鉛筆、雨傘、牙刷、外套、午餐、作業簿、玩具車、貼紙、糖果、遊戲點數）
+const NW = [['球鞋破了一個洞，明天體育課要跑步。買新球鞋', 'need'], ['已經有一個水壺，看到新的卡通水壺', 'want'], ['眼鏡摔壞了，看不清楚黑板。修眼鏡', 'need'], ['同學都在玩新的卡牌，也想買一包', 'want'], ['天氣很熱，忘了帶水，口很渴。買一瓶水', 'need'], ['玩具店有會發光的陀螺', 'want']];
 function financeForm(id, rand, k0) {
   const items = [], n = k => `${id}${p2(k)}`;
   for (const k of [1, 2]) { const [t, a] = NW[k0 * 2 + k - 1];
     items.push({ id: n(k), type: 'needwant', prompt: `${t}。這是需要還是想要？`, steps: [fixedChoice('life', '沒有它，生活會不會有問題', a === 'need' ? '會' : '不會', ['會', '不會'], 'part'), fixedChoice('ans', '需要還是想要', a === 'need' ? '需要' : '想要', ['需要', '想要'])] }); }
   for (const k of [3, 4]) { const B = k === 3 ? 100 : 200, need = k === 3 ? int(rand, 45, 75) : int(rand, 90, 150), ok = (k0 + k) % 2 === 1, left = B - need, want = ok ? left - int(rand, 1, Math.min(10, left - 1)) : left + int(rand, 1, 15);
-    const [nt, wt] = k === 3 ? ['午餐', '扭蛋'] : ['作業簿', '漫畫書'];
+    const [nt, wt] = k === 3 ? ['午餐', '鑰匙圈'] : ['作業簿', '漫畫書'];
     items.push({ id: n(k), type: 'budget', prompt: `只有 ${B} 元。先買需要的${nt} ${need} 元，還想買 ${want} 元的${wt}。`, steps: [num('left', `買了${nt}還剩幾元`, left, 'measure'), fixedChoice('can', `還買得起${wt}嗎`, ok ? '買得起' : '買不起', ['買得起', '買不起'])] }); }
   { const per = pick(rand, [10, 20, 30]), have = per * int(rand, 1, 3), w = int(rand, 3, 6), price = have + per * w;
     items.push({ id: n(5), type: 'wait', prompt: `想買 ${price} 元的拼圖，現在有 ${have} 元，每週存 ${per} 元。要再存幾週才買得起？`, steps: [num('need', '還差幾元', price - have, 'measure'), num('wk', '要再存幾週', w, 'answer')] }); }
