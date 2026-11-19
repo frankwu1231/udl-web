@@ -2789,3 +2789,13 @@ test('第 36 版第 4 輪：這一步沒有圖時，選錯不亮空圖框，改�
   assert.equal(await p.page.$('#figure3.look-here'), null, '空圖框不亮');
   assert.deepEqual(p.errors, []); await p.page.context().close();
 });
+
+test('第 36 版第 5 輪：高對比下，還不能按的「下一步」是白底虛線框，看得出鎖住；答對後變回黑底', { skip: skip || !distReady }, async () => {
+  const p = await act('moWork', { difficulty: 'standard', ...MONEY_MAP(['moWork']) });
+  await p.page.evaluate(() => document.documentElement.classList.add('contrast'));   // 和學生按「高對比」一樣，加在 html 上
+  const look = () => p.page.$eval('#next', b => { const s = getComputedStyle(b); return [b.classList.contains('locked'), s.backgroundColor, s.borderTopStyle]; });
+  assert.deepEqual(await look(), [true, 'rgb(255, 255, 255)', 'dashed']);
+  await p.choose('from', 'work'); await p.check();
+  const after = await look(); assert.equal(after[0], false); assert.equal(after[1], 'rgb(0, 0, 0)');
+  assert.deepEqual(p.errors, []); await p.page.context().close();
+});
