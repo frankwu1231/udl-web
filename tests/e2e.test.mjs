@@ -2647,10 +2647,22 @@ test('第 35 版第 3 輪：原本的面積圖形也接受全形數字；填負�
   await s.goto(`${base}/seven.html?shape=square`); await s.waitForSelector('#start');
   await s.click('[data-choice="goal"][data-value="g1"]'); await s.click('[data-choice="confidence"][data-value="high"]'); await s.click('[data-choice="method"][data-value="self"]'); await s.click('#start');
   const side = Number((await s.textContent('.activity')).match(/(\d+) 公分/)[1]), fw = n => String(n).replace(/[0-9]/g, c => String.fromCharCode(c.charCodeAt(0) + 0xFEE0));
-  await s.click('[data-choice="formula"][data-value="product"]'); await s.fill('#a', fw(side)); await s.fill('#b', `　${fw(side)}　`); await s.click('#check');
+  await s.click('[data-choice="formula"][data-value="product"]'); await s.fill('#a', '－' + fw(side)); await s.fill('#b', String(side)); await s.click('#check'); await s.waitForTimeout(60);
+  assert.match(await s.textContent('.activity'), /不用加負號/, '兩格一起檢查時，也說出哪裡要改');
+  const recs = async () => JSON.parse(await s.evaluate(() => sessionStorage.getItem('area-records-v16') || '[]'));
+  assert.ok((await recs()).some(r => r.event === '步驟檢核' && r.obs === 'format'), '記 format');
+  await s.fill('#a', fw(side)); await s.fill('#b', `　${fw(side)}　`); await s.click('#check');
   await s.waitForTimeout(80); assert.equal(await s.$('#next.locked'), null, '全形邊長可以過'); await s.click('#next');
   const fb = async v => { await s.fill('#total', v); await s.click('#check'); await s.waitForTimeout(60); return s.textContent('.activity:last-of-type .feedback, [id^="feedback"]:not([hidden])'); };
   assert.match(await fb('-9'), /負號/); assert.match(await fb('9,0'), /不要加「，」/); assert.match(await fb('9 9'), /空格/);
   assert.match(await fb(fw(side * side)), /答對/);
   assert.deepEqual(errs, []); await ctx.close();
+});
+
+test('第 35 版第 4 輪：只填全形空白算沒填（blank），不算答錯', { skip: skip || !distReady }, async () => {
+  const p = await act('inCount', { difficulty: 'standard', ...INT_MAP(['inCount']) });
+  const box = await p.page.$('.activity input[inputmode="decimal"]'); await box.fill('　'); await p.check();
+  const recs = JSON.parse(await p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || '[]')).filter(r => /步驟檢核|提醒還沒作答/.test(r.event));
+  assert.equal(recs.pop().obs, 'blank');
+  assert.deepEqual(p.errors, []); await p.page.context().close();
 });

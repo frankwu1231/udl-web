@@ -741,9 +741,13 @@
   // ---------- 檢查 ----------
   const ob = (...a) => window.areaObs ? window.areaObs.numeric(...a) : 'other';   // 第 26 版：錯誤的觀察代碼（看得到的事實）
   function issue(s) {
-    const r = issueRaw(s), numBox = r && r.code && document.querySelector(`input[data-answer="${CSS.escape(r.code)}"][inputmode="decimal"]`),   // 只看數字格，不看選項
-      f = numBox && (!r.obs || r.obs === 'unfinished') && typeof answers[r.code] === 'string' ? formatMsg(answers[r.code]) : null;
-    return f ? { ...r, obs: 'format', msg: f } : r;
+    // 第 35 版：這一步任何一個數字格有字、但不是數字（負號、逗號、中間空格……）→ 說清楚哪裡要改，記 format；
+    // 多個數字格一起檢查（長和寬、長寬高、三種面積）也一樣，不靠檢核結果的代碼找格子
+    const r = issueRaw(s); if (!r || (r.obs && r.obs !== 'unfinished' && r.obs !== 'other')) return r;
+    const sec = document.querySelector(`.activity[data-stage="${s}"]`);
+    const boxes = sec ? [...sec.querySelectorAll('input[inputmode="decimal"][data-answer]')] : [];
+    for (const b of boxes) { const id = b.dataset.answer, f = typeof answers[id] === 'string' ? formatMsg(answers[id]) : null; if (f) { const { soft, ...rest } = r; return { ...rest, code: id, obs: 'format', msg: f }; } }
+    return r;
   }
   function issueRaw(s) {
     if (P()) return P().steps[s].check(ctx());
@@ -815,10 +819,10 @@
 
   // 把學生的作答轉成看得懂的文字，寫進紀錄
   function answerText(s, code) {
-    if (P()) return (P().steps[s].ids || []).map(id => { const v = answers[id]; if (v === undefined || v === '') return ''; const b = document.querySelector(`[data-choice="${id}"][data-value="${v}"]`); return b ? clean(b) : String(v); }).filter(Boolean).join('、');
+    if (P()) return (P().steps[s].ids || []).map(id => { const v = answers[id]; if (v === undefined || String(v).trim() === '') return ''; const b = document.querySelector(`[data-choice="${id}"][data-value="${v}"]`); return b ? clean(b) : String(v); }).filter(Boolean).join('、');
     const ids = { target: ['target'], count: ['count'], relation: ['relation'], base: [], first: ['first'], line: ['height'], second: ['second'], formula: ['formula'], ab: ['a', 'b'], total: ['total'], verify: ['verify'], unit: ['unit'] }[code] || [KEYS[s]];
     return ids.map(id => {
-      const v = answers[id]; if (v === undefined || v === '') return '';
+      const v = answers[id]; if (v === undefined || String(v).trim() === '') return '';
       const btn = document.querySelector(`[data-choice="${id}"][data-value="${v}"]`);
       return btn ? clean(btn) : id === 'height' ? v + ' 線' : String(v);
     }).filter(Boolean).join('、') || (code === 'count' ? `點了 ${tiles.length} 格` : '');
