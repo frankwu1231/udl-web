@@ -110,7 +110,7 @@
   A.register('lnGrow', {
     methods, makeProblem: makeGrow, planFigure: ctx => fig(ctx),
     steps: [
-      cStep(0, { title: '波浪線', ask: '波浪線是什麼意思？', id: 'brk', fixed: true, hints: ['看縱軸最下面：0 的上面有一段波浪線。', '0 到 100 中間沒有畫出來。', '比一比：0 到波浪線那一格，和上面每一格一樣大嗎？'],
+      cStep(0, { title: '波浪線', ask: '波浪線是什麼意思？', id: 'brk', fixed: true, hints: ['看縱軸最下面：0 的上面有一段波浪線。', '看波浪線上面的第一個數是多少。', '比一比：從 0 到那個數的距離，和上面每一格一樣嗎？'],
         think: '老師看到波浪線：0 到 100 中間省略了，圖才不會太高。', together: '一起想：波浪線是什麼意思？', pre: prompt, figure: ctx => fig(ctx),
         q: () => '縱軸的波浪線是什麼意思？', opts: () => [['omit', '0 到 100 中間省略了'], ['zero', '小傑的身高是 0'], ['wrong', '圖畫錯了']], ans: () => 'omit',
         wrong: () => ({ obs: 'ignoreBreak', msg: '波浪線表示中間省略，不是身高是 0。' }), say: () => '0 到 100 中間省略了。' }),
@@ -186,7 +186,7 @@
   A.register('fmGroup', {
     methods, makeProblem: makeGroup, planFigure: ctx => pileSVG(ctx.problem.n, `${ctx.problem.n} 個人`),
     steps: [
-      cStep(0, { title: '要用什麼想', ask: '每組一樣多、沒有人落單', id: 'tool', fixed: true, hints: ['分組就是把人平分。', '剛好分完、沒有剩，想想學過的哪一個詞。', '分組是「分開」，還是「一直加上去」？'],
+      cStep(0, { title: '要用什麼想', ask: '每組一樣多、沒有人落單', id: 'tool', fixed: true, hints: ['分組就是把人平分。', '分成幾組，每組一樣多。', '分完以後，有沒有剩下的人？'],
         think: '老師想：分組要剛好分完，沒有人落單，要找因數。', together: '一起想：用因數還是倍數？', pre: prompt, figure: ctx => pileSVG(ctx.problem.n, `${ctx.problem.n} 個人`),
         q: () => '要找人數的什麼？', opts: () => toolOpts, ans: () => 'f', wrong: () => ({ obs: 'swapFM', msg: '分組是平分，要剛好分完：找因數。' }), say: () => '找因數。' }),
       pickStep(1, { key: 'fs', title: '找出全部的分法', ask: '可以分成幾組？', hints: ['從 1 開始試：能不能剛好分完？', '找到一個，它的好朋友也要選。', '1 組和每人一組也算，可是上課不太會這樣分。'],

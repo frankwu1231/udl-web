@@ -121,7 +121,7 @@
   const DRAFT_KEY = 'act-draft-v28', OWN_KEY = 'line-record-v28';
   let resumed = false;
   addEventListener('pagehide', () => saveDraft());   // 打字還沒按檢查就重新整理，也存起來
-  const draftable = () => !!(P() && ['area', 'surface', 'line', 'factor', 'time', 'frac'].includes(ACT?.pkgOf(type)?.id) && mode() !== 'probe' && mode() !== 'demo');
+  const draftable = () => !!(P() && (['line', 'factor', 'time', 'frac'].includes(ACT?.pkgOf(type)?.id) || P().draft) && mode() !== 'probe' && mode() !== 'demo');
   function saveDraft() {
     if (!draftable()) return;
     try { if (phase === 'solve') sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ type, index, cycle, problem: pProblem, state: pState, answers, checked: [...checked], page, hintLevel, goal, method, errors, hintsUsed, tried2: [...tried2], nudged: [...nudged], startedAt })); else sessionStorage.removeItem(DRAFT_KEY); } catch { /* 無法暫存就算了 */ }

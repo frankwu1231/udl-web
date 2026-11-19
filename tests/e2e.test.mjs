@@ -2498,5 +2498,19 @@ test('第 34 版第 1 輪複測：5-3 寬至少 2；5-4 一般、挑戰一定有
   assert.deepEqual(await draft(), before, '題目一樣');
   assert.equal(await p.page.inputValue('#need'), '7', '填的數還在');
   assert.match(await p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || ''), /重新整理後接著做/);
+  // 第 2 輪：表面積的生活活動也接著做；原本的面積、表面積活動（鋪方格、長方體）不暫存
+  await publish({ __map: { pkg: 'surface', assigned: ['sGift', 'cuboid'], path: 'all' } });
+  await p.page.goto(`${base}/seven.html?a=sGift`); await p.page.waitForSelector('#start'); await begin(p);
+  await p.choose('goal', 'surf'); await p.check(); await p.next();
+  await p.page.fill('#half', '5');
+  const g = await draft(); await p.page.reload(); await p.page.waitForSelector('#half');
+  assert.deepEqual(await draft(), g); assert.equal(await p.page.inputValue('#half'), '5', '表面積：填的數還在');
+  const kind = () => p.page.evaluate(() => JSON.parse(sessionStorage.getItem('act-draft-v28') || 'null')?.type);
+  for (const [id, pkg] of [['cuboid', 'surface'], ['tile', 'area']]) {
+    await publish({ __map: { pkg, assigned: [id], path: 'all' } });
+    await p.page.goto(`${base}/seven.html?a=${id}`); await p.page.waitForSelector('#start'); await begin(p);
+    assert.notEqual(await kind(), id, `${id} 不暫存`);
+  }
+  await publish({});
   assert.deepEqual(p.errors, []);
 });
