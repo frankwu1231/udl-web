@@ -1,0 +1,807 @@
+{
+  "id": "intMuldivProbe",
+  "version": "1",
+  "kind": "probe",
+  "package": "int",
+  "variant": "muldiv",
+  "title": "整數小測驗：乘除（二到四年級）",
+  "itemSecs": 150,
+  "totalSecs": 1500,
+  "forms": [
+    {
+      "id": "A",
+      "items": [
+        {
+          "id": "A01",
+          "type": "mult",
+          "prompt": "每盤有 5 個水餃，4 盤一共幾個？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "5 ＋ 4",
+                "5 × 4",
+                "20 ÷ 4"
+              ],
+              "answer": "5 × 4"
+            },
+            {
+              "key": "ans",
+              "label": "一共幾個",
+              "role": "answer",
+              "input": "number",
+              "answer": 20
+            }
+          ]
+        },
+        {
+          "id": "A02",
+          "type": "mult",
+          "prompt": "每排種 6 棵樹，種了 3 排。一共幾棵？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "6 × 3",
+                "18 ÷ 3",
+                "6 ＋ 3"
+              ],
+              "answer": "6 × 3"
+            },
+            {
+              "key": "ans",
+              "label": "一共幾個",
+              "role": "answer",
+              "input": "number",
+              "answer": 18
+            }
+          ]
+        },
+        {
+          "id": "A03",
+          "type": "divide",
+          "prompt": "20 張色紙平分給 5 個人，每人幾張？剩幾張？",
+          "steps": [
+            {
+              "key": "q",
+              "label": "每人幾張",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            },
+            {
+              "key": "r",
+              "label": "剩幾張",
+              "role": "part",
+              "input": "number",
+              "answer": 0
+            }
+          ]
+        },
+        {
+          "id": "A04",
+          "type": "divide",
+          "prompt": "39 張色紙平分給 5 個人，每人幾張？剩幾張？",
+          "steps": [
+            {
+              "key": "q",
+              "label": "每人幾張",
+              "role": "answer",
+              "input": "number",
+              "answer": 7
+            },
+            {
+              "key": "r",
+              "label": "剩幾張",
+              "role": "part",
+              "input": "number",
+              "answer": 4
+            }
+          ]
+        },
+        {
+          "id": "A05",
+          "type": "mulcol",
+          "prompt": "用直式算：402 × 4 ＝ ？",
+          "steps": [
+            {
+              "key": "u",
+              "label": "個位寫幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 1608
+            }
+          ]
+        },
+        {
+          "id": "A06",
+          "type": "mulcol",
+          "prompt": "用直式算：17 × 17 ＝ ？",
+          "steps": [
+            {
+              "key": "p2",
+              "label": "17 × 10 是多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 170
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 289
+            }
+          ]
+        },
+        {
+          "id": "A07",
+          "type": "divcol",
+          "prompt": "用直式算：353 ÷ 8 ＝ ？（寫出商和餘數）",
+          "steps": [
+            {
+              "key": "start",
+              "label": "商從哪一位開始寫",
+              "role": "measure",
+              "input": "choice",
+              "options": [
+                "百位",
+                "十位"
+              ],
+              "answer": "十位"
+            },
+            {
+              "key": "q",
+              "label": "商",
+              "role": "answer",
+              "input": "number",
+              "answer": 44
+            },
+            {
+              "key": "r",
+              "label": "餘數",
+              "role": "part",
+              "input": "number",
+              "answer": 1
+            }
+          ]
+        },
+        {
+          "id": "A08",
+          "type": "divcol",
+          "prompt": "用直式算：813 ÷ 2 ＝ ？（寫出商和餘數）",
+          "steps": [
+            {
+              "key": "start",
+              "label": "商從哪一位開始寫",
+              "role": "measure",
+              "input": "choice",
+              "options": [
+                "百位",
+                "十位"
+              ],
+              "answer": "百位"
+            },
+            {
+              "key": "q",
+              "label": "商",
+              "role": "answer",
+              "input": "number",
+              "answer": 406
+            },
+            {
+              "key": "r",
+              "label": "餘數",
+              "role": "part",
+              "input": "number",
+              "answer": 1
+            }
+          ]
+        },
+        {
+          "id": "A09",
+          "type": "divcol",
+          "prompt": "用直式算：158 ÷ 8 ＝ ？（寫出商和餘數）",
+          "steps": [
+            {
+              "key": "start",
+              "label": "商從哪一位開始寫",
+              "role": "measure",
+              "input": "choice",
+              "options": [
+                "百位",
+                "十位"
+              ],
+              "answer": "十位"
+            },
+            {
+              "key": "q",
+              "label": "商",
+              "role": "answer",
+              "input": "number",
+              "answer": 19
+            },
+            {
+              "key": "r",
+              "label": "餘數",
+              "role": "part",
+              "input": "number",
+              "answer": 6
+            }
+          ]
+        },
+        {
+          "id": "A10",
+          "type": "estq",
+          "prompt": "276 本書，每 38 本裝一箱。可以裝滿幾箱？剩幾本？",
+          "steps": [
+            {
+              "key": "near",
+              "label": "38 大約是幾十",
+              "role": "measure",
+              "input": "number",
+              "answer": 40
+            },
+            {
+              "key": "q",
+              "label": "可以裝滿幾箱",
+              "role": "answer",
+              "input": "number",
+              "answer": 7
+            },
+            {
+              "key": "r",
+              "label": "剩幾本",
+              "role": "part",
+              "input": "number",
+              "answer": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "items": [
+        {
+          "id": "B01",
+          "type": "mult",
+          "prompt": "每盤有 6 個水餃，5 盤一共幾個？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "6 × 5",
+                "30 ÷ 5",
+                "6 ＋ 5"
+              ],
+              "answer": "6 × 5"
+            },
+            {
+              "key": "ans",
+              "label": "一共幾個",
+              "role": "answer",
+              "input": "number",
+              "answer": 30
+            }
+          ]
+        },
+        {
+          "id": "B02",
+          "type": "mult",
+          "prompt": "每排種 7 棵樹，種了 9 排。一共幾棵？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "7 ＋ 9",
+                "7 × 9",
+                "63 ÷ 9"
+              ],
+              "answer": "7 × 9"
+            },
+            {
+              "key": "ans",
+              "label": "一共幾個",
+              "role": "answer",
+              "input": "number",
+              "answer": 63
+            }
+          ]
+        },
+        {
+          "id": "B03",
+          "type": "divide",
+          "prompt": "28 張色紙平分給 4 個人，每人幾張？剩幾張？",
+          "steps": [
+            {
+              "key": "q",
+              "label": "每人幾張",
+              "role": "answer",
+              "input": "number",
+              "answer": 7
+            },
+            {
+              "key": "r",
+              "label": "剩幾張",
+              "role": "part",
+              "input": "number",
+              "answer": 0
+            }
+          ]
+        },
+        {
+          "id": "B04",
+          "type": "divide",
+          "prompt": "75 張色紙平分給 8 個人，每人幾張？剩幾張？",
+          "steps": [
+            {
+              "key": "q",
+              "label": "每人幾張",
+              "role": "answer",
+              "input": "number",
+              "answer": 9
+            },
+            {
+              "key": "r",
+              "label": "剩幾張",
+              "role": "part",
+              "input": "number",
+              "answer": 3
+            }
+          ]
+        },
+        {
+          "id": "B05",
+          "type": "mulcol",
+          "prompt": "用直式算：303 × 7 ＝ ？",
+          "steps": [
+            {
+              "key": "u",
+              "label": "個位寫幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 1
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 2121
+            }
+          ]
+        },
+        {
+          "id": "B06",
+          "type": "mulcol",
+          "prompt": "用直式算：46 × 24 ＝ ？",
+          "steps": [
+            {
+              "key": "p2",
+              "label": "46 × 20 是多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 920
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 1104
+            }
+          ]
+        },
+        {
+          "id": "B07",
+          "type": "divcol",
+          "prompt": "用直式算：270 ÷ 8 ＝ ？（寫出商和餘數）",
+          "steps": [
+            {
+              "key": "start",
+              "label": "商從哪一位開始寫",
+              "role": "measure",
+              "input": "choice",
+              "options": [
+                "百位",
+                "十位"
+              ],
+              "answer": "十位"
+            },
+            {
+              "key": "q",
+              "label": "商",
+              "role": "answer",
+              "input": "number",
+              "answer": 33
+            },
+            {
+              "key": "r",
+              "label": "餘數",
+              "role": "part",
+              "input": "number",
+              "answer": 6
+            }
+          ]
+        },
+        {
+          "id": "B08",
+          "type": "divcol",
+          "prompt": "用直式算：278 ÷ 9 ＝ ？（寫出商和餘數）",
+          "steps": [
+            {
+              "key": "start",
+              "label": "商從哪一位開始寫",
+              "role": "measure",
+              "input": "choice",
+              "options": [
+                "百位",
+                "十位"
+              ],
+              "answer": "十位"
+            },
+            {
+              "key": "q",
+              "label": "商",
+              "role": "answer",
+              "input": "number",
+              "answer": 30
+            },
+            {
+              "key": "r",
+              "label": "餘數",
+              "role": "part",
+              "input": "number",
+              "answer": 8
+            }
+          ]
+        },
+        {
+          "id": "B09",
+          "type": "divcol",
+          "prompt": "用直式算：198 ÷ 7 ＝ ？（寫出商和餘數）",
+          "steps": [
+            {
+              "key": "start",
+              "label": "商從哪一位開始寫",
+              "role": "measure",
+              "input": "choice",
+              "options": [
+                "百位",
+                "十位"
+              ],
+              "answer": "十位"
+            },
+            {
+              "key": "q",
+              "label": "商",
+              "role": "answer",
+              "input": "number",
+              "answer": 28
+            },
+            {
+              "key": "r",
+              "label": "餘數",
+              "role": "part",
+              "input": "number",
+              "answer": 2
+            }
+          ]
+        },
+        {
+          "id": "B10",
+          "type": "estq",
+          "prompt": "285 本書，每 37 本裝一箱。可以裝滿幾箱？剩幾本？",
+          "steps": [
+            {
+              "key": "near",
+              "label": "37 大約是幾十",
+              "role": "measure",
+              "input": "number",
+              "answer": 40
+            },
+            {
+              "key": "q",
+              "label": "可以裝滿幾箱",
+              "role": "answer",
+              "input": "number",
+              "answer": 7
+            },
+            {
+              "key": "r",
+              "label": "剩幾本",
+              "role": "part",
+              "input": "number",
+              "answer": 26
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "items": [
+        {
+          "id": "C01",
+          "type": "mult",
+          "prompt": "每盤有 5 個水餃，5 盤一共幾個？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "5 × 5",
+                "25 ÷ 5",
+                "5 ＋ 5"
+              ],
+              "answer": "5 × 5"
+            },
+            {
+              "key": "ans",
+              "label": "一共幾個",
+              "role": "answer",
+              "input": "number",
+              "answer": 25
+            }
+          ]
+        },
+        {
+          "id": "C02",
+          "type": "mult",
+          "prompt": "每排種 3 棵樹，種了 3 排。一共幾棵？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "9 ÷ 3",
+                "3 ＋ 3",
+                "3 × 3"
+              ],
+              "answer": "3 × 3"
+            },
+            {
+              "key": "ans",
+              "label": "一共幾個",
+              "role": "answer",
+              "input": "number",
+              "answer": 9
+            }
+          ]
+        },
+        {
+          "id": "C03",
+          "type": "divide",
+          "prompt": "24 張色紙平分給 4 個人，每人幾張？剩幾張？",
+          "steps": [
+            {
+              "key": "q",
+              "label": "每人幾張",
+              "role": "answer",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "r",
+              "label": "剩幾張",
+              "role": "part",
+              "input": "number",
+              "answer": 0
+            }
+          ]
+        },
+        {
+          "id": "C04",
+          "type": "divide",
+          "prompt": "14 張色紙平分給 6 個人，每人幾張？剩幾張？",
+          "steps": [
+            {
+              "key": "q",
+              "label": "每人幾張",
+              "role": "answer",
+              "input": "number",
+              "answer": 2
+            },
+            {
+              "key": "r",
+              "label": "剩幾張",
+              "role": "part",
+              "input": "number",
+              "answer": 2
+            }
+          ]
+        },
+        {
+          "id": "C05",
+          "type": "mulcol",
+          "prompt": "用直式算：209 × 4 ＝ ？",
+          "steps": [
+            {
+              "key": "u",
+              "label": "個位寫幾",
+              "role": "measure",
+              "input": "number",
+              "answer": 6
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 836
+            }
+          ]
+        },
+        {
+          "id": "C06",
+          "type": "mulcol",
+          "prompt": "用直式算：57 × 20 ＝ ？",
+          "steps": [
+            {
+              "key": "p2",
+              "label": "57 × 20 是多少",
+              "role": "measure",
+              "input": "number",
+              "answer": 1140
+            },
+            {
+              "key": "ans",
+              "label": "答案是多少",
+              "role": "answer",
+              "input": "number",
+              "answer": 1140
+            }
+          ]
+        },
+        {
+          "id": "C07",
+          "type": "divcol",
+          "prompt": "用直式算：225 ÷ 7 ＝ ？（寫出商和餘數）",
+          "steps": [
+            {
+              "key": "start",
+              "label": "商從哪一位開始寫",
+              "role": "measure",
+              "input": "choice",
+              "options": [
+                "百位",
+                "十位"
+              ],
+              "answer": "十位"
+            },
+            {
+              "key": "q",
+              "label": "商",
+              "role": "answer",
+              "input": "number",
+              "answer": 32
+            },
+            {
+              "key": "r",
+              "label": "餘數",
+              "role": "part",
+              "input": "number",
+              "answer": 1
+            }
+          ]
+        },
+        {
+          "id": "C08",
+          "type": "divcol",
+          "prompt": "用直式算：856 ÷ 8 ＝ ？（寫出商和餘數）",
+          "steps": [
+            {
+              "key": "start",
+              "label": "商從哪一位開始寫",
+              "role": "measure",
+              "input": "choice",
+              "options": [
+                "百位",
+                "十位"
+              ],
+              "answer": "百位"
+            },
+            {
+              "key": "q",
+              "label": "商",
+              "role": "answer",
+              "input": "number",
+              "answer": 107
+            },
+            {
+              "key": "r",
+              "label": "餘數",
+              "role": "part",
+              "input": "number",
+              "answer": 0
+            }
+          ]
+        },
+        {
+          "id": "C09",
+          "type": "divcol",
+          "prompt": "用直式算：696 ÷ 8 ＝ ？（寫出商和餘數）",
+          "steps": [
+            {
+              "key": "start",
+              "label": "商從哪一位開始寫",
+              "role": "measure",
+              "input": "choice",
+              "options": [
+                "百位",
+                "十位"
+              ],
+              "answer": "十位"
+            },
+            {
+              "key": "q",
+              "label": "商",
+              "role": "answer",
+              "input": "number",
+              "answer": 87
+            },
+            {
+              "key": "r",
+              "label": "餘數",
+              "role": "part",
+              "input": "number",
+              "answer": 0
+            }
+          ]
+        },
+        {
+          "id": "C10",
+          "type": "estq",
+          "prompt": "199 本書，每 22 本裝一箱。可以裝滿幾箱？剩幾本？",
+          "steps": [
+            {
+              "key": "near",
+              "label": "22 大約是幾十",
+              "role": "measure",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "q",
+              "label": "可以裝滿幾箱",
+              "role": "answer",
+              "input": "number",
+              "answer": 9
+            },
+            {
+              "key": "r",
+              "label": "剩幾本",
+              "role": "part",
+              "input": "number",
+              "answer": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

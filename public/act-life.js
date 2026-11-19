@@ -54,7 +54,7 @@
     const c = MAT_CTX[(i + rnd(rand, 0, 3)) % MAT_CTX.length];
     let w, h, k;
     do { w = rnd(rand, ...lv(level, { easy: [2, 5], standard: [3, 8], challenge: [4, 9] })); h = rnd(rand, ...lv(level, { easy: [2, 4], standard: [2, 6], challenge: [3, 8] })); k = any(rand, lv(level, { easy: [4, 5], standard: [4, 6, 8], challenge: [6, 8, 10] })); }
-    while (w === h || (level !== 'easy' && (w * h) % k === 0 && i % 3 !== 0));
+    while (w === h || 2 * (w + h) === w * h || (level !== 'easy' && (w * h) % k === 0 && i % 3 !== 0));
     const need = w * h, packs = ceilDiv(need, k);
     return { c, w, h, k, need, packs, have: packs * k, dims: [w, h, k], prompt: `${c[0]}是長方形，長 ${w} 公尺、寬 ${h} 公尺。要鋪滿${c[1]}，一塊地墊是邊長 1 公尺的正方形，一包有 ${k} 塊。至少要買幾包？` };
   }

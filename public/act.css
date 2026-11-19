@@ -234,3 +234,23 @@ html.contrast .fr-part.fr-on{fill:#000}html.contrast .fr-part.fr-off{fill:#fff;s
 /* 第 34 版：跨領域生活單元（兩個盒子並排） */
 .lf-pair{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:flex-end}.lf-pair>div{flex:1 1 220px;min-width:0;max-width:340px}
 .lf-tag{text-align:center;font-weight:700;font-size:1.2rem;margin:0}
+/* 第 35 版：整數四則運算教材包 */
+.in-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;font-size:1.6rem;line-height:1.2;margin:.3rem auto;max-width:560px}.in-chip.gone{opacity:.35;text-decoration:line-through}.in-gap{width:.6rem}
+.in-groups{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin:.3rem auto;max-width:600px}
+.in-rows{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:1.4rem;margin:.3rem auto}
+.in-cmp{margin:.3rem auto;max-width:560px}
+.in-blocks{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:center;gap:4px;margin:.4rem auto;max-width:560px}
+.in-h{display:inline-block;width:60px;height:60px;background:repeating-linear-gradient(0deg,#7fb2ff 0 5px,#1e4f9a 5px 6px),#7fb2ff;border:2px solid #1e4f9a}
+.in-t{display:inline-block;width:10px;height:60px;background:#ffb37a;border:2px solid #b4530f}
+.in-ones{display:inline-flex;flex-wrap:wrap;width:36px;gap:2px}.in-u{display:inline-block;width:10px;height:10px;background:#8fd18f;border:2px solid #2b7a2b}
+.in-col{border-collapse:collapse;margin:.4rem auto;font-size:1.7rem;font-variant-numeric:tabular-nums;font-family:ui-monospace,Menlo,Consolas,monospace}
+.in-col td,.in-col th{width:1.6em;height:1.5em;text-align:center;padding:0}.in-col .in-head th{font-size:.8rem;color:#4a5a78;font-weight:700}
+.in-col td.hl{background:#fff3bf;outline:2px solid #e8590c}.in-col .in-carry td{font-size:1rem;color:#c92a2a;height:1em}.in-col td.in-x{text-decoration:line-through;text-decoration-color:#c92a2a;text-decoration-thickness:2px}
+.in-col .in-line td{border-top:3px solid #1d2b44;height:.2em}.in-col .in-res td{color:#1f6fd1;font-weight:700}
+.in-div .in-d{border-right:3px solid #1d2b44;padding-right:.2em}.in-div tr:nth-child(2) td:not(.in-d){border-top:3px solid #1d2b44}
+.in-tape{fill:#cfe0ff;stroke:#1e4f9a;stroke-width:2}.in-tape.b{fill:#ffe0c2;stroke:#b4530f}.in-brace{fill:none;stroke:#1d2b44;stroke-width:2}
+.in-place{margin:.4rem 0}.in-place>summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center}
+.in-receipt{min-width:200px}
+.choice .in-col{font-size:1.2rem;margin:.1rem auto}
+html.contrast .in-tape{fill:#fff;stroke:#000}html.contrast .in-tape.b{fill:#ccc}html.contrast .in-col td.hl{background:#000;color:#fff}html.contrast .in-t{background:#666}html.contrast .in-u{background:#000}
+@media (max-width:420px){.in-col{font-size:1.35rem}.in-chips{font-size:1.3rem}}

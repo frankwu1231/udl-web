@@ -935,7 +935,7 @@ test('現場試用：開始前老師點選代號（不用打字）；沒選齊�
   assert.match(await p.text('#researchBar .who'), /T02-S05/);
   await p.page.click('#researchFlush'); await p.page.waitForTimeout(300);
   const start = p.rows('場次')[0];
-  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v34'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
+  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v35'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
   assert.ok(p.rows('教師設定').some(r => r.actId === 'rectangle' && r.buddy === '開'), '記下老師這次的設定');
   assert.ok(!JSON.stringify(p.posts).match(/姓名/), '不傳姓名欄位');
 
@@ -1239,7 +1239,7 @@ test('第 26 版：研究紀錄存網站資料庫：開始本節編節次、錯�
   const ev = await events();
   const wrong = ev.find(r => r.event === '步驟檢核' && r.correct === '否');
   assert.ok(wrong, '錯誤存進網站資料庫');
-  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v34');
+  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v35');
   const d = JSON.parse(wrong.detail); assert.equal(d.obs, 'chosePerimeter'); assert.equal(d.outcome, 'wrong'); assert.equal(d.firstTry, true);
   assert.ok(ev.some(r => r.event === '無法判定'), '老師按「這題無法判定」');
   // 老師調整支持：沒選理由不能存；減少支持存成這位學生的設定，記下方向
@@ -1722,7 +1722,7 @@ test('第 27 版第 1 輪修正：換教材再換回保留指派；2-1 依實際
     return { k322: k({ l: 3, w: 2, h: 2 }), k432: k({ l: 4, w: 3, h: 2 }), k222: k({ l: 2, w: 2, h: 2 }), faces: (net.match(/class="sf-net/g) || []).length, none: /沒有上面/.test(net), front: />前面</.test(label) && !/>上面</.test(label) }; });
   assert.deepEqual(r, { k322: '2', k432: '3', k222: '1', faces: 5, none: true, front: true });
   const rec = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16') || '[]').find(x => x.event === '整題定標'));
-  assert.equal(rec.siteVersion, 'v34'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
+  assert.equal(rec.siteVersion, 'v35'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
   assert.match(await p.page.title(), /表面積/); assert.match(await p.text('header .brand'), /表面積/);
   assert.deepEqual(p.errors, []);
   await publish({});
@@ -2513,4 +2513,159 @@ test('第 34 版第 1 輪複測：5-3 寬至少 2；5-4 一般、挑戰一定有
   }
   await publish({});
   assert.deepEqual(p.errors, []);
+});
+
+// ---------- 第 35 版：整數四則運算教材包 ----------
+const INT_MAP = ids => ({ __map: { pkg: 'int', assigned: ids, path: 'all' } });
+
+test('第 35 版：整數四則運算 43 個活動都能出題、畫圖，照示範做完每一步都對；空白的不會過；畫面沒有 undefined；數字不超過課綱上限', { skip: skip || !distReady }, async () => {
+  const p = await act('inWhich', { difficulty: 'standard', ...INT_MAP(['inWhich']) });
+  const out = await p.page.evaluate(() => {
+    const A = window.areaActs, I = window.intFig, OBS = window.areaObs.OBS, bad = [];
+    const ids = A.packages.int.activities.map(a => a.id);
+    for (const id of ids) {
+      const pl = A.get(id); if (!pl) { bad.push(id + ' 沒有註冊'); continue; }
+      for (const level of ['easy', 'standard', 'challenge']) for (let i = 0; i < 12; i++) {
+        const problem = pl.makeProblem(level, i, Math.random), answers = {}, state = {}, obs = [];
+        const ctx = { answers, state, problem, plugin: pl, settings: {}, method: 'mark', level, hint: () => 3, checked: () => false, invalidate() {}, refreshFigure() {}, rerender() {}, log() {}, choice: (k, t, items) => items.map(x => x[1]).join('|') };
+        if (/undefined|NaN|Infinity/.test(problem.prompt || '')) bad.push(`${id} 題目有 undefined/NaN：${problem.prompt}`);
+        if ((problem.dims || []).some(n => typeof n !== 'number' || !Number.isFinite(n))) bad.push(`${id} dims 不是數字`);
+        try { pl.planFigure && pl.planFigure(ctx); } catch (e) { bad.push(`${id} planFigure ${e.message}`); }
+        pl.steps.forEach((st, s) => {
+          let opts = null; const c2 = { ...ctx, choice: (k, t, items) => { opts = items; return items.map(x => x[1]).join('|'); } };
+          try { const html = (st.figure ? st.figure(c2) : '') + st.answer(c2); if (/undefined|NaN|Infinity/.test(html)) bad.push(`${id} ${level} 第${s + 1}步畫面有 undefined/NaN`); } catch (e) { bad.push(`${id} 第${s + 1}步畫面 ${e.message}`); }
+          if (opts) { const keys = opts.map(o => o[0]), labels = opts.map(o => o[1]); if (new Set(keys).size !== keys.length || new Set(labels).size !== labels.length) bad.push(`${id} ${level} 第${s + 1}步選項重複：${labels.join('／')}`); }
+          try { if (!st.check(ctx)) bad.push(`${id} 第${s + 1}步沒作答也過`); st.solve(ctx); const r = st.check(ctx); if (r) bad.push(`${id} ${level} ${i} 第${s + 1}步照示範做卻沒過：${r.msg}`);
+            if (opts && !opts.some(o => o[0] === answers[st.ids[0]])) bad.push(`${id} ${level} 第${s + 1}步正確答案不在選項裡`);
+            for (const k of st.ids) if (/^\d/.test(String(answers[k])) && (!Number.isInteger(Number(answers[k])) || Number(answers[k]) < 0)) bad.push(`${id} ${level} 第${s + 1}步答案不是 0 以上的整數：${answers[k]}`);
+          } catch (e) { bad.push(`${id} 第${s + 1}步 ${e.message}`); }
+          try { if (st.say) st.say({ problem, answers }); } catch (e) { bad.push(`${id} 第${s + 1}步 say ${e.message}`); }
+        });
+        try { pl.done(ctx); } catch (e) { bad.push(`${id} done ${e.message}`); }
+        // 課綱上限
+        const P = problem;
+        if (['inWhich', 'inJoin', 'inTake', 'inMoreLess'].includes(id)) { const sum = id === 'inJoin' || (id === 'inWhich' && ['more', 'join'].includes(P.kind)); if (Math.max(P.a, P.b, sum ? P.a + P.b : 0) > 10) bad.push(`${id} 一年級超過 10：${P.a}、${P.b}`); }
+        if (id === 'inAddCol' && (P.s > 999 || I.carries(P.a, P.b) > 2)) bad.push(`${id} 二年級加法超過三位數或進位超過二次：${P.a}+${P.b}`);
+        if (id === 'inSubCol' && level !== 'challenge' && (P.a > 999 || I.borrows(P.a, P.b) !== 1)) bad.push(`${id} 二年級減法不是退位一次：${P.a}-${P.b}`);
+        if ((id === 'inMissAdd' || id === 'inMissSub') && P.c > 999) bad.push(`${id} 超過三位數：${P.c}`);
+        if (['inGroups', 'inTimes', 'inArray', 'inPack', 'inShare'].includes(id) && (P.n || P.a || P.r) > 9) bad.push(`${id} 超過九九範圍`);
+        if (id === 'inDivCol' && (P.n > 999 || P.n < 10)) bad.push(`${id} 被除數不是二、三位數：${P.n}`);
+        if (id === 'inDivCol' && level === 'challenge' && !/0/.test(String(P.q).slice(1, -1))) bad.push(`${id} 挑戰的商中間沒有 0：${P.q}`);
+        if ((id === 'inDiv2' || id === 'inEstQ') && P.d > 999) bad.push(`${id} 除數超過三位`);
+        if (id === 'inOrder' && (!Number.isInteger(P.v) || P.v < 0 || !Number.isInteger(P.fv))) bad.push(`${id} 不是整數：${P.text}`);
+      }
+    }
+    // 程式裡寫到的 obs 代碼都在 observations.js
+    return { bad, n: ids.length, paths: Object.keys(A.packages.int.paths), core: A.packages.int.activities.filter(a => a.core).map(a => a.id), pre: A.packages.int.activities.filter(a => a.pretest).map(a => a.id), obsKeys: Object.keys(OBS) };
+  });
+  assert.equal(out.n, 43); assert.deepEqual(out.bad, []); assert.deepEqual(out.paths, ['g1', 'addsub', 'muldiv', 'word', 'life', 'all']);
+  assert.deepEqual(out.core, ['inWhich', 'inSubCol', 'inDivCol', 'inTwoStep', 'inOrder', 'inEnough']); assert.deepEqual(out.pre, ['inCount', 'inTens']);
+  const code = ['act-int.js', 'act-int2.js', 'act-int3.js', 'act-int4.js'].map(f => fs.readFileSync(new URL('../public/' + f, import.meta.url), 'utf8')).join('\n');
+  const used = [...new Set([...code.matchAll(/obs: '([a-zA-Z0-9]+)'/g)].map(m => m[1]))];
+  assert.deepEqual(used.filter(k => !out.obsKeys.includes(k)), [], '錯誤觀察代碼都要寫在 observations.js');
+  assert.deepEqual(p.errors, []); await p.page.context().close();
+});
+
+test('第 35 版：學習地圖換成整數四則運算、單元 0 是先測、有算數小幫手；教師頁可以換成整數教材', { skip: skip || !distReady }, async () => {
+  await setup(); await publish({ __map: { pkg: 'int', assigned: ['inCount', 'inTens', 'inSubCol'], sequential: true } });
+  const ctx = await browser.newContext(); const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.goto(base + '/seven.html'); await page.waitForSelector('.map-card');
+  const units = await page.$$eval('.map-unit h2', h => h.map(x => x.innerText.trim()).join('|'));
+  assert.match(units, /準備好了嗎/); assert.match(units, /算數小幫手/); assert.doesNotMatch(units, /分數小幫手/);
+  assert.match(await page.innerText('[data-map="inCount"]'), /先測/);
+  assert.ok(await page.$('.map-card.locked[data-map="inTens"]'), '0-1 還沒全對，0-2 鎖住');
+  const tp = await browser.newPage(); await tp.goto(base + '/teacher.html'); await tp.waitForSelector('[data-pkg="int"]');
+  assert.match(await tp.innerText('[data-pkg="int"]'), /整數/);
+  assert.deepEqual(errs, []); await ctx.close(); await tp.close();
+  await publish({});
+});
+
+test('第 35 版第 2 輪：商寫在對的位上、提示不露出答案、退位小格、商中間的 0、9-1 漏算、整數才算對、公車人數合理', { skip: skip || !distReady }, async () => {
+  const p = await act('inDivCol', { difficulty: 'standard', ...INT_MAP(['inDivCol']) });
+  const out = await p.page.evaluate(() => {
+    const A = window.areaActs, I = window.intFig, r = [];
+    const mk = (pl, problem, o = {}) => ({ answers: {}, state: {}, problem, plugin: pl, settings: {}, method: 'mark', level: o.level || 'standard', hint: () => o.hint ?? 0, checked: s => (o.checked || []).includes(s), invalidate() {}, refreshFigure() {}, rerender() {}, log() {}, choice: (k, t, items) => items.map(x => x[1]).join('|') });
+    const cells = html => { const d = document.createElement('div'); d.innerHTML = html; return [...d.querySelectorAll('tr')].map(tr => [...tr.children].map(td => td.textContent.trim())); };
+    // 1. 39 ÷ 3：第一個商 1 寫在十位（3）上面
+    const dv = A.get('inDivCol'), dp = { n: 39, d: 3, q: 13, r: 0, startLen: 1, q1: 1, r1: 0 };
+    r.push(['div2', cells(dv.steps[2].figure(mk(dv, dp)))[0]]);
+    r.push(['div3', cells(dv.steps[3].figure(mk(dv, dp)))[0]]);
+    r.push(['div3done', cells(dv.steps[3].figure(mk(dv, dp, { checked: [3] })))[0]]);
+    const dp2 = { n: 680, d: 4, q: 170, r: 0, startLen: 1, q1: 1, r1: 2 };
+    r.push(['div680', cells(dv.steps[2].figure(mk(dv, dp2)))[0]]);
+    // 2、4. 681 － 444：提示第三層也不露答案；退位小格 7、11，原來的 8、1 劃掉
+    const sb = A.get('inSubCol'), sp = { a: 681, b: 444, d: 237, t: ['跳繩', '下'] };
+    const h3 = sb.steps[3].figure(mk(sb, sp, { hint: 3 }));
+    r.push(['subHint', /237/.test(h3)]);
+    r.push(['subDone', /237/.test(sb.steps[3].figure(mk(sb, sp, { checked: [3] })))]);
+    r.push(['borrow', cells(h3).find(row => row.includes('11')), (h3.match(/in-x/g) || []).length]);
+    r.push(['borrow0', I.borrowRow(503, 127).join(',')]);
+    r.push(['step2before', /11/.test(sb.steps[2].figure(mk(sb, sp)))]);
+    // 第三層提示用了 shown 的其他直式也不露答案
+    const leak = [];
+    for (const id of ['inAddCol', 'inMulti', 'inMul1', 'inMul2', 'inEstQ', 'inDiv2', 'inDivCol', 'inSubCol']) { const pl = A.get(id); for (let i = 0; i < 6; i++) { const pr = pl.makeProblem('standard', i, Math.random), ans = String(pr.v ?? pr.q ?? pr.d ?? pr.s);
+      pl.steps.forEach(st => { if (!st.figure) return; const c2 = mk(pl, pr); st.solve(c2); if (!Object.values(c2.answers).map(String).includes(ans)) return; const d = document.createElement('div'); d.innerHTML = st.figure(mk(pl, pr, { hint: 3 })); const res = d.querySelector('tr.in-res'); if (res && res.textContent.replace(/\s/g, '') === ans) leak.push(`${id} 第${pl.steps.indexOf(st) + 1}步`); }); } }
+    r.push(['leak', [...new Set(leak)]]);
+    // 3. 挑戰：商中間有 0
+    const qs = Array.from({ length: 300 }, (_, i) => dv.makeProblem('challenge', i, Math.random).q);
+    r.push(['mid0', qs.filter(q => !/0/.test(String(q).slice(1, -1))).length]);
+    // 5. 9-1 只算第一步
+    const mg = A.get('inMerge'), mp = mg.makeProblem('standard', 2, Math.random), mc = mk(mg, mp); mc.answers.v = String(mp.s1[1]);
+    r.push(['merge', mp.s1[1] === mp.ans ? 'skipStep' : (mg.steps[2].check(mc) || {}).obs]);
+    // 6. 小數不算對
+    const ct = A.get('inCount'), cp = ct.makeProblem('standard', 0, Math.random), cc = mk(ct, cp); const st = ct.steps.find(s => s.ids && s.ids.length === 1 && /^\d+$/.test(String((() => { const c2 = mk(ct, cp); s.solve(c2); return c2.answers[s.ids[0]]; })())));
+    st.solve(cc); const okv = cc.answers[st.ids[0]]; cc.answers[st.ids[0]] = okv + '.0000000001';
+    const tryV = v => { cc.answers[st.ids[0]] = v; return st.check(cc); }, fw = s => String(s).replace(/[0-9]/g, c => String.fromCharCode(c.charCodeAt(0) + 0xFEE0));
+    r.push(['dec', [okv + '.0000000001', okv + '.0', okv + '.0000000000000001', okv + '．0'].map(v => tryV(v) !== null), tryV(okv), tryV(fw(okv)), tryV(` ${fw(okv)} `)]);
+    const d0 = A.get('inDivCol'), z = mk(d0, { n: 39, d: 3, q: 13, r: 0, startLen: 1, q1: 1, r1: 0 }); z.answers.r1 = '０';
+    r.push(['fw0', d0.steps[2].check(z)]);
+    // 7. 公車最多 45 人；人多的不是公車
+    let bus = 0;
+    for (const lv of ['easy', 'standard', 'challenge']) for (let i = 0; i < 300; i++) { const q = A.get('inTwoStep').makeProblem(lv, i, Math.random); if (/公車/.test(q.prompt) && Math.max(q.s1[1], q.ans, ...(q.prompt.match(/\d+/g) || []).map(Number)) > 45) bus++; }
+    for (let i = 0; i < 300; i++) { const q = mg.makeProblem('standard', i, Math.random); if (/公車/.test(q.prompt) && Math.max(q.ans, ...(q.prompt.match(/\d+/g) || []).map(Number)) > 45) bus++; }
+    r.push(['bus', bus]);
+    return Object.fromEntries(r.map(x => [x[0], x.slice(1)]));
+  });
+  assert.deepEqual(out.div2[0], ['', '1', ''], '39 ÷ 3 第一個商在十位上面');
+  assert.deepEqual(out.div3[0], ['', '1', ''], '答對前第三步還是只有第一個商');
+  assert.deepEqual(out.div3done[0], ['', '1', '3']);
+  assert.deepEqual(out.div680[0], ['', '1', '', ''], '680 ÷ 4 第一個商在百位上面');
+  assert.equal(out.subHint[0], false, '第三層提示不顯示 237'); assert.equal(out.subDone[0], true);
+  assert.ok(out.borrow[0] && out.borrow[0].includes('7') && out.borrow[0].includes('11'), JSON.stringify(out.borrow)); assert.equal(out.borrow[1], 2);
+  assert.equal(out.borrow0[0], '13,9,4'); assert.equal(out.step2before[0], false, '借位小格是第 2 步的答案，答對前不顯示');
+  assert.deepEqual(out.leak[0], [], '答對前直式不顯示答案'); assert.equal(out.mid0[0], 0);
+  assert.equal(out.merge[0], 'skipStep');
+  assert.deepEqual(out.dec[0], [true, true, true, true], '有小數點的都不算對'); assert.equal(out.dec[1], null); assert.equal(out.dec[2], null, '全形數字也算對'); assert.equal(out.dec[3], null);
+  assert.equal(out.fw0[0], null, '餘數填全形 ０ 算對');
+  assert.equal(out.bus[0], 0);
+  assert.deepEqual(p.errors, []); await p.page.context().close();
+});
+
+test('第 35 版第 3 輪：原本的面積圖形也接受全形數字；填負號、逗號、中間空格會說哪裡要改，不說「沒填」', { skip: skip || !distReady }, async () => {
+  await setup(); await publish({ flow: 'custom', keep: [], difficulty: 'standard', practice: false, tryFirst: false, confidence: true, guide: false });   // 前面的測試可能套用過「輕度智能障礙建議」，這裡寫清楚
+  const ctx = await browser.newContext({ viewport: { width: 820, height: 1180 } }); const s = await ctx.newPage(); const errs = []; s.on('pageerror', e => errs.push(e.message));
+  await s.goto(`${base}/seven.html?shape=square`); await s.waitForSelector('#start');
+  await s.click('[data-choice="goal"][data-value="g1"]'); await s.click('[data-choice="confidence"][data-value="high"]'); await s.click('[data-choice="method"][data-value="self"]'); await s.click('#start');
+  const side = Number((await s.textContent('.activity')).match(/(\d+) 公分/)[1]), fw = n => String(n).replace(/[0-9]/g, c => String.fromCharCode(c.charCodeAt(0) + 0xFEE0));
+  await s.click('[data-choice="formula"][data-value="product"]'); await s.fill('#a', '－' + fw(side)); await s.fill('#b', String(side)); await s.click('#check'); await s.waitForTimeout(60);
+  assert.match(await s.textContent('.activity'), /不用加負號/, '兩格一起檢查時，也說出哪裡要改');
+  const recs = async () => JSON.parse(await s.evaluate(() => sessionStorage.getItem('area-records-v16') || '[]'));
+  assert.ok((await recs()).some(r => r.event === '步驟檢核' && r.obs === 'format' && r.issue === 'a' && /－/.test(r.choice || '')), '記 format，也存下那一格填的字');
+  await s.fill('#a', String(side)); await s.fill('#b', '　'); await s.click('#check'); await s.waitForTimeout(60);
+  const last = (await recs()).filter(r => /步驟檢核|提醒還沒作答/.test(r.event)).pop(); assert.equal(last.event, '提醒還沒作答', '一格只有空白：算沒填，不算答錯'); assert.equal(last.issue, 'b');
+  assert.match(await s.textContent('.activity'), /還有一格沒填/, '提醒的是空的那一格');
+  await s.fill('#a', fw(side)); await s.fill('#b', `　${fw(side)}　`); await s.click('#check');
+  await s.waitForTimeout(80); assert.equal(await s.$('#next.locked'), null, '全形邊長可以過'); await s.click('#next');
+  const fb = async v => { await s.fill('#total', v); await s.click('#check'); await s.waitForTimeout(60); return s.textContent('.activity:last-of-type .feedback, [id^="feedback"]:not([hidden])'); };
+  assert.match(await fb('-9'), /負號/); assert.match(await fb('9,0'), /不要加「，」/); assert.match(await fb('9 9'), /空格/);
+  assert.match(await fb(fw(side * side)), /答對/);
+  assert.deepEqual(errs, []); await ctx.close();
+});
+
+test('第 35 版第 4 輪：只填全形空白算沒填（blank），不算答錯', { skip: skip || !distReady }, async () => {
+  const p = await act('inCount', { difficulty: 'standard', ...INT_MAP(['inCount']) });
+  const box = await p.page.$('.activity input[inputmode="decimal"]'); await box.fill('　'); await p.check();
+  const recs = JSON.parse(await p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || '[]')).filter(r => /步驟檢核|提醒還沒作答/.test(r.event));
+  assert.equal(recs.pop().obs, 'blank');
+  assert.deepEqual(p.errors, []); await p.page.context().close();
 });

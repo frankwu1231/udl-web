@@ -48,7 +48,9 @@
     return d;
   }
   const bounds = cells => ({ w: Math.max(...cells.map(c => c[0])) + 1, h: Math.max(...cells.map(c => c[1])) + 1 });
-  const num = v => { const s = String(v ?? '').trim(); return /^\d+(\.\d+)?$/.test(s) ? Number(s) : null; };
+  // 第 35 版：全形數字（１６、０）和全形小數點也接受，先換成半形
+  const half = v => String(v ?? '').trim().replace(/[０-９．]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+  const num = v => { const s = half(v); return /^\d+(\.\d+)?$/.test(s) ? Number(s) : null; };
   const fieldHtml = (ctx, id, label, step) => `<label class="field"><span data-read data-say>${label}</span><input id="${id}" data-answer="${id}" data-step="${step}" inputmode="decimal" autocomplete="off" value="${esc(ctx.answers[id] ?? '')}"></label>`;
 
   // 動畫示範的兩個畫面：先看題（例題），再看做好的樣子。例題每次重新產生，數字和學生的題目不同。
