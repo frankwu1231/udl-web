@@ -10,7 +10,8 @@
   const A = window.areaActs, U = A.util, { esc } = U, R = window.fracFig;
   const { rnd, any, fromLevel, big, cStep, prompt, shown } = R;
   // 整數教材：答案一定是 0 以上的整數，填小數（例如 16.0000000001）不算對
-  const notInt = (ctx, ids) => ids.find(id => { const raw = ctx.answers[id]; if (raw == null || String(raw).trim() === '') return false; const v = Number(String(raw).trim()); return Number.isFinite(v) && !Number.isInteger(v); });
+  // 看原本填的字：有小數點（16.0、16.0000000000000001、全形．也算）就不是整數，不靠 Number 轉換（長的小數會被捨入）
+  const notInt = (ctx, ids) => ids.find(id => /^\s*[0-9０-９]*[.．][0-9０-９]*\s*$/.test(String(ctx.answers[id] ?? '')) && /[0-9０-９]/.test(String(ctx.answers[id])));
   const intOnly = st => { const base = st.check; st.check = ctx => { const bad = notInt(ctx, st.ids); return bad ? { code: bad, obs: 'other', msg: '答案是整數，不會有小數點。' } : base(ctx); }; return st; };
   const nStep = (n, o) => intOnly(R.nStep(n, o)), mStep = (n, o) => intOnly(R.mStep(n, o));
   const timesAid = ctx => window.factorFig ? window.factorFig.timesAid(ctx) : '';

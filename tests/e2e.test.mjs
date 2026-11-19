@@ -2615,7 +2615,10 @@ test('第 35 版第 2 輪：商寫在對的位上、提示不露出答案、退�
     // 6. 小數不算對
     const ct = A.get('inCount'), cp = ct.makeProblem('standard', 0, Math.random), cc = mk(ct, cp); const st = ct.steps.find(s => s.ids && s.ids.length === 1 && /^\d+$/.test(String((() => { const c2 = mk(ct, cp); s.solve(c2); return c2.answers[s.ids[0]]; })())));
     st.solve(cc); const okv = cc.answers[st.ids[0]]; cc.answers[st.ids[0]] = okv + '.0000000001';
-    r.push(['dec', st.check(cc) !== null, (() => { cc.answers[st.ids[0]] = okv; return st.check(cc); })()]);
+    const tryV = v => { cc.answers[st.ids[0]] = v; return st.check(cc); }, fw = s => String(s).replace(/[0-9]/g, c => String.fromCharCode(c.charCodeAt(0) + 0xFEE0));
+    r.push(['dec', [okv + '.0000000001', okv + '.0', okv + '.0000000000000001', okv + '．0'].map(v => tryV(v) !== null), tryV(okv), tryV(fw(okv)), tryV(` ${fw(okv)} `)]);
+    const d0 = A.get('inDivCol'), z = mk(d0, { n: 39, d: 3, q: 13, r: 0, startLen: 1, q1: 1, r1: 0 }); z.answers.r1 = '０';
+    r.push(['fw0', d0.steps[2].check(z)]);
     // 7. 公車最多 45 人；人多的不是公車
     let bus = 0;
     for (const lv of ['easy', 'standard', 'challenge']) for (let i = 0; i < 300; i++) { const q = A.get('inTwoStep').makeProblem(lv, i, Math.random); if (/公車/.test(q.prompt) && Math.max(q.s1[1], q.ans, ...(q.prompt.match(/\d+/g) || []).map(Number)) > 45) bus++; }
@@ -2632,7 +2635,8 @@ test('第 35 版第 2 輪：商寫在對的位上、提示不露出答案、退�
   assert.equal(out.borrow0[0], '13,9,4'); assert.equal(out.step2before[0], false, '借位小格是第 2 步的答案，答對前不顯示');
   assert.deepEqual(out.leak[0], [], '答對前直式不顯示答案'); assert.equal(out.mid0[0], 0);
   assert.equal(out.merge[0], 'skipStep');
-  assert.equal(out.dec[0], true, '16.0000000001 不算對'); assert.equal(out.dec[1], null);
+  assert.deepEqual(out.dec[0], [true, true, true, true], '有小數點的都不算對'); assert.equal(out.dec[1], null); assert.equal(out.dec[2], null, '全形數字也算對'); assert.equal(out.dec[3], null);
+  assert.equal(out.fw0[0], null, '餘數填全形 ０ 算對');
   assert.equal(out.bus[0], 0);
   assert.deepEqual(p.errors, []);
 });
