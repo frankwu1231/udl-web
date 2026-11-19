@@ -1,0 +1,669 @@
+{
+  "id": "moneyPayProbe",
+  "version": "1",
+  "kind": "probe",
+  "package": "money",
+  "variant": "pay",
+  "title": "錢幣小測驗：數錢、付錢（一、二年級）",
+  "itemSecs": 150,
+  "totalSecs": 1500,
+  "forms": [
+    {
+      "id": "A",
+      "items": [
+        {
+          "id": "A01",
+          "type": "count",
+          "prompt": "小晴的口袋裡有 4 個 10 元、7 個 1 元。一共幾元？",
+          "steps": [
+            {
+              "key": "big",
+              "label": "10 元的一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 40
+            },
+            {
+              "key": "ans",
+              "label": "一共幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 47
+            }
+          ]
+        },
+        {
+          "id": "A02",
+          "type": "count",
+          "prompt": "撲滿倒出來有 1 個 50 元、3 個 10 元、1 個 5 元、1 個 1 元。一共幾元？",
+          "steps": [
+            {
+              "key": "big",
+              "label": "50 元和 10 元一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 80
+            },
+            {
+              "key": "ans",
+              "label": "一共幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 86
+            }
+          ]
+        },
+        {
+          "id": "A03",
+          "type": "count",
+          "prompt": "紅包袋裡有 1 張 100 元、1 個 50 元、4 個 10 元、6 個 1 元。一共幾元？",
+          "steps": [
+            {
+              "key": "big",
+              "label": "100 元和 50 元一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 150
+            },
+            {
+              "key": "ans",
+              "label": "一共幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 196
+            }
+          ]
+        },
+        {
+          "id": "A04",
+          "type": "trade",
+          "prompt": "1 張 100 元，可以換幾個 10 元？",
+          "steps": [
+            {
+              "key": "ans",
+              "label": "可以換幾個 10 元",
+              "role": "answer",
+              "input": "number",
+              "answer": 10
+            }
+          ]
+        },
+        {
+          "id": "A05",
+          "type": "countbig",
+          "prompt": "舅舅的皮夾裡有 1 張 1000 元、6 張 100 元。一共幾元？",
+          "steps": [
+            {
+              "key": "big",
+              "label": "1000 元的一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 1000
+            },
+            {
+              "key": "ans",
+              "label": "一共幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 1600
+            }
+          ]
+        },
+        {
+          "id": "A06",
+          "type": "countbig",
+          "prompt": "班級的旅行基金裡有 1 張 1000 元、1 張 500 元、2 張 100 元、1 個 10 元。一共幾元？",
+          "steps": [
+            {
+              "key": "big",
+              "label": "1000 元和 500 元一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 1500
+            },
+            {
+              "key": "ans",
+              "label": "一共幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 1710
+            }
+          ]
+        },
+        {
+          "id": "A07",
+          "type": "estimate",
+          "prompt": "一個書包 539 元。大約是幾百元？",
+          "steps": [
+            {
+              "key": "near",
+              "label": "大約是幾百元",
+              "role": "answer",
+              "input": "number",
+              "answer": 500
+            }
+          ]
+        },
+        {
+          "id": "A08",
+          "type": "exact",
+          "prompt": "文具店的膠水要 97 元。要剛好付，已經先拿 1 個 50 元。",
+          "steps": [
+            {
+              "key": "rest",
+              "label": "還要再付幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 47
+            },
+            {
+              "key": "set",
+              "label": "還要再拿哪些錢",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "4 個 10 元、8 個 1 元",
+                "7 個 10 元、4 個 1 元",
+                "3 個 10 元、7 個 1 元",
+                "4 個 10 元、7 個 1 元"
+              ],
+              "answer": "4 個 10 元、7 個 1 元"
+            }
+          ]
+        },
+        {
+          "id": "A09",
+          "type": "exact",
+          "prompt": "早餐店的蛋餅加豆漿要 77 元。要剛好付，已經先拿 1 個 50 元。",
+          "steps": [
+            {
+              "key": "rest",
+              "label": "還要再付幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 27
+            },
+            {
+              "key": "set",
+              "label": "還要再拿哪些錢",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "7 個 10 元、2 個 1 元",
+                "2 個 10 元、7 個 1 元",
+                "1 個 10 元、7 個 1 元",
+                "2 個 10 元、8 個 1 元"
+              ],
+              "answer": "2 個 10 元、7 個 1 元"
+            }
+          ]
+        },
+        {
+          "id": "A10",
+          "type": "fewest",
+          "prompt": "要付 66 元，可以用 50 元、10 元、5 元、1 元。錢幣最少要用幾個？",
+          "steps": [
+            {
+              "key": "top",
+              "label": "先拿哪一種",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "50 元",
+                "10 元",
+                "5 元",
+                "1 元"
+              ],
+              "answer": "50 元"
+            },
+            {
+              "key": "ans",
+              "label": "最少幾個",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "items": [
+        {
+          "id": "B01",
+          "type": "count",
+          "prompt": "阿哲的口袋裡有 5 個 10 元、5 個 1 元。一共幾元？",
+          "steps": [
+            {
+              "key": "big",
+              "label": "10 元的一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 50
+            },
+            {
+              "key": "ans",
+              "label": "一共幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 55
+            }
+          ]
+        },
+        {
+          "id": "B02",
+          "type": "count",
+          "prompt": "撲滿倒出來有 1 個 50 元、3 個 10 元、1 個 5 元、2 個 1 元。一共幾元？",
+          "steps": [
+            {
+              "key": "big",
+              "label": "50 元和 10 元一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 80
+            },
+            {
+              "key": "ans",
+              "label": "一共幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 87
+            }
+          ]
+        },
+        {
+          "id": "B03",
+          "type": "count",
+          "prompt": "紅包袋裡有 1 張 100 元、1 個 50 元、1 個 10 元、5 個 1 元。一共幾元？",
+          "steps": [
+            {
+              "key": "big",
+              "label": "100 元和 50 元一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 150
+            },
+            {
+              "key": "ans",
+              "label": "一共幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 165
+            }
+          ]
+        },
+        {
+          "id": "B04",
+          "type": "trade",
+          "prompt": "1 個 50 元，可以換幾個 5 元？",
+          "steps": [
+            {
+              "key": "ans",
+              "label": "可以換幾個 5 元",
+              "role": "answer",
+              "input": "number",
+              "answer": 10
+            }
+          ]
+        },
+        {
+          "id": "B05",
+          "type": "countbig",
+          "prompt": "舅舅的皮夾裡有 2 張 1000 元、6 張 100 元。一共幾元？",
+          "steps": [
+            {
+              "key": "big",
+              "label": "1000 元的一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 2000
+            },
+            {
+              "key": "ans",
+              "label": "一共幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 2600
+            }
+          ]
+        },
+        {
+          "id": "B06",
+          "type": "countbig",
+          "prompt": "班級的旅行基金裡有 1 張 1000 元、1 張 500 元、4 張 100 元、1 個 10 元。一共幾元？",
+          "steps": [
+            {
+              "key": "big",
+              "label": "1000 元和 500 元一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 1500
+            },
+            {
+              "key": "ans",
+              "label": "一共幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 1910
+            }
+          ]
+        },
+        {
+          "id": "B07",
+          "type": "estimate",
+          "prompt": "一個書包 318 元。大約是幾百元？",
+          "steps": [
+            {
+              "key": "near",
+              "label": "大約是幾百元",
+              "role": "answer",
+              "input": "number",
+              "answer": 300
+            }
+          ]
+        },
+        {
+          "id": "B08",
+          "type": "exact",
+          "prompt": "文具店的膠水要 71 元。要剛好付，已經先拿 1 個 50 元。",
+          "steps": [
+            {
+              "key": "rest",
+              "label": "還要再付幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 21
+            },
+            {
+              "key": "set",
+              "label": "還要再拿哪些錢",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "2 個 10 元、1 個 1 元",
+                "1 個 10 元、1 個 1 元",
+                "1 個 10 元、2 個 1 元",
+                "2 個 10 元、2 個 1 元"
+              ],
+              "answer": "2 個 10 元、1 個 1 元"
+            }
+          ]
+        },
+        {
+          "id": "B09",
+          "type": "exact",
+          "prompt": "早餐店的蛋餅加豆漿要 84 元。要剛好付，已經先拿 1 個 50 元。",
+          "steps": [
+            {
+              "key": "rest",
+              "label": "還要再付幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 34
+            },
+            {
+              "key": "set",
+              "label": "還要再拿哪些錢",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "2 個 10 元、4 個 1 元",
+                "4 個 10 元、3 個 1 元",
+                "3 個 10 元、5 個 1 元",
+                "3 個 10 元、4 個 1 元"
+              ],
+              "answer": "3 個 10 元、4 個 1 元"
+            }
+          ]
+        },
+        {
+          "id": "B10",
+          "type": "fewest",
+          "prompt": "要付 92 元，可以用 50 元、10 元、5 元、1 元。錢幣最少要用幾個？",
+          "steps": [
+            {
+              "key": "top",
+              "label": "先拿哪一種",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "50 元",
+                "10 元",
+                "5 元",
+                "1 元"
+              ],
+              "answer": "50 元"
+            },
+            {
+              "key": "ans",
+              "label": "最少幾個",
+              "role": "answer",
+              "input": "number",
+              "answer": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "items": [
+        {
+          "id": "C01",
+          "type": "count",
+          "prompt": "小芸的口袋裡有 2 個 10 元、8 個 1 元。一共幾元？",
+          "steps": [
+            {
+              "key": "big",
+              "label": "10 元的一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "ans",
+              "label": "一共幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 28
+            }
+          ]
+        },
+        {
+          "id": "C02",
+          "type": "count",
+          "prompt": "撲滿倒出來有 1 個 50 元、2 個 10 元、1 個 5 元、2 個 1 元。一共幾元？",
+          "steps": [
+            {
+              "key": "big",
+              "label": "50 元和 10 元一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 70
+            },
+            {
+              "key": "ans",
+              "label": "一共幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 77
+            }
+          ]
+        },
+        {
+          "id": "C03",
+          "type": "count",
+          "prompt": "紅包袋裡有 1 張 100 元、1 個 50 元、4 個 10 元、6 個 1 元。一共幾元？",
+          "steps": [
+            {
+              "key": "big",
+              "label": "100 元和 50 元一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 150
+            },
+            {
+              "key": "ans",
+              "label": "一共幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 196
+            }
+          ]
+        },
+        {
+          "id": "C04",
+          "type": "trade",
+          "prompt": "1 個 10 元，可以換幾個 1 元？",
+          "steps": [
+            {
+              "key": "ans",
+              "label": "可以換幾個 1 元",
+              "role": "answer",
+              "input": "number",
+              "answer": 10
+            }
+          ]
+        },
+        {
+          "id": "C05",
+          "type": "countbig",
+          "prompt": "舅舅的皮夾裡有 3 張 1000 元、5 張 100 元。一共幾元？",
+          "steps": [
+            {
+              "key": "big",
+              "label": "1000 元的一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 3000
+            },
+            {
+              "key": "ans",
+              "label": "一共幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 3500
+            }
+          ]
+        },
+        {
+          "id": "C06",
+          "type": "countbig",
+          "prompt": "班級的旅行基金裡有 1 張 1000 元、1 張 500 元、4 張 100 元、1 個 10 元。一共幾元？",
+          "steps": [
+            {
+              "key": "big",
+              "label": "1000 元和 500 元一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 1500
+            },
+            {
+              "key": "ans",
+              "label": "一共幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 1910
+            }
+          ]
+        },
+        {
+          "id": "C07",
+          "type": "estimate",
+          "prompt": "一個保溫杯 422 元。大約是幾百元？",
+          "steps": [
+            {
+              "key": "near",
+              "label": "大約是幾百元",
+              "role": "answer",
+              "input": "number",
+              "answer": 400
+            }
+          ]
+        },
+        {
+          "id": "C08",
+          "type": "exact",
+          "prompt": "文具店的膠水要 76 元。要剛好付，已經先拿 1 個 50 元。",
+          "steps": [
+            {
+              "key": "rest",
+              "label": "還要再付幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 26
+            },
+            {
+              "key": "set",
+              "label": "還要再拿哪些錢",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "2 個 10 元、7 個 1 元",
+                "6 個 10 元、2 個 1 元",
+                "2 個 10 元、6 個 1 元",
+                "1 個 10 元、6 個 1 元"
+              ],
+              "answer": "2 個 10 元、6 個 1 元"
+            }
+          ]
+        },
+        {
+          "id": "C09",
+          "type": "exact",
+          "prompt": "早餐店的蛋餅加豆漿要 89 元。要剛好付，已經先拿 1 個 50 元。",
+          "steps": [
+            {
+              "key": "rest",
+              "label": "還要再付幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 39
+            },
+            {
+              "key": "set",
+              "label": "還要再拿哪些錢",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "3 個 10 元、9 個 1 元",
+                "2 個 10 元、9 個 1 元",
+                "3 個 10 元、10 個 1 元",
+                "9 個 10 元、3 個 1 元"
+              ],
+              "answer": "3 個 10 元、9 個 1 元"
+            }
+          ]
+        },
+        {
+          "id": "C10",
+          "type": "fewest",
+          "prompt": "要付 71 元，可以用 50 元、10 元、5 元、1 元。錢幣最少要用幾個？",
+          "steps": [
+            {
+              "key": "top",
+              "label": "先拿哪一種",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "50 元",
+                "10 元",
+                "5 元",
+                "1 元"
+              ],
+              "answer": "50 元"
+            },
+            {
+              "key": "ans",
+              "label": "最少幾個",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

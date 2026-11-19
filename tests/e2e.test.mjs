@@ -935,7 +935,7 @@ test('現場試用：開始前老師點選代號（不用打字）；沒選齊�
   assert.match(await p.text('#researchBar .who'), /T02-S05/);
   await p.page.click('#researchFlush'); await p.page.waitForTimeout(300);
   const start = p.rows('場次')[0];
-  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v35'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
+  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v36'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
   assert.ok(p.rows('教師設定').some(r => r.actId === 'rectangle' && r.buddy === '開'), '記下老師這次的設定');
   assert.ok(!JSON.stringify(p.posts).match(/姓名/), '不傳姓名欄位');
 
@@ -1239,7 +1239,7 @@ test('第 26 版：研究紀錄存網站資料庫：開始本節編節次、錯�
   const ev = await events();
   const wrong = ev.find(r => r.event === '步驟檢核' && r.correct === '否');
   assert.ok(wrong, '錯誤存進網站資料庫');
-  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v35');
+  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v36');
   const d = JSON.parse(wrong.detail); assert.equal(d.obs, 'chosePerimeter'); assert.equal(d.outcome, 'wrong'); assert.equal(d.firstTry, true);
   assert.ok(ev.some(r => r.event === '無法判定'), '老師按「這題無法判定」');
   // 老師調整支持：沒選理由不能存；減少支持存成這位學生的設定，記下方向
@@ -1722,7 +1722,7 @@ test('第 27 版第 1 輪修正：換教材再換回保留指派；2-1 依實際
     return { k322: k({ l: 3, w: 2, h: 2 }), k432: k({ l: 4, w: 3, h: 2 }), k222: k({ l: 2, w: 2, h: 2 }), faces: (net.match(/class="sf-net/g) || []).length, none: /沒有上面/.test(net), front: />前面</.test(label) && !/>上面</.test(label) }; });
   assert.deepEqual(r, { k322: '2', k432: '3', k222: '1', faces: 5, none: true, front: true });
   const rec = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16') || '[]').find(x => x.event === '整題定標'));
-  assert.equal(rec.siteVersion, 'v35'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
+  assert.equal(rec.siteVersion, 'v36'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
   assert.match(await p.page.title(), /表面積/); assert.match(await p.text('header .brand'), /表面積/);
   assert.deepEqual(p.errors, []);
   await publish({});
@@ -2667,5 +2667,135 @@ test('第 35 版第 4 輪：只填全形空白算沒填（blank），不算答�
   const box = await p.page.$('.activity input[inputmode="decimal"]'); await box.fill('　'); await p.check();
   const recs = JSON.parse(await p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || '[]')).filter(r => /步驟檢核|提醒還沒作答/.test(r.event));
   assert.equal(recs.pop().obs, 'blank');
+  assert.deepEqual(p.errors, []); await p.page.context().close();
+});
+
+// ---------- 第 36 版：錢幣與購物教材包 ----------
+const MONEY_MAP = ids => ({ __map: { pkg: 'money', assigned: ids, path: 'all' } });
+test('第 36 版：錢幣與購物 32 個活動都能出題、畫圖，照示範做完每一步都對；空白的不會過；畫面沒有 undefined；金額不超過課綱上限', { skip: skip || !distReady }, async () => {
+  const p = await act('moMixed', { difficulty: 'standard', ...MONEY_MAP(['moMixed']) });
+  const out = await p.page.evaluate(() => {
+    const A = window.areaActs, M = window.moneyFig, I = window.intFig, OBS = window.areaObs.OBS, bad = [];
+    const ids = A.packages.money.activities.map(a => a.id);
+    const G1 = ['moSame', 'moMixed', 'moTrade', 'moExact', 'moNextUp', 'moCountUp', 'moCheckChange'];
+    for (const id of ids) {
+      const pl = A.get(id); if (!pl) { bad.push(id + ' 沒有註冊'); continue; }
+      for (const level of ['easy', 'standard', 'challenge']) for (let i = 0; i < 12; i++) {
+        const problem = pl.makeProblem(level, i, Math.random), answers = {}, state = {};
+        const ctx = { answers, state, problem, plugin: pl, settings: {}, method: 'mark', level, hint: () => 3, checked: () => false, invalidate() {}, refreshFigure() {}, rerender() {}, log() {}, choice: (k, t, items) => items.map(x => x[1]).join('|') };
+        if (/undefined|NaN|Infinity/.test(problem.prompt || '')) bad.push(`${id} 題目有 undefined/NaN：${problem.prompt}`);
+        if ((problem.dims || []).some(n => typeof n !== 'number' || !Number.isFinite(n))) bad.push(`${id} dims 不是數字`);
+        try { pl.planFigure && pl.planFigure(ctx); } catch (e) { bad.push(`${id} planFigure ${e.message}`); }
+        pl.steps.forEach((st, s) => {
+          let opts = null; const c2 = { ...ctx, choice: (k, t, items) => { opts = items; return items.map(x => x[1]).join('|'); } };
+          try { const html = (st.figure ? st.figure(c2) : '') + st.answer(c2); if (/undefined|NaN|Infinity/.test(html)) bad.push(`${id} ${level} 第${s + 1}步畫面有 undefined/NaN`); } catch (e) { bad.push(`${id} 第${s + 1}步畫面 ${e.message}`); }
+          if (opts) { const keys = opts.map(o => o[0]), labels = opts.map(o => o[1]); if (new Set(keys).size !== keys.length || new Set(labels).size !== labels.length) bad.push(`${id} ${level} 第${s + 1}步選項重複：${labels.join('／')}`); }
+          try { if (!st.check(ctx)) bad.push(`${id} 第${s + 1}步沒作答也過`); st.solve(ctx); const r = st.check(ctx); if (r) bad.push(`${id} ${level} ${i} 第${s + 1}步照示範做卻沒過：${r.msg}`);
+            if (opts && !opts.some(o => o[0] === answers[st.ids[0]])) bad.push(`${id} ${level} 第${s + 1}步正確答案不在選項裡`);
+            if (opts && Array.isArray(st.hints)) { const right = answers[st.ids[0]], lab = (opts.find(o => o[0] === right) || [])[1];
+              // 第 3 輪複測：提示和選錯的回饋都不能說出答案（含已知的改寫說法）
+              const msgs = opts.filter(o => o[0] !== right).map(o => { answers[st.ids[0]] = o[0]; const w = st.check(ctx); return w && w.msg || ''; }); answers[st.ids[0]] = right;
+              const said = [...st.hints, ...msgs].filter(h => typeof h === 'string');
+              if (lab && lab.length > 2 && said.some(h => h.includes(lab))) bad.push(`${id} 第${s + 1}步提示或回饋直接說出答案：${lab}`);
+              const NO = { moTrade: { 2: ['還是一樣多'] }, moBarter: { 1: ['要換兩次'], 2: ['剛好想要你東西的人。'], 3: ['再用錢買'] }, moHistory: { 1: ['下面是「貝」', '這個部件是「貝」'] }, moWork: { 0: ['工作才有薪水'], 1: ['用錢互相買'], 2: ['要先把錢存進'], 3: ['工作很辛苦，錢會用完', '用完就沒有了'] }, moCard: { 0: ['要先把錢存進卡片'], 3: ['要先加值'] }, moNextUp: { 0: ['湊不出個位', '沒有零錢，就'] }, moChangeSub: { 0: ['減掉價錢', '付的錢 －'] }, moShopFlow: { 0: ['寫清單'], 4: ['拿發票'] }, moBudgetChoice: { 3: ['先存起來'] }, moWait: { 0: ['錢就變少了'], 2: ['先停下來想三個問題'] }, moLedger: { 2: ['用加的'] }, moSavePlan: { 1: ['一週一週加', '加到夠'], 3: ['多存一點'] }, moSpendSave: { 0: ['以後需要時才有', '更想要'] }, moPlanner: { 3: ['先不買想要的', '先拿掉想要的'] } };
+              for (const w of ((NO[id] || {})[s] || [])) if (said.some(h => h.includes(w))) bad.push(`${id} 第${s + 1}步提示或回饋又說出答案：${w}`); }
+            if (['moPassbook', 'moBank'].includes(id) && st.ids.length === 1 && /^b\d$/.test(st.ids[0]) && /^\d+$/.test(String(answers[st.ids[0]]))) { const keep = answers[st.ids[0]]; answers[st.ids[0]] = String(Number(keep) + 1); const w = st.check(ctx); if (!w || w.obs !== 'balanceWrong') bad.push(`${id} 第${s + 1}步餘額算錯沒記 balanceWrong：${w && w.obs}`); answers[st.ids[0]] = keep; }
+            for (const k of st.ids) if (/^\d/.test(String(answers[k])) && (!Number.isInteger(Number(answers[k])) || Number(answers[k]) < 0)) bad.push(`${id} ${level} 第${s + 1}步答案不是 0 以上的整數：${answers[k]}`);
+          } catch (e) { bad.push(`${id} 第${s + 1}步 ${e.message}`); }
+          try { if (st.say) st.say({ problem, answers, state }); } catch (e) { bad.push(`${id} 第${s + 1}步 say ${e.message}`); }
+        });
+        try { pl.done(ctx); } catch (e) { bad.push(`${id} done ${e.message}`); }
+        // 課綱上限：一年級（N-1-4）100 元內，只用 1、5、10、50、100 元；二年級（N-2-5）1000 元內；課綱沒有 20、200、2000 元
+        const P = problem, nums = JSON.stringify(P).match(/\d+/g) || [];
+        if (G1.includes(id) && level !== 'challenge') { const big = [P.n, P.price, P.B, P.p, P.ch, P.w].filter(x => typeof x === 'number'); if (big.some(x => x > 100)) bad.push(`${id} ${level} 一年級超過 100 元：${JSON.stringify(big)}`); }
+        if (['moCountBig', 'moEstimate', 'moChangeSub', 'moTwo', 'moShopFlow', 'moFewest', 'moEnough'].includes(id)) { const big = [P.n, P.s, P.B, P.price, P.w, P.p].filter(x => typeof x === 'number'); if (big.some(x => x > 1000)) bad.push(`${id} 二年級超過 1000 元：${JSON.stringify(big)}`); }
+        for (const c of [P.c, P.wallet, P.got, P.cash, P.g].filter(Boolean)) for (const d of Object.keys(c)) if (![1, 5, 10, 50, 100, 500, 1000].includes(Number(d))) bad.push(`${id} 用了課綱沒有的錢：${d}`);
+        if (['moChangeSub', 'moTwo', 'moShopFlow'].includes(id) && level !== 'challenge') { const [a, b] = id === 'moChangeSub' ? [P.B, P.p] : [P.B, P.s]; if (I.borrows(a, b) > 1) bad.push(`${id} ${level} 二年級減法退位超過一次：${a}-${b}`); }
+        if (id === 'moEstimate' && (P.e <= P.B) !== (P.s <= P.B)) bad.push(`${id} 估的和真的結果不一樣：${P.e}/${P.s}/${P.B}`);
+        if (id === 'moNextUp' && M.greedy(P.price, M.kinds(P.wallet), P.wallet)) bad.push(`${id} 錢包竟然可以剛好付：${P.price}`);
+        // 第 1 輪複測：入門不在提款機領小錢；不夠題的價錢不超過該程度上限；小金額不買書
+        if (id === 'moBank' && level === 'easy' && P.place && P.place[1] === 'atm') bad.push(`${id} 入門出現提款機領 ${P.m} 元`);
+        if (id === 'moEnough' && P.p > { easy: 50, standard: 100, challenge: 1000 }[level]) bad.push(`${id} ${level} 價錢超過上限：${P.p}`);
+        if (id === 'moPiggy' && P.X < 20 && /本/.test(P.bk)) bad.push(`${id} ${P.X} 元買${P.bk}`);
+        void nums;
+      }
+    }
+    return { bad, n: ids.length, paths: Object.keys(A.packages.money.paths), core: A.packages.money.activities.filter(a => a.core).map(a => a.id), pre: A.packages.money.activities.filter(a => a.pretest).map(a => a.id), obsKeys: Object.keys(OBS) };
+  });
+  assert.equal(out.n, 32); assert.deepEqual(out.bad, []); assert.deepEqual(out.paths, ['g1', 'g2', 'shop', 'money', 'all']);
+  assert.deepEqual(out.core, ['moMixed', 'moExact', 'moCountUp', 'moShopFlow', 'moNeedWant', 'moBank', 'moLedger']); assert.deepEqual(out.pre, ['moCount', 'moSkip']);
+  const code = ['act-money.js', 'act-money2.js', 'act-money3.js'].map(f => fs.readFileSync(new URL('../public/' + f, import.meta.url), 'utf8')).join('\n');
+  const used = [...new Set([...code.matchAll(/obs: '([a-zA-Z0-9]+)'/g)].map(m => m[1]))];
+  assert.deepEqual(used.filter(k => !out.obsKeys.includes(k)), [], '錯誤觀察代碼都要寫在 observations.js');
+  assert.deepEqual(p.errors, []); await p.page.context().close();
+});
+
+test('第 36 版：4-1 付款盤：點錢放進盤子、點盤子拿回來；不夠記 payShort、太多記 payOver；剛好才過；畫面上數得到', { skip: skip || !distReady }, async () => {
+  const p = await act('moExact', { difficulty: 'standard', ...MONEY_MAP(['moExact']) });
+  const price = await p.page.evaluate(() => Number(document.querySelector('.mo-tag-p').innerText.replace(/\D/g, '')));
+  await p.page.fill('#price', String(price)); await p.check(); await p.next();
+  const top = await p.page.evaluate(pr => [...document.querySelectorAll('[data-choice="top"]')].map(b => Number(b.dataset.value)).filter(d => d <= pr).sort((a, b) => b - a)[0], price);
+  await p.choose('top', String(top)); await p.check(); await p.next();
+  // 先放一個最小的 → 不夠
+  const smallest = await p.page.evaluate(() => Math.min(...[...document.querySelectorAll('[data-pay="pay"]:not([disabled])')].map(b => Number(b.dataset.d))));
+  await p.page.click(`[data-pay="pay"][data-d="${smallest}"]`); await p.check();
+  assert.match(await p.text('#feedback2'), /不夠/);
+  // 拿回來，照最少個放到剛好
+  await p.page.click('[data-unpay="pay"]');
+  assert.match(await p.text('.mo-tray'), /盤子是空的/);
+  const plan = await p.page.evaluate(pr => { const w = {}; document.querySelectorAll('[data-pay="pay"]').forEach(b => { w[b.dataset.d] = Number((b.innerText.match(/還有 (\d+)/) || [])[1] || 0); }); return window.moneyFig.greedy(pr, Object.keys(w).map(Number), w); }, price);
+  for (const [d, k] of Object.entries(plan)) for (let j = 0; j < k; j++) await p.page.click(`[data-pay="pay"][data-d="${d}"]`);
+  await p.check(); assert.match(await p.text('#feedback2'), /答對了/); await p.next();
+  await p.page.fill('#got', String(price)); await p.check(); await p.next();
+  assert.match(await p.page.textContent('h1'), /完成了/);
+  const recs = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16') || '[]'));
+  assert.ok(recs.some(r => r.event === '步驟檢核' && r.obs === 'payShort'), '不夠記 payShort');
+  assert.ok(recs.some(r => r.event === '放錢'), '放錢有記錄');
+  assert.deepEqual(p.errors, []); await p.page.context().close();
+});
+
+test('第 36 版：學習地圖換成錢幣與購物、單元 0 是先測、有錢錢小管家；教師頁可以換成錢幣教材；手機 390px 付款盤不跑出畫面', { skip: skip || !distReady }, async () => {
+  await setup(); await publish({ __map: { pkg: 'money', assigned: ['moCount', 'moSkip', 'moExact'], sequential: true } });
+  const ctx = await browser.newContext(); const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.goto(base + '/seven.html'); await page.waitForSelector('.map-card');
+  const units = await page.$$eval('.map-unit h2', h => h.map(x => x.innerText.trim()).join('|'));
+  assert.match(units, /準備好了嗎/); assert.match(units, /錢錢小管家/); assert.match(units, /想要與需要/); assert.doesNotMatch(units, /算數小幫手/);
+  assert.match(await page.innerText('[data-map="moCount"]'), /先測/);
+  const tp = await browser.newPage(); await tp.goto(base + '/teacher.html'); await tp.waitForSelector('[data-pkg="money"]');
+  assert.match(await tp.innerText('[data-pkg="money"]'), /錢幣/);
+  assert.deepEqual(errs, []); await ctx.close(); await tp.close();
+  const m = await browser.newContext({ viewport: { width: 390, height: 844 } }); const mp = await m.newPage(); await publish({ difficulty: 'challenge', ...MONEY_MAP(['moFewest']) });
+  await mp.goto(`${base}/seven.html?a=moFewest`); await mp.waitForSelector('#start'); await begin({ page: mp, choose: (k, v) => mp.click(`[data-choice="${k}"][data-value="${v}"]`) });
+  const price = await mp.evaluate(() => Number(document.querySelector('.mo-tag-p').innerText.replace(/\D/g, '')));
+  const top = await mp.evaluate(pr => [...document.querySelectorAll('[data-choice="top"]')].map(b => Number(b.dataset.value)).filter(d => d <= pr).sort((a, b) => b - a)[0], price);
+  await mp.click(`[data-choice="top"][data-value="${top}"]`); await mp.click('#check'); await mp.click('#next'); await mp.waitForSelector('.mo-bank');
+  for (let j = 0; j < 9; j++) await mp.click('[data-pay="pay"][data-d="1"]');
+  const over = await mp.evaluate(() => [...document.querySelectorAll('.mo-pay, .mo-bank, .mo-tray, .mo-tray button')].filter(e => { const r = e.getBoundingClientRect(); return r.right > window.innerWidth + 1 || r.left < -1; }).length);
+  assert.equal(over, 0, '付款盤在手機上不跑出畫面');
+  assert.ok(await mp.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), '手機沒有橫向捲動');
+  await m.close(); await publish({});
+});
+
+test('第 36 版第 4 輪：這一步沒有圖時，選錯不亮空圖框，改說「先看題目和選項再選」；有圖照舊', { skip: skip || !distReady }, async () => {
+  const p = await act('moWork', { difficulty: 'standard', ...MONEY_MAP(['moWork']) });
+  await p.choose('from', 'atm'); await p.check();
+  assert.match(await p.text('#feedback0'), /先看圖再選/, '有圖的步驟照舊');
+  await p.choose('from', 'work'); await p.check(); await p.next();
+  await p.choose('trade', 'buy'); await p.check(); await p.next();
+  await p.choose('atm', 'mine'); await p.check(); await p.next();
+  await p.choose('why', 'never'); await p.check();
+  assert.match(await p.text('#feedback3'), /先看題目和選項再選/);
+  assert.doesNotMatch(await p.text('#feedback3'), /先看圖再選/);
+  assert.equal(await p.page.$('#figure3.look-here'), null, '空圖框不亮');
+  assert.deepEqual(p.errors, []); await p.page.context().close();
+});
+
+test('第 36 版第 5 輪：高對比下，還不能按的「下一步」是白底虛線框，看得出鎖住；答對後變回黑底', { skip: skip || !distReady }, async () => {
+  const p = await act('moWork', { difficulty: 'standard', ...MONEY_MAP(['moWork']) });
+  await p.page.evaluate(() => document.documentElement.classList.add('contrast'));   // 和學生按「高對比」一樣，加在 html 上
+  const look = () => p.page.$eval('#next', b => { const s = getComputedStyle(b); return [b.classList.contains('locked'), s.backgroundColor, s.borderTopStyle]; });
+  assert.deepEqual(await look(), [true, 'rgb(255, 255, 255)', 'dashed']);
+  await p.choose('from', 'work'); await p.check();
+  const after = await look(); assert.equal(after[0], false); assert.equal(after[1], 'rgb(0, 0, 0)');
   assert.deepEqual(p.errors, []); await p.page.context().close();
 });
