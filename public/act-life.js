@@ -89,7 +89,7 @@
 
   // =============== 面積 5-3 貼邊條還是貼滿 ===============
   function makeBorder(level, i, rand = Math.random) {
-    let a, b; do { a = rnd(rand, ...lv(level, { easy: [2, 5], standard: [3, 8], challenge: [4, 9] })); b = rnd(rand, ...lv(level, { easy: [1, 3], standard: [2, 5], challenge: [3, 7] })); } while (a <= b);
+    let a, b; do { a = rnd(rand, ...lv(level, { easy: [2, 5], standard: [3, 8], challenge: [4, 9] })); b = rnd(rand, ...lv(level, { easy: [2, 3], standard: [2, 5], challenge: [3, 7] })); } while (a <= b);
     const per = 2 * (a + b), area = a * b, roll = per + any(rand, [-4, -2, 2, 4, 6]);
     const where = any(rand, ['教室後面的公布欄', '走廊的海報牆', '班級菜園', '布置區']);
     return { a, b, per, area, roll, where, dims: [a, b], prompt: `${where}是長方形，長 ${a} 公尺、寬 ${b} 公尺。要沿著四周貼一圈彩色邊條，中間要貼滿壁報紙。` };
@@ -97,7 +97,7 @@
   A.register('arBorder', {
     methods, makeProblem: makeBorder, planFigure: ctx => roomSVG(ctx.problem.a, ctx.problem.b, { lines: false }),
     steps: [
-      cStep(0, { title: '邊條要算什麼', ask: '邊條貼在哪裡？', id: 'k1', fixed: true, hints: ['邊條是貼在邊上，還是貼滿？', '沿著四周貼一圈，是一圈有多長。', '一圈的長是周長。'],
+      cStep(0, { title: '邊條要算什麼', ask: '邊條貼在哪裡？', id: 'k1', fixed: true, hints: ['邊條是貼在邊上，還是貼滿？', '沿著四周貼一圈，是一圈有多長。', '用手指沿著圖的邊走一圈，你量的是什麼？'],
         think: '老師想：邊條沿著四周貼一圈，要算周長。', together: '一起想：邊條要算什麼？', pre: prompt, figure: ctx => roomSVG(ctx.problem.a, ctx.problem.b, { lines: false }),
         q: () => '彩色邊條要算什麼？', opts: () => [['per', '沿著四周一圈：周長'], ['area', '貼滿中間：面積']], ans: () => 'per',
         wrong: () => ({ obs: 'choseArea', msg: '邊條只貼在四周的邊上，是一圈的長。' }), say: () => '邊條算周長。' }),
@@ -106,7 +106,7 @@
         label: () => '邊條一共要幾公尺？', ans: ctx => ctx.problem.per,
         wrong: (ctx, v) => v === ctx.problem.area ? { obs: 'eqAreaValue', msg: '這是貼滿的面積。邊條是一圈的長。' } : v === ctx.problem.a + ctx.problem.b ? { obs: 'other', msg: '只算了兩個邊。四個邊都要貼。' } : null,
         say: ex => `（${ex.problem.a} ＋ ${ex.problem.b}）× 2 ＝ ${ex.problem.per} 公尺。` }),
-      cStep(2, { title: '壁報紙要算什麼', ask: '壁報紙貼在哪裡？', id: 'k2', fixed: true, hints: ['壁報紙要貼滿中間。', '貼滿是看裡面有多大。', '裡面有多大是面積。'],
+      cStep(2, { title: '壁報紙要算什麼', ask: '壁報紙貼在哪裡？', id: 'k2', fixed: true, hints: ['壁報紙要貼滿中間。', '貼滿是看裡面有多大。', '用手掌把圖的中間塗滿，你量的是什麼？'],
         think: '老師想：壁報紙要貼滿，算面積。', together: '一起想：壁報紙要算什麼？',
         q: () => '壁報紙要算什麼？', opts: () => [['per', '沿著四周一圈：周長'], ['area', '貼滿中間：面積']], ans: () => 'area',
         wrong: () => ({ obs: 'chosePerimeter', msg: '壁報紙要貼滿整面，是看裡面有多大。' }), say: () => '壁報紙算面積。' }),
@@ -127,23 +127,20 @@
   function makeRoom(level, i, rand = Math.random) {
     const r = lv(level, { easy: [2, 6], standard: [3, 8], challenge: [3, 9] });
     let a, b, c, d;
-    let ok = null;
-    for (let t = 0; t < 400; t++) {
-      a = rnd(rand, ...r); b = rnd(rand, 2, a); c = rnd(rand, ...r); d = rnd(rand, 2, c);
-      const dA = a * b - c * d, dP = (a + b) - (c + d);
-      if (!dA) continue;
-      ok = [a, b, c, d];
-      if (level === 'easy' || dA * dP < 0) break;   // 一般、挑戰：周長比較長的房間，面積反而比較小
+    // 列出範圍內所有合格的組合再抽：面積不一樣；一般、挑戰還要「周長比較長的房間，面積反而比較小」
+    const pool = [];
+    for (let x = r[0]; x <= r[1]; x++) for (let y = 2; y <= x; y++) for (let z = r[0]; z <= r[1]; z++) for (let q = 2; q <= z; q++) {
+      const dA = x * y - z * q, dP = (x + y) - (z + q);
+      if (dA && (level === 'easy' || dA * dP < 0)) pool.push([x, y, z, q]);
     }
-    if (!ok) ok = [r[0] + 1, 2, r[0] + 2, 2];
-    [a, b, c, d] = ok;
+    [a, b, c, d] = pool.length ? pool[Math.floor(rand() * pool.length)] : [8, 2, 5, 4];
     const use = any(rand, ['遊戲室', '閱讀室', '社團教室']);
     return { a, b, c, d, A: a * b, B: c * d, big: a * b > c * d ? 'A' : 'B', use, dims: [a, b, c, d], prompt: `要選一間比較大的房間當${use}。A 房間長 ${a} 公尺、寬 ${b} 公尺；B 房間長 ${c} 公尺、寬 ${d} 公尺。哪一間的地板比較大？` };
   }
   A.register('arRoom', {
     methods, makeProblem: makeRoom, planFigure: ctx => twoRoomsSVG(ctx.problem, false),
     steps: [
-      cStep(0, { title: '要比什麼', ask: '地板比較大，是比什麼？', id: 'what', fixed: true, hints: ['地板大，是可以放東西的地方多。', '比裡面有多大，不是比邊有多長。', '裡面有多大是面積。'],
+      cStep(0, { title: '要比什麼', ask: '地板比較大，是比什麼？', id: 'what', fixed: true, hints: ['地板大，是可以放東西的地方多。', '比裡面有多大，不是比邊有多長。', '想一想：鋪地墊時，看的是哪一個量？'],
         think: '老師想：地板比較大，是比面積。牆邊比較長不一定比較大。', together: '一起想：要比什麼？', pre: prompt, figure: ctx => twoRoomsSVG(ctx.problem, false),
         q: () => '要比兩個房間的什麼？', opts: () => [['area', '地板的面積'], ['per', '牆邊一圈的長（周長）'], ['long', '最長的那一邊']], ans: () => 'area',
         wrong: (ctx, a) => a === 'per' ? { obs: 'chosePerimeter', msg: '一圈比較長，地板不一定比較大。要比面積。' } : { msg: '最長的邊比較長，地板不一定比較大。要比面積。' }, say: () => '要比地板的面積。' }),
@@ -213,7 +210,7 @@
   A.register('sGift', {
     methods: [['mark', '🎁 生活決策五步'], ['self', '🧠 先自己想，需要時看提示']], makeProblem: makeGift, planFigure: ctx => boxFig(ctx.problem),
     steps: [
-      cStep(0, { title: '要做什麼', ask: '包住盒子要算什麼？', id: 'goal', fixed: true, hints: ['包裝紙包在哪裡？裡面還是外面？', '包住外面所有的面。', '外面所有面的面積加起來，是表面積。'],
+      cStep(0, { title: '要做什麼', ask: '包住盒子要算什麼？', id: 'goal', fixed: true, hints: ['包裝紙包在哪裡？裡面還是外面？', '包住外面所有的面。', '數一數盒子外面有幾個面，紙要蓋住它們。'],
         think: '老師想：包裝紙要包住盒子外面所有的面，是表面積。', together: '一起想：要算什麼？', pre: prompt, figure: ctx => boxFig(ctx.problem),
         q: () => '包住盒子要算什麼？', opts: () => [['surf', '外面所有的面：表面積'], ['vol', '裡面裝多少：體積'], ['one', '只算底下一個面']], ans: () => 'surf',
         wrong: (ctx, a) => a === 'vol' ? { obs: 'choseVolume', msg: '包裝紙包在外面，不是算裡面裝多少。' } : { obs: 'missFace', msg: '包裝紙要包住每一個面，不是只有底下。' }, say: () => '要算表面積。' }),
@@ -275,9 +272,10 @@
   // 幾盒一樣的正方體盒子排在一起包：排法不同，體積一樣，表面積不一樣
   const SAVE = { 4: [[4, 1, 1], [2, 2, 1]], 6: [[6, 1, 1], [3, 2, 1]], 8: [[8, 1, 1], [4, 2, 1], [2, 2, 2]] };
   function makeSave(level, i, rand = Math.random) {
-    const n = any(rand, lv(level, { easy: [4], standard: [4, 6], challenge: [6, 8] })), e = any(rand, lv(level, { easy: [1, 2], standard: [2, 3], challenge: [2, 3] }));
+    const n = any(rand, lv(level, { easy: [4], standard: [4, 6], challenge: [6, 8] })); let e = any(rand, lv(level, { easy: [1, 2], standard: [2, 3], challenge: [2, 3] }));
     const ways = SAVE[n].slice(), pickW = ways.length > 2 ? [ways[0], ways[1 + Math.floor(rand() * 2)]] : ways;
     const [x, y] = rand() < 0.5 ? pickW : [pickW[1], pickW[0]];
+    e = Math.max(1, Math.min(e, Math.floor(9 / Math.max(...x, ...y))));   // 排好的長、寬、高都在 9 公分以內（九九範圍）
     const sa = d => 2 * (d[0] * d[1] + d[0] * d[2] + d[1] * d[2]) * e * e, A1 = sa(x), B1 = sa(y);
     const toDim = d => ({ l: d[0] * e, w: d[1] * e, h: d[2] * e });
     return { n, e, a: toDim(x), b: toDim(y), A: A1, B: B1, best: A1 < B1 ? 'A' : 'B', dims: [n, e, ...x, ...y], prompt: `園遊會要把 ${n} 盒餅乾包成一大包。每一盒都是邊長 ${e} 公分的正方體。A 排法：長 ${toDim(x).l}、寬 ${toDim(x).w}、高 ${toDim(x).h} 公分；B 排法：長 ${toDim(y).l}、寬 ${toDim(y).w}、高 ${toDim(y).h} 公分。哪一種包法比較省紙？` };
@@ -286,7 +284,7 @@
   A.register('sSave', {
     methods, makeProblem: makeSave, planFigure: ctx => `<div class="lf-pair"><div><p class="lf-tag">A</p>${boxFig(ctx.problem.a)}</div><div><p class="lf-tag">B</p>${boxFig(ctx.problem.b)}</div></div>`,
     steps: [
-      cStep(0, { title: '要比什麼', ask: '包裝紙看哪裡？', id: 'what', fixed: true, hints: ['兩種排法都是一樣幾盒。', '裡面裝的一樣多，體積一樣。', '包裝紙包在外面，要比表面積。'],
+      cStep(0, { title: '要比什麼', ask: '包裝紙看哪裡？', id: 'what', fixed: true, hints: ['兩種排法都是一樣幾盒。', '裡面裝的一樣多，體積一樣。', '包裝紙碰到的是盒子的裡面，還是外面？'],
         think: '老師想：盒子數一樣，體積一樣；包裝紙包外面，要比表面積。', together: '一起想：要比什麼？', pre: prompt, figure: ctx => A.get('sSave').planFigure(ctx),
         q: () => '比哪一種比較省紙，要比什麼？', opts: () => [['surf', '外面的表面積'], ['vol', '裡面裝多少（體積）'], ['long', '哪一種比較長']], ans: () => 'surf',
         wrong: (ctx, a) => a === 'vol' ? { obs: 'choseVolume', msg: '盒子數一樣，體積一樣。包裝紙要看外面。' } : { msg: '比較長不一定比較費紙，要算表面積。' }, say: () => '要比表面積。' }),
@@ -308,8 +306,8 @@
 
   // =============== 表面積 4-6 罐子的標籤紙 ===============
   function makeLabel(level, i, rand = Math.random) {
-    const h = any(rand, lv(level, { easy: [5, 6, 8], standard: [6, 8, 10, 12], challenge: [8, 10, 12] }));
-    if (level === 'challenge') { const d = any(rand, [5, 10]), C = Math.round(3.14 * d * 100) / 100; return { d, C, h, area: Math.round(C * h * 100) / 100, dia: true, dims: [d, h], prompt: `做果醬罐的標籤，要剛好繞罐子一圈。罐子的直徑是 ${d} 公分，高 ${h} 公分（圓周率用 3.14）。標籤紙要幾平方公分？` }; }
+    const h = any(rand, lv(level, { easy: [5, 6, 8], standard: [6, 7, 8, 9], challenge: [6, 8, 9] }));
+    if (level === 'challenge') { const d = any(rand, [4, 5, 6]), C = Math.round(3.14 * d * 100) / 100; return { d, C, h, area: Math.round(C * h * 100) / 100, dia: true, dims: [d, h], prompt: `做果醬罐的標籤，要剛好繞罐子一圈。罐子的直徑是 ${d} 公分，高 ${h} 公分（圓周率用 3.14）。標籤紙要幾平方公分？` }; }
     const C = any(rand, lv(level, { easy: [10, 12, 15, 20], standard: [18, 20, 24, 25, 30] }));
     return { C, h, area: C * h, dia: false, dims: [C, h], prompt: `做筆筒的標籤，要剛好繞罐子一圈。用繩子量，罐子一圈長 ${C} 公分，罐子高 ${h} 公分。標籤紙要幾平方公分？` };
   }
@@ -317,7 +315,7 @@
     methods, makeProblem: makeLabel,
     planFigure: ctx => `<p class="fm-big" aria-label="罐子和攤開的標籤紙">🥫 → ▭</p>`,
     steps: [
-      cStep(0, { title: '打開是什麼形狀', ask: '標籤紙攤開是什麼形狀？', id: 'shape', fixed: true, hints: ['想像把罐子上的標籤撕下來攤平。', '圓柱的側面攤開。', '攤開是長方形。'],
+      cStep(0, { title: '打開是什麼形狀', ask: '標籤紙攤開是什麼形狀？', id: 'shape', fixed: true, hints: ['想像把罐子上的標籤撕下來攤平。', '圓柱的側面攤開。', '看攤平的紙：有幾個角？邊是直的還是彎的？'],
         think: '老師想：把標籤從罐子上撕下來攤平，是一個長方形。', together: '一起想：攤開是什麼形狀？', pre: prompt, figure: ctx => A.get('sLabel').planFigure(ctx),
         q: () => '標籤紙攤開是什麼形狀？', opts: () => [['rect', '長方形'], ['circle', '圓形'], ['tri', '三角形']], ans: () => 'rect',
         wrong: () => ({ msg: '圓形是罐子的蓋子和底。標籤繞側面一圈，攤開是長方形。' }), say: () => '攤開是長方形。' }),

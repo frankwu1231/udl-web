@@ -2462,3 +2462,41 @@ test('第 34 版：學習地圖有四個新的生活單元；因數倍數換成�
   }
   assert.deepEqual(errs, []); await ctx.close(); await publish({});
 });
+
+test('第 34 版第 1 輪複測：5-3 寬至少 2；5-4 一般、挑戰一定有「周長長、面積反而小」；4-5、4-6 邊長和高都在 9 以內；6-5 從 0 數記 ignoreBreak；生活活動重新整理接著做', { skip: skip || !distReady }, async () => {
+  const p = await act('arMat', { difficulty: 'standard' });
+  const bad = await p.page.evaluate(() => {
+    const A = window.areaActs, out = [];
+    for (let i = 0; i < 4000; i++) {
+      const level = ['easy', 'standard', 'challenge'][i % 3];
+      const b = A.get('arBorder').makeProblem(level, i, Math.random); if (b.b < 2) out.push(`5-3 寬 ${b.b}`);
+      const r = A.get('arRoom').makeProblem(level, i, Math.random), dA = r.A - r.B, dP = (r.a + r.b) - (r.c + r.d);
+      if (!dA || (level !== 'easy' && dA * dP >= 0)) out.push(`5-4 ${level} ${r.dims}`);
+      const s = A.get('sSave').makeProblem(level, i, Math.random); if ([s.a, s.b].some(d => Math.max(d.l, d.w, d.h) > 9)) out.push(`4-5 ${s.dims}`);
+      const l = A.get('sLabel').makeProblem(level, i, Math.random); if (l.h > 9 || (l.dia && l.d > 9)) out.push(`4-6 ${l.dims}`);
+    }
+    return [...new Set(out)].slice(0, 5);
+  });
+  assert.deepEqual(bad, []);
+  // 6-5 挑戰：從 0 開始數（140 填成 40）記 ignoreBreak，不是 scaleAsOne
+  const obs = await p.page.evaluate(() => {
+    const pl = window.areaActs.get('lnGrow'), out = [];
+    for (const level of ['standard', 'challenge']) for (let i = 0; i < 30; i++) {
+      const problem = pl.makeProblem(level, i, Math.random), st = pl.steps[1];
+      const answers = {}; const ctx = { answers, state: {}, problem, plugin: pl, settings: {}, level, hint: () => 0, checked: () => false };
+      answers[st.ids[0]] = String(problem.v[problem.k] - 100); const r = st.check(ctx); out.push(r?.obs);
+    }
+    return [...new Set(out)];
+  });
+  assert.deepEqual(obs, ['ignoreBreak']);
+  // 面積的生活活動：做到一半重新整理，題目和作答都還在
+  await p.choose('goal', 'area'); await p.check(); await p.next();
+  await p.page.fill('#need', '7');
+  const draft = () => p.page.evaluate(() => JSON.parse(sessionStorage.getItem('act-draft-v28') || 'null')?.problem?.dims);
+  const before = await draft(); assert.ok(before, '有存草稿');
+  await p.page.reload(); await p.page.waitForSelector('#need');
+  assert.deepEqual(await draft(), before, '題目一樣');
+  assert.equal(await p.page.inputValue('#need'), '7', '填的數還在');
+  assert.match(await p.page.evaluate(() => sessionStorage.getItem('area-records-v16') || ''), /重新整理後接著做/);
+  assert.deepEqual(p.errors, []);
+});

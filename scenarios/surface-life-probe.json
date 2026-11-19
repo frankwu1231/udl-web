@@ -182,21 +182,21 @@
         {
           "id": "A07",
           "type": "lifeSave",
-          "prompt": "6 個邊長 2 公分的正方體肥皂要包在一起。甲排法長、寬、高是 12、2、2 公分；乙排法是 6、4、2 公分。哪一種比較省紙？",
+          "prompt": "6 個邊長 1 公分的正方體肥皂要包在一起。甲排法長、寬、高是 6、1、1 公分；乙排法是 3、2、1 公分。哪一種比較省紙？",
           "steps": [
             {
               "key": "a",
               "label": "甲的表面積",
               "role": "measure",
               "input": "number",
-              "answer": 104
+              "answer": 26
             },
             {
               "key": "b",
               "label": "乙的表面積",
               "role": "measure",
               "input": "number",
-              "answer": 88
+              "answer": 22
             },
             {
               "key": "pick",
@@ -214,21 +214,21 @@
         {
           "id": "A08",
           "type": "lifeSave",
-          "prompt": "8 個邊長 2 公分的正方體肥皂要包在一起。甲排法長、寬、高是 16、2、2 公分；乙排法是 4、4、4 公分。哪一種比較省紙？",
+          "prompt": "8 個邊長 1 公分的正方體肥皂要包在一起。甲排法長、寬、高是 8、1、1 公分；乙排法是 2、2、2 公分。哪一種比較省紙？",
           "steps": [
             {
               "key": "a",
               "label": "甲的表面積",
               "role": "measure",
               "input": "number",
-              "answer": 136
+              "answer": 34
             },
             {
               "key": "b",
               "label": "乙的表面積",
               "role": "measure",
               "input": "number",
-              "answer": 96
+              "answer": 24
             },
             {
               "key": "pick",
@@ -272,7 +272,7 @@
         {
           "id": "A10",
           "type": "lifeLabel",
-          "prompt": "茶葉罐是圓柱，用繩子量一圈長 18 公分，罐子高 10 公分。要做一張剛好繞一圈的標籤，標籤紙要幾平方公分？",
+          "prompt": "茶葉罐是圓柱，用繩子量一圈長 18 公分，罐子高 9 公分。要做一張剛好繞一圈的標籤，標籤紙要幾平方公分？",
           "steps": [
             {
               "key": "shape",
@@ -291,7 +291,7 @@
               "label": "標籤紙幾平方公分",
               "role": "answer",
               "input": "number",
-              "answer": 180
+              "answer": 162
             }
           ]
         }
@@ -471,21 +471,21 @@
         {
           "id": "B07",
           "type": "lifeSave",
-          "prompt": "8 個邊長 2 公分的正方體肥皂要包在一起。甲排法長、寬、高是 16、2、2 公分；乙排法是 4、4、4 公分。哪一種比較省紙？",
+          "prompt": "8 個邊長 1 公分的正方體肥皂要包在一起。甲排法長、寬、高是 8、1、1 公分；乙排法是 2、2、2 公分。哪一種比較省紙？",
           "steps": [
             {
               "key": "a",
               "label": "甲的表面積",
               "role": "measure",
               "input": "number",
-              "answer": 136
+              "answer": 34
             },
             {
               "key": "b",
               "label": "乙的表面積",
               "role": "measure",
               "input": "number",
-              "answer": 96
+              "answer": 24
             },
             {
               "key": "pick",
@@ -760,21 +760,21 @@
         {
           "id": "C07",
           "type": "lifeSave",
-          "prompt": "4 個邊長 3 公分的正方體肥皂要包在一起。甲排法長、寬、高是 12、3、3 公分；乙排法是 6、6、3 公分。哪一種比較省紙？",
+          "prompt": "4 個邊長 2 公分的正方體肥皂要包在一起。甲排法長、寬、高是 8、2、2 公分；乙排法是 4、4、2 公分。哪一種比較省紙？",
           "steps": [
             {
               "key": "a",
               "label": "甲的表面積",
               "role": "measure",
               "input": "number",
-              "answer": 162
+              "answer": 72
             },
             {
               "key": "b",
               "label": "乙的表面積",
               "role": "measure",
               "input": "number",
-              "answer": 144
+              "answer": 64
             },
             {
               "key": "pick",
@@ -792,21 +792,21 @@
         {
           "id": "C08",
           "type": "lifeSave",
-          "prompt": "6 個邊長 2 公分的正方體肥皂要包在一起。甲排法長、寬、高是 12、2、2 公分；乙排法是 6、4、2 公分。哪一種比較省紙？",
+          "prompt": "6 個邊長 1 公分的正方體肥皂要包在一起。甲排法長、寬、高是 6、1、1 公分；乙排法是 3、2、1 公分。哪一種比較省紙？",
           "steps": [
             {
               "key": "a",
               "label": "甲的表面積",
               "role": "measure",
               "input": "number",
-              "answer": 104
+              "answer": 26
             },
             {
               "key": "b",
               "label": "乙的表面積",
               "role": "measure",
               "input": "number",
-              "answer": 88
+              "answer": 22
             },
             {
               "key": "pick",
@@ -850,7 +850,7 @@
         {
           "id": "C10",
           "type": "lifeLabel",
-          "prompt": "茶葉罐是圓柱，用繩子量一圈長 24 公分，罐子高 10 公分。要做一張剛好繞一圈的標籤，標籤紙要幾平方公分？",
+          "prompt": "茶葉罐是圓柱，用繩子量一圈長 24 公分，罐子高 9 公分。要做一張剛好繞一圈的標籤，標籤紙要幾平方公分？",
           "steps": [
             {
               "key": "shape",
@@ -869,7 +869,7 @@
               "label": "標籤紙幾平方公分",
               "role": "answer",
               "input": "number",
-              "answer": 240
+              "answer": 216
             }
           ]
         }

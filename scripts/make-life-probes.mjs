@@ -65,13 +65,13 @@ function surfaceForm(id, rand, k0) {
   }
   const SAVE = [[[4, 1, 1], [2, 2, 1]], [[6, 1, 1], [3, 2, 1]], [[8, 1, 1], [2, 2, 2]]];
   for (const k of [7, 8]) {
-    const [x, y] = SAVE[(k + k0) % 3], e = pick(rand, [2, 3]), sa = d => 2 * (d[0] * d[1] + d[0] * d[2] + d[1] * d[2]) * e * e, dim = d => d.map(v => v * e).join('、');
+    const [x, y] = SAVE[(k + k0) % 3], e = Math.max(1, Math.min(pick(rand, [2, 3]), Math.floor(9 / Math.max(...x, ...y)))), sa = d => 2 * (d[0] * d[1] + d[0] * d[2] + d[1] * d[2]) * e * e, dim = d => d.map(v => v * e).join('、');
     const cnt = x[0] * x[1] * x[2];
     items.push({ id: n(k), type: 'lifeSave', prompt: `${cnt} 個邊長 ${e} 公分的正方體肥皂要包在一起。甲排法長、寬、高是 ${dim(x)} 公分；乙排法是 ${dim(y)} 公分。哪一種比較省紙？`,
       steps: [num('a', '甲的表面積', sa(x), 'measure'), num('b', '乙的表面積', sa(y), 'measure'), fixedChoice('pick', '哪一種比較省紙', sa(x) < sa(y) ? '甲' : '乙', ['甲', '乙'])] });
   }
   for (const k of [9, 10]) {
-    const C = pick(rand, [12, 15, 18, 20, 24]), h = pick(rand, [5, 6, 8, 10]);
+    const C = pick(rand, [12, 15, 18, 20, 24]), h = pick(rand, [5, 6, 8, 9]);
     items.push({ id: n(k), type: 'lifeLabel', prompt: `茶葉罐是圓柱，用繩子量一圈長 ${C} 公分，罐子高 ${h} 公分。要做一張剛好繞一圈的標籤，標籤紙要幾平方公分？`,
       steps: [fixedChoice('shape', '標籤攤開是什麼形狀', '長方形', ['長方形', '圓形', '三角形'], 'part'), num('area', '標籤紙幾平方公分', C * h, 'answer')] });
   }

@@ -110,14 +110,14 @@
   A.register('lnGrow', {
     methods, makeProblem: makeGrow, planFigure: ctx => fig(ctx),
     steps: [
-      cStep(0, { title: '波浪線', ask: '波浪線是什麼意思？', id: 'brk', fixed: true, hints: ['看縱軸最下面：0 的上面有一段波浪線。', '0 到 100 中間沒有畫出來。', '波浪線表示中間省略了。'],
+      cStep(0, { title: '波浪線', ask: '波浪線是什麼意思？', id: 'brk', fixed: true, hints: ['看縱軸最下面：0 的上面有一段波浪線。', '0 到 100 中間沒有畫出來。', '比一比：0 到波浪線那一格，和上面每一格一樣大嗎？'],
         think: '老師看到波浪線：0 到 100 中間省略了，圖才不會太高。', together: '一起想：波浪線是什麼意思？', pre: prompt, figure: ctx => fig(ctx),
         q: () => '縱軸的波浪線是什麼意思？', opts: () => [['omit', '0 到 100 中間省略了'], ['zero', '小傑的身高是 0'], ['wrong', '圖畫錯了']], ans: () => 'omit',
         wrong: () => ({ obs: 'ignoreBreak', msg: '波浪線表示中間省略，不是身高是 0。' }), say: () => '0 到 100 中間省略了。' }),
       nStep(1, { title: '讀出身高', ask: '那一年身高幾公分？', id: 'h', hints: ['在橫軸找到那一年。', '往上找到點，往左看縱軸。', '看清楚一格是幾公分。'],
         think: '老師找到那一年，往上找點，再往左讀。', together: '一起讀：身高幾公分？', figure: ctx => fig(ctx, { guideX: shown(ctx, 1) ? ctx.problem.k : null }),
         label: ctx => `${YEARS[ctx.problem.k]}的身高是幾公分？`, ans: ctx => ctx.problem.v[ctx.problem.k],
-        wrong: (ctx, v) => { const p = ctx.problem; return v === (p.v[p.k] - 100) / p.ch.step ? { obs: 'scaleAsOne', msg: `一格是 ${p.ch.step} 公分，而且從 100 開始。` } : v === p.v[p.k] - 100 ? { obs: 'ignoreBreak', msg: '縱軸從 100 開始，不是從 0 開始。' } : null; }, say: ex => `${YEARS[ex.problem.k]} ${ex.problem.v[ex.problem.k]} 公分。` }),
+        wrong: (ctx, v) => { const p = ctx.problem; return v === p.v[p.k] - 100 ? { obs: 'ignoreBreak', msg: '縱軸從 100 開始，不是從 0 開始。' } : p.ch.step > 1 && v === (p.v[p.k] - 100) / p.ch.step ? { obs: 'scaleAsOne', msg: `一格是 ${p.ch.step} 公分，而且從 100 開始。` } : null; }, say: ex => `${YEARS[ex.problem.k]} ${ex.problem.v[ex.problem.k]} 公分。` }),
       nStep(2, { title: '長高多少', ask: '一年長高幾公分？', id: 'g', hints: ['讀出兩年的身高。', '後一年 － 前一年。', '差多少就是長高多少。'],
         think: '老師讀出兩年的身高，相減就是長高多少。', together: '一起算：長高幾公分？', figure: ctx => fig(ctx, { seg: ctx.problem.j }),
         label: ctx => `從${YEARS[ctx.problem.j]}到${YEARS[ctx.problem.j + 1]}，長高幾公分？`, ans: ctx => ctx.problem.grow,
@@ -186,7 +186,7 @@
   A.register('fmGroup', {
     methods, makeProblem: makeGroup, planFigure: ctx => pileSVG(ctx.problem.n, `${ctx.problem.n} 個人`),
     steps: [
-      cStep(0, { title: '要用什麼想', ask: '每組一樣多、沒有人落單', id: 'tool', fixed: true, hints: ['分組就是把人平分。', '剛好分完、沒有剩，是因數。', '一直加上去是倍數。'],
+      cStep(0, { title: '要用什麼想', ask: '每組一樣多、沒有人落單', id: 'tool', fixed: true, hints: ['分組就是把人平分。', '剛好分完、沒有剩，想想學過的哪一個詞。', '分組是「分開」，還是「一直加上去」？'],
         think: '老師想：分組要剛好分完，沒有人落單，要找因數。', together: '一起想：用因數還是倍數？', pre: prompt, figure: ctx => pileSVG(ctx.problem.n, `${ctx.problem.n} 個人`),
         q: () => '要找人數的什麼？', opts: () => toolOpts, ans: () => 'f', wrong: () => ({ obs: 'swapFM', msg: '分組是平分，要剛好分完：找因數。' }), say: () => '找因數。' }),
       pickStep(1, { key: 'fs', title: '找出全部的分法', ask: '可以分成幾組？', hints: ['從 1 開始試：能不能剛好分完？', '找到一個，它的好朋友也要選。', '1 組和每人一組也算，可是上課不太會這樣分。'],
