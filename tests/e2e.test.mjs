@@ -2650,7 +2650,9 @@ test('第 35 版第 3 輪：原本的面積圖形也接受全形數字；填負�
   await s.click('[data-choice="formula"][data-value="product"]'); await s.fill('#a', '－' + fw(side)); await s.fill('#b', String(side)); await s.click('#check'); await s.waitForTimeout(60);
   assert.match(await s.textContent('.activity'), /不用加負號/, '兩格一起檢查時，也說出哪裡要改');
   const recs = async () => JSON.parse(await s.evaluate(() => sessionStorage.getItem('area-records-v16') || '[]'));
-  assert.ok((await recs()).some(r => r.event === '步驟檢核' && r.obs === 'format'), '記 format');
+  assert.ok((await recs()).some(r => r.event === '步驟檢核' && r.obs === 'format' && r.issue === 'a' && /－/.test(r.choice || '')), '記 format，也存下那一格填的字');
+  await s.fill('#a', String(side)); await s.fill('#b', '　'); await s.click('#check'); await s.waitForTimeout(60);
+  const last = (await recs()).filter(r => /步驟檢核|提醒還沒作答/.test(r.event)).pop(); assert.equal(last.event, '提醒還沒作答', '一格只有空白：算沒填，不算答錯'); assert.equal(last.issue, 'b');
   await s.fill('#a', fw(side)); await s.fill('#b', `　${fw(side)}　`); await s.click('#check');
   await s.waitForTimeout(80); assert.equal(await s.$('#next.locked'), null, '全形邊長可以過'); await s.click('#next');
   const fb = async v => { await s.fill('#total', v); await s.click('#check'); await s.waitForTimeout(60); return s.textContent('.activity:last-of-type .feedback, [id^="feedback"]:not([hidden])'); };

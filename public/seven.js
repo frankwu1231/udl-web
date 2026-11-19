@@ -747,6 +747,9 @@
     const sec = document.querySelector(`.activity[data-stage="${s}"]`);
     const boxes = sec ? [...sec.querySelectorAll('input[inputmode="decimal"][data-answer]')] : [];
     for (const b of boxes) { const id = b.dataset.answer, f = typeof answers[id] === 'string' ? formatMsg(answers[id]) : null; if (f) { const { soft, ...rest } = r; return { ...rest, code: id, obs: 'format', msg: f }; } }
+    // 有一格（看得到的數字格）還是空的（只有空白也算）：提醒要填，記成沒作答，不算答錯
+    const empty = boxes.find(b => b.offsetParent !== null && String(answers[b.dataset.answer] ?? '').trim() === '');
+    if (empty && boxes.some(b => String(answers[b.dataset.answer] ?? '').trim() !== '')) { const { soft, ...rest } = r; return { ...rest, code: empty.dataset.answer, obs: undefined, blank: true }; }
     return r;
   }
   function issueRaw(s) {
@@ -820,7 +823,7 @@
   // 把學生的作答轉成看得懂的文字，寫進紀錄
   function answerText(s, code) {
     if (P()) return (P().steps[s].ids || []).map(id => { const v = answers[id]; if (v === undefined || String(v).trim() === '') return ''; const b = document.querySelector(`[data-choice="${id}"][data-value="${v}"]`); return b ? clean(b) : String(v); }).filter(Boolean).join('、');
-    const ids = { target: ['target'], count: ['count'], relation: ['relation'], base: [], first: ['first'], line: ['height'], second: ['second'], formula: ['formula'], ab: ['a', 'b'], total: ['total'], verify: ['verify'], unit: ['unit'] }[code] || [KEYS[s]];
+    const ids = { target: ['target'], count: ['count'], relation: ['relation'], base: [], first: ['first'], line: ['height'], second: ['second'], formula: ['formula'], ab: ['a', 'b'], total: ['total'], verify: ['verify'], unit: ['unit'] }[code] || (code && Object.hasOwn(answers, code) ? [code] : [KEYS[s]]);   // 第 35 版：格式錯誤記單一格（a、b）時存那一格填的字
     return ids.map(id => {
       const v = answers[id]; if (v === undefined || String(v).trim() === '') return '';
       const btn = document.querySelector(`[data-choice="${id}"][data-value="${v}"]`);
@@ -852,7 +855,7 @@
       }
       if (r && r.soft) { ok = false; log('提醒還差一步', { activity: s + 1, issue: r.code }); continue; }   // 算對了、只差比一比：不算答錯
       // 什麼都沒填就按「檢查」：提醒要填，但不算答錯、不自動給提示，也不算「試過」。第 26 版：不再記成一筆「步驟檢核」答錯
-      if (r && blankStep(s, r)) { ok = false; log('提醒還沒作答', { activity: s + 1, issue: r.code, outcome: 'blank', obs: 'blank' }); continue; }
+      if (r && (r.blank || blankStep(s, r))) { ok = false; log('提醒還沒作答', { activity: s + 1, issue: r.code, outcome: 'blank', obs: 'blank' }); continue; }
       log('步驟檢核', { activity: s + 1, correct: !r, outcome: r ? 'wrong' : 'correct', issue: r ? r.code : 'none', obs: r ? r.obs || 'other' : '', hintLevel: hintLevel[s], firstTry: !records.some(x => x.cycle === cycle && x.event === '步驟檢核' && x.activity === s + 1 && x.actId === type) && !(hintLevel[s] > 0), choice: r ? answerText(s, r.code) : undefined });
       if (r && hintLevel[s] >= 2) tried2.add(s);
       if (r) { ok = false; errors++; checked.delete(s); if (hintLevel[s] < 3 && mode() !== 'probe') { hintLevel[s]++; log('自動提示', { activity: s + 1, hintLevel: hintLevel[s] }); if (settings.hintGate && hintPending === false) hintPending = s; } }
@@ -868,10 +871,10 @@
       else if (r.partial || (s === 3 && lineOk && r.code === 'second' && partial)) showStatus($('feedback' + s), '找到了！', true);
       else showStatus($('feedback' + s), r.msg);
     }
-    for (const s of list) if (msgs[s] && !msgs[s].partial && !msgs[s].soft && !blankStep(s, msgs[s])) { window.areaBuddy?.wrong(s, tried[s]); window.areaTutor?.wrong(s, msgs[s].obs); }
+    for (const s of list) if (msgs[s] && !msgs[s].partial && !msgs[s].soft && !msgs[s].blank && !blankStep(s, msgs[s])) { window.areaBuddy?.wrong(s, tried[s]); window.areaTutor?.wrong(s, msgs[s].obs); }
     // 第 25 版：選擇題答錯後，圖亮框，並用這一步的提示說要看哪裡，請學生先看圖再選（不鎖按鈕）
     if (mode() !== 'demo') for (const s of list) {
-      if (!msgs[s] || msgs[s].partial || msgs[s].soft || blankStep(s, msgs[s])) continue;
+      if (!msgs[s] || msgs[s].partial || msgs[s].soft || msgs[s].blank || blankStep(s, msgs[s])) continue;
       if (!document.querySelector(`.activity[data-stage="${s}"] [data-choice]`)) continue;
       const fig = $('figure' + s), box = $('feedback' + s);
       if (fig) { fig.classList.add('look-here'); setTimeout(() => fig.classList.remove('look-here'), 3000); }
