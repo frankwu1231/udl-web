@@ -1,0 +1,759 @@
+{
+  "id": "moneyShopProbe",
+  "version": "1",
+  "kind": "probe",
+  "package": "money",
+  "variant": "shop",
+  "title": "錢幣小測驗：找錢、購物（一、二年級）",
+  "itemSecs": 150,
+  "totalSecs": 1500,
+  "forms": [
+    {
+      "id": "A",
+      "items": [
+        {
+          "id": "A01",
+          "type": "countup",
+          "prompt": "買一瓶麥茶 42 元，付 50 元。店員往上數找錢。要找幾元？",
+          "steps": [
+            {
+              "key": "to",
+              "label": "先往上數到幾元（整十）",
+              "role": "measure",
+              "input": "number",
+              "answer": 50
+            },
+            {
+              "key": "ch",
+              "label": "要找幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 8
+            }
+          ]
+        },
+        {
+          "id": "A02",
+          "type": "countup",
+          "prompt": "買一包海苔 29 元，付 50 元。店員往上數找錢。要找幾元？",
+          "steps": [
+            {
+              "key": "to",
+              "label": "先往上數到幾元（整十）",
+              "role": "measure",
+              "input": "number",
+              "answer": 30
+            },
+            {
+              "key": "ch",
+              "label": "要找幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 21
+            }
+          ]
+        },
+        {
+          "id": "A03",
+          "type": "countup",
+          "prompt": "買一枝螢光筆 22 元，付 50 元。店員往上數找錢。要找幾元？",
+          "steps": [
+            {
+              "key": "to",
+              "label": "先往上數到幾元（整十）",
+              "role": "measure",
+              "input": "number",
+              "answer": 30
+            },
+            {
+              "key": "ch",
+              "label": "要找幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 28
+            }
+          ]
+        },
+        {
+          "id": "A04",
+          "type": "change",
+          "prompt": "買一個便當袋，一共 480 元，付 1 張 500 元。要找多少元？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "480 － 500",
+                "500 ＋ 480",
+                "500 － 480"
+              ],
+              "answer": "500 － 480"
+            },
+            {
+              "key": "ch",
+              "label": "要找多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 20
+            }
+          ]
+        },
+        {
+          "id": "A05",
+          "type": "change",
+          "prompt": "買一雙球鞋，一共 800 元，付 1 張 1000 元。要找多少元？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "1000 ＋ 800",
+                "1000 － 800",
+                "800 － 1000"
+              ],
+              "answer": "1000 － 800"
+            },
+            {
+              "key": "ch",
+              "label": "要找多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 200
+            }
+          ]
+        },
+        {
+          "id": "A06",
+          "type": "check",
+          "prompt": "買一份鍋燒麵 72 元，付 100 元。店員找回 2 個 10 元、1 個 5 元、3 個 1 元。",
+          "steps": [
+            {
+              "key": "should",
+              "label": "應該找幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 28
+            },
+            {
+              "key": "got",
+              "label": "店員找了幾元",
+              "role": "part",
+              "input": "number",
+              "answer": 28
+            },
+            {
+              "key": "ok",
+              "label": "找得對不對",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "找對了",
+                "少找了",
+                "多找了"
+              ],
+              "answer": "找對了"
+            }
+          ]
+        },
+        {
+          "id": "A07",
+          "type": "enough",
+          "prompt": "錢包裡有 2 個 50 元、4 個 10 元、1 個 1 元。想買 148 元的盆栽，錢夠不夠？",
+          "steps": [
+            {
+              "key": "have",
+              "label": "錢包裡一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 141
+            },
+            {
+              "key": "ok",
+              "label": "錢夠不夠",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "夠",
+                "不夠"
+              ],
+              "answer": "不夠"
+            }
+          ]
+        },
+        {
+          "id": "A08",
+          "type": "enough",
+          "prompt": "錢包裡有 1 張 100 元、2 個 10 元。想買 115 元的風箏，錢夠不夠？",
+          "steps": [
+            {
+              "key": "have",
+              "label": "錢包裡一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 120
+            },
+            {
+              "key": "ok",
+              "label": "錢夠不夠",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "夠",
+                "不夠"
+              ],
+              "answer": "夠"
+            }
+          ]
+        },
+        {
+          "id": "A09",
+          "type": "two",
+          "prompt": "在麵包店買菠蘿麵包 33 元和牛奶 29 元，付 100 元。要找多少元？",
+          "steps": [
+            {
+              "key": "tot",
+              "label": "兩樣一共多少元",
+              "role": "measure",
+              "input": "number",
+              "answer": 62
+            },
+            {
+              "key": "ch",
+              "label": "要找多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 38
+            }
+          ]
+        },
+        {
+          "id": "A10",
+          "type": "two",
+          "prompt": "帶 1 張 500 元去買一件 T 恤 190 元和一頂帽子 200 元。錢夠不夠？",
+          "steps": [
+            {
+              "key": "tot",
+              "label": "兩樣一共多少元",
+              "role": "measure",
+              "input": "number",
+              "answer": 390
+            },
+            {
+              "key": "ok",
+              "label": "錢夠不夠",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "夠",
+                "不夠"
+              ],
+              "answer": "夠"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "items": [
+        {
+          "id": "B01",
+          "type": "countup",
+          "prompt": "買一個髮夾 29 元，付 50 元。店員往上數找錢。要找幾元？",
+          "steps": [
+            {
+              "key": "to",
+              "label": "先往上數到幾元（整十）",
+              "role": "measure",
+              "input": "number",
+              "answer": 30
+            },
+            {
+              "key": "ch",
+              "label": "要找幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 21
+            }
+          ]
+        },
+        {
+          "id": "B02",
+          "type": "countup",
+          "prompt": "買一顆飯糰 31 元，付 50 元。店員往上數找錢。要找幾元？",
+          "steps": [
+            {
+              "key": "to",
+              "label": "先往上數到幾元（整十）",
+              "role": "measure",
+              "input": "number",
+              "answer": 40
+            },
+            {
+              "key": "ch",
+              "label": "要找幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 19
+            }
+          ]
+        },
+        {
+          "id": "B03",
+          "type": "countup",
+          "prompt": "買一包衛生紙 18 元，付 50 元。店員往上數找錢。要找幾元？",
+          "steps": [
+            {
+              "key": "to",
+              "label": "先往上數到幾元（整十）",
+              "role": "measure",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "ch",
+              "label": "要找幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 32
+            }
+          ]
+        },
+        {
+          "id": "B04",
+          "type": "change",
+          "prompt": "買一雙襪子和手套，一共 210 元，付 1 張 500 元。要找多少元？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "500 － 210",
+                "210 － 500",
+                "500 ＋ 210"
+              ],
+              "answer": "500 － 210"
+            },
+            {
+              "key": "ch",
+              "label": "要找多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 290
+            }
+          ]
+        },
+        {
+          "id": "B05",
+          "type": "change",
+          "prompt": "買一個行李袋，一共 800 元，付 1 張 1000 元。要找多少元？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "1000 ＋ 800",
+                "1000 － 800",
+                "800 － 1000"
+              ],
+              "answer": "1000 － 800"
+            },
+            {
+              "key": "ch",
+              "label": "要找多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 200
+            }
+          ]
+        },
+        {
+          "id": "B06",
+          "type": "check",
+          "prompt": "買一份鍋燒麵 84 元，付 100 元。店員找回 1 個 10 元、1 個 1 元。",
+          "steps": [
+            {
+              "key": "should",
+              "label": "應該找幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 16
+            },
+            {
+              "key": "got",
+              "label": "店員找了幾元",
+              "role": "part",
+              "input": "number",
+              "answer": 11
+            },
+            {
+              "key": "ok",
+              "label": "找得對不對",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "找對了",
+                "少找了",
+                "多找了"
+              ],
+              "answer": "少找了"
+            }
+          ]
+        },
+        {
+          "id": "B07",
+          "type": "enough",
+          "prompt": "錢包裡有 1 個 50 元、2 個 10 元、2 個 1 元。想買 71 元的盆栽，錢夠不夠？",
+          "steps": [
+            {
+              "key": "have",
+              "label": "錢包裡一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 72
+            },
+            {
+              "key": "ok",
+              "label": "錢夠不夠",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "夠",
+                "不夠"
+              ],
+              "answer": "夠"
+            }
+          ]
+        },
+        {
+          "id": "B08",
+          "type": "enough",
+          "prompt": "錢包裡有 2 張 100 元、7 個 10 元。想買 278 元的風箏，錢夠不夠？",
+          "steps": [
+            {
+              "key": "have",
+              "label": "錢包裡一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 270
+            },
+            {
+              "key": "ok",
+              "label": "錢夠不夠",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "夠",
+                "不夠"
+              ],
+              "answer": "不夠"
+            }
+          ]
+        },
+        {
+          "id": "B09",
+          "type": "two",
+          "prompt": "在麵包店買菠蘿麵包 43 元和牛奶 12 元，付 100 元。要找多少元？",
+          "steps": [
+            {
+              "key": "tot",
+              "label": "兩樣一共多少元",
+              "role": "measure",
+              "input": "number",
+              "answer": 55
+            },
+            {
+              "key": "ch",
+              "label": "要找多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 45
+            }
+          ]
+        },
+        {
+          "id": "B10",
+          "type": "two",
+          "prompt": "帶 1 張 500 元去買一件 T 恤 300 元和一頂帽子 260 元。錢夠不夠？",
+          "steps": [
+            {
+              "key": "tot",
+              "label": "兩樣一共多少元",
+              "role": "measure",
+              "input": "number",
+              "answer": 560
+            },
+            {
+              "key": "ok",
+              "label": "錢夠不夠",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "夠",
+                "不夠"
+              ],
+              "answer": "不夠"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "items": [
+        {
+          "id": "C01",
+          "type": "countup",
+          "prompt": "買一個削鉛筆機 34 元，付 50 元。店員往上數找錢。要找幾元？",
+          "steps": [
+            {
+              "key": "to",
+              "label": "先往上數到幾元（整十）",
+              "role": "measure",
+              "input": "number",
+              "answer": 40
+            },
+            {
+              "key": "ch",
+              "label": "要找幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 16
+            }
+          ]
+        },
+        {
+          "id": "C02",
+          "type": "countup",
+          "prompt": "買一盒蠟筆 65 元，付 100 元。店員往上數找錢。要找幾元？",
+          "steps": [
+            {
+              "key": "to",
+              "label": "先往上數到幾元（整十）",
+              "role": "measure",
+              "input": "number",
+              "answer": 70
+            },
+            {
+              "key": "ch",
+              "label": "要找幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 35
+            }
+          ]
+        },
+        {
+          "id": "C03",
+          "type": "countup",
+          "prompt": "買一個便當 71 元，付 100 元。店員往上數找錢。要找幾元？",
+          "steps": [
+            {
+              "key": "to",
+              "label": "先往上數到幾元（整十）",
+              "role": "measure",
+              "input": "number",
+              "answer": 80
+            },
+            {
+              "key": "ch",
+              "label": "要找幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 29
+            }
+          ]
+        },
+        {
+          "id": "C04",
+          "type": "change",
+          "prompt": "買一組桌遊，一共 370 元，付 1 張 500 元。要找多少元？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "500 ＋ 370",
+                "500 － 370",
+                "370 － 500"
+              ],
+              "answer": "500 － 370"
+            },
+            {
+              "key": "ch",
+              "label": "要找多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 130
+            }
+          ]
+        },
+        {
+          "id": "C05",
+          "type": "change",
+          "prompt": "買一雙球鞋，一共 800 元，付 1 張 1000 元。要找多少元？",
+          "steps": [
+            {
+              "key": "op",
+              "label": "算式",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "1000 － 800",
+                "800 － 1000",
+                "1000 ＋ 800"
+              ],
+              "answer": "1000 － 800"
+            },
+            {
+              "key": "ch",
+              "label": "要找多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 200
+            }
+          ]
+        },
+        {
+          "id": "C06",
+          "type": "check",
+          "prompt": "買一份鍋燒麵 56 元，付 100 元。店員找回 4 個 10 元、1 個 5 元、4 個 1 元。",
+          "steps": [
+            {
+              "key": "should",
+              "label": "應該找幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 44
+            },
+            {
+              "key": "got",
+              "label": "店員找了幾元",
+              "role": "part",
+              "input": "number",
+              "answer": 49
+            },
+            {
+              "key": "ok",
+              "label": "找得對不對",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "找對了",
+                "少找了",
+                "多找了"
+              ],
+              "answer": "多找了"
+            }
+          ]
+        },
+        {
+          "id": "C07",
+          "type": "enough",
+          "prompt": "錢包裡有 1 個 50 元、5 個 10 元、1 個 1 元。想買 103 元的盆栽，錢夠不夠？",
+          "steps": [
+            {
+              "key": "have",
+              "label": "錢包裡一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 101
+            },
+            {
+              "key": "ok",
+              "label": "錢夠不夠",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "夠",
+                "不夠"
+              ],
+              "answer": "不夠"
+            }
+          ]
+        },
+        {
+          "id": "C08",
+          "type": "enough",
+          "prompt": "錢包裡有 1 張 100 元、3 個 10 元。想買 122 元的風箏，錢夠不夠？",
+          "steps": [
+            {
+              "key": "have",
+              "label": "錢包裡一共幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 130
+            },
+            {
+              "key": "ok",
+              "label": "錢夠不夠",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "夠",
+                "不夠"
+              ],
+              "answer": "夠"
+            }
+          ]
+        },
+        {
+          "id": "C09",
+          "type": "two",
+          "prompt": "在麵包店買菠蘿麵包 20 元和牛奶 38 元，付 100 元。要找多少元？",
+          "steps": [
+            {
+              "key": "tot",
+              "label": "兩樣一共多少元",
+              "role": "measure",
+              "input": "number",
+              "answer": 58
+            },
+            {
+              "key": "ch",
+              "label": "要找多少元",
+              "role": "answer",
+              "input": "number",
+              "answer": 42
+            }
+          ]
+        },
+        {
+          "id": "C10",
+          "type": "two",
+          "prompt": "帶 1 張 500 元去買一件 T 恤 150 元和一頂帽子 210 元。錢夠不夠？",
+          "steps": [
+            {
+              "key": "tot",
+              "label": "兩樣一共多少元",
+              "role": "measure",
+              "input": "number",
+              "answer": 360
+            },
+            {
+              "key": "ok",
+              "label": "錢夠不夠",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "夠",
+                "不夠"
+              ],
+              "answer": "夠"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
