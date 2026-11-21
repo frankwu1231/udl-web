@@ -1,0 +1,765 @@
+{
+  "id": "moneyFinanceProbe",
+  "version": "1",
+  "kind": "probe",
+  "package": "money",
+  "variant": "finance",
+  "title": "錢幣小測驗：理財（想要需要、存提款、記帳）",
+  "itemSecs": 150,
+  "totalSecs": 1500,
+  "forms": [
+    {
+      "id": "A",
+      "items": [
+        {
+          "id": "A01",
+          "type": "needwant",
+          "prompt": "球鞋破了一個洞，明天體育課要跑步。買新球鞋。這是需要還是想要？",
+          "steps": [
+            {
+              "key": "life",
+              "label": "沒有它，生活會不會有問題",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "會",
+                "不會"
+              ],
+              "answer": "會"
+            },
+            {
+              "key": "ans",
+              "label": "需要還是想要",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "需要",
+                "想要"
+              ],
+              "answer": "需要"
+            }
+          ]
+        },
+        {
+          "id": "A02",
+          "type": "needwant",
+          "prompt": "已經有一個水壺，看到新的卡通水壺。這是需要還是想要？",
+          "steps": [
+            {
+              "key": "life",
+              "label": "沒有它，生活會不會有問題",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "會",
+                "不會"
+              ],
+              "answer": "不會"
+            },
+            {
+              "key": "ans",
+              "label": "需要還是想要",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "需要",
+                "想要"
+              ],
+              "answer": "想要"
+            }
+          ]
+        },
+        {
+          "id": "A03",
+          "type": "budget",
+          "prompt": "只有 100 元。先買需要的午餐 45 元，還想買 53 元的鑰匙圈。",
+          "steps": [
+            {
+              "key": "left",
+              "label": "買了午餐還剩幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 55
+            },
+            {
+              "key": "can",
+              "label": "還買得起鑰匙圈嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "買得起",
+                "買不起"
+              ],
+              "answer": "買得起"
+            }
+          ]
+        },
+        {
+          "id": "A04",
+          "type": "budget",
+          "prompt": "只有 200 元。先買需要的作業簿 119 元，還想買 86 元的漫畫書。",
+          "steps": [
+            {
+              "key": "left",
+              "label": "買了作業簿還剩幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 81
+            },
+            {
+              "key": "can",
+              "label": "還買得起漫畫書嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "買得起",
+                "買不起"
+              ],
+              "answer": "買不起"
+            }
+          ]
+        },
+        {
+          "id": "A05",
+          "type": "wait",
+          "prompt": "想買 160 元的拼圖，現在有 60 元，每週存 20 元。要再存幾週才買得起？",
+          "steps": [
+            {
+              "key": "need",
+              "label": "還差幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 100
+            },
+            {
+              "key": "wk",
+              "label": "要再存幾週",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "A06",
+          "type": "piggy",
+          "prompt": "每天放 5 元進存錢筒，放了 10 天。存錢筒裡有幾元？",
+          "steps": [
+            {
+              "key": "how",
+              "label": "用什麼方法數",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "5 元 5 元數",
+                "1 元 1 元數"
+              ],
+              "answer": "5 元 5 元數"
+            },
+            {
+              "key": "ans",
+              "label": "一共幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 50
+            }
+          ]
+        },
+        {
+          "id": "A07",
+          "type": "passbook",
+          "prompt": "存摺最後一行的結存是 700 元。今天存入 200 元。",
+          "steps": [
+            {
+              "key": "dir",
+              "label": "錢變多還是變少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "變多",
+                "變少"
+              ],
+              "answer": "變多"
+            },
+            {
+              "key": "bal",
+              "label": "新的結存是幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 900
+            }
+          ]
+        },
+        {
+          "id": "A08",
+          "type": "passbook",
+          "prompt": "存摺最後一行的結存是 1200 元。今天提出 400 元。",
+          "steps": [
+            {
+              "key": "dir",
+              "label": "錢變多還是變少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "變多",
+                "變少"
+              ],
+              "answer": "變少"
+            },
+            {
+              "key": "bal",
+              "label": "新的結存是幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 800
+            }
+          ]
+        },
+        {
+          "id": "A09",
+          "type": "ledger",
+          "prompt": "記帳本：本來有 190 元。買文具花 25 元，奶奶給 50 元，買點心花 10 元。",
+          "steps": [
+            {
+              "key": "mid",
+              "label": "買了文具還剩幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 165
+            },
+            {
+              "key": "now",
+              "label": "現在有幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 205
+            }
+          ]
+        },
+        {
+          "id": "A10",
+          "type": "plan",
+          "prompt": "每週零用錢 50 元，每週存 30 元，想存到 210 元買球拍。",
+          "steps": [
+            {
+              "key": "spend",
+              "label": "每週還可以花幾元",
+              "role": "part",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "wk",
+              "label": "要存幾週",
+              "role": "answer",
+              "input": "number",
+              "answer": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "items": [
+        {
+          "id": "B01",
+          "type": "needwant",
+          "prompt": "眼鏡摔壞了，看不清楚黑板。修眼鏡。這是需要還是想要？",
+          "steps": [
+            {
+              "key": "life",
+              "label": "沒有它，生活會不會有問題",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "會",
+                "不會"
+              ],
+              "answer": "會"
+            },
+            {
+              "key": "ans",
+              "label": "需要還是想要",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "需要",
+                "想要"
+              ],
+              "answer": "需要"
+            }
+          ]
+        },
+        {
+          "id": "B02",
+          "type": "needwant",
+          "prompt": "同學都在玩新的卡牌，也想買一包。這是需要還是想要？",
+          "steps": [
+            {
+              "key": "life",
+              "label": "沒有它，生活會不會有問題",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "會",
+                "不會"
+              ],
+              "answer": "不會"
+            },
+            {
+              "key": "ans",
+              "label": "需要還是想要",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "需要",
+                "想要"
+              ],
+              "answer": "想要"
+            }
+          ]
+        },
+        {
+          "id": "B03",
+          "type": "budget",
+          "prompt": "只有 100 元。先買需要的午餐 58 元，還想買 47 元的鑰匙圈。",
+          "steps": [
+            {
+              "key": "left",
+              "label": "買了午餐還剩幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 42
+            },
+            {
+              "key": "can",
+              "label": "還買得起鑰匙圈嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "買得起",
+                "買不起"
+              ],
+              "answer": "買不起"
+            }
+          ]
+        },
+        {
+          "id": "B04",
+          "type": "budget",
+          "prompt": "只有 200 元。先買需要的作業簿 112 元，還想買 79 元的漫畫書。",
+          "steps": [
+            {
+              "key": "left",
+              "label": "買了作業簿還剩幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 88
+            },
+            {
+              "key": "can",
+              "label": "還買得起漫畫書嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "買得起",
+                "買不起"
+              ],
+              "answer": "買得起"
+            }
+          ]
+        },
+        {
+          "id": "B05",
+          "type": "wait",
+          "prompt": "想買 210 元的拼圖，現在有 30 元，每週存 30 元。要再存幾週才買得起？",
+          "steps": [
+            {
+              "key": "need",
+              "label": "還差幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 180
+            },
+            {
+              "key": "wk",
+              "label": "要再存幾週",
+              "role": "answer",
+              "input": "number",
+              "answer": 6
+            }
+          ]
+        },
+        {
+          "id": "B06",
+          "type": "piggy",
+          "prompt": "每天放 10 元進存錢筒，放了 7 天。存錢筒裡有幾元？",
+          "steps": [
+            {
+              "key": "how",
+              "label": "用什麼方法數",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "10 元 10 元數",
+                "1 元 1 元數"
+              ],
+              "answer": "10 元 10 元數"
+            },
+            {
+              "key": "ans",
+              "label": "一共幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 70
+            }
+          ]
+        },
+        {
+          "id": "B07",
+          "type": "passbook",
+          "prompt": "存摺最後一行的結存是 750 元。今天存入 300 元。",
+          "steps": [
+            {
+              "key": "dir",
+              "label": "錢變多還是變少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "變多",
+                "變少"
+              ],
+              "answer": "變多"
+            },
+            {
+              "key": "bal",
+              "label": "新的結存是幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 1050
+            }
+          ]
+        },
+        {
+          "id": "B08",
+          "type": "passbook",
+          "prompt": "存摺最後一行的結存是 1200 元。今天提出 200 元。",
+          "steps": [
+            {
+              "key": "dir",
+              "label": "錢變多還是變少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "變多",
+                "變少"
+              ],
+              "answer": "變少"
+            },
+            {
+              "key": "bal",
+              "label": "新的結存是幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 1000
+            }
+          ]
+        },
+        {
+          "id": "B09",
+          "type": "ledger",
+          "prompt": "記帳本：本來有 190 元。買文具花 41 元，奶奶給 50 元，買點心花 16 元。",
+          "steps": [
+            {
+              "key": "mid",
+              "label": "買了文具還剩幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 149
+            },
+            {
+              "key": "now",
+              "label": "現在有幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 183
+            }
+          ]
+        },
+        {
+          "id": "B10",
+          "type": "plan",
+          "prompt": "每週零用錢 50 元，每週存 30 元，想存到 120 元買球拍。",
+          "steps": [
+            {
+              "key": "spend",
+              "label": "每週還可以花幾元",
+              "role": "part",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "wk",
+              "label": "要存幾週",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "items": [
+        {
+          "id": "C01",
+          "type": "needwant",
+          "prompt": "天氣很熱，忘了帶水，口很渴。買一瓶水。這是需要還是想要？",
+          "steps": [
+            {
+              "key": "life",
+              "label": "沒有它，生活會不會有問題",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "會",
+                "不會"
+              ],
+              "answer": "會"
+            },
+            {
+              "key": "ans",
+              "label": "需要還是想要",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "需要",
+                "想要"
+              ],
+              "answer": "需要"
+            }
+          ]
+        },
+        {
+          "id": "C02",
+          "type": "needwant",
+          "prompt": "玩具店有會發光的陀螺。這是需要還是想要？",
+          "steps": [
+            {
+              "key": "life",
+              "label": "沒有它，生活會不會有問題",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "會",
+                "不會"
+              ],
+              "answer": "不會"
+            },
+            {
+              "key": "ans",
+              "label": "需要還是想要",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "需要",
+                "想要"
+              ],
+              "answer": "想要"
+            }
+          ]
+        },
+        {
+          "id": "C03",
+          "type": "budget",
+          "prompt": "只有 100 元。先買需要的午餐 67 元，還想買 31 元的鑰匙圈。",
+          "steps": [
+            {
+              "key": "left",
+              "label": "買了午餐還剩幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 33
+            },
+            {
+              "key": "can",
+              "label": "還買得起鑰匙圈嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "買得起",
+                "買不起"
+              ],
+              "answer": "買得起"
+            }
+          ]
+        },
+        {
+          "id": "C04",
+          "type": "budget",
+          "prompt": "只有 200 元。先買需要的作業簿 117 元，還想買 96 元的漫畫書。",
+          "steps": [
+            {
+              "key": "left",
+              "label": "買了作業簿還剩幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 83
+            },
+            {
+              "key": "can",
+              "label": "還買得起漫畫書嗎",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "買得起",
+                "買不起"
+              ],
+              "answer": "買不起"
+            }
+          ]
+        },
+        {
+          "id": "C05",
+          "type": "wait",
+          "prompt": "想買 70 元的拼圖，現在有 20 元，每週存 10 元。要再存幾週才買得起？",
+          "steps": [
+            {
+              "key": "need",
+              "label": "還差幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 50
+            },
+            {
+              "key": "wk",
+              "label": "要再存幾週",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "C06",
+          "type": "piggy",
+          "prompt": "每天放 5 元進存錢筒，放了 14 天。存錢筒裡有幾元？",
+          "steps": [
+            {
+              "key": "how",
+              "label": "用什麼方法數",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "5 元 5 元數",
+                "1 元 1 元數"
+              ],
+              "answer": "5 元 5 元數"
+            },
+            {
+              "key": "ans",
+              "label": "一共幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 70
+            }
+          ]
+        },
+        {
+          "id": "C07",
+          "type": "passbook",
+          "prompt": "存摺最後一行的結存是 600 元。今天存入 300 元。",
+          "steps": [
+            {
+              "key": "dir",
+              "label": "錢變多還是變少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "變多",
+                "變少"
+              ],
+              "answer": "變多"
+            },
+            {
+              "key": "bal",
+              "label": "新的結存是幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 900
+            }
+          ]
+        },
+        {
+          "id": "C08",
+          "type": "passbook",
+          "prompt": "存摺最後一行的結存是 1200 元。今天提出 500 元。",
+          "steps": [
+            {
+              "key": "dir",
+              "label": "錢變多還是變少",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "變多",
+                "變少"
+              ],
+              "answer": "變少"
+            },
+            {
+              "key": "bal",
+              "label": "新的結存是幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 700
+            }
+          ]
+        },
+        {
+          "id": "C09",
+          "type": "ledger",
+          "prompt": "記帳本：本來有 180 元。買文具花 23 元，奶奶給 50 元，買點心花 25 元。",
+          "steps": [
+            {
+              "key": "mid",
+              "label": "買了文具還剩幾元",
+              "role": "measure",
+              "input": "number",
+              "answer": 157
+            },
+            {
+              "key": "now",
+              "label": "現在有幾元",
+              "role": "answer",
+              "input": "number",
+              "answer": 182
+            }
+          ]
+        },
+        {
+          "id": "C10",
+          "type": "plan",
+          "prompt": "每週零用錢 50 元，每週存 40 元，想存到 160 元買球拍。",
+          "steps": [
+            {
+              "key": "spend",
+              "label": "每週還可以花幾元",
+              "role": "part",
+              "input": "number",
+              "answer": 10
+            },
+            {
+              "key": "wk",
+              "label": "要存幾週",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

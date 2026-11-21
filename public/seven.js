@@ -69,7 +69,7 @@
 
   // 第 26 版：班級設定，再套上這位學生的個別設定（老師在「教師觀察」調整、存在網站資料庫）
   function ownSettings() { return { ...F.settings(L()), ...(window.areaResearch?.overrides?.(type) || {}), ...(window.areaResearch?.phasePatch?.(type) || {}) }; }   // 第 26 版第四階段：研究階段（B、BC 關閉 AI；BC 由小老師小方取代小幫手；示範階段用老師示範模式）
-  const SITE_VERSION = 'v35';
+  const SITE_VERSION = 'v36';
   function log(event, extra = {}) {
     const st = extra.activity && phase !== 'plan' ? (titles()[extra.activity - 1] || '') : '';
     const r = { time: new Date().toISOString(), siteVersion: SITE_VERSION, shape: nameOf(), shapeKey: type, actId: type, stepTitle: st, cycle, activity: extra.activity ?? null, event, support: settings.support, response, method, flow: settings.flow, difficulty: settings.difficulty, mode: mode(), studyPhase, ...(window.areaTutor?.stage?.() ? { tutorStage: window.areaTutor.stage() } : {}), ...extra };
@@ -127,7 +127,7 @@
   const DRAFT_KEY = 'act-draft-v28', OWN_KEY = 'line-record-v28';
   let resumed = false;
   addEventListener('pagehide', () => saveDraft());   // 打字還沒按檢查就重新整理，也存起來
-  const draftable = () => !!(P() && (['line', 'factor', 'time', 'frac', 'int'].includes(ACT?.pkgOf(type)?.id) || P().draft) && mode() !== 'probe' && mode() !== 'demo');
+  const draftable = () => !!(P() && (['line', 'factor', 'time', 'frac', 'int', 'money'].includes(ACT?.pkgOf(type)?.id) || P().draft) && mode() !== 'probe' && mode() !== 'demo');
   function saveDraft() {
     if (!draftable()) return;
     try { if (phase === 'solve') sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ type, index, cycle, problem: pProblem, state: pState, answers, checked: [...checked], page, hintLevel, goal, method, errors, hintsUsed, tried2: [...tried2], nudged: [...nudged], startedAt })); else sessionStorage.removeItem(DRAFT_KEY); } catch { /* 無法暫存就算了 */ }
@@ -879,8 +879,10 @@
       if (!msgs[s] || msgs[s].partial || msgs[s].soft || msgs[s].blank || blankStep(s, msgs[s])) continue;
       if (!document.querySelector(`.activity[data-stage="${s}"] [data-choice]`)) continue;
       const fig = $('figure' + s), box = $('feedback' + s);
-      if (fig) { fig.classList.add('look-here'); setTimeout(() => fig.classList.remove('look-here'), 3000); }
-      if (box) box.insertAdjacentHTML('beforeend', `<span class="look-note" data-read data-say>　先看圖再選：${esc(hintFor(s, 1))}</span>`);
+      // 第 36 版：這一步沒有圖（圖區空白）就不亮框，改請學生看題目和選項
+      const hasFig = !!fig && (fig.textContent.trim() !== '' || !!fig.querySelector('img, svg, canvas, table, .mo-coin, .mo-bill'));
+      if (hasFig) { fig.classList.add('look-here'); setTimeout(() => fig.classList.remove('look-here'), 3000); }
+      if (box) box.insertAdjacentHTML('beforeend', `<span class="look-note" data-read data-say>　${hasFig ? '先看圖再選' : '先看題目和選項再選'}：${esc(hintFor(s, 1))}</span>`);
     }
     if (ok) { showStatus(groupBox(), phase === 'reflect' ? '單位答對了！' : '全部答對了，可以按「下一步」。', true); if (phase !== 'reflect') celebrate(); window.areaBuddy?.right(list[list.length - 1]); window.areaTutor?.right(list[list.length - 1]); }
     else if (partial) showStatus(groupBox(), '找到高了！再填它的長度。', true);
