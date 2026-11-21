@@ -1,0 +1,157 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>分數前測 卷號 19</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap"><style>
+/* 版面：A4 試卷置中；題目用楷體（像課本與考卷），教師區用黑體。紙本只用淺色。 */
+:root {
+  color-scheme: light;
+  --desk: #e9ecef; --paper: #ffffff; --ink: #1f2328; --muted: #5b636d; --line: #c9cfd6; --grid: #b9c7d6;
+  --fill: #dbe8f5; --fill2: #f6c99a; --leaf: #bfe0b4; --accent: #c2410c; --calc: #1d4f91; --app: #2f6b2f;
+  --font-q: "LXGW WenKai TC", "BiauKai", "DFKai-SB", "標楷體", "Kaiti TC", serif;
+  --font-ui: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif;
+}
+body { background: var(--desk); color: var(--ink); font-family: var(--font-ui); }
+.wrap { padding-block: 24px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 32px; }
+.toc { max-width: 820px; margin: 0 auto; width: 100%; display: grid; gap: 10px; }
+.toc h1 { font-size: 20px; margin: 0; }
+.toc p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.7; }
+.toc nav { display: flex; flex-wrap: wrap; gap: 8px; }
+.toc a { display: inline-block; min-width: 2.6em; text-align: center; padding: 6px 8px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); text-decoration: none; border-radius: 6px; font-variant-numeric: tabular-nums; }
+.toc a:hover, .toc a:focus-visible { border-color: var(--calc); color: var(--calc); outline: none; }
+.sheet { max-width: 820px; width: 100%; box-sizing: border-box; margin: 0 auto; background: var(--paper); padding: 40px 48px; box-shadow: 0 1px 3px rgba(0,0,0,.12); display: grid; gap: 28px; scroll-margin-top: 16px; }
+.sheet-head { display: grid; gap: 14px; border-bottom: 2px solid var(--ink); padding-bottom: 16px; position: relative; }
+.serial { justify-self: end; font-size: 15px; border: 1.5px solid var(--ink); padding: 2px 12px; font-variant-numeric: tabular-nums; }
+.serial b { font-size: 20px; }
+.sheet-head h1 { font-family: var(--font-q); font-size: 30px; margin: 0; text-align: center; letter-spacing: .08em; text-wrap: balance; }
+.meta { display: flex; flex-wrap: wrap; gap: 10px 28px; justify-content: center; font-family: var(--font-q); font-size: 18px; }
+.meta span { display: inline-flex; gap: 6px; align-items: baseline; }
+.meta i { display: inline-block; width: 110px; border-bottom: 1px solid var(--ink); }
+.note { font-size: 14px; color: var(--muted); margin: 0; line-height: 1.7; }
+.item { display: grid; gap: 12px; padding-bottom: 24px; border-bottom: 1px dashed var(--line); break-inside: avoid; }
+.item-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.no { font-family: var(--font-q); font-weight: 700; font-size: 22px; min-width: 1.6em; }
+.no::after { content: "."; }
+.tag { font-size: 13px; font-weight: 500; padding: 2px 10px; border-radius: 999px; border: 1px solid currentColor; }
+.tag-calc { color: var(--calc); }
+.tag-app { color: var(--app); }
+.unit-tag { font-size: 13px; color: var(--muted); }
+.stem { font-family: var(--font-q); font-size: 20px; line-height: 1.8; margin: 0; }
+.stem:empty { display: none; }
+.fig { display: flex; flex-wrap: wrap; gap: 20px 40px; align-items: flex-end; overflow-x: auto; }
+.fig svg { max-width: 100%; height: auto; font-family: var(--font-ui); }
+.fig-sub { margin: 0; display: grid; gap: 4px; }
+.fig-sub figcaption { font-family: var(--font-q); font-size: 16px; }
+.subs { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.subs li { display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; font-family: var(--font-q); font-size: 20px; line-height: 1.7; }
+.sub-no { color: var(--muted); }
+.sub-q { min-width: 0; }
+.ans { grid-column: 2; display: flex; align-items: baseline; gap: 6px; font-size: 18px; }
+.blank { flex: 1; max-width: 360px; border-bottom: 1px solid var(--ink); height: 1.6em; }
+.teacher { display: grid; gap: 18px; font-size: 15px; line-height: 1.7; break-before: page; }
+.teacher h2 { font-size: 20px; margin: 0; padding-top: 8px; border-top: 2px solid var(--ink); }
+.teacher h3 { font-size: 16px; margin: 6px 0 0; }
+.teacher p, .teacher ul { margin: 0; }
+.teacher ul { padding-left: 1.3em; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: #f3f5f7; font-weight: 500; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.score { min-width: 64px; }
+@media (max-width: 560px) { .sheet { padding: 24px 18px; } .stem, .subs li { font-size: 18px; } }
+@media print {
+  body { background: #fff; }
+  .wrap { padding: 0; display: block; }
+  .toc { display: none; }
+  .sheet { box-shadow: none; padding: 0; max-width: none; break-before: page; }
+}
+/* 折線圖前測：資料表格、選項、畫圖題 */
+.dtable { width: auto; font-family: var(--font-q); font-size: 18px; margin: 0; }
+.dtable caption { font-weight: 700; margin-bottom: 4px; text-align: left; }
+.dtable th, .dtable td { text-align: center; padding: 4px 12px; min-width: 2.6em; }
+.choices { font-family: var(--font-q); font-size: 19px; margin: 2px 0 0; display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.choices > span::before { content: "□ "; }
+.draw { grid-column: 2; font-size: 16px; color: var(--muted); }
+/* 分數前測：直式分數（分子在上、分母在下） */
+.fr { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1.05; margin: 0 .12em; font-size: .9em; }
+.fr > span:first-child { border-bottom: 1.5px solid currentColor; padding: 0 .15em; }
+.fr-w { margin-right: .05em; }
+
+@media print { .teacher { display: block; } .teacher > * + * { margin-top: 14px; } .teacher h3 { break-after: avoid; } tr { break-inside: avoid; } th { white-space: nowrap; } .item { break-inside: avoid; } }</style></head><body><div class="wrap"><main class="sheet" id="v19">
+  <header class="sheet-head">
+    <div class="serial">卷號 <b>19</b></div>
+    <h1>分數前測</h1>
+    <div class="meta"><span>學生代號<i></i></span><span>日期<i></i></span><span>施測者<i></i></span></div>
+    <p class="note">一共 12 題，每個小題 1 分。二、三年級做第 1～4 題和第 12 題，四年級做第 1～8 題和第 12 題，五、六年級做全部。老師可以把每一句題目唸給學生聽。有單位的答案要寫單位。可以寫算式、畫圖，不限時間。</p>
+  </header>
+  <section class="item">
+  <header class="item-head"><span class="no">1</span><span class="tag tag-app">判斷</span><span class="unit-tag">單元 0</span></header>
+  <p class="stem">每一塊都一樣大，才是「平分」。</p>
+  <div class="fig"><figure class="fig-sub"><svg viewBox="0 0 308 52" width="308" height="52" role="img" aria-label="長條"><rect x="4.0" y="4" width="75.0" height="44" fill="#fff" stroke="#1d2b44" stroke-width="2"/><rect x="79.0" y="4" width="75.0" height="44" fill="#fff" stroke="#1d2b44" stroke-width="2"/><rect x="154.0" y="4" width="75.0" height="44" fill="#fff" stroke="#1d2b44" stroke-width="2"/><rect x="229.0" y="4" width="75.0" height="44" fill="#fff" stroke="#1d2b44" stroke-width="2"/></svg><figcaption>甲</figcaption></figure><figure class="fig-sub"><svg viewBox="0 0 308 52" width="308" height="52" role="img" aria-label="長條"><rect x="4.0" y="4" width="71.1" height="44" fill="#fff" stroke="#1d2b44" stroke-width="2"/><rect x="75.1" y="4" width="57.5" height="44" fill="#fff" stroke="#1d2b44" stroke-width="2"/><rect x="132.5" y="4" width="118.7" height="44" fill="#fff" stroke="#1d2b44" stroke-width="2"/><rect x="251.2" y="4" width="52.8" height="44" fill="#fff" stroke="#1d2b44" stroke-width="2"/></svg><figcaption>乙</figcaption></figure><figure class="fig-sub"><svg viewBox="-66 -66 132 132" width="132" height="132" role="img" aria-label="圓"><path d="M0 0L0.0 -60.0A60 60 0 0 1 60.0 -0.0Z" fill="#fff" stroke="#1d2b44" stroke-width="2"/><path d="M0 0L60.0 -0.0A60 60 0 0 1 0.0 60.0Z" fill="#fff" stroke="#1d2b44" stroke-width="2"/><path d="M0 0L0.0 60.0A60 60 0 0 1 -60.0 0.0Z" fill="#fff" stroke="#1d2b44" stroke-width="2"/><path d="M0 0L-60.0 0.0A60 60 0 0 1 -0.0 -60.0Z" fill="#fff" stroke="#1d2b44" stroke-width="2"/></svg><figcaption>丙</figcaption></figure><figure class="fig-sub"><svg viewBox="-66 -66 132 132" width="132" height="132" role="img" aria-label="圓"><path d="M0 0L0.0 -60.0A60 60 0 0 1 54.3 -25.5Z" fill="#fff" stroke="#1d2b44" stroke-width="2"/><path d="M0 0L54.3 -25.5A60 60 0 0 1 0.0 60.0Z" fill="#fff" stroke="#1d2b44" stroke-width="2"/><path d="M0 0L0.0 60.0A60 60 0 0 1 -54.3 -25.5Z" fill="#fff" stroke="#1d2b44" stroke-width="2"/><path d="M0 0L-54.3 -25.5A60 60 0 0 1 -0.0 -60.0Z" fill="#fff" stroke="#1d2b44" stroke-width="2"/></svg><figcaption>丁</figcaption></figure></div>
+  <ol class="subs"><li><span class="sub-no">(1)</span><span class="sub-q">甲、乙兩條吐司都切成 4 塊，哪一條是平分？<span class="choices"><span>甲</span><span>乙</span></span></span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(2)</span><span class="sub-q">丙、丁兩個蛋糕都切成 4 塊，哪一個是平分？<span class="choices"><span>丙</span><span>丁</span></span></span><span class="ans">答：<span class="blank"></span></span></li></ol>
+</section><section class="item">
+  <header class="item-head"><span class="no">2</span><span class="tag tag-calc">計算</span><span class="unit-tag">單元 1</span></header>
+  <p class="stem">回答下面的問題。</p>
+  <div class="fig"><figure class="fig-sub"><svg viewBox="0 0 308 52" width="308" height="52" role="img" aria-label="長條"><rect x="4.0" y="4" width="75.0" height="44" fill="#9fbde0" stroke="#1d2b44" stroke-width="2"/><rect x="79.0" y="4" width="75.0" height="44" fill="#fff" stroke="#1d2b44" stroke-width="2"/><rect x="154.0" y="4" width="75.0" height="44" fill="#fff" stroke="#1d2b44" stroke-width="2"/><rect x="229.0" y="4" width="75.0" height="44" fill="#fff" stroke="#1d2b44" stroke-width="2"/></svg><figcaption></figcaption></figure></div>
+  <ol class="subs"><li><span class="sub-no">(1)</span><span class="sub-q">塗色的 1 塊，是一整條的幾分之一？</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(2)</span><span class="sub-q">一張長方形色紙對摺 2 次再打開，一格是整張的幾分之一？</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(3)</span><span class="sub-q">一個蛋糕的「一半」，是幾分之一？<span class="choices"><span><span class="fr"><span>1</span><span>2</span></span></span><span><span class="fr"><span>1</span><span>3</span></span></span><span><span class="fr"><span>1</span><span>4</span></span></span></span></span><span class="ans">答：<span class="blank"></span></span></li></ol>
+</section><section class="item">
+  <header class="item-head"><span class="no">3</span><span class="tag tag-calc">計算</span><span class="unit-tag">單元 2</span></header>
+  <p class="stem">看圖回答。</p>
+  <div class="fig"><figure class="fig-sub"><svg viewBox="-66 -66 132 132" width="132" height="132" role="img" aria-label="圓"><path d="M0 0L0.0 -60.0A60 60 0 0 1 57.1 -18.5Z" fill="#9fbde0" stroke="#1d2b44" stroke-width="2"/><path d="M0 0L57.1 -18.5A60 60 0 0 1 35.3 48.5Z" fill="#9fbde0" stroke="#1d2b44" stroke-width="2"/><path d="M0 0L35.3 48.5A60 60 0 0 1 -35.3 48.5Z" fill="#9fbde0" stroke="#1d2b44" stroke-width="2"/><path d="M0 0L-35.3 48.5A60 60 0 0 1 -57.1 -18.5Z" fill="#fff" stroke="#1d2b44" stroke-width="2"/><path d="M0 0L-57.1 -18.5A60 60 0 0 1 -0.0 -60.0Z" fill="#fff" stroke="#1d2b44" stroke-width="2"/></svg><figcaption></figcaption></figure></div>
+  <ol class="subs"><li><span class="sub-no">(1)</span><span class="sub-q">塗色的部分是一個圓的幾分之幾？</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(2)</span><span class="sub-q"><span class="fr"><span>5</span><span>9</span></span> 是幾個 <span class="fr"><span>1</span><span>9</span></span>？</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(3)</span><span class="sub-q">圓上還要再塗幾分之幾，才是一整個？</span><span class="ans">答：<span class="blank"></span></span></li></ol>
+</section><section class="item">
+  <header class="item-head"><span class="no">4</span><span class="tag tag-calc">計算</span><span class="unit-tag">單元 3</span></header>
+  <p class="stem">比一比、算一算。</p>
+  <ol class="subs"><li><span class="sub-no">(1)</span><span class="sub-q"><span class="fr"><span>6</span><span>8</span></span> 和 <span class="fr"><span>3</span><span>8</span></span>，哪一個比較大？<span class="choices"><span><span class="fr"><span>6</span><span>8</span></span></span><span><span class="fr"><span>3</span><span>8</span></span></span><span>一樣大</span></span></span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(2)</span><span class="sub-q"><span class="fr"><span>1</span><span>5</span></span> ＋ <span class="fr"><span>3</span><span>5</span></span> ＝ □</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(3)</span><span class="sub-q">1 － <span class="fr"><span>2</span><span>4</span></span> ＝ □</span><span class="ans">答：<span class="blank"></span></span></li></ol>
+</section><section class="item">
+  <header class="item-head"><span class="no">5</span><span class="tag tag-calc">計算</span><span class="unit-tag">單元 4</span></header>
+  <p class="stem">真分數、假分數和帶分數。</p>
+  <ol class="subs"><li><span class="sub-no">(1)</span><span class="sub-q"><span class="fr"><span>10</span><span>3</span></span> 寫成帶分數是多少？</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(2)</span><span class="sub-q"><span class="fr-w">2</span><span class="fr"><span>3</span><span>4</span></span> 寫成假分數是多少？</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(3)</span><span class="sub-q"><span class="fr"><span>3</span><span>3</span></span> 是真分數還是假分數？<span class="choices"><span>真分數</span><span>假分數</span></span></span><span class="ans">答：<span class="blank"></span></span></li></ol>
+</section><section class="item">
+  <header class="item-head"><span class="no">6</span><span class="tag tag-calc">計算</span><span class="unit-tag">單元 5</span></header>
+  <p class="stem">算算看。</p>
+  <ol class="subs"><li><span class="sub-no">(1)</span><span class="sub-q"><span class="fr-w">1</span><span class="fr"><span>2</span><span>6</span></span> ＋ <span class="fr-w">1</span><span class="fr"><span>2</span><span>6</span></span> ＝ □</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(2)</span><span class="sub-q"><span class="fr-w">2</span><span class="fr"><span>3</span><span>7</span></span> － <span class="fr"><span>6</span><span>7</span></span> ＝ □</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(3)</span><span class="sub-q">小華每天喝 <span class="fr"><span>2</span><span>4</span></span> 瓶牛奶，3 天一共喝了幾瓶？</span><span class="ans">答：<span class="blank"></span></span></li></ol>
+</section><section class="item">
+  <header class="item-head"><span class="no">7</span><span class="tag tag-calc">計算</span><span class="unit-tag">單元 6</span></header>
+  <p class="stem">一樣大的分數。</p>
+  <ol class="subs"><li><span class="sub-no">(1)</span><span class="sub-q"><span class="fr"><span>1</span><span>2</span></span> ＝ <span class="fr"><span>□</span><span>6</span></span>，□ 是多少？</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(2)</span><span class="sub-q"><span class="fr"><span>2</span><span>3</span></span> ＝ <span class="fr"><span>4</span><span>□</span></span>，□ 是多少？</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(3)</span><span class="sub-q"><span class="fr"><span>1</span><span>2</span></span> 和 <span class="fr"><span>3</span><span>4</span></span>，哪一個比較大？<span class="choices"><span><span class="fr"><span>1</span><span>2</span></span></span><span><span class="fr"><span>3</span><span>4</span></span></span><span>一樣大</span></span></span><span class="ans">答：<span class="blank"></span></span></li></ol>
+</section><section class="item">
+  <header class="item-head"><span class="no">8</span><span class="tag tag-calc">計算</span><span class="unit-tag">單元 7</span></header>
+  <p class="stem">看數線回答；分數和小數。</p>
+  <div class="fig"><figure class="fig-sub"><svg viewBox="0 0 386 84" width="386" height="84" role="img" aria-label="數線"><path d="M20 40H364" stroke="#1d2b44" stroke-width="2"/><path d="M364 40l-8 -5v10z" fill="#1d2b44"/><path d="M30.0 28V52" stroke="#1d2b44" stroke-width="3"/><text x="30.0" y="72" text-anchor="middle" font-size="16" font-weight="700">0</text><path d="M83.3 33V47" stroke="#1d2b44" stroke-width="1.5"/><path d="M136.7 33V47" stroke="#1d2b44" stroke-width="1.5"/><path d="M190.0 28V52" stroke="#1d2b44" stroke-width="3"/><text x="190.0" y="72" text-anchor="middle" font-size="16" font-weight="700">1</text><path d="M243.3 33V47" stroke="#1d2b44" stroke-width="1.5"/><path d="M296.7 33V47" stroke="#1d2b44" stroke-width="1.5"/><path d="M350.0 28V52" stroke="#1d2b44" stroke-width="3"/><text x="350.0" y="72" text-anchor="middle" font-size="16" font-weight="700">2</text><path d="M243.3 6V24" stroke="#c2410c" stroke-width="3"/><path d="M243.3 28l-6 -9h12z" fill="#c2410c"/></svg><figcaption>箭頭指的位置</figcaption></figure></div>
+  <ol class="subs"><li><span class="sub-no">(1)</span><span class="sub-q">箭頭指的是多少？寫成分數。</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(2)</span><span class="sub-q"><span class="fr"><span>3</span><span>10</span></span> 寫成小數是多少？</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(3)</span><span class="sub-q">0.2 寫成分數是多少？</span><span class="ans">答：<span class="blank"></span></span></li></ol>
+</section><section class="item">
+  <header class="item-head"><span class="no">9</span><span class="tag tag-calc">計算</span><span class="unit-tag">單元 8</span></header>
+  <p class="stem">約分與異分母加減。答案要約成最簡分數。</p>
+  <ol class="subs"><li><span class="sub-no">(1)</span><span class="sub-q">把 <span class="fr"><span>3</span><span>12</span></span> 約成最簡分數。</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(2)</span><span class="sub-q"><span class="fr"><span>2</span><span>3</span></span> ＋ <span class="fr"><span>1</span><span>4</span></span> ＝ □</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(3)</span><span class="sub-q"><span class="fr"><span>5</span><span>6</span></span> － <span class="fr"><span>1</span><span>8</span></span> ＝ □</span><span class="ans">答：<span class="blank"></span></span></li></ol>
+</section><section class="item">
+  <header class="item-head"><span class="no">10</span><span class="tag tag-calc">計算</span><span class="unit-tag">單元 9</span></header>
+  <p class="stem">分數乘法。答案要約成最簡分數。</p>
+  <ol class="subs"><li><span class="sub-no">(1)</span><span class="sub-q">16 顆糖的 <span class="fr"><span>3</span><span>4</span></span> 是幾顆？</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(2)</span><span class="sub-q"><span class="fr"><span>2</span><span>5</span></span> × <span class="fr"><span>1</span><span>3</span></span> ＝ □</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(3)</span><span class="sub-q">8 × <span class="fr"><span>3</span><span>2</span></span> 的答案，比 8 大還是比 8 小？<span class="choices"><span>比 8 大</span><span>比 8 小</span></span></span><span class="ans">答：<span class="blank"></span></span></li></ol>
+</section><section class="item">
+  <header class="item-head"><span class="no">11</span><span class="tag tag-calc">計算</span><span class="unit-tag">單元 10</span></header>
+  <p class="stem">分數除法。答案要約成最簡分數。</p>
+  <ol class="subs"><li><span class="sub-no">(1)</span><span class="sub-q">3 個披薩平分給 4 個人，每人分到幾個披薩？寫成分數。</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(2)</span><span class="sub-q">4 ÷ <span class="fr"><span>1</span><span>2</span></span> ＝ □</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(3)</span><span class="sub-q"><span class="fr"><span>3</span><span>4</span></span> ÷ <span class="fr"><span>3</span><span>8</span></span> ＝ □</span><span class="ans">答：<span class="blank"></span></span></li></ol>
+</section><section class="item">
+  <header class="item-head"><span class="no">12</span><span class="tag tag-app">判斷</span><span class="unit-tag">單元 11</span></header>
+  <p class="stem">分數小幫手：生活裡的分數。</p>
+  <ol class="subs"><li><span class="sub-no">(1)</span><span class="sub-q">1 個披薩切成 6 片，3 個人平分。每人分到幾片？是幾分之幾個披薩？</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(2)</span><span class="sub-q">做 1 份鬆餅要 <span class="fr"><span>1</span><span>2</span></span> 杯牛奶。要做 2 份，要幾杯牛奶？</span><span class="ans">答：<span class="blank"></span></span></li><li><span class="sub-no">(3)</span><span class="sub-q">1 瓶果汁平分成 4 杯，已經喝了 1 杯。瓶子裡還剩幾分之幾瓶？</span><span class="ans">答：<span class="blank"></span></span></li></ol>
+</section>
+  <section class="teacher">
+    <h2>教師用：卷號 19 的答案與計分</h2>
+    <h3>計分規則</h3>
+    <ul>
+      <li>每個小題 1 分。有單位的題目，數字和單位都對才給分；選擇的題目寫字或打勾都可以。</li>
+      <li>分數答案：一樣大的分數都算對（例如 2/4 和 1/2），除非題目寫「約成最簡分數」；假分數和帶分數都算對。第 12(1) 題兩個空格都對才給分。</li>
+      <li>二、三年級做第 1～4 題（11 分）和第 12 題（3 分）；四年級做第 1～8 題（23 分）和第 12 題；五、六年級做全部（35 分）。第 12 題「分數小幫手」也可以留到教學後當類化探測。</li>
+    </ul>
+    <h3>答案</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>小題</th><th>答案</th><th>單元</th><th>測的概念、常見錯誤（括號是網站的觀察代碼）</th></tr></thead>
+      <tbody><tr><td class="num">1(1)</td><td>甲</td><td class="num">0</td><td>每一塊一樣大才是平分；只數塊數不看大小表示還沒有平分的概念（unequalOK）</td></tr><tr><td class="num">1(2)</td><td>丙</td><td class="num">0</td><td>同上；圓形也要每一塊一樣大</td></tr><tr><td class="num">2(1)</td><td>1/4</td><td class="num">1</td><td>全部平分成 4 份，1 份是 1/4；寫 1/3 表示分母寫成沒塗色的份數（partToPart）</td></tr><tr><td class="num">2(2)</td><td>1/4</td><td class="num">1</td><td>每摺一次格子變 2 倍，不是每次多 2 格</td></tr><tr><td class="num">2(3)</td><td>1/2</td><td class="num">1</td><td>一半就是平分成 2 份的 1 份</td></tr><tr><td class="num">3(1)</td><td>3/5</td><td class="num">2</td><td>分母寫全部 5 份、分子寫塗色 3 份；寫成 5/3 表示分子分母放反（numDenSwap），寫 3/2 表示部分比部分（partToPart）</td></tr><tr><td class="num">3(2)</td><td>5 個</td><td class="num">2</td><td>分子是幾，就是幾個幾分之一</td></tr><tr><td class="num">3(3)</td><td>2/5</td><td class="num">2</td><td>一整個是 5/5，還差 2 份</td></tr><tr><td class="num">4(1)</td><td>6/8</td><td class="num">3</td><td>分母一樣，分子大的比較大</td></tr><tr><td class="num">4(2)</td><td>4/5</td><td class="num">3</td><td>分母不變，分子相加；寫 4/10 表示分母也相加（addDen）</td></tr><tr><td class="num">4(3)</td><td>2/4</td><td class="num">3</td><td>1 ＝ 4/4，再減 2/4</td></tr><tr><td class="num">5(1)</td><td>3又1/3</td><td class="num">4</td><td>10 裡面有 3 個 3，還剩 1（mixedConvert）</td></tr><tr><td class="num">5(2)</td><td>11/4</td><td class="num">4</td><td>2 ＝ 8/4，再加 3/4；寫 5/4 表示整數直接加到分子（mixedConvert）</td></tr><tr><td class="num">5(3)</td><td>假分數</td><td class="num">4</td><td>分子比分母小是真分數；分子等於或大於分母是假分數</td></tr><tr><td class="num">6(1)</td><td>2又2/3</td><td class="num">5</td><td>整數加整數、分數加分數</td></tr><tr><td class="num">6(2)</td><td>1又4/7</td><td class="num">5</td><td>分子 3 不夠減 6，要拿 1 個整數換成 7/7（borrowWhole）</td></tr><tr><td class="num">6(3)</td><td>1又1/2 瓶（或 6/4 瓶）</td><td class="num">5</td><td>3 個 2/4，分子 × 3、分母不變；分母也乘表示整數倍算錯</td></tr><tr><td class="num">7(1)</td><td>3</td><td class="num">6</td><td>分母乘 3，分子也要乘 3；寫 5 表示加同一個數（equivAdd）</td></tr><tr><td class="num">7(2)</td><td>6</td><td class="num">6</td><td>分子乘 2，分母也乘 2（equivAdd）</td></tr><tr><td class="num">7(3)</td><td>3/4</td><td class="num">6</td><td>先把 1/2 換成分母 4；以為分母大的就大表示 bigDenBig</td></tr><tr><td class="num">8(1)</td><td>1又1/3（或 4/3）</td><td class="num">7</td><td>0 到 1 分成 3 段，數「段」不數刻度線；寫成 4/4 表示數了刻度線（countTicks）</td></tr><tr><td class="num">8(2)</td><td>0.3</td><td class="num">7</td><td>3 個 0.1；寫 0.03 或 3.0 表示小數點位置錯（fracDecDigit）</td></tr><tr><td class="num">8(3)</td><td>1/5（或 2/10）</td><td class="num">7</td><td>一位小數是十分之幾，可以再約分</td></tr><tr><td class="num">9(1)</td><td>1/4</td><td class="num">8</td><td>分子分母同除以 3；沒有除到最簡記 notSimplest</td></tr><tr><td class="num">9(2)</td><td>11/12</td><td class="num">8</td><td>先通分；寫 3/7 表示分子分母各自相加（addAcross）</td></tr><tr><td class="num">9(3)</td><td>17/24</td><td class="num">8</td><td>公分母用 24，分母直接相乘也可以但要約分（denProduct、notSimplest）</td></tr><tr><td class="num">10(1)</td><td>12 顆</td><td class="num">9</td><td>先分成 4 份，一份 4 顆，再拿 3 份</td></tr><tr><td class="num">10(2)</td><td>2/15</td><td class="num">9</td><td>分子乘分子、分母乘分母，再約分</td></tr><tr><td class="num">10(3)</td><td>比 8 大</td><td class="num">9</td><td>乘以比 1 大的數，答案變大；乘以比 1 小的數，答案變小；以為乘法一定變大記 multBigger</td></tr><tr><td class="num">11(1)</td><td>3/4 個</td><td class="num">10</td><td>3 ÷ 4 ＝ 3/4；寫成 4/3 表示被除數、除數放反</td></tr><tr><td class="num">11(2)</td><td>8</td><td class="num">10</td><td>4 裡面有幾個 1/2；寫 4/2 表示乘除弄反（divFlipWrong）</td></tr><tr><td class="num">11(3)</td><td>2</td><td class="num">10</td><td>乘以除數的倒數；顛倒成被除數的倒數記 divFlipWrong</td></tr><tr><td class="num">12(1)</td><td>2 片，1/3 個（或 2/6 個）</td><td class="num">11</td><td>整體是 1 個披薩；兩個空格都對才給分（wrongWhole）</td></tr><tr><td class="num">12(2)</td><td>1 杯</td><td class="num">11</td><td>2 個 1/2 杯，食譜加倍</td></tr><tr><td class="num">12(3)</td><td>3/4 瓶</td><td class="num">11</td><td>整瓶是 4/4；寫 1/4 表示答成喝掉的部分</td></tr></tbody>
+    </table></div>
+    <h3>各單元得分與篩選</h3>
+    <p>答對率未達 80% 的單元算「還沒學會」。依單元順序，選最前面 3 個還沒學會的單元進行教學；少於 3 個的學生不列入。單元 0 還沒學會的學生，網站上先做 0-1、0-2。網站路徑：二、三年級用「入門版」，四年級用「四年級版」，五、六年級用「五六年級版」，單元 11 用「分數小幫手」。</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>單元</th><th>計分小題</th><th>滿分</th><th>還沒學會</th><th>得分</th></tr></thead>
+      <tbody><tr><td>0 準備好了嗎（平分）</td><td>1(1)、1(2)</td><td class="num">2</td><td class="num">1 分以下</td><td class="score"></td></tr><tr><td>1 平分與幾分之一</td><td>2(1)、2(2)、2(3)</td><td class="num">3</td><td class="num">2 分以下</td><td class="score"></td></tr><tr><td>2 幾分之幾</td><td>3(1)、3(2)、3(3)</td><td class="num">3</td><td class="num">2 分以下</td><td class="score"></td></tr><tr><td>3 同分母比大小與加減（三年級）</td><td>4(1)、4(2)、4(3)</td><td class="num">3</td><td class="num">2 分以下</td><td class="score"></td></tr><tr><td>4 真分數、假分數、帶分數（四年級）</td><td>5(1)、5(2)、5(3)</td><td class="num">3</td><td class="num">2 分以下</td><td class="score"></td></tr><tr><td>5 同分母加減與整數倍（四年級）</td><td>6(1)、6(2)、6(3)</td><td class="num">3</td><td class="num">2 分以下</td><td class="score"></td></tr><tr><td>6 等值分數（四年級）</td><td>7(1)、7(2)、7(3)</td><td class="num">3</td><td class="num">2 分以下</td><td class="score"></td></tr><tr><td>7 數線、分數和小數（四年級）</td><td>8(1)、8(2)、8(3)</td><td class="num">3</td><td class="num">2 分以下</td><td class="score"></td></tr><tr><td>8 擴分、約分與異分母加減（五年級）</td><td>9(1)、9(2)、9(3)</td><td class="num">3</td><td class="num">2 分以下</td><td class="score"></td></tr><tr><td>9 分數乘法（五年級）</td><td>10(1)、10(2)、10(3)</td><td class="num">3</td><td class="num">2 分以下</td><td class="score"></td></tr><tr><td>10 整數相除與分數除法（五、六年級）</td><td>11(1)、11(2)、11(3)</td><td class="num">3</td><td class="num">2 分以下</td><td class="score"></td></tr><tr><td>11 分數小幫手</td><td>12(1)、12(2)、12(3)</td><td class="num">3</td><td class="num">2 分以下</td><td class="score"></td></tr></tbody>
+    </table></div>
+  </section>
+</main></div></body></html>
