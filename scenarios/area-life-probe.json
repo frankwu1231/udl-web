@@ -1,0 +1,1359 @@
+{
+  "id": "areaLifeProbe",
+  "version": "1",
+  "kind": "probe",
+  "package": "area",
+  "variant": "life",
+  "title": "面積小測驗：家裡的小設計師（生活應用）",
+  "itemSecs": 150,
+  "totalSecs": 1500,
+  "forms": [
+    {
+      "id": "A",
+      "items": [
+        {
+          "id": "A01",
+          "type": "lifeMat",
+          "prompt": "社團教室是長方形，長 7 公尺、寬 3 公尺。要鋪滿地毯，一片是 1 平方公尺，一箱有 4 片。至少要買幾箱？",
+          "figure": {
+            "cols": 7,
+            "rows": 3,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                7,
+                3
+              ]
+            ],
+            "labels": [
+              {
+                "x": 3.5,
+                "y": -0.2,
+                "text": "7 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 1.7,
+                "text": "3 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "need",
+              "label": "鋪滿要幾片",
+              "role": "measure",
+              "input": "number",
+              "answer": 21
+            },
+            {
+              "key": "box",
+              "label": "至少要買幾箱",
+              "role": "answer",
+              "input": "number",
+              "answer": 6
+            }
+          ]
+        },
+        {
+          "id": "A02",
+          "type": "lifeMat",
+          "prompt": "陽台是長方形，長 4 公尺、寬 3 公尺。要鋪滿止滑墊，一片是 1 平方公尺，一箱有 5 片。至少要買幾箱？",
+          "figure": {
+            "cols": 4,
+            "rows": 3,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                4,
+                3
+              ]
+            ],
+            "labels": [
+              {
+                "x": 2,
+                "y": -0.2,
+                "text": "4 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 1.7,
+                "text": "3 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "need",
+              "label": "鋪滿要幾片",
+              "role": "measure",
+              "input": "number",
+              "answer": 12
+            },
+            {
+              "key": "box",
+              "label": "至少要買幾箱",
+              "role": "answer",
+              "input": "number",
+              "answer": 3
+            }
+          ]
+        },
+        {
+          "id": "A03",
+          "type": "lifeMat",
+          "prompt": "樂樂的房間是長方形，長 6 公尺、寬 3 公尺。要鋪滿木地板，一片是 1 平方公尺，一箱有 6 片。至少要買幾箱？",
+          "figure": {
+            "cols": 6,
+            "rows": 3,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                6,
+                3
+              ]
+            ],
+            "labels": [
+              {
+                "x": 3,
+                "y": -0.2,
+                "text": "6 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 1.7,
+                "text": "3 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "need",
+              "label": "鋪滿要幾片",
+              "role": "measure",
+              "input": "number",
+              "answer": 18
+            },
+            {
+              "key": "box",
+              "label": "至少要買幾箱",
+              "role": "answer",
+              "input": "number",
+              "answer": 3
+            }
+          ]
+        },
+        {
+          "id": "A04",
+          "type": "lifeBorder",
+          "prompt": "門口的地墊是長方形，長 7 公尺、寬 2 公尺。要整面貼滿防水布，要幾平方公尺？",
+          "figure": {
+            "cols": 7,
+            "rows": 2,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                7,
+                2
+              ]
+            ],
+            "labels": [
+              {
+                "x": 3.5,
+                "y": -0.2,
+                "text": "7 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 1.2,
+                "text": "2 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要算周長還是面積",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "周長",
+                "面積"
+              ],
+              "answer": "面積"
+            },
+            {
+              "key": "ans",
+              "label": "要幾平方公尺",
+              "role": "answer",
+              "input": "number",
+              "answer": 14
+            }
+          ]
+        },
+        {
+          "id": "A05",
+          "type": "lifeBorder",
+          "prompt": "花圃是長方形，長 7 公尺、寬 3 公尺。要沿著四周圍一圈花邊，花邊要幾公尺？",
+          "figure": {
+            "cols": 7,
+            "rows": 3,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                7,
+                3
+              ]
+            ],
+            "labels": [
+              {
+                "x": 3.5,
+                "y": -0.2,
+                "text": "7 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 1.7,
+                "text": "3 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要算周長還是面積",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "周長",
+                "面積"
+              ],
+              "answer": "周長"
+            },
+            {
+              "key": "ans",
+              "label": "花邊要幾公尺",
+              "role": "answer",
+              "input": "number",
+              "answer": 20
+            }
+          ]
+        },
+        {
+          "id": "A06",
+          "type": "lifeBorder",
+          "prompt": "班級的黑板是長方形，長 7 公尺、寬 5 公尺。要沿著四周圍一圈花邊，花邊要幾公尺？",
+          "figure": {
+            "cols": 7,
+            "rows": 5,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                7,
+                5
+              ]
+            ],
+            "labels": [
+              {
+                "x": 3.5,
+                "y": -0.2,
+                "text": "7 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 2.7,
+                "text": "5 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要算周長還是面積",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "周長",
+                "面積"
+              ],
+              "answer": "周長"
+            },
+            {
+              "key": "ans",
+              "label": "花邊要幾公尺",
+              "role": "answer",
+              "input": "number",
+              "answer": 24
+            }
+          ]
+        },
+        {
+          "id": "A07",
+          "type": "lifeRoom",
+          "prompt": "兩間教室要選一間地板比較大的。甲：長 7 公尺、寬 2 公尺；乙：長 5 公尺、寬 3 公尺。",
+          "steps": [
+            {
+              "key": "a",
+              "label": "甲是幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 14
+            },
+            {
+              "key": "b",
+              "label": "乙是幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 15
+            },
+            {
+              "key": "pick",
+              "label": "選哪一間",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "甲",
+                "乙"
+              ],
+              "answer": "乙"
+            }
+          ]
+        },
+        {
+          "id": "A08",
+          "type": "lifeRoom",
+          "prompt": "兩間教室要選一間地板比較大的。甲：長 6 公尺、寬 3 公尺；乙：長 8 公尺、寬 2 公尺。",
+          "steps": [
+            {
+              "key": "a",
+              "label": "甲是幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 18
+            },
+            {
+              "key": "b",
+              "label": "乙是幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 16
+            },
+            {
+              "key": "pick",
+              "label": "選哪一間",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "甲",
+                "乙"
+              ],
+              "answer": "甲"
+            }
+          ]
+        },
+        {
+          "id": "A09",
+          "type": "lifeGarden",
+          "prompt": "社區花園是長方形，長 5 公尺、寬 6 公尺，要平分給 2 戶人家。每戶分到幾平方公尺？",
+          "figure": {
+            "cols": 5,
+            "rows": 6,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                5,
+                6
+              ]
+            ],
+            "labels": [
+              {
+                "x": 2.5,
+                "y": -0.2,
+                "text": "5 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 3.2,
+                "text": "6 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "all",
+              "label": "整個花園幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 30
+            },
+            {
+              "key": "each",
+              "label": "每戶幾平方公尺",
+              "role": "answer",
+              "input": "number",
+              "answer": 15
+            }
+          ]
+        },
+        {
+          "id": "A10",
+          "type": "lifeGarden",
+          "prompt": "社區花園是長方形，長 4 公尺、寬 6 公尺，要平分給 2 戶人家。每戶分到幾平方公尺？",
+          "figure": {
+            "cols": 4,
+            "rows": 6,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                4,
+                6
+              ]
+            ],
+            "labels": [
+              {
+                "x": 2,
+                "y": -0.2,
+                "text": "4 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 3.2,
+                "text": "6 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "all",
+              "label": "整個花園幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 24
+            },
+            {
+              "key": "each",
+              "label": "每戶幾平方公尺",
+              "role": "answer",
+              "input": "number",
+              "answer": 12
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "items": [
+        {
+          "id": "B01",
+          "type": "lifeMat",
+          "prompt": "陽台是長方形，長 7 公尺、寬 4 公尺。要鋪滿止滑墊，一片是 1 平方公尺，一箱有 6 片。至少要買幾箱？",
+          "figure": {
+            "cols": 7,
+            "rows": 4,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                7,
+                4
+              ]
+            ],
+            "labels": [
+              {
+                "x": 3.5,
+                "y": -0.2,
+                "text": "7 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 2.2,
+                "text": "4 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "need",
+              "label": "鋪滿要幾片",
+              "role": "measure",
+              "input": "number",
+              "answer": 28
+            },
+            {
+              "key": "box",
+              "label": "至少要買幾箱",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "B02",
+          "type": "lifeMat",
+          "prompt": "樂樂的房間是長方形，長 6 公尺、寬 3 公尺。要鋪滿木地板，一片是 1 平方公尺，一箱有 4 片。至少要買幾箱？",
+          "figure": {
+            "cols": 6,
+            "rows": 3,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                6,
+                3
+              ]
+            ],
+            "labels": [
+              {
+                "x": 3,
+                "y": -0.2,
+                "text": "6 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 1.7,
+                "text": "3 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "need",
+              "label": "鋪滿要幾片",
+              "role": "measure",
+              "input": "number",
+              "answer": 18
+            },
+            {
+              "key": "box",
+              "label": "至少要買幾箱",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "B03",
+          "type": "lifeMat",
+          "prompt": "社團教室是長方形，長 6 公尺、寬 5 公尺。要鋪滿地毯，一片是 1 平方公尺，一箱有 5 片。至少要買幾箱？",
+          "figure": {
+            "cols": 6,
+            "rows": 5,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                6,
+                5
+              ]
+            ],
+            "labels": [
+              {
+                "x": 3,
+                "y": -0.2,
+                "text": "6 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 2.7,
+                "text": "5 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "need",
+              "label": "鋪滿要幾片",
+              "role": "measure",
+              "input": "number",
+              "answer": 30
+            },
+            {
+              "key": "box",
+              "label": "至少要買幾箱",
+              "role": "answer",
+              "input": "number",
+              "answer": 6
+            }
+          ]
+        },
+        {
+          "id": "B04",
+          "type": "lifeBorder",
+          "prompt": "花圃是長方形，長 6 公尺、寬 3 公尺。要沿著四周圍一圈花邊，花邊要幾公尺？",
+          "figure": {
+            "cols": 6,
+            "rows": 3,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                6,
+                3
+              ]
+            ],
+            "labels": [
+              {
+                "x": 3,
+                "y": -0.2,
+                "text": "6 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 1.7,
+                "text": "3 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要算周長還是面積",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "周長",
+                "面積"
+              ],
+              "answer": "周長"
+            },
+            {
+              "key": "ans",
+              "label": "花邊要幾公尺",
+              "role": "answer",
+              "input": "number",
+              "answer": 18
+            }
+          ]
+        },
+        {
+          "id": "B05",
+          "type": "lifeBorder",
+          "prompt": "班級的黑板是長方形，長 5 公尺、寬 4 公尺。要沿著四周圍一圈花邊，花邊要幾公尺？",
+          "figure": {
+            "cols": 5,
+            "rows": 4,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                5,
+                4
+              ]
+            ],
+            "labels": [
+              {
+                "x": 2.5,
+                "y": -0.2,
+                "text": "5 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 2.2,
+                "text": "4 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要算周長還是面積",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "周長",
+                "面積"
+              ],
+              "answer": "周長"
+            },
+            {
+              "key": "ans",
+              "label": "花邊要幾公尺",
+              "role": "answer",
+              "input": "number",
+              "answer": 18
+            }
+          ]
+        },
+        {
+          "id": "B06",
+          "type": "lifeBorder",
+          "prompt": "門口的地墊是長方形，長 4 公尺、寬 3 公尺。要整面貼滿防水布，要幾平方公尺？",
+          "figure": {
+            "cols": 4,
+            "rows": 3,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                4,
+                3
+              ]
+            ],
+            "labels": [
+              {
+                "x": 2,
+                "y": -0.2,
+                "text": "4 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 1.7,
+                "text": "3 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要算周長還是面積",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "周長",
+                "面積"
+              ],
+              "answer": "面積"
+            },
+            {
+              "key": "ans",
+              "label": "要幾平方公尺",
+              "role": "answer",
+              "input": "number",
+              "answer": 12
+            }
+          ]
+        },
+        {
+          "id": "B07",
+          "type": "lifeRoom",
+          "prompt": "兩間教室要選一間地板比較大的。甲：長 8 公尺、寬 2 公尺；乙：長 5 公尺、寬 4 公尺。",
+          "steps": [
+            {
+              "key": "a",
+              "label": "甲是幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 16
+            },
+            {
+              "key": "b",
+              "label": "乙是幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "pick",
+              "label": "選哪一間",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "甲",
+                "乙"
+              ],
+              "answer": "乙"
+            }
+          ]
+        },
+        {
+          "id": "B08",
+          "type": "lifeRoom",
+          "prompt": "兩間教室要選一間地板比較大的。甲：長 8 公尺、寬 2 公尺；乙：長 5 公尺、寬 4 公尺。",
+          "steps": [
+            {
+              "key": "a",
+              "label": "甲是幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 16
+            },
+            {
+              "key": "b",
+              "label": "乙是幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 20
+            },
+            {
+              "key": "pick",
+              "label": "選哪一間",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "甲",
+                "乙"
+              ],
+              "answer": "乙"
+            }
+          ]
+        },
+        {
+          "id": "B09",
+          "type": "lifeGarden",
+          "prompt": "社區花園是長方形，長 4 公尺、寬 6 公尺，要平分給 3 戶人家。每戶分到幾平方公尺？",
+          "figure": {
+            "cols": 4,
+            "rows": 6,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                4,
+                6
+              ]
+            ],
+            "labels": [
+              {
+                "x": 2,
+                "y": -0.2,
+                "text": "4 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 3.2,
+                "text": "6 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "all",
+              "label": "整個花園幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 24
+            },
+            {
+              "key": "each",
+              "label": "每戶幾平方公尺",
+              "role": "answer",
+              "input": "number",
+              "answer": 8
+            }
+          ]
+        },
+        {
+          "id": "B10",
+          "type": "lifeGarden",
+          "prompt": "社區花園是長方形，長 4 公尺、寬 3 公尺，要平分給 6 戶人家。每戶分到幾平方公尺？",
+          "figure": {
+            "cols": 4,
+            "rows": 3,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                4,
+                3
+              ]
+            ],
+            "labels": [
+              {
+                "x": 2,
+                "y": -0.2,
+                "text": "4 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 1.7,
+                "text": "3 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "all",
+              "label": "整個花園幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 12
+            },
+            {
+              "key": "each",
+              "label": "每戶幾平方公尺",
+              "role": "answer",
+              "input": "number",
+              "answer": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "items": [
+        {
+          "id": "C01",
+          "type": "lifeMat",
+          "prompt": "樂樂的房間是長方形，長 7 公尺、寬 3 公尺。要鋪滿木地板，一片是 1 平方公尺，一箱有 6 片。至少要買幾箱？",
+          "figure": {
+            "cols": 7,
+            "rows": 3,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                7,
+                3
+              ]
+            ],
+            "labels": [
+              {
+                "x": 3.5,
+                "y": -0.2,
+                "text": "7 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 1.7,
+                "text": "3 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "need",
+              "label": "鋪滿要幾片",
+              "role": "measure",
+              "input": "number",
+              "answer": 21
+            },
+            {
+              "key": "box",
+              "label": "至少要買幾箱",
+              "role": "answer",
+              "input": "number",
+              "answer": 4
+            }
+          ]
+        },
+        {
+          "id": "C02",
+          "type": "lifeMat",
+          "prompt": "社團教室是長方形，長 6 公尺、寬 4 公尺。要鋪滿地毯，一片是 1 平方公尺，一箱有 5 片。至少要買幾箱？",
+          "figure": {
+            "cols": 6,
+            "rows": 4,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                6,
+                4
+              ]
+            ],
+            "labels": [
+              {
+                "x": 3,
+                "y": -0.2,
+                "text": "6 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 2.2,
+                "text": "4 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "need",
+              "label": "鋪滿要幾片",
+              "role": "measure",
+              "input": "number",
+              "answer": 24
+            },
+            {
+              "key": "box",
+              "label": "至少要買幾箱",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        },
+        {
+          "id": "C03",
+          "type": "lifeMat",
+          "prompt": "陽台是長方形，長 6 公尺、寬 5 公尺。要鋪滿止滑墊，一片是 1 平方公尺，一箱有 5 片。至少要買幾箱？",
+          "figure": {
+            "cols": 6,
+            "rows": 5,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                6,
+                5
+              ]
+            ],
+            "labels": [
+              {
+                "x": 3,
+                "y": -0.2,
+                "text": "6 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 2.7,
+                "text": "5 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "need",
+              "label": "鋪滿要幾片",
+              "role": "measure",
+              "input": "number",
+              "answer": 30
+            },
+            {
+              "key": "box",
+              "label": "至少要買幾箱",
+              "role": "answer",
+              "input": "number",
+              "answer": 6
+            }
+          ]
+        },
+        {
+          "id": "C04",
+          "type": "lifeBorder",
+          "prompt": "班級的黑板是長方形，長 8 公尺、寬 4 公尺。要沿著四周圍一圈花邊，花邊要幾公尺？",
+          "figure": {
+            "cols": 8,
+            "rows": 4,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                8,
+                4
+              ]
+            ],
+            "labels": [
+              {
+                "x": 4,
+                "y": -0.2,
+                "text": "8 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 2.2,
+                "text": "4 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要算周長還是面積",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "周長",
+                "面積"
+              ],
+              "answer": "周長"
+            },
+            {
+              "key": "ans",
+              "label": "花邊要幾公尺",
+              "role": "answer",
+              "input": "number",
+              "answer": 24
+            }
+          ]
+        },
+        {
+          "id": "C05",
+          "type": "lifeBorder",
+          "prompt": "門口的地墊是長方形，長 5 公尺、寬 3 公尺。要整面貼滿防水布，要幾平方公尺？",
+          "figure": {
+            "cols": 5,
+            "rows": 3,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                5,
+                3
+              ]
+            ],
+            "labels": [
+              {
+                "x": 2.5,
+                "y": -0.2,
+                "text": "5 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 1.7,
+                "text": "3 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要算周長還是面積",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "周長",
+                "面積"
+              ],
+              "answer": "面積"
+            },
+            {
+              "key": "ans",
+              "label": "要幾平方公尺",
+              "role": "answer",
+              "input": "number",
+              "answer": 15
+            }
+          ]
+        },
+        {
+          "id": "C06",
+          "type": "lifeBorder",
+          "prompt": "花圃是長方形，長 4 公尺、寬 3 公尺。要沿著四周圍一圈花邊，花邊要幾公尺？",
+          "figure": {
+            "cols": 4,
+            "rows": 3,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                4,
+                3
+              ]
+            ],
+            "labels": [
+              {
+                "x": 2,
+                "y": -0.2,
+                "text": "4 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 1.7,
+                "text": "3 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "kind",
+              "label": "要算周長還是面積",
+              "role": "part",
+              "input": "choice",
+              "options": [
+                "周長",
+                "面積"
+              ],
+              "answer": "周長"
+            },
+            {
+              "key": "ans",
+              "label": "花邊要幾公尺",
+              "role": "answer",
+              "input": "number",
+              "answer": 14
+            }
+          ]
+        },
+        {
+          "id": "C07",
+          "type": "lifeRoom",
+          "prompt": "兩間教室要選一間地板比較大的。甲：長 4 公尺、寬 4 公尺；乙：長 7 公尺、寬 2 公尺。",
+          "steps": [
+            {
+              "key": "a",
+              "label": "甲是幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 16
+            },
+            {
+              "key": "b",
+              "label": "乙是幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 14
+            },
+            {
+              "key": "pick",
+              "label": "選哪一間",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "甲",
+                "乙"
+              ],
+              "answer": "甲"
+            }
+          ]
+        },
+        {
+          "id": "C08",
+          "type": "lifeRoom",
+          "prompt": "兩間教室要選一間地板比較大的。甲：長 8 公尺、寬 3 公尺；乙：長 5 公尺、寬 5 公尺。",
+          "steps": [
+            {
+              "key": "a",
+              "label": "甲是幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 24
+            },
+            {
+              "key": "b",
+              "label": "乙是幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 25
+            },
+            {
+              "key": "pick",
+              "label": "選哪一間",
+              "role": "answer",
+              "input": "choice",
+              "options": [
+                "甲",
+                "乙"
+              ],
+              "answer": "乙"
+            }
+          ]
+        },
+        {
+          "id": "C09",
+          "type": "lifeGarden",
+          "prompt": "社區花園是長方形，長 4 公尺、寬 2 公尺，要平分給 4 戶人家。每戶分到幾平方公尺？",
+          "figure": {
+            "cols": 4,
+            "rows": 2,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                4,
+                2
+              ]
+            ],
+            "labels": [
+              {
+                "x": 2,
+                "y": -0.2,
+                "text": "4 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 1.2,
+                "text": "2 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "all",
+              "label": "整個花園幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 8
+            },
+            {
+              "key": "each",
+              "label": "每戶幾平方公尺",
+              "role": "answer",
+              "input": "number",
+              "answer": 2
+            }
+          ]
+        },
+        {
+          "id": "C10",
+          "type": "lifeGarden",
+          "prompt": "社區花園是長方形，長 5 公尺、寬 2 公尺，要平分給 2 戶人家。每戶分到幾平方公尺？",
+          "figure": {
+            "cols": 5,
+            "rows": 2,
+            "grid": true,
+            "rects": [
+              [
+                0,
+                0,
+                5,
+                2
+              ]
+            ],
+            "labels": [
+              {
+                "x": 2.5,
+                "y": -0.2,
+                "text": "5 公尺"
+              },
+              {
+                "x": -1.2,
+                "y": 1.2,
+                "text": "2 公尺"
+              }
+            ]
+          },
+          "steps": [
+            {
+              "key": "all",
+              "label": "整個花園幾平方公尺",
+              "role": "measure",
+              "input": "number",
+              "answer": 10
+            },
+            {
+              "key": "each",
+              "label": "每戶幾平方公尺",
+              "role": "answer",
+              "input": "number",
+              "answer": 5
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

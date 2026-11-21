@@ -4,6 +4,8 @@
 // 五、六年級都做；8 個單元（0～7）、20 個活動；「找因數」「找公因數公倍數」兩套七步驟（1-3、3-2 是核心），六年級另有短除。
 // 入門 24 以內、一般 50 以內、挑戰 100 以內；入門和一般可以開九九乘法表；單元 5「分清楚」獨立；單元 0 當先測。
 // 課綱（已對照教育部數學領綱原文）：N-5-3（五年級只學意義，不用短除法）、N-6-1、N-6-2；學習表現 n-III-3；先備 N-2-7、N-3-4；後續 N-5-4。
+// 第 34 版：新增跨領域單元 8「分組分裝小幫手」（act-life2.js）。跨領域代碼依 Codex 查證：綜合 2b-Ⅲ-1（團體合作）；
+// 特生K-sP-5 購物的流程與技巧；特生4-sP-4 能解決日常生活的問題。8-4 依 Codex 建議改成值日輪流（不排照顧動植物的固定週期），只標數學代碼。
 (() => {
   const UNITS = [
     { id: 'f0', title: '準備好了嗎（先測）', icon: '🧭', code: 'N-2-7、N-3-4' },
@@ -13,7 +15,8 @@
     { id: 'f4', title: '公倍數', icon: '🚌', code: 'N-5-3' },
     { id: 'f5', title: '分清楚：公因數還是公倍數', icon: '🤔', code: 'N-5-3、n-III-3' },
     { id: 'f6', title: '質數與質因數分解（六年級）', icon: '💎', code: 'N-6-1' },
-    { id: 'f7', title: '短除法與約分通分（六年級）', icon: '🪜', code: 'N-6-2、N-5-4' }
+    { id: 'f7', title: '短除法與約分通分（六年級）', icon: '🪜', code: 'N-6-2、N-5-4' },
+    { id: 'f8', title: '分組分裝小幫手（生活應用）', icon: '🛍️', code: 'N-5-3、綜合2b-Ⅲ-1、特生K-sP-5' }
   ];
   const LIST = [
     { id: 'fmTimes', unit: 'f0', no: '0-1', title: '乘法表找一找', code: 'N-2-7', icon: '✖️', kind: 'plugin', pretest: true },
@@ -35,18 +38,26 @@
     { id: 'fmPrimeDiv', unit: 'f6', no: '6-3', title: '短除分解', code: 'N-6-1', icon: '🪜', kind: 'plugin' },
     { id: 'fmShortDiv', unit: 'f7', no: '7-1', title: '短除找最大公因數和最小公倍數', code: 'N-6-2', icon: '🪜', kind: 'plugin' },
     { id: 'fmCoprime', unit: 'f7', no: '7-2', title: '互質', code: 'N-6-2', icon: '🙌', kind: 'plugin' },
-    { id: 'fmSimplify', unit: 'f7', no: '7-3', title: '約分與通分', code: 'N-6-2、N-5-4', icon: '🍰', kind: 'plugin' }
+    { id: 'fmSimplify', unit: 'f7', no: '7-3', title: '約分與通分', code: 'N-6-2、N-5-4', icon: '🍰', kind: 'plugin' },
+    { id: 'fmGroup', unit: 'f8', no: '8-1', title: '分組一樣多', code: 'N-5-3、綜合2b-Ⅲ-1', icon: '🙋', kind: 'plugin' },
+    { id: 'fmPack', unit: 'f8', no: '8-2', title: '生活決策五步：一包幾個要買幾包', code: 'N-5-3、特生K-sP-5', icon: '🛒', kind: 'plugin', core: true },
+    { id: 'fmBags', unit: 'f8', no: '8-3', title: '分裝禮物袋', code: 'N-5-3、綜合2b-Ⅲ-1、特生4-sP-4', icon: '🛍️', kind: 'plugin' },
+    { id: 'fmDuty', unit: 'f8', no: '8-4', title: '值日輪流：哪天又碰在一起', code: 'N-5-3', icon: '📚', kind: 'plugin' },
+    { id: 'fmDesk', unit: 'f8', no: '8-5', title: '桌子排成長方形', code: 'N-5-3、綜合2b-Ⅲ-1', icon: '🪑', kind: 'plugin' }
   ];
-  const g5 = ['fmTimes', 'fmShare', 'fmArray', 'fmIsFactor', 'fmFactors', 'fmSkip', 'fmIsMult', 'fmPair', 'fmShareTwo', 'fmGcd', 'fmMeet', 'fmLcm', 'fmWhich', 'fmMixed'];
+  const g5 = ['fmTimes', 'fmShare', 'fmArray', 'fmIsFactor', 'fmFactors', 'fmSkip', 'fmIsMult', 'fmPair', 'fmShareTwo', 'fmGcd', 'fmMeet', 'fmLcm', 'fmWhich', 'fmMixed', 'fmGroup', 'fmPack', 'fmBags', 'fmDuty', 'fmDesk'];
   const PATHS = {
     grade5: { title: '五年級版（因數、倍數、公因數、公倍數）', ids: g5 },
     grade6: { title: '六年級版（複習，再學質數和短除）', ids: ['fmFactors', 'fmGcd', 'fmLcm', 'fmWhich', 'fmPrime', 'fmTest235', 'fmPrimeDiv', 'fmShortDiv', 'fmCoprime', 'fmSimplify'] },
+    life: { title: '分組分裝小幫手（生活應用，可當類化探測）', ids: ['fmGroup', 'fmPack', 'fmBags', 'fmDuty', 'fmDesk'] },
     all: { title: '全部', ids: LIST.map(a => a.id) }
   };
   // 探試題組：五年級、六年級各一份，各 10 題。題組 JSON 寫 "package": "factor"、"variant": "g5" 或 "g6"
   const PROBE_VARIANTS = {
     g5: { isFactor: 1, factors: 2, isMult: 1, pairWord: 1, gcd: 1, lcm: 1, which: 2, apply: 1 },
-    g6: { prime: 2, test235: 1, primeDiv: 2, gcd: 2, lcm: 2, simplify: 1 }
+    g6: { prime: 2, test235: 1, primeDiv: 2, gcd: 2, lcm: 2, simplify: 1 },
+    // 第 34 版：生活應用題組
+    life: { lifeGroup: 2, lifePack: 3, lifeBags: 2, lifeDuty: 2, lifeDesk: 1 }
   };
   const pkg = { id: 'factor', title: '因數與倍數（五、六年級）', units: UNITS, activities: LIST, paths: PATHS, probeTypes: PROBE_VARIANTS.g5, probeVariants: PROBE_VARIANTS };
   window.lessonPackages = window.lessonPackages || {};

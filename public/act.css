@@ -231,3 +231,63 @@ html.contrast .tm-jl{fill:#000;font-weight:900}html.contrast .tm-jump{stroke:#00
 .fr-wall-row:first-child>span{background:#cfe0ff;font-weight:700}
 html.contrast .fr-part.fr-on{fill:#000}html.contrast .fr-part.fr-off{fill:#fff;stroke:#000}html.contrast .fr-part.fr-on.b{fill:#666}html.contrast .fr-part.fr-on.lite{fill:url(#fr-hatch);stroke:#000}html.contrast .fr-part.fr-on.dark{fill:#000;stroke:#fff;stroke-width:3}html.contrast .fr-wall-row>span{border-color:#000;background:#fff;color:#000}
 @media (max-width:480px){.fr-wall-row>span{font-size:.65rem}.fr-fs{min-width:7rem}}
+/* 第 34 版：跨領域生活單元（兩個盒子並排） */
+.lf-pair{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:flex-end}.lf-pair>div{flex:1 1 220px;min-width:0;max-width:340px}
+.lf-tag{text-align:center;font-weight:700;font-size:1.2rem;margin:0}
+/* 第 35 版：整數四則運算教材包 */
+.in-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;font-size:1.6rem;line-height:1.2;margin:.3rem auto;max-width:560px}.in-chip.gone{opacity:.35;text-decoration:line-through}.in-gap{width:.6rem}
+.in-groups{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin:.3rem auto;max-width:600px}
+.in-rows{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:1.4rem;margin:.3rem auto}
+.in-cmp{margin:.3rem auto;max-width:560px}
+.in-blocks{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:center;gap:4px;margin:.4rem auto;max-width:560px}
+.in-h{display:inline-block;width:60px;height:60px;background:repeating-linear-gradient(0deg,#7fb2ff 0 5px,#1e4f9a 5px 6px),#7fb2ff;border:2px solid #1e4f9a}
+.in-t{display:inline-block;width:10px;height:60px;background:#ffb37a;border:2px solid #b4530f}
+.in-ones{display:inline-flex;flex-wrap:wrap;width:36px;gap:2px}.in-u{display:inline-block;width:10px;height:10px;background:#8fd18f;border:2px solid #2b7a2b}
+.in-col{border-collapse:collapse;margin:.4rem auto;font-size:1.7rem;font-variant-numeric:tabular-nums;font-family:ui-monospace,Menlo,Consolas,monospace}
+.in-col td,.in-col th{width:1.6em;height:1.5em;text-align:center;padding:0}.in-col .in-head th{font-size:.8rem;color:#4a5a78;font-weight:700}
+.in-col td.hl{background:#fff3bf;outline:2px solid #e8590c}.in-col .in-carry td{font-size:1rem;color:#c92a2a;height:1em}.in-col td.in-x{text-decoration:line-through;text-decoration-color:#c92a2a;text-decoration-thickness:2px}
+.in-col .in-line td{border-top:3px solid #1d2b44;height:.2em}.in-col .in-res td{color:#1f6fd1;font-weight:700}
+.in-div .in-d{border-right:3px solid #1d2b44;padding-right:.2em}.in-div tr:nth-child(2) td:not(.in-d){border-top:3px solid #1d2b44}
+.in-tape{fill:#cfe0ff;stroke:#1e4f9a;stroke-width:2}.in-tape.b{fill:#ffe0c2;stroke:#b4530f}.in-brace{fill:none;stroke:#1d2b44;stroke-width:2}
+.in-place{margin:.4rem 0}.in-place>summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center}
+.in-receipt{min-width:200px}
+.choice .in-col{font-size:1.2rem;margin:.1rem auto}
+html.contrast .in-tape{fill:#fff;stroke:#000}html.contrast .in-tape.b{fill:#ccc}html.contrast .in-col td.hl{background:#000;color:#fff}html.contrast .in-t{background:#666}html.contrast .in-u{background:#000}
+@media (max-width:420px){.in-col{font-size:1.35rem}.in-chips{font-size:1.3rem}}
+/* 第 36 版：錢幣與購物教材包（錢幣、鈔票是簡化的圖，只畫面額） */
+.mo-coin,.mo-bill{display:inline-flex;align-items:center;justify-content:center;flex-direction:column;font-weight:800;line-height:1;color:#1d2b44;vertical-align:middle;box-sizing:border-box;margin:2px;font-variant-numeric:tabular-nums}
+.mo-coin{border-radius:50%;border:3px solid rgba(0,0,0,.35);box-shadow:inset 0 0 0 3px rgba(255,255,255,.45)}
+.mo-coin.d1{width:40px;height:40px;background:#d9a35b;font-size:1rem}
+.mo-coin.d5{width:44px;height:44px;background:#d7dce3;font-size:1.05rem}
+.mo-coin.d10{width:52px;height:52px;background:#c4cbd4;font-size:1.15rem}
+.mo-coin.d50{width:56px;height:56px;background:#f0cf5a;font-size:1.2rem}
+.mo-bill{width:96px;height:48px;border-radius:6px;border:2px solid rgba(0,0,0,.4);font-size:1.25rem;flex-direction:row;gap:2px}
+.mo-bill i{font-style:normal;font-size:.75rem;font-weight:700}
+.mo-bill.d100{background:#f4a6a0}.mo-bill.d500{background:#d9a77a}.mo-bill.d1000{background:#9fc0ef}
+.mo-coin.sm{transform:scale(.8);margin:-2px}.mo-bill.sm{width:76px;height:38px;font-size:1.05rem}
+.mo-pile{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px;margin:.3rem auto;max-width:600px}
+.mo-pile.sorted{justify-content:flex-start}
+.mo-show{display:flex;justify-content:center;margin:.4rem 0}.mo-show .mo-coin{transform:scale(1.5);margin:14px}.mo-show .mo-bill{transform:scale(1.3);margin:10px 18px}
+.mo-empty{color:#5b6b85;font-size:.95rem}
+.mo-tag{display:inline-flex;flex-direction:column;align-items:center;border:2px solid #b4530f;border-radius:10px;background:#fff7ed;padding:.3rem .7rem;margin:.2rem;min-width:110px}
+.mo-tag-n{font-size:1rem}.mo-tag-p{font-size:1.5rem;font-weight:800;color:#b4530f}
+.mo-tags{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.mo-pay{border:2px dashed #8094b4;border-radius:12px;padding:.5rem;margin:.4rem 0;max-width:100%;box-sizing:border-box}
+.mo-pay-note{margin:.1rem 0 .4rem;font-size:.95rem}
+.mo-bank{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.mo-bank .mo-add,.mo-tray .mo-out{min-height:48px;min-width:48px;padding:2px 4px;border-radius:10px;border:2px solid #b8c7de;background:#fff;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}
+.mo-bank .mo-add:disabled{opacity:.35;cursor:not-allowed}
+.mo-left{font-size:.75rem;color:#4a5a78}
+.mo-tray{display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:center;min-height:64px;margin:.5rem 0;padding:.4rem;background:#eef4fc;border-radius:10px}
+.mo-tray .mo-out{border-color:#1f6fd1}
+.mo-clear{display:block;margin:0 auto}
+.mo-barter p{font-size:1.25rem;text-align:center;margin:.2rem 0}
+.mo-time{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;list-style:none;padding:0;margin:.4rem 0}
+.mo-time li{display:flex;flex-direction:column;align-items:center;min-width:80px;max-width:110px;padding:.3rem;border:2px solid #d0d8e6;border-radius:10px;font-size:.9rem;text-align:center;color:#5b6b85}
+.mo-time li.on{border-color:#1f6fd1;color:#1d2b44;background:#eef4fc}.mo-te{font-size:1.6rem}
+.mo-list{border:2px solid #8094b4;border-radius:10px;padding:.3rem .8rem;max-width:240px;margin:.3rem auto;background:#fffdf5}.mo-list p{margin:0;font-weight:700}.mo-list ul{margin:.2rem 0;padding-left:1.2rem;font-size:1.15rem}
+.mo-days{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}.mo-day{display:flex;flex-direction:column;align-items:center;font-size:.8rem;border:1px solid #d0d8e6;border-radius:8px;padding:2px 4px}
+.mo-jars{display:flex;gap:10px;justify-content:center;text-align:center;font-size:1.1rem}.mo-jars>div{border:2px solid #8094b4;border-radius:12px;padding:.4rem .8rem;font-size:1.6rem;line-height:1.3}
+.mo-ledger td,.mo-ledger th,.mo-book td,.mo-book th{font-size:1rem}
+html.contrast .mo-coin,html.contrast .mo-bill{background:#fff;color:#000;border-color:#000}html.contrast .mo-tray{background:#fff;border:2px solid #000}html.contrast .mo-tag{background:#fff;border-color:#000}html.contrast .mo-tag-p{color:#000}
+@media (max-width:420px){.mo-bill{width:80px;height:40px;font-size:1.05rem}.mo-tag{min-width:90px}.mo-time li{min-width:64px}.mo-show .mo-bill{transform:scale(1.1)}}

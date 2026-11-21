@@ -46,7 +46,13 @@
   let doneBase = 0;
   const doneAll = () => records.filter(r => r.event === '整題完成' && (r.actId || r.shapeKey) === type).length;
   const doneHere = () => doneAll() - doneBase;
-  const number = id => { const v = String(answers[id] ?? '').trim(); return /^\d+(\.\d+)?$/.test(v) ? Number(v) : null; };
+  // 第 35 版：全形數字、全形小數點、全形空白也接受（和 act-core.js 的 num 一樣）
+  const halfNum = v => String(v ?? '').trim().replace(/[０-９．]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+  const number = id => { const v = halfNum(answers[id]); return /^\d+(\.\d+)?$/.test(v) ? Number(v) : null; };
+  // 有填東西、但不是數字（負號、逗號、中間有空格……）：說清楚哪裡要改，不要說「沒填」
+  const formatMsg = raw => { const v = halfNum(raw); if (!v || /^\d+(\.\d+)?$/.test(v)) return null;
+    if (/^[-－−‐]/.test(v)) return '答案是 0 以上的數，不用加負號。'; if (/^[+＋]/.test(v)) return '只要填數字，不用加「＋」。';
+    if (/[,，、]/.test(v)) return '數字中間不要加「，」。'; if (/\s/.test(v)) return '數字中間不要空格。'; return '只要填數字就好（0、1、2……）。'; };
   const button = (id, text, cls = '', extra = '') => `<button id="${id}" class="${cls}" ${extra}>${text}</button>`;
   const field = (id, label, cls = '') => `<label class="field ${cls}"><span data-read data-say>${label}</span><input id="${id}" data-answer="${id}" inputmode="decimal" autocomplete="off" value="${esc(answers[id] ?? '')}"></label>`;
   const hint1 = s => (L().hints && L().hints[s]) || C.tier1[type][s];
@@ -63,7 +69,7 @@
 
   // 第 26 版：班級設定，再套上這位學生的個別設定（老師在「教師觀察」調整、存在網站資料庫）
   function ownSettings() { return { ...F.settings(L()), ...(window.areaResearch?.overrides?.(type) || {}), ...(window.areaResearch?.phasePatch?.(type) || {}) }; }   // 第 26 版第四階段：研究階段（B、BC 關閉 AI；BC 由小老師小方取代小幫手；示範階段用老師示範模式）
-  const SITE_VERSION = 'v33';
+  const SITE_VERSION = 'v36';
   function log(event, extra = {}) {
     const st = extra.activity && phase !== 'plan' ? (titles()[extra.activity - 1] || '') : '';
     const r = { time: new Date().toISOString(), siteVersion: SITE_VERSION, shape: nameOf(), shapeKey: type, actId: type, stepTitle: st, cycle, activity: extra.activity ?? null, event, support: settings.support, response, method, flow: settings.flow, difficulty: settings.difficulty, mode: mode(), studyPhase, ...(window.areaTutor?.stage?.() ? { tutorStage: window.areaTutor.stage() } : {}), ...extra };
@@ -121,7 +127,7 @@
   const DRAFT_KEY = 'act-draft-v28', OWN_KEY = 'line-record-v28';
   let resumed = false;
   addEventListener('pagehide', () => saveDraft());   // 打字還沒按檢查就重新整理，也存起來
-  const draftable = () => !!(P() && ['line', 'factor', 'time', 'frac'].includes(ACT?.pkgOf(type)?.id) && mode() !== 'probe' && mode() !== 'demo');
+  const draftable = () => !!(P() && (['line', 'factor', 'time', 'frac', 'int', 'money'].includes(ACT?.pkgOf(type)?.id) || P().draft) && mode() !== 'probe' && mode() !== 'demo');
   function saveDraft() {
     if (!draftable()) return;
     try { if (phase === 'solve') sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ type, index, cycle, problem: pProblem, state: pState, answers, checked: [...checked], page, hintLevel, goal, method, errors, hintsUsed, tried2: [...tried2], nudged: [...nudged], startedAt })); else sessionStorage.removeItem(DRAFT_KEY); } catch { /* 無法暫存就算了 */ }
@@ -735,6 +741,20 @@
   // ---------- 檢查 ----------
   const ob = (...a) => window.areaObs ? window.areaObs.numeric(...a) : 'other';   // 第 26 版：錯誤的觀察代碼（看得到的事實）
   function issue(s) {
+    // 第 35 版：這一步任何一個數字格有字、但不是數字（負號、逗號、中間空格……）→ 說清楚哪裡要改，記 format；
+    // 多個數字格一起檢查（長和寬、長寬高、三種面積）也一樣，不靠檢核結果的代碼找格子
+    const r = issueRaw(s); if (!r || (r.obs && r.obs !== 'unfinished' && r.obs !== 'other')) return r;
+    const sec = document.querySelector(`.activity[data-stage="${s}"]`);
+    const boxes = sec ? [...sec.querySelectorAll('input[inputmode="decimal"][data-answer]')] : [];
+    for (const b of boxes) { const id = b.dataset.answer, f = typeof answers[id] === 'string' ? formatMsg(answers[id]) : null; if (f) { const { soft, ...rest } = r; return { ...rest, code: id, obs: 'format', msg: f }; } }
+    // 有一格（看得到的數字格）還是空的（只有空白也算）：提醒要填，記成沒作答，不算答錯
+    const empty = boxes.find(b => b.offsetParent !== null && String(answers[b.dataset.answer] ?? '').trim() === '');
+    // （這一步已經開始作答：別格有填，或已經選了選項，例如正方體選好算式、面積還沒填）
+    const started = boxes.some(b => String(answers[b.dataset.answer] ?? '').trim() !== '') || !!sec?.querySelector('[data-choice][aria-pressed="true"]');
+    if (empty && started) { const { soft, ...rest } = r; return { ...rest, code: empty.dataset.answer, obs: undefined, blank: true, msg: '還有一格沒填，先把它填好。' }; }
+    return r;
+  }
+  function issueRaw(s) {
     if (P()) return P().steps[s].check(ctx());
     const D = dims(), [a, b] = D, fb = C.choiceFeedback, key = C.answerKey(type);
     if (s === 0) { if (!answers.target) return { code: 'target', msg: '請先選一個答案。' }; return answers.target === key.target ? null : { code: 'target', obs: answers.target === 'border' ? 'chosePerimeter' : 'wrongChoice', msg: fb.target[answers.target] }; }
@@ -804,10 +824,10 @@
 
   // 把學生的作答轉成看得懂的文字，寫進紀錄
   function answerText(s, code) {
-    if (P()) return (P().steps[s].ids || []).map(id => { const v = answers[id]; if (v === undefined || v === '') return ''; const b = document.querySelector(`[data-choice="${id}"][data-value="${v}"]`); return b ? clean(b) : String(v); }).filter(Boolean).join('、');
-    const ids = { target: ['target'], count: ['count'], relation: ['relation'], base: [], first: ['first'], line: ['height'], second: ['second'], formula: ['formula'], ab: ['a', 'b'], total: ['total'], verify: ['verify'], unit: ['unit'] }[code] || [KEYS[s]];
+    if (P()) return (P().steps[s].ids || []).map(id => { const v = answers[id]; if (v === undefined || String(v).trim() === '') return ''; const b = document.querySelector(`[data-choice="${id}"][data-value="${v}"]`); return b ? clean(b) : String(v); }).filter(Boolean).join('、');
+    const ids = { target: ['target'], count: ['count'], relation: ['relation'], base: [], first: ['first'], line: ['height'], second: ['second'], formula: ['formula'], ab: ['a', 'b'], total: ['total'], verify: ['verify'], unit: ['unit'] }[code] || (code && Object.hasOwn(answers, code) ? [code] : [KEYS[s]]);   // 第 35 版：格式錯誤記單一格（a、b）時存那一格填的字
     return ids.map(id => {
-      const v = answers[id]; if (v === undefined || v === '') return '';
+      const v = answers[id]; if (v === undefined || String(v).trim() === '') return '';
       const btn = document.querySelector(`[data-choice="${id}"][data-value="${v}"]`);
       return btn ? clean(btn) : id === 'height' ? v + ' 線' : String(v);
     }).filter(Boolean).join('、') || (code === 'count' ? `點了 ${tiles.length} 格` : '');
@@ -837,7 +857,7 @@
       }
       if (r && r.soft) { ok = false; log('提醒還差一步', { activity: s + 1, issue: r.code }); continue; }   // 算對了、只差比一比：不算答錯
       // 什麼都沒填就按「檢查」：提醒要填，但不算答錯、不自動給提示，也不算「試過」。第 26 版：不再記成一筆「步驟檢核」答錯
-      if (r && blankStep(s, r)) { ok = false; log('提醒還沒作答', { activity: s + 1, issue: r.code, outcome: 'blank', obs: 'blank' }); continue; }
+      if (r && (r.blank || blankStep(s, r))) { ok = false; log('提醒還沒作答', { activity: s + 1, issue: r.code, outcome: 'blank', obs: 'blank' }); continue; }
       log('步驟檢核', { activity: s + 1, correct: !r, outcome: r ? 'wrong' : 'correct', issue: r ? r.code : 'none', obs: r ? r.obs || 'other' : '', hintLevel: hintLevel[s], firstTry: !records.some(x => x.cycle === cycle && x.event === '步驟檢核' && x.activity === s + 1 && x.actId === type) && !(hintLevel[s] > 0), choice: r ? answerText(s, r.code) : undefined });
       if (r && hintLevel[s] >= 2) tried2.add(s);
       if (r) { ok = false; errors++; checked.delete(s); if (hintLevel[s] < 3 && mode() !== 'probe') { hintLevel[s]++; log('自動提示', { activity: s + 1, hintLevel: hintLevel[s] }); if (settings.hintGate && hintPending === false) hintPending = s; } }
@@ -853,14 +873,16 @@
       else if (r.partial || (s === 3 && lineOk && r.code === 'second' && partial)) showStatus($('feedback' + s), '找到了！', true);
       else showStatus($('feedback' + s), r.msg);
     }
-    for (const s of list) if (msgs[s] && !msgs[s].partial && !msgs[s].soft && !blankStep(s, msgs[s])) { window.areaBuddy?.wrong(s, tried[s]); window.areaTutor?.wrong(s, msgs[s].obs); }
+    for (const s of list) if (msgs[s] && !msgs[s].partial && !msgs[s].soft && !msgs[s].blank && !blankStep(s, msgs[s])) { window.areaBuddy?.wrong(s, tried[s]); window.areaTutor?.wrong(s, msgs[s].obs); }
     // 第 25 版：選擇題答錯後，圖亮框，並用這一步的提示說要看哪裡，請學生先看圖再選（不鎖按鈕）
     if (mode() !== 'demo') for (const s of list) {
-      if (!msgs[s] || msgs[s].partial || msgs[s].soft || blankStep(s, msgs[s])) continue;
+      if (!msgs[s] || msgs[s].partial || msgs[s].soft || msgs[s].blank || blankStep(s, msgs[s])) continue;
       if (!document.querySelector(`.activity[data-stage="${s}"] [data-choice]`)) continue;
       const fig = $('figure' + s), box = $('feedback' + s);
-      if (fig) { fig.classList.add('look-here'); setTimeout(() => fig.classList.remove('look-here'), 3000); }
-      if (box) box.insertAdjacentHTML('beforeend', `<span class="look-note" data-read data-say>　先看圖再選：${esc(hintFor(s, 1))}</span>`);
+      // 第 36 版：這一步沒有圖（圖區空白）就不亮框，改請學生看題目和選項
+      const hasFig = !!fig && (fig.textContent.trim() !== '' || !!fig.querySelector('img, svg, canvas, table, .mo-coin, .mo-bill'));
+      if (hasFig) { fig.classList.add('look-here'); setTimeout(() => fig.classList.remove('look-here'), 3000); }
+      if (box) box.insertAdjacentHTML('beforeend', `<span class="look-note" data-read data-say>　${hasFig ? '先看圖再選' : '先看題目和選項再選'}：${esc(hintFor(s, 1))}</span>`);
     }
     if (ok) { showStatus(groupBox(), phase === 'reflect' ? '單位答對了！' : '全部答對了，可以按「下一步」。', true); if (phase !== 'reflect') celebrate(); window.areaBuddy?.right(list[list.length - 1]); window.areaTutor?.right(list[list.length - 1]); }
     else if (partial) showStatus(groupBox(), '找到高了！再填它的長度。', true);

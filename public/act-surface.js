@@ -37,7 +37,7 @@
       if (on) { const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2; g += `<text x="${r1(mx + (k === 'h' ? 10 : k === 'w' ? 12 : 0))}" y="${r1(my + (k === 'l' ? 24 : k === 'w' ? 18 : 4))}" text-anchor="${k === 'l' ? 'middle' : 'start'}" class="ac-len">${NAME[k]} ${LEN[k]} 公分</text>`; }
     }
     const W = x0 + L + dx + 110, Ht = y0 + H + 40;
-    return `<svg class="ac-svg" viewBox="0 0 ${r1(W)} ${r1(Ht)}" role="img" aria-label="${p.cube ? '正方體' : '長方體'}的盒子${(o.edges || []).map(k => `，${NAME[k]} ${LEN[k]} 公分`).join('')}">${g}</svg>`;
+    return `<svg class="ac-svg" viewBox="0 0 ${r1(W)} ${r1(Ht)}" role="img" aria-label="${o.name || `${p.cube ? '正方體' : '長方體'}的盒子`}${(o.edges || []).map(k => `，${NAME[k]} ${LEN[k]} 公分`).join('')}">${g}</svg>`;
   }
 
   // 展開圖（十字形）：左 前 右 後 排一列，上面在前面的上方，下面在前面的下方

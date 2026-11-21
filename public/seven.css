@@ -225,6 +225,8 @@ html.contrast .surface{border:3px solid #000}
 html.contrast p,html.contrast li,html.contrast legend,html.contrast label,html.contrast .subtle,html.contrast .figure-note,html.contrast .eyebrow{color:#000}
 html.contrast button:not(.say){border:2px solid #000;color:#000}
 html.contrast .primary,html.contrast button.primary:not(.say){background:#000;color:#fff;border-color:#000}
+/* 第 36 版：高對比下，還不能按的「下一步／完成」要看得出鎖住（白底黑字、虛線框） */
+html.contrast .lesson-controls button.locked,html.contrast .lesson-controls button.locked:hover{background:#fff;color:#000;border:2px dashed #000}
 html.contrast .choice button[aria-pressed=true],html.contrast .aids button[aria-pressed=true]{background:#ffe600;border:4px solid #000}
 html.contrast .choice button[aria-pressed=true]::before{color:#000}
 html.contrast .feedback.correct{background:#fff;border:3px solid #006b2e;color:#000}
