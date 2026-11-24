@@ -7,7 +7,7 @@
 (() => {
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const VERSION = 'v36';
+  const VERSION = 'v37';
   const WHO_KEY = 'area-research-who-v22', QUEUE_KEY = 'area-research-queue-v22', NAMES_KEY = 'area-research-names-v22', SENT_KEY = 'area-research-sent-v22', LAST_KEY = 'area-research-last-v22';
   const MAX_ROWS = 40;            // 一次最多傳幾筆
   const MAX_BYTES = 30000;        // 一次最多傳多少位元組（離頁時的 keepalive 上限是 64 KB）
@@ -29,6 +29,18 @@
     ['assists', '我今天需要介入幾次', [['0', '0 次'], ['1-2', '1～2 次'], ['3-5', '3～5 次'], ['6+', '6 次以上']]]
   ];
 
+  // 第 37 版：試用後的學生問卷（第一年 ADDIE 實作與評估）。老師在試用最後一節按「🗳️ 學生問卷」開啟，
+  // 一題一頁、可朗讀、跟著學生頁的注音；學生自己點，必要時老師協助。題目依手冊第 16 節 UDL 檢核、第 17 節 SRL 循環分組。
+  const SURVEY_ANS = [['yes', '😀', '是'], ['bit', '😐', '有一點'], ['no', '🙁', '不是'], ['na', '🤷', '沒用過']];
+  const SURVEY_AGAIN = [['yes', '😀', '想'], ['bit', '😐', '還好'], ['no', '🙁', '不想']];
+  const SURVEY = [
+    ['q01', '畫面上的字，你看得清楚嗎？'], ['q02', '「唸給我聽」有幫你聽懂題目嗎？'], ['q03', '注音有幫你讀題目嗎？'],
+    ['q04', '你知道每一步要做什麼嗎？'], ['q05', '題目上的圖，你看得懂嗎？'],
+    ['q06', '按、點、拖拉，容易做嗎？'], ['q07', '「給我提示」有幫你做下去嗎？'], ['q08', '看示範影片後，你會自己做嗎？'],
+    ['q09', '答錯的時候，你知道要改哪裡嗎？'], ['q10', '卡住的時候，你會按「我卡住了」嗎？'], ['q11', '小方讓你想繼續做嗎？'],
+    ['q12', '你知道「我的目標」是什麼意思嗎？'], ['q13', '做完後，你看得出自己有沒有做到嗎？'], ['q14', '蓋章和星星，你喜歡嗎？']
+  ];
+  const doneActs = new Map();   // 這位學生這次做過的活動（換學生時清掉）
   let cfg = null, api = null, who = null, scopeKey = '', sending = false, lastActivity = '', classCode = '', ownTeacher = '';
   const load = (store, key, fallback) => { try { const v = JSON.parse(store.getItem(key) || 'null'); return v ?? fallback; } catch { return fallback; } };
   const keep = (store, key, value) => { try { store.setItem(key, JSON.stringify(value)); return true; } catch { return false; } };
@@ -138,9 +150,12 @@
   function record(r) {
     if (!on()) return;
     r.teacherId = who.teacher; r.studentId = who.student; r.sessionId = who.sessionId;
+    if ((r.actId || r.shapeKey) && r.shape && !doneActs.has(r.actId || r.shapeKey)) doneActs.set(r.actId || r.shapeKey, r.shape);   // 第 37 版：學生問卷第 15 題用
     if (who.phase) r.studyPhase = who.phase;   // 第 26 版第四階段：研究階段以研究管理設定的為準
     const base = { activity: r.shape || '', actId: r.actId || '', cycle: r.cycle ?? '', step: r.activity ?? '', stepTitle: r.stepTitle || '', event: r.event, mode: r.mode || '', studyPhase: r.studyPhase || '' };
     if (r.event === '教師觀察' || r.event === '教師即時紀錄') enqueue('教師觀察', { ...base, kind: r.event, tag: r.tagText || '', phase: r.phase || '', level: r.level || '', buddyReact: r.buddyReact || '', note: r.evidence || r.note || '' });
+    // 學生問卷：放在「學生回饋」表，類型「試用後問卷」；答案收成一欄（舊版 Apps Script 會放進「其他」欄，新版另整理成「學生問卷」表）
+    if (r.event === '學生問卷') enqueue('學生回饋', { ...base, kind: '試用後問卷', answers: r.answers || '', favorite: r.favorite || '', hardest: r.hardest || '', again: r.again || '', assist: r.assist || '', note: r.note || '' });
     if (r.event === '學生心情' || r.event === '學生回饋') enqueue('學生回饋', { ...base, kind: r.event, mood: r.moodText || '', fun: r.funText || '', buddyHelp: r.buddyHelpText || '', camFeel: r.camFeelText || '' });
     if (r.event === '小幫手' && r.action === '鏡頭打不開') tech('鏡頭', r.error || '鏡頭打不開');
     // 學生自己寫的話（studentWords）只留在這台電腦給老師看，不上傳
@@ -189,7 +204,7 @@
     el.innerHTML = `<p class="who"><b>📋 ${esc(who.student)}</b>${who.sessionNo ? `<span class="session-no">第 ${who.sessionNo} 節</span>` : ''}<span>${esc(who.device)}・${esc(who.group)}${who.camera ? '・📷 可用鏡頭' : ''}</span></p>
       <div class="quick">${QUICK.filter(([k]) => k === 'help').map(([k, t]) => `<button type="button" data-quick="${k}">${t}</button>`).join('')}</div>
       ${['B', 'BC'].includes(who.phase) ? `<div class="teacher-prompts"><span id="researchCue" class="cue" hidden>⏱ 學生停了一陣子</span><span>教師提示：</span>${TEACHER_PROMPTS.map(([k, t]) => `<button type="button" data-tp="${k}">${t}</button>`).join('')}</div>` : ''}
-      <div class="ops"><button type="button" id="researchNext">換學生</button><button type="button" id="researchClass">📝 這節課結束</button></div>
+      <div class="ops"><button type="button" id="researchSurveyOpen">🗳️ 學生問卷</button><button type="button" id="researchNext">換學生</button><button type="button" id="researchClass">📝 這節課結束</button></div>
       <details class="more" id="researchMore"${moreOpen() ? ' open' : ''}><summary>更多（其他紀錄、小測驗、本節作廢、上傳）</summary><div class="quick">${QUICK.filter(([k]) => k !== 'help').map(([k, t]) => `<button type="button" data-quick="${k}">${t}</button>`).join('')}</div>
       <div class="ops"><span id="researchCount" class="count"></span>${serverOn() ? '<button type="button" id="researchProbe">🧪 小測驗</button>' : ''}${serverOn() && who.sessionNo ? '<button type="button" id="researchInvalid">🚫 本節作廢</button>' : ''}<button type="button" id="researchFlush">立即上傳</button></div></details>`;
     $('researchMore').addEventListener('toggle', () => { try { sessionStorage.setItem(MORE_KEY, $('researchMore').open ? '1' : '0'); } catch { /* 略過 */ } });
@@ -211,6 +226,7 @@
     // 第 26 版：每節開始時的探試（另一頁，沒有提示與小方；做完回到這裡）
     if ($('researchProbe')) $('researchProbe').onclick = async () => { await flush(); location.href = 'probe.html'; };
     if ($('researchInvalid')) $('researchInvalid').onclick = () => invalidSession();
+    $('researchSurveyOpen').onclick = () => survey();
     $('researchNext').onclick = () => endStudent();
     $('researchClass').onclick = () => classEnd();
     paintCount();
@@ -360,11 +376,70 @@
     d.querySelectorAll('[data-mood]').forEach(b => b.onclick = () => { const m = MOODS.find(x => x[0] === b.dataset.mood); api.log('學生心情', { activity: 7, cycle: ctx.cycle, shape: ctx.shape, shapeKey: ctx.shapeKey, actId: ctx.actId, mood: m[0], moodText: m[1] + ' ' + m[2] }); d.close(); toast('謝謝你！'); });
     $('researchMoodSkip').onclick = () => d.close();
   }
+  // ---------- 第 37 版：試用後的學生問卷 ----------
+  // 朗讀：zh-TW 語音，唸題目和選項；學生頁開了注音，問卷也加注音
+  function sayText(text) {
+    try { if (!('speechSynthesis' in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-TW'; u.rate = 0.85; speechSynthesis.speak(u); } catch { /* 略過 */ }
+  }
+  // 這位學生這次做過的活動（第 15 題用）：從學生頁紀錄裡完成或做過的題目找
+  function doneActivities() {
+    const seen = new Map(doneActs);
+    for (const r of api.records()) { const id = r.actId || r.shapeKey; if (id && r.shape && !seen.has(id)) seen.set(id, r.shape); }
+    const cur = api.activity(); if (cur.id && !seen.has(cur.id)) seen.set(cur.id, cur.name || cur.id);
+    return [...seen].slice(0, 8);
+  }
+  function survey() {
+    if (!on()) return;
+    window.areaBuddy?.pauseCamera?.();
+    const acts = doneActivities(), st = { i: 0, a: {} };
+    const pages = [...SURVEY.map(([k, q]) => ({ k, q, items: SURVEY_ANS })),
+      ...(acts.length > 1 ? [{ k: 'favorite', q: '這些活動，你最喜歡哪一個？', items: acts.map(([id, n]) => [id, '🧩', n]) }, { k: 'hardest', q: '這些活動，哪一個最難？', items: acts.map(([id, n]) => [id, '🧩', n]) }] : []),
+      { k: 'again', q: '你還想用這個網站學數學嗎？', items: SURVEY_AGAIN }];
+    const total = pages.length;
+    const zhuyinOn = () => document.documentElement.classList.contains('zhuyin-on');
+    const finish = () => {
+      const d = dialog('researchSurvey', `<h2 data-survey-say>問完了，謝謝你！</h2><p class="subtle">以下由老師填寫（請勿寫學生姓名）</p>
+        <h3>作答時老師的協助</h3>${pickRow('assist', [['none', '學生自己點'], ['read', '老師唸題'], ['point', '學生用指的，老師代點'], ['explain', '老師另外解釋題意']], st.a.assist || '')}
+        <label for="researchSurveyNote">學生說的原因或補充（例如：為什麼最難、哪裡不喜歡）</label><textarea id="researchSurveyNote" rows="3" maxlength="500"></textarea>
+        <div class="actions"><button type="button" id="researchSurveySave" class="primary">送出</button><button type="button" id="researchSurveyBack">回上一題</button><button type="button" id="researchSurveyQuit">不送出，關掉</button></div>`);
+      d.oncancel = e => e.preventDefault();
+      const pick = {}; bindPicks(d, pick);
+      $('researchSurveyBack').onclick = () => { st.i = total - 1; show(); };
+      $('researchSurveyQuit').onclick = () => { d.close(); api.changed(); };
+      $('researchSurveySave').onclick = () => {
+        const label = (k, v) => { const p = pages.find(x => x.k === k); const it = p && p.items.find(x => x[0] === v); return it ? it[2] : ''; };
+        const answers = SURVEY.map(([k], n) => `${n + 1}=${st.a[k] ? label(k, st.a[k]) : '略'}`).join(';');
+        api.log('學生問卷', { activity: api.step(), answers, favorite: st.a.favorite ? label('favorite', st.a.favorite) : '', hardest: st.a.hardest ? label('hardest', st.a.hardest) : '', again: st.a.again ? label('again', st.a.again) : '',
+          assist: { none: '學生自己點', read: '老師唸題', point: '學生用指的，老師代點', explain: '老師另外解釋題意' }[pick.assist] || '', note: $('researchSurveyNote').value.trim() });
+        flush(); d.close(); toast('問卷已送出，謝謝！'); api.changed();
+      };
+    };
+    const show = () => {
+      if (st.i >= total) { finish(); return; }
+      const p = pages[st.i];
+      const d = dialog('researchSurvey', `<p class="survey-progress">第 ${st.i + 1}／${total} 題</p>
+        <h2 class="survey-q"><span data-survey-say>${esc(p.q)}</span> <button type="button" class="say" id="researchSurveySay" aria-label="唸題目">🔊</button></h2>
+        <div class="moods survey-ans${p.items.length === 3 ? ' three' : ''}">${p.items.map(([v, e, t]) => `<button type="button" data-ans="${esc(v)}" aria-pressed="${st.a[p.k] === v}"><span aria-hidden="true">${e}</span>${esc(t)}</button>`).join('')}</div>
+        <div class="actions">${st.i ? '<button type="button" id="researchSurveyPrev">⬅ 上一題</button>' : ''}<button type="button" id="researchSurveySkip">跳過這題</button><button type="button" id="researchSurveyQuit">老師：先關掉</button></div>`);
+      d.oncancel = e => e.preventDefault();
+      if (window.zhuyin) window.zhuyin.enable(d, zhuyinOn());
+      const read = () => sayText(p.q + '。' + p.items.map(x => x[2]).join('、'));
+      $('researchSurveySay').onclick = read; read();
+      d.querySelectorAll('[data-ans]').forEach(b => b.onclick = () => {
+        st.a[p.k] = b.dataset.ans; d.querySelectorAll('[data-ans]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+        setTimeout(() => { if (pages[st.i] === p) { st.i++; show(); } }, 350);
+      });
+      $('researchSurveySkip').onclick = () => { delete st.a[p.k]; st.i++; show(); };
+      if (st.i) $('researchSurveyPrev').onclick = () => { st.i--; show(); };
+      $('researchSurveyQuit').onclick = () => { try { speechSynthesis.cancel(); } catch { /* 略過 */ } d.close(); api.changed(); };
+    };
+    show();
+  }
   // 結束這位學生的場次：先關鏡頭、清掉同意，再做下一件事
   function closeStudent() {
     if (!on()) return;
     enqueue('場次', { kind: '結束', minutes: Math.round((Date.now() - who.startedAt) / 60000) }); flush();
-    who = null; try { sessionStorage.removeItem(WHO_KEY); } catch { /* 略過 */ }
+    who = null; doneActs.clear(); try { sessionStorage.removeItem(WHO_KEY); } catch { /* 略過 */ }
     window.areaBuddy?.newStudent(); bar(); api.changed();
   }
   // 換學生前：學生回答 3 題（可以跳過），上傳後讓老師選下一位；then：之後要做的事（預設是選下一位）
@@ -442,6 +517,6 @@
     phase: () => (on() ? who.phase || '' : ''), teacherWait: () => (on() ? who.teacherWait || 10 : 10),
     tutorStage: act => (on() && who.tutor ? who.tutor[act] || '' : ''), phasePatch, cueTeacher, adviceOff: () => on() && !!who.adviceOff,
     // 測試與教師說明用
-    flush, pending: () => queue().length, VERSION
+    flush, pending: () => queue().length, VERSION, survey
   };
 })();
