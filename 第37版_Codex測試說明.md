@@ -10,7 +10,7 @@ git checkout claude/project-thread-gdhsbn
 git rev-parse HEAD                        # 確認是本分支最新 commit
 npm install
 npm run build
-npm test                                  # 自動測試（含瀏覽器測試，需要 Playwright），應該 149 項全過
+npm test                                  # 自動測試（含瀏覽器測試，需要 Playwright），應該 148 項全過
 node scripts/preview-feedback.mjs         # 本機預覽：http://127.0.0.1:4173
 ```
 
