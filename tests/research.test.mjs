@@ -96,6 +96,18 @@ test('試用紀錄：學生摘要與教師摘要（接受率、專心提醒、�
   assert.ok(t.find(r => r[0] === 'T02'), '第二位老師也有摘要');
 });
 
+test('試用紀錄（第 37 版）：試用後學生問卷寫在學生回饋的「其他」欄，更新摘要時拆成「學生問卷」表一題一欄', () => {
+  const { book, api, post } = load();
+  api.setup();
+  post({ key: 'field-2026', rows: [row('學生回饋', { kind: '試用後問卷', answers: '1=是;2=有一點;3=沒用過;4=略;5=不是;6=是;7=是;8=是;9=是;10=是;11=是;12=是;13=是;14=是', favorite: '1-2 鋪方格', hardest: '2-2 面積還是周長', again: '想', assist: '老師唸題', note: '周長那題看不懂' })] });
+  api.buildSummaries();
+  const s = book.sheets.get('學生問卷').rows, h = s[0], r1 = s.find(r => r[0] === 'T01-S01');
+  assert.ok(r1, '有一列');
+  assert.equal(r1[h.indexOf('1 字看得清楚')], '是'); assert.equal(r1[h.indexOf('2 唸給我聽有幫助')], '有一點'); assert.equal(r1[h.indexOf('4 知道每一步要做什麼')], '略');
+  assert.equal(r1[h.indexOf('最難的活動')], '2-2 面積還是周長'); assert.equal(r1[h.indexOf('老師協助')], '老師唸題'); assert.equal(r1[h.indexOf('學生說的原因或補充')], '周長那題看不懂');
+  assert.equal(h.length, 3 + 14 + 5);
+});
+
 test('試用紀錄：超過 1000 列、超過 26 欄也寫得進去；快取過期或同一批重複也不重複寫；前面有空白的公式也擋下', () => {
   const { book, api, post, clearCache } = load();
   api.setup();

@@ -28,3 +28,11 @@ html.contrast .research-bar{background:#fff;border-color:#000}
 /* 第 30 版：上課中的小工具列，其他收進「更多」 */
 .research-bar details.more { margin-top: 6px; }
 .research-bar details.more > summary { cursor: pointer; font-size: 15px; color: #526b89; padding: 4px 0; }
+/* 第 37 版：試用後的學生問卷，一題一頁、大按鈕 */
+.research-dialog .survey-progress{margin:0;color:#526b89;font-size:15px}
+.research-dialog .survey-q{font-size:24px;line-height:1.5;margin:8px 0 4px}
+.research-dialog .survey-q .say{min-height:40px;font-size:20px;vertical-align:middle}
+.research-dialog .survey-ans button{min-height:110px;font-size:20px}
+.research-dialog .survey-ans button[aria-pressed=true]{background:#2157da;color:#fff;border-color:#2157da}
+.research-dialog .survey-ans.three{grid-template-columns:repeat(3,1fr)}
+@media(max-width:760px){.research-dialog .survey-ans.three{grid-template-columns:repeat(3,1fr)}}
