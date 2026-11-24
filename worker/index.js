@@ -260,7 +260,7 @@ const RECORDS_PER_DAY=20000;
 const RECORD_KEYS=new Set(('rid sheet time version sessionId teacher student sessionNo classCode phase activity actId cycle step stepTitle event mode studyPhase correct hintLevel action detail '+
 'siteVersion shape shapeKey support response method flow difficulty tutorStage teacherId studentId '+
 'aid answer attempt attentionReminds badges browser buddyAccepted buddyHelp buddyHelpText buddyOffers buddyReact buddyStuck buddyWrong by camFeel camFeelText cameraConsent carriedFrom cause changes checkGoal checked choice completed confidence corrected decision device different dimensions error errors evidence example fadeLevel fallback finding firstTry frame from fullExample fun funText goal goalKind goalMet group hasCamera helped hints idle index issue judgment kind learnerJudgment level levelText maxHintLevel message minutes model monitors mood moodText nextAction nextMethod nextStep note obs on online operation outcome page part presentation promptVersion provider reason result score screen seconds secs selfMet selfReportedCheck skipped source stage start steps streak stuckPressed studentMarked tag tagText teacherHelp text times to value watched where why wrong cue '+
-'studentMarked wroteWords engage timing buddyUseful camAccurate assists fix buddy buddyWait buddyVoice attention attentionSec zhuyin textSize contrast video ai fading selfAsk rest simple simpleShow tour guide practice firstActionSecs deadClicks').split(' '));
+'studentMarked wroteWords answers favorite hardest again assist engage timing buddyUseful camAccurate assists fix buddy buddyWait buddyVoice attention attentionSec zhuyin textSize contrast video ai fading selfAsk rest simple simpleShow tour guide practice firstActionSecs deadClicks').split(' '));
 // 巢狀物件（例如 dimensions、answer）也只收已知欄位；字串一律截短
 const NESTED_KEYS=new Set('w h a b total unit divisor complete correct skipped field before after direction x y'.split(' '));
 const LONG_TEXT=new Set(['message','note','evidence','fix','browser']);
@@ -345,7 +345,7 @@ const DEFAULT_RULES={lowAcc:60,highAcc:80,indep:80,minItems:5,upN:3,downN:2,main
 const RULE_LIMITS={lowAcc:[0,100],highAcc:[0,100],indep:[0,100],minItems:[1,20],upN:[1,10],downN:[1,10],maintainN:[1,10],summaryChars:[100,600],stageUp:[0,100],stageDown:[0,100],stageN:[1,10],handsOnN:[1,20],teacherWait:[3,60],tutorChars:[10,40],showAdvice:[0,1]};
 // 第 29 版：實驗參數鎖定。前導試做後主持人按「鎖定」，把模型、提示詞版本、判準門檻與字數上限存成快照。
 // 鎖定期間：判準不能改；AI 的模型或提示詞版本和快照不同時一律改用固定內容（不讓不同的工具混進正式資料）。解鎖要寫理由，留下歷程。
-const SITE_VERSION='v36';
+const SITE_VERSION='v37';
 const PROMPT_VERSIONS=()=>({hint:HINT_PROMPT_VERSION,summary:SUMMARY_PROMPT_VERSION,tutor:TUTOR_PROMPT_VERSION});
 function aiSnapshot(env){const m=modelConfig(env);return {provider:m?.provider||'',model:m?.model||''};}
 async function studyLock(env){try{const row=await env.DB.prepare('SELECT value_json FROM study_config WHERE key = ?').bind('lock').first();return row?JSON.parse(row.value_json):{locked:false,history:[]};}catch{return {locked:false,history:[]};}}

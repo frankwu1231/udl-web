@@ -1,5 +1,5 @@
 /**
- * 圖形面積互動教材（第 22 版）｜現場試用紀錄：接收網站傳來的紀錄，寫進這份 Google 試算表
+ * 圖形面積互動教材（第 22 版起，第 37 版加學生問卷）｜現場試用紀錄：接收網站傳來的紀錄，寫進這份 Google 試算表
  * --------------------------------------------------------------
  * 使用方法（詳見「部署說明.md」）：
  *   1. 建立一份新的 Google 試算表 → 選單「擴充功能」→「Apps Script」。
@@ -32,13 +32,15 @@ const SHEETS = {
 };
 const CODEBOOK = ['學生代號', '教師代號', '年級', '障礙類別', '需要注音或報讀', '前測分數', '後測分數', '家長同意書', '鏡頭同意', '備註'];
 const OTHER = '其他';
+// 第 37 版：學生問卷的題目（和網站 public/research.js 的 SURVEY 同順序）
+const SURVEY_ITEMS = ['字看得清楚', '唸給我聽有幫助', '注音有幫助', '知道每一步要做什麼', '圖看得懂', '按點拖拉容易', '給我提示有幫助', '看示範後會自己做', '答錯知道改哪裡', '卡住會按我卡住了', '小方讓我想繼續', '懂我的目標', '看得出有沒有做到', '喜歡蓋章和星星'];
 
 // ---------- 建立工作表（可以重複執行，不會刪資料） ----------
 function setup() {
   const book = SpreadsheetApp.getActiveSpreadsheet();
   for (const [name, cols] of Object.entries(SHEETS)) header(book, name, cols.map(c => c[1]).concat(OTHER));
   header(book, '代號表', CODEBOOK);
-  header(book, '學生摘要', []); header(book, '教師摘要', []);
+  header(book, '學生摘要', []); header(book, '教師摘要', []); header(book, '學生問卷', []);
   return '完成：' + book.getName();
 }
 function header(book, name, titles) {
@@ -142,14 +144,22 @@ function summaries(book) {
     return [t, new Set(it.map(o => o['學生代號'])).size, sessions.filter(o => o['教師代號'] === t).length, it.length, offers, rate(acc, offers), sum(it, '專心提醒'), sum(it, '老師幫忙'), sum(it, '小方不準'),
       obs.filter(o => o['教師代號'] === t).length, tf.length, score('學生投入'), score('小方有幫助'), tf.map(o => o['最需要改的地方']).filter(Boolean).join('｜')];
   });
+  // 第 37 版：試用後學生問卷。網站把答案放在「學生回饋」表（類型＝試用後問卷）的「其他」欄，這裡拆成一題一欄
+  const surveyHead = ['學生代號', '教師代號', '時間', ...SURVEY_ITEMS.map((q, i) => (i + 1) + ' ' + q), '最喜歡的活動', '最難的活動', '還想用嗎', '老師協助', '學生說的原因或補充'];
+  const surveyRows = fb.filter(o => o['類型'] === '試用後問卷').map(o => {
+    let x = {}; try { x = JSON.parse(o[OTHER] || '{}'); } catch (err) { x = {}; }
+    const ans = {}; String(x.answers || '').split(';').forEach(part => { const m = part.match(/^(\d+)=(.*)$/); if (m) ans[m[1]] = m[2]; });
+    return [o['學生代號'], o['教師代號'], o['時間'], ...SURVEY_ITEMS.map((q, i) => ans[String(i + 1)] ?? ''), x.favorite || '', x.hardest || '', x.again || '', x.assist || '', x.note || ''];
+  });
   return {
+    survey: [surveyHead, ...surveyRows],
     student: [['學生代號', '教師代號', '年級', '障礙類別', '場次數', '完成題數', '平均秒數', '平均答錯', '平均提示', '小方主動問', '接受小方', '接受率', '小方打開我卡住了', '專心提醒', '老師幫忙', '小方不準', '每題心情', '說小方有幫忙', '前測', '後測'], ...studentRows],
     teacher: [['教師代號', '學生數', '場次數', '完成題數', '小方主動問', '接受率', '專心提醒', '老師幫忙', '小方不準', '觀察筆數', '教師回饋次數', '平均學生投入', '平均小方有幫助', '最需要改的地方'], ...teacherRows]
   };
 }
 function buildSummaries() {
   const book = SpreadsheetApp.getActiveSpreadsheet(), out = summaries(book);
-  for (const [name, values] of [['學生摘要', out.student], ['教師摘要', out.teacher]]) {
+  for (const [name, values] of [['學生摘要', out.student], ['教師摘要', out.teacher], ['學生問卷', out.survey]]) {
     const sh = book.getSheetByName(name) || book.insertSheet(name);
     sh.clearContents(); room(sh, values.length, values[0].length); sh.getRange(1, 1, values.length, values[0].length).setValues(values); sh.getRange(1, 1, 1, values[0].length).setFontWeight('bold'); sh.setFrozenRows(1);
   }
