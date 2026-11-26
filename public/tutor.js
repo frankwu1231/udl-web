@@ -30,7 +30,7 @@
   function unmount() { root?.remove(); root = null; }
   function talk(text) {
     if (!('speechSynthesis' in window)) return;
-    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-TW'; u.rate = 0.85; const v = api?.voice?.(); if (v) u.voice = v; speechSynthesis.speak(u); } catch { /* 略過 */ }
+    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(window.speech ? window.speech.fix(text) : text); u.lang = 'zh-TW'; u.rate = 0.85; const v = api?.voice?.(); if (v) u.voice = v; speechSynthesis.speak(u); } catch { /* 略過 */ }
   }
   // buttons：[[文字, 值]]；pick(值) 在學生點選後呼叫
   function say(text, { buttons = [], pick = null, ttl = 6000 } = {}) {

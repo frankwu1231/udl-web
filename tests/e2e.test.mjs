@@ -935,7 +935,7 @@ test('現場試用：開始前老師點選代號（不用打字）；沒選齊�
   assert.match(await p.text('#researchBar .who'), /T02-S05/);
   await p.page.click('#researchFlush'); await p.page.waitForTimeout(300);
   const start = p.rows('場次')[0];
-  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v37'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
+  assert.equal(start.teacher, 'T02'); assert.equal(start.student, 'T02-S05'); assert.equal(start.cameraConsent, '是'); assert.equal(start.version, 'v38'); assert.equal(start.sessionNo, 1, '開始本節：第 1 節');
   assert.ok(p.rows('教師設定').some(r => r.actId === 'rectangle' && r.buddy === '開'), '記下老師這次的設定');
   assert.ok(!JSON.stringify(p.posts).match(/姓名/), '不傳姓名欄位');
 
@@ -1038,6 +1038,25 @@ test('現場試用：做完一題學生選心情（記在完成的那一題）�
   assert.deepEqual([t.teacher, t.student, t.engage, t.timing, t.fix], ['T01', '', '4', '太晚', '小方等太久才出現']);
   await p.page.click('#researchDoneNext');
   await p.page.waitForSelector('#researchWho[open]');
+  assert.deepEqual(p.errors, []);
+});
+
+test('第 38 版：朗讀共用讀音修正與語音選擇（學生頁、學生問卷）', { skip: skip || !distReady }, async () => {
+  const p = await fieldStudent();
+  await pickWho(p.page);
+  const r = await p.page.evaluate(() => {
+    window.__said = []; window.__voice = [];
+    speechSynthesis.speak = u => { window.__said.push(u.text); window.__voice.push(u.voice && u.voice.name); };
+    const real = speechSynthesis.getVoices;   // 假的語音物件不能指定給 u.voice，只拿來測選擇順序
+    speechSynthesis.getVoices = () => [{ name: 'Google 普通话（中国大陆）', lang: 'zh-CN' }, { name: 'Microsoft HsiaoChen Online (Natural)', lang: 'zh-TW' }];
+    const voice = window.speech.voice().name; speechSynthesis.getVoices = real;
+    return { fix: window.speech.fix('數一數，去銀行，多了要還給店員'), voice };
+  });
+  assert.equal(r.fix, '暑一暑，去銀航，多了要環給店員');
+  assert.equal(r.voice, 'Microsoft HsiaoChen Online (Natural)');
+  await p.page.click('#researchSurveyOpen'); await p.page.waitForSelector('#researchSurvey[open]');
+  await p.page.waitForFunction(() => window.__said.length > 0);
+  assert.match(await p.page.evaluate(() => window.__said[0]), /看得清楚嗎/, '學生問卷經過共用朗讀');
   assert.deepEqual(p.errors, []);
 });
 
@@ -1272,7 +1291,7 @@ test('第 26 版：研究紀錄存網站資料庫：開始本節編節次、錯�
   const ev = await events();
   const wrong = ev.find(r => r.event === '步驟檢核' && r.correct === '否');
   assert.ok(wrong, '錯誤存進網站資料庫');
-  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v37');
+  assert.equal(wrong.sessionNo, 1); assert.equal(wrong.version, 'v38');
   const d = JSON.parse(wrong.detail); assert.equal(d.obs, 'chosePerimeter'); assert.equal(d.outcome, 'wrong'); assert.equal(d.firstTry, true);
   assert.ok(ev.some(r => r.event === '無法判定'), '老師按「這題無法判定」');
   // 老師調整支持：沒選理由不能存；減少支持存成這位學生的設定，記下方向
@@ -1755,7 +1774,7 @@ test('第 27 版第 1 輪修正：換教材再換回保留指派；2-1 依實際
     return { k322: k({ l: 3, w: 2, h: 2 }), k432: k({ l: 4, w: 3, h: 2 }), k222: k({ l: 2, w: 2, h: 2 }), faces: (net.match(/class="sf-net/g) || []).length, none: /沒有上面/.test(net), front: />前面</.test(label) && !/>上面</.test(label) }; });
   assert.deepEqual(r, { k322: '2', k432: '3', k222: '1', faces: 5, none: true, front: true });
   const rec = await p.page.evaluate(() => JSON.parse(sessionStorage.getItem('area-records-v16') || '[]').find(x => x.event === '整題定標'));
-  assert.equal(rec.siteVersion, 'v37'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
+  assert.equal(rec.siteVersion, 'v38'); assert.ok(rec.dimensions.every(n => n > 0), '表面積的題目尺寸有記下來');
   assert.match(await p.page.title(), /表面積/); assert.match(await p.text('header .brand'), /表面積/);
   assert.deepEqual(p.errors, []);
   await publish({});

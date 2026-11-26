@@ -31,7 +31,7 @@
   }
   function say(text) {
     if (!('speechSynthesis' in window)) return;
-    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-TW'; u.rate = 0.85; speechSynthesis.speak(u); } catch { /* 略過 */ }
+    try { speechSynthesis.cancel(); const sp = window.speech; const u = new SpeechSynthesisUtterance(sp ? sp.fix(text) : text); u.lang = 'zh-TW'; u.rate = 0.85; const v = sp?.voice(); if (v) u.voice = v; speechSynthesis.speak(u); } catch { /* 略過 */ }
   }
 
   // ---------- 老師開始：選題組 ----------
