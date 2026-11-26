@@ -66,7 +66,7 @@
   function talk(text) {
     lastSpoken = text;
     if (!cfg.buddyVoice || !('speechSynthesis' in window)) return;
-    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-TW'; u.rate = cfg.rate === 'slow' ? 0.7 : 0.9; const v = api?.voice?.(); if (v) u.voice = v; speechSynthesis.speak(u); } catch { /* 不能朗讀時只顯示文字 */ }
+    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(window.speech ? window.speech.fix(text) : text); u.lang = 'zh-TW'; u.rate = cfg.rate === 'slow' ? 0.7 : 0.9; const v = api?.voice?.(); if (v) u.voice = v; speechSynthesis.speak(u); } catch { /* 不能朗讀時只顯示文字 */ }
   }
 
   // ---------- 卡住偵測 ----------
