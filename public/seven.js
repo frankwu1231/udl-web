@@ -69,7 +69,7 @@
 
   // 第 26 版：班級設定，再套上這位學生的個別設定（老師在「教師觀察」調整、存在網站資料庫）
   function ownSettings() { return { ...F.settings(L()), ...(window.areaResearch?.overrides?.(type) || {}), ...(window.areaResearch?.phasePatch?.(type) || {}) }; }   // 第 26 版第四階段：研究階段（B、BC 關閉 AI；BC 由小老師小方取代小幫手；示範階段用老師示範模式）
-  const SITE_VERSION = 'v37';
+  const SITE_VERSION = 'v38';
   function log(event, extra = {}) {
     const st = extra.activity && phase !== 'plan' ? (titles()[extra.activity - 1] || '') : '';
     const r = { time: new Date().toISOString(), siteVersion: SITE_VERSION, shape: nameOf(), shapeKey: type, actId: type, stepTitle: st, cycle, activity: extra.activity ?? null, event, support: settings.support, response, method, flow: settings.flow, difficulty: settings.difficulty, mode: mode(), studyPhase, ...(window.areaTutor?.stage?.() ? { tutorStage: window.areaTutor.stage() } : {}), ...extra };
@@ -1156,14 +1156,9 @@
   }
   const plainText = el => clean(el);
   // 選比較自然的中文語音：優先台灣國語，再找名稱含 Natural／Online／Google 等較新的語音
-  function pickVoice() {
-    try {
-      const all = speechSynthesis.getVoices() || [];
-      const zh = all.filter(v => /^zh[-_]TW/i.test(v.lang)).concat(all.filter(v => /^zh/i.test(v.lang) && !/^zh[-_]TW/i.test(v.lang)));
-      const good = /Natural|Online|Neural|Google|Mei-Jia|美佳|Yating|HsiaoChen|曉臻|Hanhan/i;
-      return zh.find(v => good.test(v.name)) || zh[0] || null;
-    } catch { return null; }
-  }
+  // 第 38 版：改用共用的語音工具（speech.js），所有朗讀用同一套語音與讀音修正
+  function pickVoice() { try { return window.speech?.voice() || null; } catch { return null; } }
+  const sayFix = t => window.speech?.fix ? window.speech.fix(t) : t;
   if ('speechSynthesis' in window && speechSynthesis.addEventListener) speechSynthesis.addEventListener('voiceschanged', () => {});
 
   // 第 23 版：裝置沒有中文語音時（常見於 Safari），提醒一次怎麼補，不然會用英文語音唸得很奇怪
@@ -1187,7 +1182,7 @@
       if (i >= list.length) { stopRead(); return; }
       const el = list[i++], text = plainText(el);
       if (!text) return next();
-      const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-TW'; u.rate = settings.rate === 'slow' ? 0.7 : 0.9; const v = pickVoice(); if (v) u.voice = v;
+      const u = new SpeechSynthesisUtterance(sayFix(text)); u.lang = 'zh-TW'; u.rate = settings.rate === 'slow' ? 0.7 : 0.9; const v = pickVoice(); if (v) u.voice = v;
       u.onstart = () => { el.classList.add('reading'); el.scrollIntoView({ block: 'nearest' }); };
       u.onend = () => { el.classList.remove('reading'); next(); };
       u.onerror = () => stopRead();
@@ -1481,7 +1476,7 @@
       $('tourNext').onclick = () => { if (last) end(true); else { i++; show(); } };
       if ($('tourSkip')) $('tourSkip').onclick = () => end(false);
       $('tourNext').focus({ preventScroll: true });
-      if (settings.buddyVoice !== false && settings.sound !== false && window.speechSynthesis) { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-TW'; speechSynthesis.speak(u); } catch { /* 略過 */ } }
+      if (settings.buddyVoice !== false && settings.sound !== false && window.speechSynthesis) { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(sayFix(text)); u.lang = 'zh-TW'; u.rate = settings.rate === 'slow' ? 0.7 : 0.9; const v = pickVoice(); if (v) u.voice = v; speechSynthesis.speak(u); } catch { /* 略過 */ } }
     };
     show();
   }

@@ -17,13 +17,8 @@
     return pool.find(d => !(d[0] === cur[0] && d[1] === cur[1]) && area(d) !== area(cur) && d[0] !== cur[0] && d[1] !== cur[1]) || pool.find(d => area(d) !== area(cur)) || pool[0];
   }
 
-  function voice() {
-    try {
-      const all = speechSynthesis.getVoices() || [];
-      const zh = all.filter(v => /^zh[-_]TW/i.test(v.lang)).concat(all.filter(v => /^zh/i.test(v.lang)));
-      return zh.find(v => /Natural|Online|Neural|Google|Mei-Jia|美佳|Yating|HsiaoChen|曉臻|Hanhan/i.test(v.name)) || zh[0] || null;
-    } catch { return null; }
-  }
+  // 第 38 版：改用共用的語音工具（speech.js）
+  function voice() { try { return window.speech?.voice() || null; } catch { return null; } }
 
   // ---------- 腳本：每一步有幾個畫面，每個畫面一句話和一個動作 ----------
   function script(type, s, method, ex) {
@@ -190,7 +185,7 @@
         if (!('speechSynthesis' in window)) return fallback();
         try {
           speechSynthesis.cancel();
-          const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-TW'; u.rate = slow ? 0.6 : 0.9; const v = voice(); if (v) u.voice = v;
+          const u = new SpeechSynthesisUtterance(window.speech ? window.speech.fix(text) : text); u.lang = 'zh-TW'; u.rate = slow ? 0.6 : 0.9; const v = voice(); if (v) u.voice = v;
           let done = false; const end = () => { if (!done) { done = true; resolve(); } };
           u.onend = end; u.onerror = end; setTimeout(end, Math.max(2500, text.length * 450) * k());   // 沒有聲音的裝置也會往下播
           if (alive(t)) speechSynthesis.speak(u); else end();
