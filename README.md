@@ -12,7 +12,7 @@
 
 - 新增 `public/speech.js`：所有朗讀共用。語音優先台灣國語的自然語音（Natural／Online > Google、美佳等 > 任何 zh-TW > 其他中文）；朗讀前依 `zhuyin.js` 的讀音，把少數讀音的破音字換成同音字（例如「銀行」→「銀航」、「數一數」→「暑一暑」），畫面文字不變。
 - 學生頁、動畫示範、小方、AI 小老師、小測驗、學生問卷的朗讀都改用它（`seven.js`、`step-demo.js`、`buddy.js`、`tutor.js`、`probe.js`、`research.js`）。
-- 注音修正：「排成長方形」「糖的數量」「每一種不只」。`zhuyin` 另外提供 `reading(字)`（預設讀音）。
+- 注音修正：「排成長方形」「糖的數量」「每一種不只、3 種不一樣」「看得到、畫得到、辦得到」（得讀輕聲）。`zhuyin` 另外提供 `reading(字)`（預設讀音）。
 - 測試：`tests/speech.test.mjs`、`tests/e2e.test.mjs`（第 38 版朗讀）。
 
 ## 2026-11-24：第 37 版（現場試用的學生問卷）
