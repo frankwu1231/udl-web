@@ -7,7 +7,7 @@
 (() => {
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const VERSION = 'v37';
+  const VERSION = 'v38';
   const WHO_KEY = 'area-research-who-v22', QUEUE_KEY = 'area-research-queue-v22', NAMES_KEY = 'area-research-names-v22', SENT_KEY = 'area-research-sent-v22', LAST_KEY = 'area-research-last-v22';
   const MAX_ROWS = 40;            // 一次最多傳幾筆
   const MAX_BYTES = 30000;        // 一次最多傳多少位元組（離頁時的 keepalive 上限是 64 KB）
@@ -379,7 +379,7 @@
   // ---------- 第 37 版：試用後的學生問卷 ----------
   // 朗讀：zh-TW 語音，唸題目和選項；學生頁開了注音，問卷也加注音
   function sayText(text) {
-    try { if (!('speechSynthesis' in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-TW'; u.rate = 0.85; speechSynthesis.speak(u); } catch { /* 略過 */ }
+    try { if (!('speechSynthesis' in window)) return; speechSynthesis.cancel(); const sp = window.speech; const u = new SpeechSynthesisUtterance(sp ? sp.fix(text) : text); u.lang = 'zh-TW'; u.rate = 0.85; const v = sp?.voice(); if (v) u.voice = v; speechSynthesis.speak(u); } catch { /* 略過 */ }
   }
   // 這位學生這次做過的活動（第 15 題用）：從學生頁紀錄裡完成或做過的題目找
   function doneActivities() {
